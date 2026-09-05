@@ -3,7 +3,7 @@ import { randomBytes, randomUUID, createHash } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { eloChange, periodStart, rankFor } from '../../../packages/core/src/ranking.ts';
-import { RuleError, type Player } from '../../../packages/core/src/game.ts';
+import { RuleError } from '../../../packages/core/src/game.ts';
 import type { Profile, PublicPlayer, HistoryEntry } from '../../../packages/core/src/protocol.ts';
 import type { StoredMatch } from './matches.ts';
 export const digest = (value: string) => createHash('sha256').update(value).digest('hex');
@@ -30,11 +30,18 @@ export class Store {
       CREATE TABLE IF NOT EXISTS sessions(hash TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),expires_at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS ratings(user_id TEXT NOT NULL REFERENCES users(id),game_id TEXT NOT NULL,rating INTEGER NOT NULL DEFAULT 1000,played INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(user_id,game_id));
       CREATE TABLE IF NOT EXISTS matches(id TEXT PRIMARY KEY,body TEXT NOT NULL,finished INTEGER NOT NULL DEFAULT 0);
-      CREATE TABLE IF NOT EXISTS results(match_id TEXT NOT NULL REFERENCES matches(id),user_id TEXT NOT NULL REFERENCES users(id),game_id TEXT NOT NULL,opponent TEXT NOT NULL,result TEXT NOT NULL,reason TEXT NOT NULL,duration_ms INTEGER NOT NULL,delta INTEGER NOT NULL,ranked INTEGER NOT NULL,ended_at INTEGER NOT NULL,PRIMARY KEY(match_id,user_id));
+      CREATE TABLE IF NOT EXISTS results(match_id TEXT NOT NULL REFERENCES matches(id),user_id TEXT NOT NULL REFERENCES users(id),game_id TEXT NOT NULL,opponent TEXT NOT NULL,result TEXT NOT NULL,reason TEXT NOT NULL,duration_ms INTEGER NOT NULL,delta INTEGER NOT NULL,ranked INTEGER NOT NULL,ended_at INTEGER NOT NULL,opponents_json TEXT NOT NULL DEFAULT '[]',player_count INTEGER NOT NULL DEFAULT 2,PRIMARY KEY(match_id,user_id));
       CREATE INDEX IF NOT EXISTS results_period ON results(game_id,ended_at);
       CREATE TABLE IF NOT EXISTS friends(user_id TEXT NOT NULL REFERENCES users(id),friend_id TEXT NOT NULL REFERENCES users(id),PRIMARY KEY(user_id,friend_id));
       CREATE TABLE IF NOT EXISTS oauth_flows(state TEXT PRIMARY KEY,body TEXT NOT NULL,expires_at INTEGER NOT NULL);
       CREATE TABLE IF NOT EXISTS auth_codes(hash TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),challenge TEXT NOT NULL,expires_at INTEGER NOT NULL);`);
+    const resultColumns = new Set(
+      (this.db.prepare('PRAGMA table_info(results)').all() as { name: string }[]).map((column) => column.name),
+    );
+    if (!resultColumns.has('opponents_json'))
+      this.db.exec("ALTER TABLE results ADD COLUMN opponents_json TEXT NOT NULL DEFAULT '[]'");
+    if (!resultColumns.has('player_count'))
+      this.db.exec('ALTER TABLE results ADD COLUMN player_count INTEGER NOT NULL DEFAULT 2');
   }
   transaction<T>(fn: () => T): T {
     this.db.exec('BEGIN IMMEDIATE');
@@ -134,10 +141,12 @@ export class Store {
       .run(match.id, JSON.stringify(match), match.result ? 1 : 0);
   }
   loadMatch(id: string): StoredMatch {
-    const row = this.db.prepare('SELECT body FROM matches WHERE id=?').get(id) as
-      { body: string } | undefined;
+    const row = this.db.prepare('SELECT body FROM matches WHERE id=?').get(id) as { body: string } | undefined;
     if (!row) throw new RuleError('match-not-found');
-    return JSON.parse(row.body);
+    const match = JSON.parse(row.body) as StoredMatch;
+    match.drawAccepts ??= match.drawOffer === null ? [] : [match.drawOffer];
+    match.state.playerCount ??= match.players.length as 2 | 3 | 4;
+    return match;
   }
   activeMatches(): StoredMatch[] {
     return (
@@ -149,46 +158,53 @@ export class Store {
   settle(match: StoredMatch) {
     if (!match.result || match.endedAt === null) throw new Error('Cannot settle active match');
     this.transaction(() => {
-      const existing = this.db
-        .prepare('SELECT match_id FROM results WHERE match_id=? LIMIT 1')
-        .get(match.id);
+      const existing = this.db.prepare('SELECT match_id FROM results WHERE match_id=? LIMIT 1').get(match.id);
       if (existing) return;
       const result = match.result!;
       if (match.ranked && result.reason !== 'abandoned') {
-        const ratings = match.players.map((p) => this.rating(p.id, match.gameId));
-        const change = eloChange(
-          ratings[0],
-          ratings[1],
-          result.winner === null ? 0.5 : result.winner === 0 ? 1 : 0,
-        );
-        result.ratingDelta = [change, -change];
-        for (const player of [0, 1] as const)
+        const ratings = match.players.map((player) => this.rating(player.id, match.gameId));
+        const raw = ratings.map(() => 0);
+        for (let left = 0; left < ratings.length; left++)
+          for (let right = left + 1; right < ratings.length; right++) {
+            const score =
+              result.winner === null ? 0.5 : result.winner === left ? 1 : result.winner === right ? 0 : 0.5;
+            const change = eloChange(ratings[left], ratings[right], score);
+            raw[left] += change;
+            raw[right] -= change;
+          }
+        const divisor = Math.max(1, ratings.length - 1);
+        result.ratingDelta = raw.map((delta) => Math.round(delta / divisor));
+        const drift = result.ratingDelta.reduce((sum, delta) => sum + delta, 0);
+        if (drift) result.ratingDelta[result.winner ?? 0] -= drift;
+        for (let seat = 0; seat < match.players.length; seat++)
           this.db
             .prepare(
               'INSERT INTO ratings(user_id,game_id,rating,played) VALUES(?,?,?,1) ON CONFLICT(user_id,game_id) DO UPDATE SET rating=excluded.rating,played=ratings.played+1',
             )
-            .run(
-              match.players[player].id,
-              match.gameId,
-              ratings[player] + result.ratingDelta[player],
-            );
+            .run(match.players[seat].id, match.gameId, ratings[seat] + result.ratingDelta[seat]);
       }
       this.saveMatch(match);
-      for (const player of [0, 1] as const)
+      for (let seat = 0; seat < match.players.length; seat++) {
+        const opponents = match.players.filter((_, index) => index !== seat).map((player) => player.name);
         this.db
-          .prepare('INSERT INTO results VALUES(?,?,?,?,?,?,?,?,?,?)')
+          .prepare(
+            'INSERT INTO results(match_id,user_id,game_id,opponent,result,reason,duration_ms,delta,ranked,ended_at,opponents_json,player_count) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',
+          )
           .run(
             match.id,
-            match.players[player].id,
+            match.players[seat].id,
             match.gameId,
-            match.players[player === 0 ? 1 : 0].name,
-            result.winner === null ? 'draw' : result.winner === player ? 'win' : 'loss',
+            opponents.join(', '),
+            result.winner === null ? 'draw' : result.winner === seat ? 'win' : 'loss',
             result.reason,
             match.endedAt! - match.createdAt,
-            result.ratingDelta[player],
+            result.ratingDelta[seat] ?? 0,
             match.ranked ? 1 : 0,
             match.endedAt!,
+            JSON.stringify(opponents),
+            match.players.length,
           );
+      }
     });
   }
   profile(userId: string, gameIds: string[]): Profile {
@@ -211,6 +227,8 @@ export class Store {
       matchId: row.match_id,
       gameId: row.game_id,
       opponent: row.opponent,
+      opponents: JSON.parse(String(row.opponents_json ?? '[]')),
+      playerCount: Number(row.player_count ?? 2),
       result: row.result,
       reason: row.reason,
       durationMs: row.duration_ms,

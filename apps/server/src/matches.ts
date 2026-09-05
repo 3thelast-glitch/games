@@ -1,10 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import { GameRegistry, RuleError, opponent, type Player } from '../../../packages/core/src/game.ts';
-import type {
-  MatchSnapshot,
-  MatchCommand,
-  ResultReason,
-} from '../../../packages/core/src/protocol.ts';
+import {
+  GameRegistry,
+  RuleError,
+  opponent,
+  seats,
+  type Player,
+  type PlayerCount,
+  type Seat,
+} from '../../../packages/core/src/game.ts';
+import type { MatchSnapshot, MatchCommand, ResultReason } from '../../../packages/core/src/protocol.ts';
 import { Store, digest } from './store.ts';
 export interface StoredMatch extends Omit<MatchSnapshot, 'serverNow'> {
   commands: Record<string, { fingerprint: string; revision: number }>;
@@ -16,44 +20,35 @@ export interface MatchOptions {
 }
 export class MatchService {
   readonly options: MatchOptions;
-  constructor(
-    readonly store: Store,
-    readonly games: GameRegistry,
-    options: Partial<MatchOptions> = {},
-  ) {
-    this.options = {
-      clockMs: 600000,
-      graceMs: 60000,
-      now: Date.now,
-      ...options,
-    };
+  constructor(readonly store: Store, readonly games: GameRegistry, options: Partial<MatchOptions> = {}) {
+    this.options = { clockMs: 600000, graceMs: 60000, now: Date.now, ...options };
   }
-  create(gameId: string, users: [string, string], ranked = false): MatchSnapshot {
+  create(gameId: string, users: string[], ranked = false): MatchSnapshot {
     const game = this.games.get(gameId);
-    if (users[0] === users[1]) throw new RuleError('cannot-play-yourself');
+    if (users.length < game.minPlayers || users.length > game.maxPlayers)
+      throw new RuleError('player-count-not-supported');
+    if (new Set(users).size !== users.length) throw new RuleError('cannot-play-yourself');
     if (this.store.activeMatches().some((m) => m.players.some((p) => users.includes(p.id))))
       throw new RuleError('already-in-match');
-    if (ranked && users.some((u) => this.store.user(u).guest))
-      throw new RuleError('ranked-requires-account');
-    const now = this.options.now();
+    if (ranked && users.some((u) => this.store.user(u).guest)) throw new RuleError('ranked-requires-account');
+    const now = this.options.now(),
+      playerCount = users.length as PlayerCount;
     const m: StoredMatch = {
       id: randomUUID(),
       gameId,
-      players: [
-        this.store.publicPlayer(users[0], gameId),
-        this.store.publicPlayer(users[1], gameId),
-      ],
-      state: game.create(),
+      players: users.map((user) => this.store.publicPlayer(user, gameId)),
+      state: game.create(playerCount),
       ranked,
       revision: 0,
-      clockMs: [this.options.clockMs, this.options.clockMs],
+      clockMs: users.map(() => this.options.clockMs),
       turnStartedAt: now,
       createdAt: now,
       endedAt: null,
       result: null,
-      disconnectedAt: [null, null],
+      disconnectedAt: users.map(() => null),
       graceMs: this.options.graceMs,
       drawOffer: null,
+      drawAccepts: [],
       commands: {},
       rematchVotes: [],
       rematchId: null,
@@ -61,21 +56,20 @@ export class MatchService {
     this.store.saveMatch(m);
     return this.snapshot(m);
   }
-  seat(match: StoredMatch, userId: string): Player {
-    const i = match.players.findIndex((p) => p.id === userId);
-    if (i !== 0 && i !== 1) throw new RuleError('not-in-match');
-    return i;
+  seat(match: StoredMatch, userId: string): Seat {
+    const index = match.players.findIndex((p) => p.id === userId);
+    if (index < 0 || index > 3) throw new RuleError('not-in-match');
+    return index as Seat;
   }
   snapshot(match: StoredMatch): MatchSnapshot {
     const { commands, ...publicMatch } = match;
     return { ...publicMatch, serverNow: this.options.now() };
   }
-  /** Apply a game's optional private-information projection before a snapshot leaves the server. */
   forUser(match: MatchSnapshot, userId: string): MatchSnapshot {
     const index = match.players.findIndex((player) => player.id === userId);
-    if (index !== 0 && index !== 1) throw new RuleError('not-in-match');
+    if (index < 0 || index > 3) throw new RuleError('not-in-match');
     const game = this.games.get(match.gameId);
-    return game.view ? { ...match, state: game.view(match.state, index) } : match;
+    return game.view ? { ...match, state: game.view(match.state, index as Seat) } : match;
   }
   get(id: string, userId: string): MatchSnapshot {
     let m = this.store.loadMatch(id);
@@ -84,25 +78,25 @@ export class MatchService {
     return this.snapshot(m);
   }
   activeFor(userId: string): MatchSnapshot | null {
-    const m = this.store.activeMatches().find((m) => m.players.some((p) => p.id === userId));
+    const m = this.store.activeMatches().find((match) => match.players.some((p) => p.id === userId));
     return m ? this.get(m.id, userId) : null;
   }
-  private finish(
-    m: StoredMatch,
-    winner: Player | null,
-    reason: ResultReason,
-    at = this.options.now(),
-  ) {
+  private bestRemaining(m: StoredMatch, excluded: Seat[]): Seat {
+    const available = seats(m.players.length).filter((seat) => !excluded.includes(seat));
+    if (!available.length) throw new RuleError('no-remaining-player');
+    return available.sort(
+      (a, b) => this.games.get(m.gameId).evaluate(m.state, b) - this.games.get(m.gameId).evaluate(m.state, a),
+    )[0];
+  }
+  private finish(m: StoredMatch, winner: Seat | null, reason: ResultReason, at = this.options.now()) {
     if (m.result) return m;
-    m.clockMs[m.state.turn] = Math.max(
-      0,
-      m.clockMs[m.state.turn] - Math.max(0, at - m.turnStartedAt),
-    );
+    m.clockMs[m.state.turn] = Math.max(0, m.clockMs[m.state.turn] - Math.max(0, at - m.turnStartedAt));
     m.turnStartedAt = at;
     m.endedAt = at;
     m.state = { ...m.state, winner };
-    m.result = { winner, reason, ratingDelta: [0, 0] };
+    m.result = { winner, reason, ratingDelta: m.players.map(() => 0) };
     m.drawOffer = null;
+    m.drawAccepts = [];
     m.revision++;
     this.store.settle(m);
     return m;
@@ -110,36 +104,22 @@ export class MatchService {
   expire(m: StoredMatch): StoredMatch {
     if (m.result) return m;
     const now = this.options.now();
-    const deadlines: {
-      at: number;
-      loser: Player;
-      reason: 'timeout' | 'disconnect';
-    }[] = [
-      {
-        at: m.turnStartedAt + m.clockMs[m.state.turn],
-        loser: m.state.turn,
-        reason: 'timeout',
-      },
+    const deadlines: { at: number; loser: Seat; reason: 'timeout' | 'disconnect' }[] = [
+      { at: m.turnStartedAt + m.clockMs[m.state.turn], loser: m.state.turn, reason: 'timeout' },
     ];
-    for (const p of [0, 1] as const)
-      if (m.disconnectedAt[p] !== null)
-        deadlines.push({
-          at: m.disconnectedAt[p]! + m.graceMs,
-          loser: p,
-          reason: 'disconnect',
-        });
+    for (const seat of seats(m.players.length))
+      if (m.disconnectedAt[seat] !== null)
+        deadlines.push({ at: m.disconnectedAt[seat]! + m.graceMs, loser: seat, reason: 'disconnect' });
     deadlines.sort((a, b) => a.at - b.at);
     const first = deadlines[0];
     if (first.at > now) return m;
-    const both =
-      first.reason === 'disconnect' &&
-      deadlines.some((d) => d !== first && d.reason === 'disconnect' && d.at === first.at);
-    return this.finish(
-      m,
-      both ? null : opponent(first.loser),
-      both ? 'abandoned' : first.reason,
-      first.at,
-    );
+    if (first.reason === 'timeout')
+      return this.finish(m, this.bestRemaining(m, [first.loser]), 'timeout', first.at);
+    const simultaneous = deadlines
+      .filter((deadline) => deadline.reason === 'disconnect' && deadline.at === first.at)
+      .map((deadline) => deadline.loser);
+    if (simultaneous.length === m.players.length) return this.finish(m, null, 'abandoned', first.at);
+    return this.finish(m, this.bestRemaining(m, simultaneous), 'disconnect', first.at);
   }
   command(userId: string, command: MatchCommand): MatchSnapshot {
     let m = this.store.loadMatch(command.matchId);
@@ -163,26 +143,35 @@ export class MatchService {
       m.state = next;
       m.revision++;
       m.drawOffer = null;
+      m.drawAccepts = [];
       m.commands[key] = { fingerprint, revision: m.revision };
       if (next.winner !== null)
         return this.snapshot(this.finish(m, next.winner, this.games.get(m.gameId).winReason, now));
       if (next.drawReason) return this.snapshot(this.finish(m, null, next.drawReason, now));
     } else if (command.type === 'resign') {
       m.commands[key] = { fingerprint, revision: m.revision + 1 };
-      return this.snapshot(this.finish(m, opponent(seat), 'resignation', now));
+      const winner =
+        m.players.length === 2 ? opponent(seat as Player) : this.bestRemaining(m, [seat]);
+      return this.snapshot(this.finish(m, winner, 'resignation', now));
     } else if (command.type === 'draw-offer') {
       if (m.drawOffer !== null) throw new RuleError('draw-already-offered');
       m.drawOffer = seat;
+      m.drawAccepts = [seat];
       m.revision++;
     } else {
-      if (m.drawOffer === null || m.drawOffer === seat)
-        throw new RuleError('no-opponent-draw-offer');
-      if (command.accept) {
-        m.commands[key] = { fingerprint, revision: m.revision + 1 };
-        return this.snapshot(this.finish(m, null, 'agreement', now));
+      if (m.drawOffer === null || m.drawOffer === seat) throw new RuleError('no-opponent-draw-offer');
+      if (!command.accept) {
+        m.drawOffer = null;
+        m.drawAccepts = [];
+        m.revision++;
+      } else {
+        if (!m.drawAccepts.includes(seat)) m.drawAccepts.push(seat);
+        if (m.drawAccepts.length === m.players.length) {
+          m.commands[key] = { fingerprint, revision: m.revision + 1 };
+          return this.snapshot(this.finish(m, null, 'agreement', now));
+        }
+        m.revision++;
       }
-      m.drawOffer = null;
-      m.revision++;
     }
     m.commands[key] = { fingerprint, revision: m.revision };
     this.store.saveMatch(m);
@@ -190,9 +179,7 @@ export class MatchService {
   }
   connection(userId: string, connected: boolean): MatchSnapshot[] {
     const result: MatchSnapshot[] = [];
-    for (let m of this.store
-      .activeMatches()
-      .filter((m) => m.players.some((p) => p.id === userId))) {
+    for (let m of this.store.activeMatches().filter((match) => match.players.some((p) => p.id === userId))) {
       m = this.expire(m);
       if (!m.result) {
         const seat = this.seat(m, userId);
@@ -206,7 +193,7 @@ export class MatchService {
   recoverAfterRestart() {
     const now = this.options.now();
     for (const m of this.store.activeMatches()) {
-      m.disconnectedAt = m.disconnectedAt.map((at) => at ?? now) as [number, number];
+      m.disconnectedAt = m.disconnectedAt.map((at) => at ?? now);
       this.store.saveMatch(m);
     }
   }
@@ -219,8 +206,9 @@ export class MatchService {
     if (!m.result) throw new RuleError('match-still-active');
     if (m.rematchId) return this.get(m.rematchId, userId);
     if (!m.rematchVotes.includes(seat)) m.rematchVotes.push(seat);
-    if (m.rematchVotes.length === 2) {
-      const next = this.create(m.gameId, [m.players[1].id, m.players[0].id], m.ranked);
+    if (m.rematchVotes.length === m.players.length) {
+      const users = [...m.players.slice(1).map((player) => player.id), m.players[0].id];
+      const next = this.create(m.gameId, users, m.ranked);
       m.rematchId = next.id;
       this.store.saveMatch(m);
       return next;

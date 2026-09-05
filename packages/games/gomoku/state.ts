@@ -1,7 +1,7 @@
-import type { BaseState } from '../../core/src/game.ts';
+import type { TwoPlayerState } from '../../core/src/game.ts';
 import type { Cell } from '../shared/lines.ts';
 export const GOMOKU_SIZE = 15;
-export interface GomokuState extends BaseState {
+export interface GomokuState extends TwoPlayerState {
   gameId: 'gomoku';
   board: Cell[];
   lastMove: number | null;

@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Profile, PublicPlayer } from '../../../packages/core/src/protocol.ts';
-import type { Difficulty } from '../../../packages/core/src/game.ts';
+import type { Difficulty, PlayerCount, Seat } from '../../../packages/core/src/game.ts';
 import { RANKS } from '../../../packages/core/src/ranking.ts';
 import { Avatar, avatars, Empty, GameArt, Icon, Modal, formatTime } from './components.tsx';
 import { gameInfo, upcoming } from './gameViews.tsx';
@@ -12,7 +12,7 @@ export interface LocalHistory {
   id: string;
   gameId: string;
   mode: 'local' | 'ai';
-  winner: 0 | 1 | null;
+  winner: Seat | null;
   durationMs: number;
   endedAt: number;
 }
@@ -171,7 +171,7 @@ export function ModeDialog({
   gameId: string;
   initialMode?: PlayMode;
   onClose: () => void;
-  onStart: (mode: PlayMode, difficulty: Difficulty, ranked: boolean, code?: string) => void;
+  onStart: (mode: PlayMode, difficulty: Difficulty, ranked: boolean, playerCount: PlayerCount, code?: string) => void;
   guest: boolean;
   onSignIn: () => void;
   busy: boolean;
@@ -180,6 +180,7 @@ export function ModeDialog({
   const [mode, setMode] = useState<PlayMode>(initialMode ?? 'local'),
     [difficulty, setDifficulty] = useState<Difficulty>('medium'),
     [ranked, setRanked] = useState(false),
+    [playerCount, setPlayerCount] = useState<PlayerCount>(2),
     [code, setCode] = useState('');
   return (
     <Modal title={t('chooseMode')} onClose={onClose}>
@@ -210,6 +211,18 @@ export function ModeDialog({
           </button>
         ))}
       </div>
+      {gameId === 'digitalGame' && mode !== 'ai' && (
+        <fieldset>
+          <legend>{t('playerCountLabel')}</legend>
+          <div className="segmented">
+            {([2, 3, 4] as PlayerCount[]).map((count) => (
+              <button key={count} aria-pressed={playerCount === count} onClick={() => setPlayerCount(count)}>
+                {count}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      )}
       {mode === 'ai' && (
         <fieldset>
           <legend>{t('difficulty')}</legend>
@@ -247,7 +260,7 @@ export function ModeDialog({
           <button
             className="button primary"
             disabled={busy}
-            onClick={() => onStart(mode, difficulty, false)}
+            onClick={() => onStart(mode, difficulty, false, playerCount)}
           >
             <Icon name="lock" />
             {t('createRoom')}
@@ -255,7 +268,7 @@ export function ModeDialog({
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              onStart(mode, difficulty, false, code);
+              onStart(mode, difficulty, false, playerCount, code);
             }}
           >
             <label>
@@ -287,7 +300,7 @@ export function ModeDialog({
         <button
           className="button primary full"
           disabled={busy || (ranked && guest && mode === 'online')}
-          onClick={() => onStart(mode, difficulty, ranked)}
+          onClick={() => onStart(mode, difficulty, ranked, mode === 'ai' ? 2 : playerCount)}
         >
           {t(mode === 'online' ? 'quickMatch' : 'start')}
           <Icon name="arrow" />
@@ -302,8 +315,8 @@ export function WaitingDialog({
   onCopy,
 }: {
   room:
-    | { type: 'room'; code: string; gameId: string; expiresAt: number }
-    | { type: 'queued'; gameId: string; ranked: boolean };
+    | { type: 'room'; code: string; gameId: string; expiresAt: number; playerCount: PlayerCount; joined: number }
+    | { type: 'queued'; gameId: string; ranked: boolean; playerCount: PlayerCount };
   onCancel: () => void;
   onCopy: (text: string) => void;
 }) {
@@ -317,6 +330,9 @@ export function WaitingDialog({
         <span className="eyebrow">{t(room.gameId)}</span>
         <h3>{t(room.type === 'room' ? 'waitingFriend' : 'searching')}</h3>
         <p>{t(room.type === 'room' ? 'shareCode' : 'searchHint')}</p>
+        <p className="small-muted">
+          {t('playerCountLabel')}: {room.type === 'room' ? `${room.joined}/${room.playerCount}` : room.playerCount}
+        </p>
         {room.type === 'room' && (
           <>
             <div className="room-code" dir="ltr">

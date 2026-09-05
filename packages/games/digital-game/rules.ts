@@ -1,13 +1,15 @@
 import {
   RuleError,
-  type Player,
+  seats,
+  type PlayerCount,
   type RulesEngine,
+  type Seat,
   type Validation,
 } from '../../core/src/game.ts';
 import {
   INITIAL_MELD_POINTS,
   JOKER_PENALTY,
-  createDigitalGame,
+  createDigitalGameForPlayers,
   nextPlayer,
   type CommitMeldIntent,
   type DigitalGameMove,
@@ -32,7 +34,9 @@ export type MeldValidation = ResolvedMeld | InvalidMeld;
 function invalid(code: string): InvalidMeld {
   return { ok: false, code };
 }
-
+function countOf(state: DigitalGameState): PlayerCount {
+  return (state.playerCount ?? state.racks.length ?? 2) as PlayerCount;
+}
 function assertTileIds(state: DigitalGameState, ids: string[]): DigitalTile[] {
   return ids.map((id) => {
     const tile = state.tiles[id];
@@ -65,7 +69,6 @@ export function validateRun(tiles: DigitalTile[]): MeldValidation {
   if (numbered.some((tile) => tile.color !== color)) return invalid('run-color');
   const numberedValues = numbered.map((tile) => tile.value!);
   if (new Set(numberedValues).size !== numberedValues.length) return invalid('run-duplicate-number');
-
   for (let start = 1; start + tiles.length - 1 <= 13; start++) {
     let valid = true;
     const values: number[] = [];
@@ -94,8 +97,6 @@ export function validateMeld(tiles: DigitalTile[]): MeldValidation {
   if (group.ok) return group;
   const run = validateRun(tiles);
   if (run.ok) return run;
-  // Prefer the run-specific explanation when a same-size group fails on values and the colors also
-  // prove it cannot be a run. This keeps the UI error actionable without changing validity.
   if (group.code === 'group-value' && run.code === 'run-color') return run;
   return invalid(group.code === 'group-size' ? run.code : group.code);
 }
@@ -140,22 +141,24 @@ export function validateTable(
 export function tilePenalty(tile: DigitalTile): number {
   return tile.isJoker ? JOKER_PENALTY : tile.value ?? 0;
 }
-
-export function rackPenalty(state: DigitalGameState, player: Player): number {
-  return state.racks[player].reduce((sum, id) => sum + tilePenalty(state.tiles[id]), 0);
+export function rackPenalty(state: DigitalGameState, player: Seat): number {
+  return (state.racks[player] ?? []).reduce((sum, id) => sum + tilePenalty(state.tiles[id]), 0);
 }
-
 export function calculateRoundScores(
   state: DigitalGameState,
-  winner: Player,
-  racks: [string[], string[]] = state.racks,
-): [number, number] {
-  const other = nextPlayer(winner);
-  const loserPenalty = racks[other].reduce((sum, id) => sum + tilePenalty(state.tiles[id]), 0);
-  const result: [number, number] = [0, 0];
-  result[winner] = loserPenalty;
-  result[other] = -loserPenalty;
-  return result;
+  winner: Seat,
+  racks: string[][] = state.racks,
+): number[] {
+  const scores = racks.map(() => 0);
+  let won = 0;
+  for (const seat of seats(racks.length)) {
+    if (seat === winner) continue;
+    const penalty = (racks[seat] ?? []).reduce((sum, id) => sum + tilePenalty(state.tiles[id]), 0);
+    scores[seat] = -penalty;
+    won += penalty;
+  }
+  scores[winner] = won;
+  return scores;
 }
 
 function parseMeld(value: unknown): CommitMeldIntent {
@@ -173,7 +176,6 @@ function parseMeld(value: unknown): CommitMeldIntent {
     throw new RuleError('invalid-move');
   return { id: meld.id as string | undefined, tiles: [...(meld.tiles as string[])] };
 }
-
 export function parseDigitalMove(input: unknown): DigitalGameMove {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new RuleError('invalid-move');
   const move = input as Record<string, unknown>;
@@ -190,7 +192,6 @@ export function parseDigitalMove(input: unknown): DigitalGameMove {
 }
 
 const signature = (tiles: string[]) => [...tiles].sort().join('|');
-
 function initialMeldScore(
   state: DigitalGameState,
   table: CommitMeldIntent[],
@@ -205,28 +206,26 @@ function initialMeldScore(
   }
   return score;
 }
-
 function commitPlan(state: DigitalGameState, move: Extract<DigitalGameMove, { type: 'commit' }>) {
   if (state.winner !== null || state.drawReason) throw new RuleError('game-over');
   const player = state.turn;
   const tableValidation = validateTable(state, move.table);
   if (!tableValidation.ok) throw new RuleError(tableValidation.code);
-
   const oldTableIds = new Set(state.table.flatMap((meld) => meld.tiles));
   const newTableIds = new Set(move.table.flatMap((meld) => meld.tiles));
   for (const id of oldTableIds) if (!newTableIds.has(id)) throw new RuleError('table-tile-missing');
-
-  const rack = new Set(state.racks[player]);
-  const opponentRack = new Set(state.racks[nextPlayer(player)]);
+  const rack = new Set(state.racks[player] ?? []);
+  const otherRackTiles = new Set(
+    state.racks.flatMap((items, index) => (index === player ? [] : items)),
+  );
   const played: string[] = [];
   for (const id of newTableIds) {
     if (oldTableIds.has(id)) continue;
-    if (opponentRack.has(id)) throw new RuleError('opponent-tile');
+    if (otherRackTiles.has(id)) throw new RuleError('opponent-tile');
     if (!rack.has(id)) throw new RuleError('tile-not-owned');
     played.push(id);
   }
   if (!played.length) throw new RuleError('play-rack-tile');
-
   if (!state.hasCompletedInitialMeld[player]) {
     const oldSignatures = new Map<string, number>();
     for (const meld of state.table) {
@@ -245,16 +244,14 @@ function commitPlan(state: DigitalGameState, move: Extract<DigitalGameMove, { ty
     if (initialMeldScore(state, move.table, oldTableIds) < INITIAL_MELD_POINTS)
       throw new RuleError('initial-meld-30');
   }
-
   const playedSet = new Set(played);
-  const nextRack = state.racks[player].filter((id) => !playedSet.has(id));
+  const nextRack = (state.racks[player] ?? []).filter((id) => !playedSet.has(id));
   const melds = tableValidation.melds.map((meld, index) => ({
     ...meld,
     id: move.table[index].id ?? `m${state.ply + 1}-${index}`,
   }));
   return { player, played, nextRack, melds };
 }
-
 export function validateDigital(state: DigitalGameState, move: DigitalGameMove): Validation {
   try {
     const parsed = parseDigitalMove(move);
@@ -269,71 +266,68 @@ export function validateDigital(state: DigitalGameState, move: DigitalGameMove):
     throw error;
   }
 }
-
 function finishBlockedRound(state: DigitalGameState): DigitalGameState {
-  const penalties: [number, number] = [rackPenalty(state, 0), rackPenalty(state, 1)];
-  if (penalties[0] === penalties[1]) return { ...state, drawReason: 'blocked-round' };
-  const winner: Player = penalties[0] < penalties[1] ? 0 : 1;
+  const activeSeats = seats(countOf(state));
+  const penalties = activeSeats.map((seat) => rackPenalty(state, seat as Seat));
+  const minimum = Math.min(...penalties);
+  const best = activeSeats.filter((seat) => penalties[seat] === minimum);
+  if (best.length !== 1) return { ...state, drawReason: 'blocked-round' };
+  const winner = best[0];
   return { ...state, winner, scores: calculateRoundScores(state, winner) };
 }
-
 export function applyDigital(state: DigitalGameState, input: DigitalGameMove): DigitalGameState {
   const move = parseDigitalMove(input);
   if (state.winner !== null || state.drawReason) throw new RuleError('game-over');
   const player = state.turn;
-
+  const playerCount = countOf(state);
   if (move.type === 'draw') {
-    const racks: [string[], string[]] = [[...state.racks[0]], [...state.racks[1]]];
+    const racks = state.racks.map((rack) => [...rack]);
     const drawPool = [...state.drawPool];
     let emptyPoolPasses = state.emptyPoolPasses;
     if (drawPool.length) {
       const tile = drawPool.pop()!;
       racks[player].push(tile);
       emptyPoolPasses = 0;
-    } else {
-      emptyPoolPasses++;
-    }
+    } else emptyPoolPasses++;
     let next: DigitalGameState = {
       ...state,
+      playerCount,
       racks,
-      rackCounts: [racks[0].length, racks[1].length],
+      rackCounts: racks.map((rack) => rack.length),
       drawPool,
       emptyPoolPasses,
       lastAction: 'draw',
-      turn: nextPlayer(player),
+      turn: nextPlayer(player, playerCount),
       ply: state.ply + 1,
     };
-    if (!drawPool.length && emptyPoolPasses >= 2) next = finishBlockedRound(next);
+    if (!drawPool.length && emptyPoolPasses >= playerCount) next = finishBlockedRound(next);
     return next;
   }
-
   const plan = commitPlan(state, move);
-  const racks: [string[], string[]] = [[...state.racks[0]], [...state.racks[1]]];
+  const racks = state.racks.map((rack) => [...rack]);
   racks[player] = plan.nextRack;
-  const initial: [boolean, boolean] = [...state.hasCompletedInitialMeld];
+  const initial = [...state.hasCompletedInitialMeld];
   initial[player] = true;
   const winner = plan.nextRack.length === 0 ? player : null;
-  const next: DigitalGameState = {
+  return {
     ...state,
+    playerCount,
     table: plan.melds,
     racks,
-    rackCounts: [racks[0].length, racks[1].length],
+    rackCounts: racks.map((rack) => rack.length),
     hasCompletedInitialMeld: initial,
     scores: winner === null ? state.scores : calculateRoundScores(state, winner, racks),
     winner,
-    turn: winner === null ? nextPlayer(player) : player,
+    turn: winner === null ? nextPlayer(player, playerCount) : player,
     ply: state.ply + 1,
     lastAction: 'commit',
     emptyPoolPasses: 0,
   };
-  return next;
 }
-
-function simpleCandidateMelds(state: DigitalGameState, player: Player): string[][] {
-  const rackTiles = state.racks[player].map((id) => state.tiles[id]).filter(Boolean);
+function simpleCandidateMelds(state: DigitalGameState, player: Seat): string[][] {
+  const rackTiles = (state.racks[player] ?? []).map((id) => state.tiles[id]).filter(Boolean);
   const jokers = rackTiles.filter((tile) => tile.isJoker).map((tile) => tile.id);
   const candidates: string[][] = [];
-
   for (let value = 1; value <= 13; value++) {
     const byColor = new Map<string, string>();
     for (const tile of rackTiles)
@@ -344,7 +338,6 @@ function simpleCandidateMelds(state: DigitalGameState, player: Player): string[]
     if (ids.length === 4) candidates.push(ids);
     if (ids.length === 2 && jokers.length) candidates.push([...ids, jokers[0]]);
   }
-
   for (const color of ['red', 'blue', 'orange', 'black'] as const) {
     const byValue = new Map<number, string>();
     for (const tile of rackTiles)
@@ -361,66 +354,56 @@ function simpleCandidateMelds(state: DigitalGameState, player: Player): string[]
   }
   return candidates;
 }
-
 export function digitalLegalMoves(state: DigitalGameState): DigitalGameMove[] {
   if (state.winner !== null || state.drawReason) return [];
   const moves: DigitalGameMove[] = [{ type: 'draw' }];
   const oldTable = state.table.map((meld) => ({ id: meld.id, tiles: [...meld.tiles] }));
   for (const tiles of simpleCandidateMelds(state, state.turn)) {
-    const move: DigitalGameMove = {
-      type: 'commit',
-      table: [...oldTable, { tiles }],
-    };
+    const move: DigitalGameMove = { type: 'commit', table: [...oldTable, { tiles }] };
     if (validateDigital(state, move).ok) moves.push(move);
     if (moves.length >= 24) break;
   }
   return moves;
 }
-
-export function evaluateDigital(state: DigitalGameState, player: Player): number {
+export function evaluateDigital(state: DigitalGameState, player: Seat): number {
   if (state.winner === player) return 100000;
   if (state.winner !== null) return -100000;
-  const other = nextPlayer(player);
-  return (
-    (rackPenalty(state, other) - rackPenalty(state, player)) * 4 +
-    (state.rackCounts[other] - state.rackCounts[player]) * 20 +
+  const others = seats(countOf(state)).filter((seat) => seat !== player);
+  const averagePenalty = others.reduce<number>((sum, seat) => sum + rackPenalty(state, seat as Seat), 0) / others.length;
+  const averageCount = others.reduce<number>((sum, seat) => sum + state.rackCounts[seat], 0) / others.length;
+  const initialLead =
     (state.hasCompletedInitialMeld[player] ? 40 : 0) -
-    (state.hasCompletedInitialMeld[other] ? 40 : 0)
-  );
+    others.reduce<number>((sum, seat) => sum + (state.hasCompletedInitialMeld[seat as Seat] ? 40 : 0), 0) / others.length;
+  return (averagePenalty - rackPenalty(state, player)) * 4 + (averageCount - state.rackCounts[player]) * 20 + initialLead;
 }
-
-/**
- * Produce a client-safe online projection. Hidden racks, draw order, and the shuffle seed are never
- * sent to the other seat. Tile values/colors are included only for the viewer's rack and public table.
- */
-export function projectDigitalState(state: DigitalGameState, viewer: Player): DigitalGameState {
+export function projectDigitalState(state: DigitalGameState, viewer: Seat): DigitalGameState {
+  const playerCount = countOf(state);
   const visible = new Set<string>([
-    ...state.racks[viewer],
+    ...(state.racks[viewer] ?? []),
     ...state.table.flatMap((meld) => meld.tiles),
   ]);
-  const tiles = Object.fromEntries(
-    Object.entries(state.tiles).filter(([id]) => visible.has(id)),
-  );
-  const racks: [string[], string[]] = [[], []];
-  racks[viewer] = [...state.racks[viewer]];
-  const hiddenPlayer = nextPlayer(viewer);
-  racks[hiddenPlayer] = Array.from(
-    { length: state.rackCounts[hiddenPlayer] },
-    (_, index) => `hidden-rack-${hiddenPlayer}-${index}`,
+  const tiles = Object.fromEntries(Object.entries(state.tiles).filter(([id]) => visible.has(id)));
+  const racks = state.racks.map((rack, index) =>
+    index === viewer
+      ? [...rack]
+      : Array.from({ length: state.rackCounts[index] }, (_, item) => `hidden-rack-${index}-${item}`),
   );
   return {
     ...state,
+    playerCount,
+    viewerSeat: viewer,
     seed: 0,
     tiles,
     racks,
     drawPool: Array.from({ length: state.drawPool.length }, (_, index) => `hidden-draw-${index}`),
   };
 }
-
-export const digitalGameEngine: RulesEngine<DigitalGameState, DigitalGameMove> = {
+export const digitalGameEngine: RulesEngine<DigitalGameState, DigitalGameMove, Seat> = {
   id: 'digitalGame',
+  minPlayers: 2,
+  maxPlayers: 4,
   winReason: 'digital-win',
-  create: createDigitalGame,
+  create: (playerCount = 2) => createDigitalGameForPlayers(playerCount),
   parseMove: parseDigitalMove,
   validate: validateDigital,
   apply: applyDigital,

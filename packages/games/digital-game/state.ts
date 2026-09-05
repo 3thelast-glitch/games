@@ -1,4 +1,4 @@
-import type { BaseState, Player } from '../../core/src/game.ts';
+import type { BaseState, PlayerCount, Seat } from '../../core/src/game.ts';
 
 export type DigitalColor = 'red' | 'blue' | 'orange' | 'black';
 export type MeldType = 'group' | 'run';
@@ -19,17 +19,21 @@ export interface DigitalMeld {
 
 export interface DigitalGameState extends BaseState {
   gameId: 'digitalGame';
+  playerCount: PlayerCount;
   /** Complete catalog on authoritative/local states; projected online states only include visible tiles. */
   tiles: Record<string, DigitalTile>;
-  /** Authoritative/local racks. Online projections replace the opponent's IDs with opaque placeholders. */
-  racks: [string[], string[]];
-  rackCounts: [number, number];
+  /** One rack per seat. Online projections replace non-viewer IDs with opaque placeholders. */
+  racks: string[][];
+  rackCounts: number[];
   /** Authoritative/local draw order. Online projections contain count-only placeholders. */
   drawPool: string[];
   table: DigitalMeld[];
-  hasCompletedInitialMeld: [boolean, boolean];
-  scores: [number, number];
+  hasCompletedInitialMeld: boolean[];
+  scores: number[];
+  /** Authoritative shuffle seed. Online projections deliberately replace it with 0. */
   seed: number;
+  /** Present only in a projected online state so the UI knows which private rack is visible. */
+  viewerSeat?: Seat;
   lastAction: 'commit' | 'draw' | null;
   emptyPoolPasses: number;
 }
@@ -61,7 +65,6 @@ function randomSeed(): number {
   return (Date.now() ^ 0x9e3779b9) >>> 0 || 1;
 }
 
-/** Mulberry32-style deterministic PRNG. */
 export function seededRandom(seed: number): () => number {
   let value = seed >>> 0;
   return () => {
@@ -101,20 +104,21 @@ export function shuffleTileIds(ids: string[], seed: number): string[] {
   return out;
 }
 
-export function createDigitalGame(seed = randomSeed()): DigitalGameState {
+export function createDigitalGame(seed = randomSeed(), playerCount: PlayerCount = 2): DigitalGameState {
   const list = createTileSet();
   const tiles = Object.fromEntries(list.map((tile) => [tile.id, tile]));
   const pool = shuffleTileIds(list.map((tile) => tile.id), seed);
-  const racks: [string[], string[]] = [pool.splice(0, TILES_PER_PLAYER), pool.splice(0, TILES_PER_PLAYER)];
+  const racks = Array.from({ length: playerCount }, () => pool.splice(0, TILES_PER_PLAYER));
   return {
     gameId: 'digitalGame',
+    playerCount,
     tiles,
     racks,
-    rackCounts: [racks[0].length, racks[1].length],
+    rackCounts: racks.map((rack) => rack.length),
     drawPool: pool,
     table: [],
-    hasCompletedInitialMeld: [false, false],
-    scores: [0, 0],
+    hasCompletedInitialMeld: Array.from({ length: playerCount }, () => false),
+    scores: Array.from({ length: playerCount }, () => 0),
     seed,
     lastAction: null,
     emptyPoolPasses: 0,
@@ -125,4 +129,9 @@ export function createDigitalGame(seed = randomSeed()): DigitalGameState {
   };
 }
 
-export const nextPlayer = (player: Player): Player => (player === 0 ? 1 : 0);
+export function createDigitalGameForPlayers(playerCount: PlayerCount = 2): DigitalGameState {
+  return createDigitalGame(randomSeed(), playerCount);
+}
+
+export const nextPlayer = (player: Seat, playerCount: number = 2): Seat =>
+  (((player + 1) % playerCount) as Seat);

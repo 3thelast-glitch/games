@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Difficulty, Player } from '../../../packages/core/src/game.ts';
+import type { Difficulty, PlayerCount, Seat } from '../../../packages/core/src/game.ts';
 import { OfflineMatch, type OfflineSnapshot } from '../../../packages/core/src/offline.ts';
 import type {
   MatchCommand,
@@ -96,7 +96,7 @@ function ArenaApp({
     [choice, setChoice] = useState<{ gameId: string; mode?: PlayMode } | null>(null),
     [rules, setRules] = useState<string | null>(null),
     [lobby, setLobby] = useState<Extract<ServerMessage, { type: 'room' | 'queued' }> | null>(null),
-    [emote, setEmote] = useState<{ player: Player; value: string } | null>(null);
+    [emote, setEmote] = useState<{ player: Seat; value: string } | null>(null);
   const tokenRef = useRef<string | null>(null),
     onlineRef = useRef<MatchSnapshot | null>(null),
     offlineRef = useRef<OfflineSession | null>(null),
@@ -272,7 +272,12 @@ function ArenaApp({
     void storage.get<SavedOffline | null>('offline-match', null).then((saved) => {
       if (saved && !saved.current.result) {
         try {
-          const controller = new OfflineMatch(games.get(saved.gameId), saved.mode);
+          const controller = new OfflineMatch(
+            games.get(saved.gameId),
+            saved.mode,
+            Date.now,
+            (saved.current.state.playerCount ?? 2) as PlayerCount,
+          );
           controller.current = {
             ...saved.current,
             turnStartedAt: Date.now(),
@@ -383,10 +388,15 @@ function ArenaApp({
       worker.terminate();
     };
   }, [offline?.id, localState?.ply, offline?.controller.current.result, notify, syncOffline]);
-  const startOffline = (gameId: string, mode: 'local' | 'ai', difficulty: Difficulty) => {
+  const startOffline = (
+    gameId: string,
+    mode: 'local' | 'ai',
+    difficulty: Difficulty,
+    playerCount: PlayerCount = 2,
+  ) => {
     const session = {
       id: crypto.randomUUID(),
-      controller: new OfflineMatch(games.get(gameId), mode),
+      controller: new OfflineMatch(games.get(gameId), mode, Date.now, mode === 'ai' ? 2 : playerCount),
       difficulty,
     };
     offlineRef.current = session;
@@ -398,12 +408,18 @@ function ArenaApp({
     setPage('match');
     saveOffline(session);
   };
-  const start = async (mode: PlayMode, difficulty: Difficulty, ranked: boolean, code?: string) => {
+  const start = async (
+    mode: PlayMode,
+    difficulty: Difficulty,
+    ranked: boolean,
+    playerCount: PlayerCount,
+    code?: string,
+  ) => {
     if (!choice) return;
     try {
       if (onlineRef.current && !onlineRef.current.result) throw new Error('already-in-match');
       if (mode === 'local' || mode === 'ai') {
-        startOffline(choice.gameId, mode, difficulty);
+        startOffline(choice.gameId, mode, difficulty, playerCount);
         return;
       }
       setBusy(true);
@@ -411,9 +427,11 @@ function ArenaApp({
       await connection.waitReady();
       if (mode === 'private')
         connection.send(
-          code ? { type: 'join-room', code } : { type: 'create-room', gameId: choice.gameId },
+          code
+            ? { type: 'join-room', code }
+            : { type: 'create-room', gameId: choice.gameId, playerCount },
         );
-      else connection.send({ type: 'queue', gameId: choice.gameId, ranked });
+      else connection.send({ type: 'queue', gameId: choice.gameId, ranked, playerCount });
     } catch (e) {
       notify(e);
       setBusy(false);
@@ -529,26 +547,20 @@ function ArenaApp({
   };
   const isOnline = !!online;
   const current = online?.state ?? offline?.controller.current.state;
-  const self = (online ? online.players.findIndex((p) => p.id === profile?.id) : 0) as Player;
-  const localPlayers: [PublicPlayer, PublicPlayer] = [
-    {
-      id: 'local-0',
-      name: profile?.name ?? t('player1'),
-      avatar: profile?.avatar ?? 'orbit',
-      rating: 1000,
-      rank: 'Silver',
-    },
-    {
-      id: 'local-1',
-      name:
-        offline?.controller.mode === 'ai'
+  const self = (online ? online.players.findIndex((p) => p.id === profile?.id) : 0) as Seat;
+  const localPlayerCount = (offline?.controller.current.state.playerCount ?? 2) as PlayerCount;
+  const localPlayers: PublicPlayer[] = Array.from({ length: localPlayerCount }, (_, index) => ({
+    id: `local-${index}`,
+    name:
+      index === 0
+        ? profile?.name ?? t('player1')
+        : offline?.controller.mode === 'ai' && index === 1
           ? `${t('aiName')} · ${t(offline.difficulty)}`
-          : t('player2'),
-      avatar: offline?.controller.mode === 'ai' ? 'hex' : 'comet',
-      rating: 1000,
-      rank: 'Silver',
-    },
-  ];
+          : t(`player${index + 1}`),
+    avatar: index === 0 ? profile?.avatar ?? 'orbit' : ['comet', 'hex', 'crown'][index - 1] ?? 'moon',
+    rating: 1000,
+    rank: 'Silver',
+  }));
   const navigation: { id: Page; icon: string; label: string }[] = [
     { id: 'library', icon: 'library', label: 'library' },
     { id: 'arena', icon: 'trophy', label: 'arena' },
@@ -689,7 +701,7 @@ function ArenaApp({
                 mode={online ? 'online' : offline!.controller.mode}
                 ranked={online?.ranked ?? false}
                 players={online?.players ?? localPlayers}
-                self={self === 1 ? 1 : 0}
+                self={self >= 0 ? self : 0}
                 clocks={online?.clockMs ?? local!.clocks}
                 turnStartedAt={online?.turnStartedAt ?? local!.turnStartedAt}
                 now={matchNow}
@@ -706,20 +718,26 @@ function ArenaApp({
                 canUndo={!isOnline && !!offline?.controller.history.length}
                 sound={settings.sound}
                 connectionStatus={status}
-                disconnected={!!(online && online.disconnectedAt[self === 0 ? 1 : 0] !== null)}
+                disconnected={
+                  !!online && online.disconnectedAt.some((at, index) => index !== self && at !== null)
+                }
                 graceSeconds={
                   online
                     ? Math.max(
                         0,
                         Math.ceil(
-                          (online.graceMs -
-                            (matchNow - (online.disconnectedAt[self === 0 ? 1 : 0] ?? matchNow))) /
-                            1000,
+                          Math.min(
+                            ...online.disconnectedAt
+                              .map((at, index) => (index === self || at === null ? Infinity : online.graceMs - (matchNow - at)))
+                              .filter(Number.isFinite),
+                            online.graceMs,
+                          ) / 1000,
                         ),
                       )
                     : 0
                 }
                 drawOffer={online?.drawOffer ?? null}
+                drawAccepts={online?.drawAccepts ?? []}
                 rematchWaiting={!!online?.rematchVotes.includes(self)}
                 emote={emote}
                 onMove={makeMove}
@@ -742,13 +760,16 @@ function ArenaApp({
                     offline!.controller.game.id,
                     offline!.controller.mode,
                     offline!.difficulty,
+                    (offline!.controller.current.state.playerCount ?? 2) as PlayerCount,
                   )
                 }
                 onResign={() => {
                   if (online) submit('resign');
                   else {
                     offline!.controller.finish(
-                      offline!.controller.mode === 'ai' ? 1 : current.turn === 0 ? 1 : 0,
+                      offline!.controller.mode === 'ai'
+                        ? 1
+                        : (((current.turn + 1) % (current.playerCount ?? 2)) as Seat),
                       'resignation',
                     );
                     syncOffline();
@@ -774,6 +795,7 @@ function ArenaApp({
                       offline!.controller.game.id,
                       offline!.controller.mode,
                       offline!.difficulty,
+                      (offline!.controller.current.state.playerCount ?? 2) as PlayerCount,
                     );
                 }}
                 onHome={goHome}

@@ -1,9 +1,9 @@
-import type { BaseState, Player } from '../../core/src/game.ts';
+import type { TwoPlayerState, Player } from '../../core/src/game.ts';
 export interface Checker {
   owner: Player;
   king: boolean;
 }
-export interface CheckersState extends BaseState {
+export interface CheckersState extends TwoPlayerState {
   gameId: 'checkers';
   board: (Checker | null)[];
   forcedFrom: number | null;

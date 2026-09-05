@@ -3,7 +3,7 @@ import {
   type BaseState,
   type Difficulty,
   type GamePlugin,
-  type Player,
+  type Seat,
 } from './game.ts';
 export interface AIOptions {
   random?: () => number;
@@ -27,7 +27,7 @@ export function chooseMove(
     return moves[
       Math.min(moves.length - 1, Math.floor((options.random ?? Math.random)() * moves.length))
     ];
-  const value = (s: BaseState, p: Player) =>
+  const value = (s: BaseState, p: Seat) =>
     s.drawReason
       ? 0
       : s.winner === null

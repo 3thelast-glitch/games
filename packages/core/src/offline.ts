@@ -1,8 +1,15 @@
-import { RuleError, opponent, type BaseState, type GamePlugin } from './game.ts';
+import {
+  RuleError,
+  seats,
+  type BaseState,
+  type GamePlugin,
+  type PlayerCount,
+  type Seat,
+} from './game.ts';
 import type { MatchResult } from './protocol.ts';
 export interface OfflineSnapshot {
   state: BaseState;
-  clocks: [number, number];
+  clocks: number[];
   turnStartedAt: number;
   createdAt: number;
   endedAt: number | null;
@@ -15,11 +22,12 @@ export class OfflineMatch {
     readonly game: GamePlugin,
     readonly mode: 'local' | 'ai',
     readonly now: () => number = Date.now,
+    readonly playerCount: PlayerCount = 2,
   ) {
     const nowValue = now();
     this.current = {
-      state: game.create(),
-      clocks: [600000, 600000],
+      state: game.create(playerCount),
+      clocks: Array.from({ length: playerCount }, () => 600000),
       turnStartedAt: nowValue,
       createdAt: nowValue,
       endedAt: null,
@@ -31,6 +39,12 @@ export class OfflineMatch {
     c.clocks = [...c.clocks];
     c.clocks[c.state.turn] = Math.max(0, c.clocks[c.state.turn] - (this.now() - c.turnStartedAt));
     c.turnStartedAt = this.now();
+  }
+  private bestRemaining(loser: Seat): Seat {
+    const candidates = seats(this.current.clocks.length).filter((seat) => seat !== loser);
+    return candidates.sort(
+      (a, b) => this.game.evaluate(this.current.state, b) - this.game.evaluate(this.current.state, a),
+    )[0];
   }
   move(input: unknown) {
     this.tick();
@@ -46,16 +60,16 @@ export class OfflineMatch {
   tick() {
     const c = this.current;
     if (!c.result && c.clocks[c.state.turn] - (this.now() - c.turnStartedAt) <= 0)
-      this.finish(opponent(c.state.turn), 'timeout');
+      this.finish(this.bestRemaining(c.state.turn), 'timeout');
     return this.current;
   }
-  finish(winner: 0 | 1 | null, reason: MatchResult['reason']) {
+  finish(winner: Seat | null, reason: MatchResult['reason']) {
     if (this.current.result) return;
     this.charge();
     this.current = {
       ...this.current,
       endedAt: this.now(),
-      result: { winner, reason, ratingDelta: [0, 0] },
+      result: { winner, reason, ratingDelta: this.current.clocks.map(() => 0) },
     };
   }
   undo() {

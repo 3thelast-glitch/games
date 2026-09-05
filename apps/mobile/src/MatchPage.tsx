@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { BaseState, Player } from '../../../packages/core/src/game.ts';
+import type { BaseState, Seat } from '../../../packages/core/src/game.ts';
 import type { MatchResult, PublicPlayer } from '../../../packages/core/src/protocol.ts';
 import { Avatar, formatTime, Icon, Modal } from './components.tsx';
 import { gameResource, gameViews } from './gameViews.tsx';
@@ -9,9 +9,9 @@ export interface MatchPageProps {
   state: BaseState;
   mode: 'local' | 'ai' | 'online';
   ranked: boolean;
-  players: [PublicPlayer, PublicPlayer];
-  self: Player;
-  clocks: [number, number];
+  players: PublicPlayer[];
+  self: Seat;
+  clocks: number[];
   turnStartedAt: number;
   now: number;
   createdAt: number;
@@ -24,9 +24,10 @@ export interface MatchPageProps {
   connectionStatus: string;
   disconnected: boolean;
   graceSeconds: number;
-  drawOffer: Player | null;
+  drawOffer: Seat | null;
+  drawAccepts?: Seat[];
   rematchWaiting: boolean;
-  emote: { player: Player; value: string } | null;
+  emote: { player: Seat; value: string } | null;
   onMove: (move: unknown) => void;
   onUndo: () => void;
   onRestart: () => void;
@@ -60,7 +61,7 @@ export function MatchPage(p: MatchPageProps) {
             : p.state.turn === p.self
               ? t('yourTurn')
               : t('theirTurn');
-  const panel = (player: Player) => {
+  const panel = (player: Seat) => {
     const person = p.players[player],
       resource = gameResource(p.state, player),
       clock = Math.max(
@@ -69,6 +70,7 @@ export function MatchPage(p: MatchPageProps) {
       );
     return (
       <div
+        key={player}
         className={`player-panel player-${player} ${p.state.turn === player && !p.result ? 'active' : ''}`}
       >
         <Avatar name={person.name} avatar={person.avatar} />
@@ -94,8 +96,9 @@ export function MatchPage(p: MatchPageProps) {
       </div>
     );
   };
-  const bottom = p.mode === 'online' ? p.self : 0,
-    top = (bottom === 0 ? 1 : 0) as Player;
+  const opponents = p.players
+    .map((_, index) => index as Seat)
+    .filter((seat) => seat !== p.self);
   return (
     <div className="match-page page-enter">
       <header className="match-header">
@@ -133,13 +136,13 @@ export function MatchPage(p: MatchPageProps) {
       )}
       <div className="match-layout">
         <div className="board-column">
-          {panel(top)}
+          <div className="multiplayer-opponents">{opponents.map((seat) => panel(seat))}</div>
           <div className={`turn-banner player-${p.state.turn}`} role="status">
             <span className="live-dot" />
             {turnText}
           </div>
           {view({ state: p.state, disabled: p.disabled, onMove: p.onMove, t })}
-          {panel(bottom)}
+          {panel(p.self)}
         </div>
         <aside className="match-side">
           <section className="panel match-controls">
@@ -200,8 +203,8 @@ export function MatchPage(p: MatchPageProps) {
           </section>
           {p.drawOffer !== null && !p.result && (
             <section className="panel draw-panel">
-              <p>{t(p.drawOffer === p.self ? 'drawSent' : 'drawOffered')}</p>
-              {p.drawOffer !== p.self && (
+              <p>{t(p.drawOffer === p.self || (p.drawAccepts ?? []).includes(p.self) ? 'drawSent' : 'drawOffered')}</p>
+              {p.drawOffer !== p.self && !(p.drawAccepts ?? []).includes(p.self) && (
                 <div className="button-row">
                   <button className="button primary" onClick={() => p.onDrawAnswer(true)}>
                     {t('accept')}

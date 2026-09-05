@@ -1,7 +1,8 @@
-import type {
-  ClientMessage,
-  MatchCommand,
-  ServerMessage,
+import {
+  PROTOCOL_VERSION,
+  type ClientMessage,
+  type MatchCommand,
+  type ServerMessage,
 } from '../../../packages/core/src/protocol.ts';
 import { storage } from './platform.ts';
 const configured = (import.meta.env?.VITE_SERVER_URL ?? '').replace(/\/$/, '');
@@ -104,7 +105,7 @@ export class ArenaConnection {
       if (this.ws === ws && !this.ready) ws.close();
     }, 12000);
     ws.onopen = () => {
-      if (this.ws === ws) ws.send(JSON.stringify({ type: 'auth', token: this.token, version: 1 }));
+      if (this.ws === ws) ws.send(JSON.stringify({ type: 'auth', token: this.token, version: PROTOCOL_VERSION }));
     };
     ws.onmessage = (event) => {
       if (this.ws !== ws) return;
