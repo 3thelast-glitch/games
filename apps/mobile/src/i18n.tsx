@@ -132,6 +132,9 @@ const en: Record<string, string> = {
   thinking: 'AI is thinking…',
   player1: 'Player one',
   player2: 'Player two',
+  player3: 'Player three',
+  player4: 'Player four',
+  playerCountLabel: 'Players',
   you: 'You',
   aiName: 'Arena AI',
   walls: 'walls left',
@@ -367,7 +370,7 @@ const en: Record<string, string> = {
   'play-rack-tile': 'Play at least one tile from your rack before committing.',
   'initial-table-locked': 'Complete your 30-point initial meld before reorganizing the table.',
   'initial-meld-30': 'Your initial meld must total at least 30 points from your rack.',
-  'blocked-round': 'The draw pool is empty and neither player could continue.',
+  'blocked-round': 'The draw pool is empty and no player could continue.',
   'digital-win': 'Rack emptied with a legal committed table.',
 };
 const ar: Record<string, string> = {
@@ -502,6 +505,9 @@ const ar: Record<string, string> = {
   thinking: 'الذكاء الاصطناعي يفكّر…',
   player1: 'اللاعب الأول',
   player2: 'اللاعب الثاني',
+  player3: 'اللاعب الثالث',
+  player4: 'اللاعب الرابع',
+  playerCountLabel: 'عدد اللاعبين',
   you: 'أنت',
   aiName: 'ذكاء الساحة',
   walls: 'جدران متبقية',
@@ -736,7 +742,7 @@ const ar: Record<string, string> = {
   'play-rack-tile': 'العب بلاطة واحدة على الأقل من حاملك قبل تأكيد الدور.',
   'initial-table-locked': 'أكمل نزولك الأول بـ30 نقطة قبل إعادة ترتيب الطاولة.',
   'initial-meld-30': 'يجب أن يساوي نزولك الأول 30 نقطة على الأقل من بلاطات حاملك.',
-  'blocked-round': 'نفدت كومة السحب ولم يستطع أي لاعب الاستمرار.',
+  'blocked-round': 'نفدت بلاطات السحب ولم يستطع أي لاعب الاستمرار.',
   'digital-win': 'تم إفراغ الحامل بعد تأكيد طاولة قانونية.',
 };
 export type Translate = (key: string) => string;

@@ -1,4 +1,4 @@
-import type { BaseState } from '../../core/src/game.ts';
+import type { TwoPlayerState } from '../../core/src/game.ts';
 import type { Cell } from '../shared/lines.ts';
 // Three rings, each ordered clockwise from its top-left corner. Physical coordinates never mirror.
 export const MORRIS_POINTS = [
@@ -50,7 +50,7 @@ export const MORRIS_EDGES: number[][] = [
     [i + 8, i + 16],
   ]),
 ];
-export interface MorrisState extends BaseState {
+export interface MorrisState extends TwoPlayerState {
   gameId: 'nineMensMorris';
   board: Cell[];
   remaining: [number, number];

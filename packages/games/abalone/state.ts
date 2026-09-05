@@ -1,4 +1,4 @@
-import type { BaseState, Player } from '../../core/src/game.ts';
+import type { TwoPlayerState, Player } from '../../core/src/game.ts';
 export type Hex = readonly [number, number];
 export interface Marble {
   id: string;
@@ -10,7 +10,7 @@ export interface Motion {
   to: Hex;
   ejected: boolean;
 }
-export interface AbaloneState extends BaseState {
+export interface AbaloneState extends TwoPlayerState {
   gameId: 'abalone';
   board: Record<string, Marble>;
   captured: [number, number];

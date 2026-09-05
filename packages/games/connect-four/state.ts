@@ -1,6 +1,6 @@
-import type { BaseState } from '../../core/src/game.ts';
+import type { TwoPlayerState } from '../../core/src/game.ts';
 import type { Cell } from '../shared/lines.ts';
-export interface ConnectFourState extends BaseState {
+export interface ConnectFourState extends TwoPlayerState {
   gameId: 'connectFour';
   board: Cell[];
   lastMove: number | null;

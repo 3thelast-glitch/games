@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { games } from '../../../packages/games/registry.ts';
 import {
   clientMessageSchema,
+  PROTOCOL_VERSION,
   type ServerMessage,
   type MatchSnapshot,
 } from '../../../packages/core/src/protocol.ts';
@@ -76,6 +77,17 @@ export function createArenaServer(options: ServerOptions = {}) {
     for (const player of match.players)
       sendUser(player.id, { type: 'match', match: matches.forUser(match, player.id), ack });
   };
+  const broadcastRoom = (room: ReturnType<Lobby['createRoom']>) => {
+    for (const userId of room.members)
+      sendUser(userId, {
+        type: 'room',
+        code: room.code,
+        expiresAt: room.expiresAt,
+        gameId: room.gameId,
+        playerCount: room.playerCount,
+        joined: room.members.length,
+      });
+  };
   const json = (res: ServerResponse, status: number, body: unknown) => {
     res.writeHead(status, {
       'Content-Type': 'application/json',
@@ -136,7 +148,7 @@ export function createArenaServer(options: ServerOptions = {}) {
     if (!limits.allow(`http:${ip}`, 600, 60000)) return json(res, 429, { error: 'rate-limited' });
     try {
       if (url.pathname === '/api/health')
-        return json(res, 200, { ok: true, protocol: 1, games: games.ids() });
+        return json(res, 200, { ok: true, protocol: PROTOCOL_VERSION, games: games.ids() });
       if (url.pathname === '/api/auth/providers' && req.method === 'GET')
         return json(res, 200, auth.capabilities());
       if (url.pathname.startsWith('/api/auth/') && !limits.allow(`auth:${ip}`, 80, 60000))
@@ -383,30 +395,32 @@ export function createArenaServer(options: ServerOptions = {}) {
         store.authenticate(tokenBySocket.get(ws)!);
         if (message.type === 'ping') return send(ws, { type: 'pong', serverNow: Date.now() });
         if (message.type === 'queue') {
-          const match = lobby.enqueue(userId, message.gameId, message.ranked);
+          const match = lobby.enqueue(userId, message.gameId, message.ranked, message.playerCount);
           if (match) broadcast(match);
           else
             send(ws, {
               type: 'queued',
               gameId: message.gameId,
               ranked: message.ranked,
+              playerCount: message.playerCount,
             });
           return;
         }
         if (message.type === 'cancel') {
-          lobby.cancel(userId);
+          for (const room of lobby.cancel(userId)) broadcastRoom(room);
           return send(ws, { type: 'cancelled' });
         }
         if (message.type === 'create-room') {
-          const room = lobby.createRoom(userId, message.gameId);
-          return send(ws, {
-            type: 'room',
-            code: room.code,
-            expiresAt: room.expiresAt,
-            gameId: room.gameId,
-          });
+          const room = lobby.createRoom(userId, message.gameId, message.playerCount);
+          broadcastRoom(room);
+          return;
         }
-        if (message.type === 'join-room') return broadcast(lobby.joinRoom(userId, message.code));
+        if (message.type === 'join-room') {
+          const joined = lobby.joinRoomResult(userId, message.code);
+          if (joined.match) broadcast(joined.match);
+          else broadcastRoom(joined.room);
+          return;
+        }
         if (message.type === 'resume')
           return send(ws, {
             type: 'match',
@@ -463,7 +477,7 @@ export function createArenaServer(options: ServerOptions = {}) {
       sockets.get(id)?.delete(ws);
       if (!sockets.get(id)?.size) {
         sockets.delete(id);
-        lobby.cancel(id);
+        for (const room of lobby.cancel(id)) broadcastRoom(room);
         for (const match of matches.connection(id, false)) broadcast(match);
       }
     });

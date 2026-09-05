@@ -1,4 +1,4 @@
-import type { BaseState, Player } from '../../core/src/game.ts';
+import type { TwoPlayerState, Player } from '../../core/src/game.ts';
 export type Square = readonly [number, number]; // [row, column], fixed physical coordinates in RTL and LTR.
 export interface Wall {
   row: number;
@@ -8,7 +8,7 @@ export interface Wall {
 export interface PlacedWall extends Wall {
   owner: Player;
 }
-export interface QuoridorState extends BaseState {
+export interface QuoridorState extends TwoPlayerState {
   gameId: 'quoridor';
   pawns: [Square, Square];
   walls: PlacedWall[];

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { validateDigital, validateMeld, validateTable } from './rules.ts';
-import { nextPlayer, type DigitalGameMove, type DigitalGameState, type DigitalMeld } from './state.ts';
+import type { DigitalGameMove, DigitalGameState, DigitalMeld } from './state.ts';
 
 export interface DigitalGameBoardProps {
   state: DigitalGameState;
@@ -17,18 +17,17 @@ function tableFingerprint(table: DigitalMeld[]) {
 }
 
 export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoardProps) {
-  const currentRackVisible = state.racks[state.turn].every((id) => !!state.tiles[id]);
-  const visibleSeat = currentRackVisible ? state.turn : nextPlayer(state.turn);
+  const visibleSeat = state.viewerSeat ?? state.turn;
+  const currentRackVisible = (state.racks[visibleSeat] ?? []).every((id) => !!state.tiles[id]);
   const canEdit = !disabled && visibleSeat === state.turn;
   const [workingTable, setWorkingTable] = useState<DigitalMeld[]>(() => cloneTable(state.table));
   const [workingRack, setWorkingRack] = useState<string[]>(() => [...state.racks[visibleSeat]]);
   const [selected, setSelected] = useState<string[]>([]);
 
   useEffect(() => {
-    const rackVisible = state.racks[state.turn].every((id) => !!state.tiles[id]);
-    const seat = rackVisible ? state.turn : nextPlayer(state.turn);
+    const seat = state.viewerSeat ?? state.turn;
     setWorkingTable(cloneTable(state.table));
-    setWorkingRack([...state.racks[seat]]);
+    setWorkingRack([...(state.racks[seat] ?? [])]);
     setSelected([]);
   }, [state.ply, state.turn, state.racks, state.table]);
 

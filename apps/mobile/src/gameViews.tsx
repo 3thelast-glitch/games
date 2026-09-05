@@ -8,7 +8,7 @@ import { MorrisBoard } from '../../../packages/games/nine-mens-morris/ui.tsx';
 import type { MorrisState } from '../../../packages/games/nine-mens-morris/state.ts';
 import { DigitalGameBoard } from '../../../packages/games/digital-game/ui.tsx';
 import type { DigitalGameState } from '../../../packages/games/digital-game/state.ts';
-import type { BaseState } from '../../../packages/core/src/game.ts';
+import type { BaseState, Seat } from '../../../packages/core/src/game.ts';
 import { AbaloneBoard } from '../../../packages/games/abalone/ui.tsx';
 import type { AbaloneState } from '../../../packages/games/abalone/state.ts';
 import { QuoridorBoard } from '../../../packages/games/quoridor/ui.tsx';
@@ -60,14 +60,14 @@ export const gameInfo = [
 export const upcoming = ['chess', 'reversi', 'mancala'];
 const resources: Record<
   string,
-  (state: BaseState, player: 0 | 1) => { value: string; label: string }
+  (state: BaseState, player: Seat) => { value: string; label: string }
 > = {
   abalone: (state, player) => ({
-    value: `${(state as AbaloneState).captured[player]}/6`,
+    value: `${(state as AbaloneState).captured[player as 0 | 1]}/6`,
     label: 'captured',
   }),
   quoridor: (state, player) => ({
-    value: String((state as QuoridorState).remaining[player]),
+    value: String((state as QuoridorState).remaining[player as 0 | 1]),
     label: 'walls',
   }),
   digitalGame: (state, player) => ({
@@ -75,7 +75,7 @@ const resources: Record<
     label: 'digitalTilesLeft',
   }),
 };
-export function gameResource(state: BaseState, player: 0 | 1): { value: string; label: string } {
+export function gameResource(state: BaseState, player: Seat): { value: string; label: string } {
   if (resources[state.gameId]) return resources[state.gameId](state, player);
   const board = (state as CheckersState | GomokuState | MorrisState | ConnectFourState).board;
   const count = board.filter((piece) =>
