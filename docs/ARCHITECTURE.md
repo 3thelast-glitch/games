@@ -15,13 +15,23 @@ Board Arena is a TypeScript monorepo with one root lockfile. The React/Capacitor
 | Network adapter    | Auth frames, reconnect, outbox, snapshots                   | Validating moves on behalf of the server |
 | Game view          | Selection, previews, animation and accessibility            | Authoritative state mutation             |
 
-The current contract supports two-player, alternating-turn, perfect-information games. Chess, checkers, Connect Four, Reversi, Nine Men's Morris, Gomoku and Mancala fit this starting point. Hidden-information or simultaneous-turn games would need a new state projection or turn model.
+The current contract supports two-player, perfect-information games. A command may retain the current player while a compulsory capture sequence is in progress; each command increments `ply` for replay and AI-worker identity. Chess, checkers, Connect Four, Reversi, Nine Men's Morris, Gomoku and Mancala fit this starting point. Hidden-information or simultaneous-turn games would need a new state projection or turn model.
 
 ## Game details
 
 Abalone uses axial hex coordinates with radius four. A move selects 1–3 own marbles and one of six axial direction vectors. Validation checks a unique contiguous straight selection, distinguishes inline from broadside movement, checks destinations and walks an opponent chain. A push requires strict numerical superiority. A legal reduction produces a fresh board and motion records with stable marble identities for animation.
 
 Quoridor uses fixed row/column coordinates. Walls are anchors between squares and block two bidirectional edges. Move generation inspects adjacency and walls before allowing straight jumps or the permitted side jumps. Before accepting a wall, a breadth-first search must find a path from each pawn to its target row. That search ignores temporary pawn occupancy, since the pawn does not permanently close a route. A WeakMap adjacency cache is safe because accepted states are immutable.
+
+### Additional games and terminal draws
+
+Checkers uses a 64-cell board with owner/king pieces and a `forcedFrom` continuation. Every submitted jump is validated; a capture chain retains the current player and clock, and promotion ends the turn. Repetition positions are recorded only after complete turns. Captures and uncrowned movement reset the no-progress/repetition history.
+
+Gomoku and Connect Four share direction-aware line detection and a window evaluator. Gomoku keeps all 225 intersections legal and uses freestyle five-or-more wins. Connect Four resolves a submitted column to its lowest empty slot. Their views highlight winning lines; Gomoku previews a placement before confirmation.
+
+Nine Men’s Morris owns an explicit 24-point graph and 16 mill lines. `remaining` tracks reserves; `capturing` keeps the turn with the mill maker until a legal opponent piece is removed. Reserves count toward survival. Flying applies only after placement, with exactly three pieces. Repetition keys include side to move and reserves, and captures reset the history.
+
+`BaseState.drawReason` is an optional, server-owned terminal translation key, separate from `winner`. It is absent from legacy snapshots. The offline and online controllers settle these draws, and the AI stops on them and scores them as zero. Clients still cannot supply results. Draw snapshots and multi-command turns use the existing persistence and revision protocol.
 
 ## AI
 

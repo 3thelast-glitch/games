@@ -105,6 +105,6 @@ Change the temporary app ID consistently in the Capacitor config, native generat
 
 ## Verification before launch
 
-Run the automated suite and production build, then test with two real devices through your HTTPS endpoint: room join, both games, forced network loss/reconnect, clock expiry, rematch and ranked settlement. Test OAuth deep links with the app both running and closed. Check narrow screens, Arabic layouts, touch wall placement, audio unlock, haptics and reduced motion on actual devices.
+Run the automated suite and production build, then test with two real devices through your HTTPS endpoint: room join, all six games, forced network loss/reconnect, clock expiry, rematch and ranked settlement. Test OAuth deep links with the app both running and closed. Check narrow screens, Arabic layouts, touch wall placement, compulsory capture chains, mill captures, Gomoku placement confirmation, automatic draws, audio unlock, haptics and reduced motion on actual devices.
 
 The web production build and generated native configurations have been verified here. Native binaries, Docker execution, public TLS/WebSocket routing and provider sign-in have not been validated in this environment. Further outstanding items are listed in [delivery status](STATUS.md).

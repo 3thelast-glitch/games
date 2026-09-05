@@ -2,7 +2,7 @@
   "version": "0.1.0",
   "verifiedDate": "2026-09-05",
   "automatedTests": {
-    "passed": 107,
+    "passed": 158,
     "failed": 0,
     "skipped": 0
   },
@@ -10,13 +10,14 @@
   "webProductionBuild": "passed",
   "serverBundle": "passed",
   "nativeProjectSync": {
-    "android": "passed",
-    "ios": "passed"
+    "android": "passed in initial delivery; not rerun for game-module update",
+    "ios": "passed in initial delivery; not rerun for game-module update"
   },
   "nativeManifestChecks": "passed",
   "nativeBinaries": "not built; required SDKs unavailable",
   "visualBrowserQA": "not completed; local URL denied by browser access policy",
   "publicDeployment": "not performed",
   "providerOAuthLiveQA": "not performed; credentials not supplied",
-  "githubPush": "Destination: 3thelast-glitch/games, main. This file records local validation; check GitHub for remote commit and workflow results."
+  "githubPush": "Change branch: feat/four-board-games in 3thelast-glitch/games. Check GitHub for commit and workflow results.",
+  "games": ["abalone", "quoridor", "checkers", "gomoku", "nineMensMorris", "connectFour"]
 }

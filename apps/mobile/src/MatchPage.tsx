@@ -110,7 +110,7 @@ export function MatchPage(p: MatchPageProps) {
           </small>
         </div>
         <span className="match-move-number">
-          {t('turn')} {p.state.ply + 1}
+          {t('moveNumber')} {p.state.ply + 1}
         </span>
         <button
           className="icon-button"
