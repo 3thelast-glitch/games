@@ -1,0 +1,14 @@
+services:
+  arena:
+    build: .
+    env_file: .env
+    ports:
+      - '127.0.0.1:8787:8787'
+    volumes:
+      - arena-data:/app/data
+    environment:
+      DATABASE_PATH: /app/data/board-arena.db
+    restart: unless-stopped
+    init: true
+volumes:
+  arena-data:

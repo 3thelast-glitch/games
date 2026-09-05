@@ -1,0 +1,22 @@
+{
+  "version": "0.1.0",
+  "verifiedDate": "2026-09-05",
+  "automatedTests": {
+    "passed": 107,
+    "failed": 0,
+    "skipped": 0
+  },
+  "typecheck": "passed",
+  "webProductionBuild": "passed",
+  "serverBundle": "passed",
+  "nativeProjectSync": {
+    "android": "passed",
+    "ios": "passed"
+  },
+  "nativeManifestChecks": "passed",
+  "nativeBinaries": "not built; required SDKs unavailable",
+  "visualBrowserQA": "not completed; local URL denied by browser access policy",
+  "publicDeployment": "not performed",
+  "providerOAuthLiveQA": "not performed; credentials not supplied",
+  "githubPush": "Destination: 3thelast-glitch/games, main. This file records local validation; check GitHub for remote commit and workflow results."
+}
