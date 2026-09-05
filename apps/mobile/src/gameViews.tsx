@@ -6,6 +6,8 @@ import { ConnectFourBoard } from '../../../packages/games/connect-four/ui.tsx';
 import type { ConnectFourState } from '../../../packages/games/connect-four/state.ts';
 import { MorrisBoard } from '../../../packages/games/nine-mens-morris/ui.tsx';
 import type { MorrisState } from '../../../packages/games/nine-mens-morris/state.ts';
+import { DigitalGameBoard } from '../../../packages/games/digital-game/ui.tsx';
+import type { DigitalGameState } from '../../../packages/games/digital-game/state.ts';
 import type { BaseState } from '../../../packages/core/src/game.ts';
 import { AbaloneBoard } from '../../../packages/games/abalone/ui.tsx';
 import type { AbaloneState } from '../../../packages/games/abalone/state.ts';
@@ -22,6 +24,7 @@ export const gameViews: Record<string, (props: Props) => React.ReactNode> = {
   connectFour: (props) => <ConnectFourBoard {...props} state={props.state as ConnectFourState} />,
   gomoku: (props) => <GomokuBoard {...props} state={props.state as GomokuState} />,
   checkers: (props) => <CheckersBoard {...props} state={props.state as CheckersState} />,
+  digitalGame: (props) => <DigitalGameBoard {...props} state={props.state as DigitalGameState} />,
   abalone: (props) => <AbaloneBoard {...props} state={props.state as AbaloneState} />,
   quoridor: (props) => <QuoridorBoard {...props} state={props.state as QuoridorState} />,
 };
@@ -32,6 +35,13 @@ export const gameInfo = [
     { id: 'nineMensMorris', duration: '10–20', icon: '▣' },
     { id: 'connectFour', duration: '5–10', icon: '⠿' },
   ].map((game) => ({ ...game, tag: `${game.id}Tag`, description: `${game.id}Desc` })),
+  {
+    id: 'digitalGame',
+    duration: '15–40',
+    tag: 'digitalGameTag',
+    description: 'digitalGameDesc',
+    icon: '▥',
+  },
   {
     id: 'abalone',
     duration: '15–25',
@@ -59,6 +69,10 @@ const resources: Record<
   quoridor: (state, player) => ({
     value: String((state as QuoridorState).remaining[player]),
     label: 'walls',
+  }),
+  digitalGame: (state, player) => ({
+    value: String((state as DigitalGameState).rackCounts[player]),
+    label: 'digitalTilesLeft',
   }),
 };
 export function gameResource(state: BaseState, player: 0 | 1): { value: string; label: string } {

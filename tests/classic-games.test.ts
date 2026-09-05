@@ -39,8 +39,8 @@ function randomGenerator(seed: number) {
   };
 }
 
-test('all four games register complete initial positions', () => {
-  assert.equal(games.ids().length, 6);
+test('all registered games keep complete initial positions', () => {
+  assert.equal(games.ids().length, 7);
   const s = createCheckers();
   for (const owner of [0, 1]) assert.equal(s.board.filter((p) => p?.owner === owner).length, 12);
   assert.equal(checkers.legalMoves(s).length, 7);

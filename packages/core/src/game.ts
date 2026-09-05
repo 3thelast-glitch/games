@@ -27,6 +27,8 @@ export interface RulesEngine<S extends BaseState, M> {
   apply(state: S, move: M): S;
   legalMoves(state: S): M[];
   evaluate(state: S, player: Player): number;
+  /** Optional online projection used to hide private information from the other seat. */
+  view?(state: S, player: Player): S;
 }
 // The only type-erasure boundary. Core services consume this interface and never import a game.
 export interface GamePlugin {
@@ -37,6 +39,7 @@ export interface GamePlugin {
   apply(state: BaseState, move: unknown): BaseState;
   legalMoves(state: BaseState): unknown[];
   evaluate(state: BaseState, player: Player): number;
+  view?(state: BaseState, player: Player): BaseState;
 }
 export function asPlugin<S extends BaseState, M>(engine: RulesEngine<S, M>): GamePlugin {
   return {
@@ -47,6 +50,7 @@ export function asPlugin<S extends BaseState, M>(engine: RulesEngine<S, M>): Gam
     apply: (state, move) => engine.apply(state as S, engine.parseMove(move)),
     legalMoves: (state) => engine.legalMoves(state as S),
     evaluate: (state, player) => engine.evaluate(state as S, player),
+    view: engine.view ? (state, player) => engine.view!(state as S, player) : undefined,
   };
 }
 export class GameRegistry {

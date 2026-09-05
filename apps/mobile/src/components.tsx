@@ -218,7 +218,7 @@ export function GameArt({ game, compact = false }: { game: string; compact?: boo
   return (
     <div className={`game-art ${game} ${compact ? 'compact' : ''}`} aria-hidden="true">
       <div className="art-halo" />
-      {['checkers', 'gomoku', 'nineMensMorris', 'connectFour'].includes(game) ? (
+      {['checkers', 'gomoku', 'nineMensMorris', 'connectFour', 'digitalGame'].includes(game) ? (
         <ClassicArt game={game} />
       ) : game === 'abalone' ? (
         <svg viewBox="0 0 480 444">
