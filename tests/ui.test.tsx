@@ -191,8 +191,6 @@ test('result screen identifies winner, reason, rating and rematch', () => {
   assert.ok(view.getByText('+16'));
   assert.ok(view.getByRole('button', { name: 'Rematch' }));
 });
-<<<<<<< HEAD
-=======
 
 import { CheckersBoard } from '../packages/games/checkers/ui.tsx';
 import { GomokuBoard } from '../packages/games/gomoku/ui.tsx';
@@ -347,4 +345,3 @@ for (const id of ['checkers', 'gomoku', 'nineMensMorris', 'connectFour']) {
     assert.ok(view.getByText('The same position occurred three times.'));
   });
 }
->>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97

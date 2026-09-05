@@ -44,11 +44,7 @@ export function HomePage({
           <p>{t('subhead')}</p>
         </div>
         <div className="heading-mark" aria-hidden="true">
-<<<<<<< HEAD
-          ✦<span>01 — 02</span>
-=======
           ✦<span>01 — {String(gameInfo.length).padStart(2, '0')}</span>
->>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
         </div>
       </section>
       {hasMatch && (
@@ -60,20 +56,12 @@ export function HomePage({
       )}
       <div className="section-heading">
         <h2>
-<<<<<<< HEAD
-          {t('library')} <span className="count">02</span>
-=======
           {t('library')} <span className="count">{String(gameInfo.length).padStart(2, '0')}</span>
->>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
         </h2>
         <span className="small-muted">{t('strategy')}</span>
       </div>
       <section className="game-grid">
-<<<<<<< HEAD
-        {gameInfo.map((game) => (
-=======
         {gameInfo.map((game, index) => (
->>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
           <article className={`game-card ${game.id}`} key={game.id}>
             <div className="card-art-wrap">
               <GameArt game={game.id} />
@@ -89,11 +77,7 @@ export function HomePage({
               >
                 <Icon name="heart" size={18} />
               </button>
-<<<<<<< HEAD
-              <span className="art-number">{game.id === 'abalone' ? '01' : '02'}</span>
-=======
               <span className="art-number">{String(index + 1).padStart(2, '0')}</span>
->>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
             </div>
             <div className="game-card-body">
               <div className="game-tag">{t(game.tag)}</div>
@@ -165,11 +149,7 @@ export function HomePage({
         <div className="upcoming-grid">
           {upcoming.map((game, i) => (
             <div className="upcoming-game" key={game}>
-<<<<<<< HEAD
-              <span aria-hidden="true">{['♞', '◉', '⠿', '◐', '⌘', '✣', '◡'][i]}</span>
-=======
               <span aria-hidden="true">{['♞', '◐', '◡'][i]}</span>
->>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
               <strong>{t(game)}</strong>
               <small>{t('comingSoon')}</small>
             </div>

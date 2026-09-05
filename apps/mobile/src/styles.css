@@ -3391,8 +3391,6 @@ td:first-child {
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
 }
-<<<<<<< HEAD
-=======
 
 /* Shared, fixed-coordinate boards for the classic games. */
 .classic-game {
@@ -3653,4 +3651,3 @@ td:first-child {
   white-space: nowrap;
   border: 0;
 }
->>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97

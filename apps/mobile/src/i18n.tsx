@@ -1,8 +1,6 @@
 import { createContext, useContext, type ReactNode } from 'react';
 export type Language = 'en' | 'ar';
 const en: Record<string, string> = {
-<<<<<<< HEAD
-=======
   moveNumber: 'Move',
   checkersTag: 'EVERY JUMP COUNTS',
   checkersDesc: 'Force a capture. Chain your jumps. Crown your way to victory.',
@@ -54,7 +52,6 @@ const en: Record<string, string> = {
   'threefold-repetition': 'The same position occurred three times.',
   'forty-move-rule': '40 turns per player without a capture or moving an uncrowned man.',
 
->>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
   library: 'Game library',
   arena: 'The arena',
   profile: 'My profile',
@@ -324,8 +321,6 @@ const en: Record<string, string> = {
   matchReady: 'Your match is ready.',
 };
 const ar: Record<string, string> = {
-<<<<<<< HEAD
-=======
   moveNumber: 'الحركة',
   checkersTag: 'كل قفزة تصنع الفارق',
   checkersDesc: 'افرض الأخذ. واصل القفز. وتوّج قطعك لتحسم المباراة.',
@@ -377,7 +372,6 @@ const ar: Record<string, string> = {
   'threefold-repetition': 'تكرر نفس الوضع ثلاث مرات.',
   'forty-move-rule': 'مرّ 40 دورًا لكل لاعب دون أخذ أو تحريك قطعة غير متوّجة.',
 
->>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
   library: 'مكتبة الألعاب',
   arena: 'الساحة',
   profile: 'ملفي الشخصي',

@@ -87,11 +87,7 @@ cd android
 
 The debug APK is at `android/app/build/outputs/apk/debug/app-debug.apk`. On Windows use `gradlew.bat`. Release signing and Play Store upload are separate steps using your signing identity.
 
-<<<<<<< HEAD
-After pushing the repository, the manual **Build Android APK** GitHub Actions workflow can compile and upload a debug APK artifact. Its `server_url` input is optional; leaving it empty produces an app for local/AI testing. The workflow has been authored, but has not run on GitHub because the destination repository is not yet selected.
-=======
 After pushing the repository, the manual **Build Android APK** GitHub Actions workflow can compile and upload a debug APK artifact. Its `server_url` input is optional; leaving it empty produces an app for local/AI testing. The workflow is supplied in `3thelast-glitch/games`; an Android build must be started manually from Actions.
->>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
 
 ## iOS
 
@@ -109,10 +105,6 @@ Change the temporary app ID consistently in the Capacitor config, native generat
 
 ## Verification before launch
 
-<<<<<<< HEAD
-Run the automated suite and production build, then test with two real devices through your HTTPS endpoint: room join, both games, forced network loss/reconnect, clock expiry, rematch and ranked settlement. Test OAuth deep links with the app both running and closed. Check narrow screens, Arabic layouts, touch wall placement, audio unlock, haptics and reduced motion on actual devices.
-=======
 Run the automated suite and production build, then test with two real devices through your HTTPS endpoint: room join, all six games, forced network loss/reconnect, clock expiry, rematch and ranked settlement. Test OAuth deep links with the app both running and closed. Check narrow screens, Arabic layouts, touch wall placement, compulsory capture chains, mill captures, Gomoku placement confirmation, automatic draws, audio unlock, haptics and reduced motion on actual devices.
->>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
 
 The web production build and generated native configurations have been verified here. Native binaries, Docker execution, public TLS/WebSocket routing and provider sign-in have not been validated in this environment. Further outstanding items are listed in [delivery status](STATUS.md).
