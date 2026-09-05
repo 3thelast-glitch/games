@@ -73,7 +73,8 @@ export function createArenaServer(options: ServerOptions = {}) {
     for (const ws of sockets.get(id) ?? []) send(ws, message);
   };
   const broadcast = (match: MatchSnapshot, ack?: string) => {
-    for (const player of match.players) sendUser(player.id, { type: 'match', match, ack });
+    for (const player of match.players)
+      sendUser(player.id, { type: 'match', match: matches.forUser(match, player.id), ack });
   };
   const json = (res: ServerResponse, status: number, body: unknown) => {
     res.writeHead(status, {
@@ -409,7 +410,7 @@ export function createArenaServer(options: ServerOptions = {}) {
         if (message.type === 'resume')
           return send(ws, {
             type: 'match',
-            match: matches.get(message.matchId, userId),
+            match: matches.forUser(matches.get(message.matchId, userId), userId),
           });
         if (message.type === 'rematch') {
           const match = matches.rematch(userId, message.matchId);
