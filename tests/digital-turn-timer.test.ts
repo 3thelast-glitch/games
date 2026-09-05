@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { OfflineMatch } from '../packages/core/src/offline.ts';
 import { clientMessageSchema, type MatchCommand } from '../packages/core/src/protocol.ts';
 import {
+  TURN_TIMER_SECONDS,
   beginTurn,
   createClocks,
   remainingTimeMs,
@@ -26,51 +27,94 @@ test('shared turn timing counts down only the active seat and resets on turn adv
   assert.deepEqual(beginTurn(control, [10000, 30000, 30000], 0, 1), [30000, 30000, 30000]);
 });
 
-test('Digital local play supports a 30-second resetting turn timer', () => {
-  let now = 0;
-  const match = new OfflineMatch(games.get('digitalGame'), 'local', () => now, 3, turnTimeControl(30));
-  now = 29000;
-  match.move({ type: 'draw' });
-  assert.equal(match.current.state.turn, 1);
-  assert.deepEqual(match.current.clocks, [30000, 30000, 30000]);
-  assert.equal(match.current.turnStartedAt, 29000);
-  now = 58999;
-  assert.equal(match.tick().result, null);
-  now = 59000;
-  assert.equal(match.tick().result?.reason, 'timeout');
-  assert.notEqual(match.current.result?.winner, 1);
-});
+for (const seconds of TURN_TIMER_SECONDS) {
+  test(`Digital local ${seconds}-second timer advances the turn, then records timeout at the exact deadline`, () => {
+    let now = 0;
+    const durationMs = seconds * 1000,
+      moveAt = Math.min(5000, durationMs - 1000),
+      match = new OfflineMatch(
+        games.get('digitalGame'),
+        'local',
+        () => now,
+        3,
+        turnTimeControl(seconds),
+      );
 
-test('authoritative Digital matches reset a selected 45-second timer after each move', () => {
-  let now = 0;
-  const store = new Store(),
-    service = new MatchService(store, games, { now: () => now }),
-    a = user(store, 'A'),
-    b = user(store, 'B'),
-    c = user(store, 'C');
-  try {
-    let match = service.create('digitalGame', [a.id, b.id, c.id], false, turnTimeControl(45));
-    assert.deepEqual(match.timeControl, turnTimeControl(45));
-    now = 20000;
-    match = service.command(a.id, {
-      type: 'move',
-      matchId: match.id,
-      commandId: randomUUID(),
-      expectedRevision: match.revision,
-      move: { type: 'draw' },
-    } as MatchCommand);
-    assert.equal(match.state.turn, 1);
-    assert.deepEqual(match.clockMs, [45000, 45000, 45000]);
-    now = 64999;
-    assert.equal(service.get(match.id, b.id).result, null);
-    now = 65000;
-    const finished = service.get(match.id, b.id);
+    now = moveAt;
+    match.move({ type: 'draw' });
+    assert.equal(match.current.state.turn, 1);
+    assert.deepEqual(match.current.clocks, [durationMs, durationMs, durationMs]);
+    assert.equal(match.current.turnStartedAt, moveAt);
+
+    now = moveAt + durationMs - 1;
+    assert.equal(match.tick().result, null);
+    assert.equal(match.current.state.turn, 1);
+
+    now = moveAt + durationMs;
+    const finished = match.tick();
     assert.equal(finished.result?.reason, 'timeout');
     assert.notEqual(finished.result?.winner, 1);
-  } finally {
-    store.close();
-  }
-});
+    assert.equal(finished.endedAt, now);
+  });
+}
+
+for (const seconds of TURN_TIMER_SECONDS) {
+  test(`authoritative Digital ${seconds}-second timer advances the turn and persists timeout`, () => {
+    let now = 0;
+    const durationMs = seconds * 1000,
+      moveAt = Math.min(5000, durationMs - 1000),
+      store = new Store(),
+      service = new MatchService(store, games, { now: () => now }),
+      a = user(store, `A-${seconds}`),
+      b = user(store, `B-${seconds}`),
+      c = user(store, `C-${seconds}`);
+    try {
+      let match = service.create(
+        'digitalGame',
+        [a.id, b.id, c.id],
+        false,
+        turnTimeControl(seconds),
+      );
+      assert.deepEqual(match.timeControl, turnTimeControl(seconds));
+      assert.deepEqual(match.clockMs, [durationMs, durationMs, durationMs]);
+
+      now = moveAt;
+      match = service.command(a.id, {
+        type: 'move',
+        matchId: match.id,
+        commandId: randomUUID(),
+        expectedRevision: match.revision,
+        move: { type: 'draw' },
+      } as MatchCommand);
+      assert.equal(match.state.turn, 1);
+      assert.deepEqual(match.clockMs, [durationMs, durationMs, durationMs]);
+      assert.equal(match.turnStartedAt, moveAt);
+
+      now = moveAt + durationMs - 1;
+      const beforeDeadline = service.get(match.id, b.id);
+      assert.equal(beforeDeadline.result, null);
+      assert.equal(beforeDeadline.state.turn, 1);
+
+      now = moveAt + durationMs;
+      const finished = service.get(match.id, b.id);
+      assert.equal(finished.result?.reason, 'timeout');
+      assert.notEqual(finished.result?.winner, 1);
+      assert.equal(finished.endedAt, now);
+
+      const stored = store.loadMatch(match.id);
+      assert.equal(stored.result?.reason, 'timeout');
+      assert.equal(stored.endedAt, now);
+
+      const rows = store.db
+        .prepare('SELECT reason,ended_at FROM results WHERE match_id=? ORDER BY user_id')
+        .all(match.id) as { reason: string; ended_at: number }[];
+      assert.equal(rows.length, 3);
+      assert.ok(rows.every((row) => row.reason === 'timeout' && row.ended_at === now));
+    } finally {
+      store.close();
+    }
+  });
+}
 
 test('Digital matchmaking isolates timer choices and private rooms preserve them', () => {
   const store = new Store(),
