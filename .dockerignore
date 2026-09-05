@@ -1,0 +1,12 @@
+node_modules
+dist
+android
+ios
+data
+.env
+.env.*
+!.env.example
+.git
+coverage
+test-results
+*.zip
