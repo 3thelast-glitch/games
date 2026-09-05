@@ -70,6 +70,12 @@ jobs:
               'state.hasCompletedInitialMeld[seat]',
               'state.hasCompletedInitialMeld[seat as Seat]',
           )
+          patch(
+              'packages/games/digital-game/rules.ts',
+              'others.reduce((sum, seat) =>',
+              'others.reduce<number>((sum, seat) =>',
+              3,
+          )
 
           patch(
               'tests/digital-multiplayer.test.ts',
