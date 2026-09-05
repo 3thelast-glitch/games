@@ -329,8 +329,13 @@ function ArenaApp({
       setClock(Date.now());
       const session = offlineRef.current;
       if (session && !session.controller.current.result) {
+        const previousPly = session.controller.current.state.ply;
         session.controller.tick();
-        if (session.controller.current.result) syncOffline();
+        if (
+          session.controller.current.result ||
+          session.controller.current.state.ply !== previousPly
+        )
+          syncOffline();
       }
     }, 250);
     return () => clearInterval(interval);

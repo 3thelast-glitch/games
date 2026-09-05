@@ -409,5 +409,6 @@ export const digitalGameEngine: RulesEngine<DigitalGameState, DigitalGameMove, S
   apply: applyDigital,
   legalMoves: digitalLegalMoves,
   evaluate: evaluateDigital,
+  timeoutMove: { type: 'draw' },
   view: projectDigitalState,
 };

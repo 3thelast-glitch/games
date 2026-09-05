@@ -12,7 +12,7 @@ import {
   beginTurn,
   chargeClock,
   createClocks,
-  remainingTimeMs,
+  timeoutAt,
   type TimeControl,
 } from './timing.ts';
 export interface OfflineSnapshot {
@@ -48,11 +48,10 @@ export class OfflineMatch {
   private control(): TimeControl {
     return this.current.timeControl ?? this.timeControl;
   }
-  private charge() {
-    const c = this.current,
-      now = this.now();
-    c.clocks = chargeClock(this.control(), c.clocks, c.state.turn, c.turnStartedAt, now);
-    c.turnStartedAt = now;
+  private charge(at = this.now()) {
+    const c = this.current;
+    c.clocks = chargeClock(this.control(), c.clocks, c.state.turn, c.turnStartedAt, at);
+    c.turnStartedAt = at;
   }
   private bestRemaining(loser: Seat): Seat {
     const candidates = seats(this.current.clocks.length).filter((seat) => seat !== loser);
@@ -73,21 +72,37 @@ export class OfflineMatch {
     else this.current.clocks = beginTurn(this.control(), this.current.clocks, previousTurn, next.turn);
     return this.current;
   }
+  private applyTimeoutMove(at: number): boolean {
+    const automatic = this.game.timeoutMove;
+    if (automatic === undefined) return false;
+    const previousTurn = this.current.state.turn;
+    this.history.push(structuredClone(this.current));
+    this.charge(at);
+    const next = this.game.apply(this.current.state, automatic);
+    this.current = { ...this.current, state: next };
+    if (next.winner !== null) this.finish(next.winner, this.game.winReason, at);
+    else if (next.drawReason) this.finish(null, next.drawReason, at);
+    else this.current.clocks = beginTurn(this.control(), this.current.clocks, previousTurn, next.turn);
+    return true;
+  }
   tick() {
-    const c = this.current;
-    if (
-      !c.result &&
-      remainingTimeMs(this.control(), c.clocks, c.state.turn, c.state.turn, c.turnStartedAt, this.now()) <= 0
-    )
-      this.finish(this.bestRemaining(c.state.turn), 'timeout');
+    const now = this.now();
+    for (let safety = 0; safety < 256 && !this.current.result; safety++) {
+      const c = this.current,
+        deadline = timeoutAt(this.control(), c.clocks, c.state.turn, c.turnStartedAt);
+      if (deadline > now) break;
+      if (this.applyTimeoutMove(deadline)) continue;
+      this.finish(this.bestRemaining(c.state.turn), 'timeout', deadline);
+      break;
+    }
     return this.current;
   }
-  finish(winner: Seat | null, reason: MatchResult['reason']) {
+  finish(winner: Seat | null, reason: MatchResult['reason'], at = this.now()) {
     if (this.current.result) return;
-    this.charge();
+    this.charge(at);
     this.current = {
       ...this.current,
-      endedAt: this.now(),
+      endedAt: at,
       result: { winner, reason, ratingDelta: this.current.clocks.map(() => 0) },
     };
   }
