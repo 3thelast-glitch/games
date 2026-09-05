@@ -49,7 +49,6 @@ export function validateGroup(tiles: DigitalTile[]): MeldValidation {
   if (numbered.some((tile) => tile.value !== value)) return invalid('group-value');
   const colors = numbered.map((tile) => tile.color!);
   if (new Set(colors).size !== colors.length) return invalid('group-duplicate-color');
-  if (tiles.length > 4) return invalid('group-size');
   return {
     ok: true,
     type: 'group',
@@ -95,6 +94,9 @@ export function validateMeld(tiles: DigitalTile[]): MeldValidation {
   if (group.ok) return group;
   const run = validateRun(tiles);
   if (run.ok) return run;
+  // Prefer the run-specific explanation when a same-size group fails on values and the colors also
+  // prove it cannot be a run. This keeps the UI error actionable without changing validity.
+  if (group.code === 'group-value' && run.code === 'run-color') return run;
   return invalid(group.code === 'group-size' ? run.code : group.code);
 }
 
