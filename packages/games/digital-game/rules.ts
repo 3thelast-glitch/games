@@ -390,8 +390,8 @@ export function evaluateDigital(state: DigitalGameState, player: Player): number
 }
 
 /**
- * Produce a client-safe online projection. Hidden racks and draw order are represented only by counts;
- * tile values/colors are included solely for the viewer's rack and public table.
+ * Produce a client-safe online projection. Hidden racks, draw order, and the shuffle seed are never
+ * sent to the other seat. Tile values/colors are included only for the viewer's rack and public table.
  */
 export function projectDigitalState(state: DigitalGameState, viewer: Player): DigitalGameState {
   const visible = new Set<string>([
@@ -410,6 +410,7 @@ export function projectDigitalState(state: DigitalGameState, viewer: Player): Di
   );
   return {
     ...state,
+    seed: 0,
     tiles,
     racks,
     drawPool: Array.from({ length: state.drawPool.length }, (_, index) => `hidden-draw-${index}`),
