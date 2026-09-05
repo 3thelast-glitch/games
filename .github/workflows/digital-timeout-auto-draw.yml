@@ -1,0 +1,32 @@
+name: Digital timeout auto-draw migration
+on:
+  push:
+    branches:
+      - fix/digital-timeout-auto-draw
+permissions:
+  contents: write
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/digital-timeout-auto-draw
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Apply timeout auto-draw changes
+        run: python3 scripts/apply_digital_timeout_auto_draw.py
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Commit validated implementation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -f .github/workflows/digital-timeout-auto-draw.yml scripts/apply_digital_timeout_auto_draw.py
+          git add -A
+          git commit -m "Auto-draw Digital tile when turn timer expires"
+          git push origin HEAD:fix/digital-timeout-auto-draw
