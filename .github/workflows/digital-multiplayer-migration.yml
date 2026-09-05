@@ -4,6 +4,7 @@ on:
     branches: [feat/digital-3-4-player]
     paths:
       - scripts/migrate_digital_multiplayer.py
+      - .github/workflows/digital-multiplayer-migration.yml
 permissions:
   contents: write
 jobs:
@@ -18,7 +19,10 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: python3 scripts/migrate_digital_multiplayer.py
+      - name: Apply migration
+        run: |
+          sed -i "s/نفدت بلاطات السحب ولم يستطع أي من اللاعبين الاستمرار/نفدت كومة السحب ولم يستطع أي لاعب الاستمرار/g" scripts/migrate_digital_multiplayer.py
+          python3 scripts/migrate_digital_multiplayer.py
       - run: npm ci
       - run: npm test
       - run: npm run build
