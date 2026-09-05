@@ -1,8 +1,10 @@
 import { z } from 'zod';
 import type { BaseState, PlayerCount, Seat } from './game.ts';
-export const PROTOCOL_VERSION = 2;
+import type { TimeControl, TurnTimerSeconds } from './timing.ts';
+export const PROTOCOL_VERSION = 3;
 const id = z.string().min(1).max(80);
 const playerCount = z.union([z.literal(2), z.literal(3), z.literal(4)]);
+const turnTimerSeconds = z.union([z.literal(30), z.literal(45), z.literal(60), z.literal(90)]);
 const matchCommand = {
   matchId: id,
   commandId: z.string().min(8).max(80),
@@ -14,7 +16,7 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
       type: z.literal('auth'),
       token: z.string().min(20).max(256),
       // v1 remains accepted during the migration window; new clients send v2.
-      version: z.union([z.literal(1), z.literal(PROTOCOL_VERSION)]),
+      version: z.union([z.literal(1), z.literal(2), z.literal(PROTOCOL_VERSION)]),
     })
     .strict(),
   z.object({ type: z.literal('ping') }).strict(),
@@ -24,6 +26,7 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
       gameId: id,
       ranked: z.boolean(),
       playerCount: playerCount.default(2),
+      turnSeconds: turnTimerSeconds.optional(),
     })
     .strict(),
   z.object({ type: z.literal('cancel') }).strict(),
@@ -32,6 +35,7 @@ export const clientMessageSchema = z.discriminatedUnion('type', [
       type: z.literal('create-room'),
       gameId: id,
       playerCount: playerCount.default(2),
+      turnSeconds: turnTimerSeconds.optional(),
     })
     .strict(),
   z
@@ -83,6 +87,8 @@ export interface MatchSnapshot {
   ranked: boolean;
   revision: number;
   clockMs: number[];
+  /** Optional for persisted v1/v2 snapshots; new matches always include it. */
+  timeControl?: TimeControl;
   turnStartedAt: number;
   createdAt: number;
   endedAt: number | null;
@@ -128,13 +134,20 @@ export interface Profile {
 export type ServerMessage =
   | { type: 'ready'; userId: string; serverNow: number }
   | { type: 'pong'; serverNow: number }
-  | { type: 'queued'; gameId: string; ranked: boolean; playerCount: PlayerCount }
+  | {
+      type: 'queued';
+      gameId: string;
+      ranked: boolean;
+      playerCount: PlayerCount;
+      turnSeconds: TurnTimerSeconds | null;
+    }
   | {
       type: 'room';
       code: string;
       expiresAt: number;
       gameId: string;
       playerCount: PlayerCount;
+      turnSeconds: TurnTimerSeconds | null;
       joined: number;
     }
   | { type: 'cancelled' }
