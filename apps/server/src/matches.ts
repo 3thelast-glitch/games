@@ -126,25 +126,52 @@ export class MatchService {
     this.store.settle(m);
     return m;
   }
+  private applyTimeoutMove(m: StoredMatch, at: number): StoredMatch | null {
+    const game = this.games.get(m.gameId),
+      automatic = game.timeoutMove;
+    if (automatic === undefined) return null;
+    const previousTurn = m.state.turn;
+    m.clockMs = chargeClock(this.controlOf(m), m.clockMs, previousTurn, m.turnStartedAt, at);
+    m.turnStartedAt = at;
+    const next = game.apply(m.state, automatic);
+    m.state = next;
+    m.revision++;
+    m.drawOffer = null;
+    m.drawAccepts = [];
+    if (next.winner !== null) return this.finish(m, next.winner, game.winReason, at);
+    if (next.drawReason) return this.finish(m, null, next.drawReason, at);
+    m.clockMs = beginTurn(this.controlOf(m), m.clockMs, previousTurn, next.turn);
+    this.store.saveMatch(m);
+    return m;
+  }
   expire(m: StoredMatch): StoredMatch {
     if (m.result) return m;
     const now = this.options.now();
-    const deadlines: { at: number; loser: Seat; reason: 'timeout' | 'disconnect' }[] = [
-      { at: timeoutAt(this.controlOf(m), m.clockMs, m.state.turn, m.turnStartedAt), loser: m.state.turn, reason: 'timeout' },
-    ];
-    for (const seat of seats(m.players.length))
-      if (m.disconnectedAt[seat] !== null)
-        deadlines.push({ at: m.disconnectedAt[seat]! + m.graceMs, loser: seat, reason: 'disconnect' });
-    deadlines.sort((a, b) => a.at - b.at);
-    const first = deadlines[0];
-    if (first.at > now) return m;
-    if (first.reason === 'timeout')
-      return this.finish(m, this.bestRemaining(m, [first.loser]), 'timeout', first.at);
-    const simultaneous = deadlines
-      .filter((deadline) => deadline.reason === 'disconnect' && deadline.at === first.at)
-      .map((deadline) => deadline.loser);
-    if (simultaneous.length === m.players.length) return this.finish(m, null, 'abandoned', first.at);
-    return this.finish(m, this.bestRemaining(m, simultaneous), 'disconnect', first.at);
+    for (let safety = 0; safety < 256 && !m.result; safety++) {
+      const deadlines: { at: number; loser: Seat; reason: 'timeout' | 'disconnect' }[] = [
+        { at: timeoutAt(this.controlOf(m), m.clockMs, m.state.turn, m.turnStartedAt), loser: m.state.turn, reason: 'timeout' },
+      ];
+      for (const seat of seats(m.players.length))
+        if (m.disconnectedAt[seat] !== null)
+          deadlines.push({ at: m.disconnectedAt[seat]! + m.graceMs, loser: seat, reason: 'disconnect' });
+      deadlines.sort((a, b) => a.at - b.at);
+      const first = deadlines[0];
+      if (first.at > now) return m;
+      if (first.reason === 'timeout') {
+        const advanced = this.applyTimeoutMove(m, first.at);
+        if (advanced) {
+          m = advanced;
+          continue;
+        }
+        return this.finish(m, this.bestRemaining(m, [first.loser]), 'timeout', first.at);
+      }
+      const simultaneous = deadlines
+        .filter((deadline) => deadline.reason === 'disconnect' && deadline.at === first.at)
+        .map((deadline) => deadline.loser);
+      if (simultaneous.length === m.players.length) return this.finish(m, null, 'abandoned', first.at);
+      return this.finish(m, this.bestRemaining(m, simultaneous), 'disconnect', first.at);
+    }
+    return m;
   }
   command(userId: string, command: MatchCommand): MatchSnapshot {
     let m = this.store.loadMatch(command.matchId);

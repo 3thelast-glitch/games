@@ -43,6 +43,8 @@ export interface RulesEngine<S extends BaseState, M, P extends Seat = Player> {
   apply(state: S, move: M): S;
   legalMoves(state: S): M[];
   evaluate(state: S, player: P): number;
+  /** Optional move automatically applied when this game's clock expires. */
+  timeoutMove?: M;
   /** Optional online projection used to hide private information from other seats. */
   view?(state: S, player: P): S;
 }
@@ -57,6 +59,8 @@ export interface GamePlugin {
   apply(state: BaseState, move: unknown): BaseState;
   legalMoves(state: BaseState): unknown[];
   evaluate(state: BaseState, player: Seat): number;
+  /** Optional move automatically applied when this game's clock expires. */
+  timeoutMove?: unknown;
   view?(state: BaseState, player: Seat): BaseState;
 }
 export function asPlugin<S extends BaseState, M, P extends Seat = Player>(
@@ -72,6 +76,7 @@ export function asPlugin<S extends BaseState, M, P extends Seat = Player>(
     apply: (state, move) => engine.apply(state as S, engine.parseMove(move)),
     legalMoves: (state) => engine.legalMoves(state as S),
     evaluate: (state, player) => engine.evaluate(state as S, player as P),
+    timeoutMove: engine.timeoutMove,
     view: engine.view ? (state, player) => engine.view!(state as S, player as P) : undefined,
   };
 }
