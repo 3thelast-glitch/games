@@ -469,8 +469,6 @@ test('real HTTP and WebSocket flow authenticates, joins private room, synchroniz
     store.close();
   }
 });
-<<<<<<< HEAD
-=======
 
 import { createCheckers } from '../packages/games/checkers/state.ts';
 import { createMorris } from '../packages/games/nine-mens-morris/state.ts';
@@ -622,4 +620,3 @@ test('online Checkers automatic draw is terminal and recorded as a draw', () => 
     store.close();
   }
 });
->>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97

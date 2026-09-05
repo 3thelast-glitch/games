@@ -2,11 +2,7 @@
   "version": "0.1.0",
   "verifiedDate": "2026-09-05",
   "automatedTests": {
-<<<<<<< HEAD
-    "passed": 107,
-=======
     "passed": 158,
->>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
     "failed": 0,
     "skipped": 0
   },
@@ -14,23 +10,14 @@
   "webProductionBuild": "passed",
   "serverBundle": "passed",
   "nativeProjectSync": {
-<<<<<<< HEAD
-    "android": "passed",
-    "ios": "passed"
-=======
     "android": "passed in initial delivery; not rerun for game-module update",
     "ios": "passed in initial delivery; not rerun for game-module update"
->>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
   },
   "nativeManifestChecks": "passed",
   "nativeBinaries": "not built; required SDKs unavailable",
   "visualBrowserQA": "not completed; local URL denied by browser access policy",
   "publicDeployment": "not performed",
   "providerOAuthLiveQA": "not performed; credentials not supplied",
-<<<<<<< HEAD
-  "githubPush": "not performed; Board Arena repository not specified"
-=======
   "githubPush": "Change branch: feat/four-board-games in 3thelast-glitch/games. Check GitHub for commit and workflow results.",
   "games": ["abalone", "quoridor", "checkers", "gomoku", "nineMensMorris", "connectFour"]
->>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
 }
