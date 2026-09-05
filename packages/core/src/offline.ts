@@ -40,6 +40,7 @@ export class OfflineMatch {
     this.charge();
     this.current = { ...this.current, state: next };
     if (next.winner !== null) this.finish(next.winner, this.game.winReason);
+    else if (next.drawReason) this.finish(null, next.drawReason);
     return this.current;
   }
   tick() {

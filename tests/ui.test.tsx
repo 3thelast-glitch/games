@@ -191,3 +191,157 @@ test('result screen identifies winner, reason, rating and rematch', () => {
   assert.ok(view.getByText('+16'));
   assert.ok(view.getByRole('button', { name: 'Rematch' }));
 });
+
+import { CheckersBoard } from '../packages/games/checkers/ui.tsx';
+import { GomokuBoard } from '../packages/games/gomoku/ui.tsx';
+import { MorrisBoard } from '../packages/games/nine-mens-morris/ui.tsx';
+import { ConnectFourBoard } from '../packages/games/connect-four/ui.tsx';
+import { createCheckers, type CheckersMove } from '../packages/games/checkers/state.ts';
+import { createGomoku, type GomokuMove } from '../packages/games/gomoku/state.ts';
+import { createMorris, type MorrisMove } from '../packages/games/nine-mens-morris/state.ts';
+import { createConnectFour, type ConnectFourMove } from '../packages/games/connect-four/state.ts';
+import { checkersEngine } from '../packages/games/checkers/rules.ts';
+import { gomokuEngine } from '../packages/games/gomoku/rules.ts';
+import { morrisEngine } from '../packages/games/nine-mens-morris/rules.ts';
+import { connectFourEngine } from '../packages/games/connect-four/rules.ts';
+import { games } from '../packages/games/registry.ts';
+import { gameInfo, upcoming } from '../apps/mobile/src/gameViews.tsx';
+
+test('Checkers UI selects a piece, highlights destinations and emits a legal move', () => {
+  const state = createCheckers();
+  let move: CheckersMove | undefined;
+  const view = render(
+    <CheckersBoard state={state} disabled={false} onMove={(m) => (move = m)} t={t} />,
+  );
+  assert.ok((view.getByRole('button', { name: 'player2 1,2' }) as HTMLButtonElement).disabled);
+  fireEvent.click(view.getByRole('button', { name: 'player1 6,1' }));
+  assert.equal(
+    view.getByRole('button', { name: 'player1 6,1' }).getAttribute('aria-pressed'),
+    'true',
+  );
+  fireEvent.click(view.getByRole('button', { name: 'emptyCell 5,2' }));
+  assert.deepEqual(move, { from: 40, to: 33 });
+  view.rerender(
+    <CheckersBoard
+      state={checkersEngine.apply(state, move!)}
+      disabled={false}
+      onMove={(m) => (move = m)}
+      t={t}
+    />,
+  );
+  assert.equal(view.container.querySelectorAll('[aria-pressed="true"]').length, 0);
+});
+
+test('Checkers UI locks the captured piece until the chain completes', () => {
+  const state = createCheckers();
+  state.board.fill(null);
+  state.board[40] = { owner: 0, king: false };
+  state.board[44] = { owner: 0, king: false };
+  state.board[33] = { owner: 1, king: false };
+  state.board[19] = { owner: 1, king: false };
+  const next = checkersEngine.apply(state, { from: 40, to: 26 });
+  let move: CheckersMove | undefined;
+  const view = render(
+    <CheckersBoard state={next} disabled={false} onMove={(m) => (move = m)} t={t} />,
+  );
+  assert.ok(view.getByText('continueCapture'));
+  assert.ok((view.getByRole('button', { name: 'player1 6,5' }) as HTMLButtonElement).disabled);
+  fireEvent.click(view.getByRole('button', { name: 'emptyCell 2,5' }));
+  assert.deepEqual(move, { from: 26, to: 12 });
+});
+
+test('Gomoku preview requires confirmation and clears after an accepted move', () => {
+  const state = createGomoku();
+  let move: GomokuMove | undefined;
+  const view = render(
+    <GomokuBoard state={state} disabled={false} onMove={(m) => (move = m)} t={t} />,
+  );
+  fireEvent.click(view.getByRole('button', { name: 'placeStone 8,8' }));
+  assert.equal(move, undefined);
+  fireEvent.click(view.getByRole('button', { name: 'confirmStone' }));
+  assert.deepEqual(move, { row: 7, col: 7 });
+  view.rerender(
+    <GomokuBoard
+      state={gomokuEngine.apply(state, move!)}
+      disabled={false}
+      onMove={(m) => (move = m)}
+      t={t}
+    />,
+  );
+  assert.ok((view.getByRole('button', { name: 'confirmStone' }) as HTMLButtonElement).disabled);
+  assert.ok((view.getByRole('button', { name: 'player1 8,8' }) as HTMLButtonElement).disabled);
+});
+
+test('Morris UI switches from placing to capturing and protects pieces in a mill', () => {
+  let state = createMorris();
+  state.board[0] = 0;
+  state.board[1] = 0;
+  for (const i of [8, 9, 10, 4]) state.board[i] = 1;
+  let move: MorrisMove | undefined;
+  const view = render(
+    <MorrisBoard state={state} disabled={false} onMove={(m) => (move = m)} t={t} />,
+  );
+  fireEvent.click(view.getByRole('button', { name: 'emptyCell 3' }));
+  assert.deepEqual(move, { kind: 'place', to: 2 });
+  state = morrisEngine.apply(state, move!);
+  view.rerender(<MorrisBoard state={state} disabled={false} onMove={(m) => (move = m)} t={t} />);
+  assert.ok(view.getByText('morrisCaptureHint'));
+  assert.ok((view.getByRole('button', { name: 'player2 9' }) as HTMLButtonElement).disabled);
+  fireEvent.click(view.getByRole('button', { name: 'player2 5' }));
+  assert.deepEqual(move, { kind: 'capture', at: 4 });
+});
+
+test('Connect Four UI drops a disc and disables full columns and finished games', () => {
+  let state = createConnectFour();
+  let move: ConnectFourMove | undefined;
+  const view = render(
+    <ConnectFourBoard state={state} disabled={false} onMove={(m) => (move = m)} t={t} />,
+  );
+  fireEvent.click(view.getByRole('button', { name: 'dropColumn 4' }));
+  assert.deepEqual(move, { column: 3 });
+  for (let i = 0; i < 6; i++) state = connectFourEngine.apply(state, { column: 3 });
+  view.rerender(
+    <ConnectFourBoard state={state} disabled={false} onMove={(m) => (move = m)} t={t} />,
+  );
+  assert.ok((view.getByRole('button', { name: 'dropColumn 4' }) as HTMLButtonElement).disabled);
+  view.rerender(
+    <ConnectFourBoard state={state} disabled={true} onMove={(m) => (move = m)} t={t} />,
+  );
+  assert.ok(view.getAllByRole('button').every((b) => (b as HTMLButtonElement).disabled));
+});
+
+for (const id of ['checkers', 'gomoku', 'nineMensMorris', 'connectFour']) {
+  test(`${id}: available in the catalog, bilingual match resources and board controls lock online`, () => {
+    assert.ok(gameInfo.some((g) => g.id === id));
+    assert.ok(!upcoming.includes(id));
+    const props = matchProps('online');
+    props.state = games.get(id).create();
+    props.disabled = true;
+    const view = render(
+      <I18n lang="ar">
+        <MatchPage {...props} />
+      </I18n>,
+    );
+    assert.ok(
+      view.getByText(
+        id === 'gomoku'
+          ? 'خمس قطع تحسمها'
+          : id === 'checkers'
+            ? 'كل قفزة تصنع الفارق'
+            : id === 'nineMensMorris'
+              ? 'ضع. حرّك. اقفز.'
+              : 'أربع قطع للفوز',
+      ),
+    );
+    const board = view.container.querySelector('.classic-game')!;
+    assert.ok(Array.from(board.querySelectorAll('button')).every((b) => b.disabled));
+    assert.ok(board.querySelector('[dir="ltr"]'));
+    props.result = { winner: null, reason: 'threefold-repetition', ratingDelta: [0, 0] };
+    view.rerender(
+      <I18n lang="en">
+        <MatchPage {...props} />
+      </I18n>,
+    );
+    assert.ok(view.getByText('The same position occurred three times.'));
+  });
+}
