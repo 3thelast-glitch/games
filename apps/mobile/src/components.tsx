@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+import { ClassicArt } from './ClassicArt.tsx';
+>>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
 import { createContext, useContext, useEffect, useId, useRef, type ReactNode } from 'react';
 import { useI18n } from './i18n.tsx';
 import { HEXES, createAbalone, hexKey } from '../../../packages/games/abalone/state.ts';
@@ -217,7 +221,13 @@ export function GameArt({ game, compact = false }: { game: string; compact?: boo
   return (
     <div className={`game-art ${game} ${compact ? 'compact' : ''}`} aria-hidden="true">
       <div className="art-halo" />
+<<<<<<< HEAD
       {game === 'abalone' ? (
+=======
+      {['checkers', 'gomoku', 'nineMensMorris', 'connectFour'].includes(game) ? (
+        <ClassicArt game={game} />
+      ) : game === 'abalone' ? (
+>>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
         <svg viewBox="0 0 480 444">
           <defs>
             <radialGradient id={`${id}b`} cx="35%" cy="22%">

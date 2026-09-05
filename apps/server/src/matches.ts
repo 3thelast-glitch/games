@@ -159,6 +159,10 @@ export class MatchService {
       m.commands[key] = { fingerprint, revision: m.revision };
       if (next.winner !== null)
         return this.snapshot(this.finish(m, next.winner, this.games.get(m.gameId).winReason, now));
+<<<<<<< HEAD
+=======
+      if (next.drawReason) return this.snapshot(this.finish(m, null, next.drawReason, now));
+>>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
     } else if (command.type === 'resign') {
       m.commands[key] = { fingerprint, revision: m.revision + 1 };
       return this.snapshot(this.finish(m, opponent(seat), 'resignation', now));

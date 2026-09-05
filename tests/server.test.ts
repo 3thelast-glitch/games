@@ -469,3 +469,157 @@ test('real HTTP and WebSocket flow authenticates, joins private room, synchroniz
     store.close();
   }
 });
+<<<<<<< HEAD
+=======
+
+import { createCheckers } from '../packages/games/checkers/state.ts';
+import { createMorris } from '../packages/games/nine-mens-morris/state.ts';
+
+for (const id of ['checkers', 'gomoku', 'nineMensMorris', 'connectFour']) {
+  test(`${id}: online rooms use authoritative rules, isolate matchmaking and settle per-game ratings`, () => {
+    const { store, service, a, b, outsider } = setup();
+    try {
+      const lobby = new Lobby(service);
+      const room = lobby.createRoom(a.id, id);
+      const match = lobby.joinRoom(b.id, room.code);
+      const move = games.get(id).legalMoves(match.state)[0];
+      const mover = match.players[match.state.turn].id;
+      assert.throws(() => service.command(outsider.id, command(match, move)), /not-in-match/);
+      assert.throws(
+        () => service.command(mover, command(match, { ...(move as object), winner: 0 })),
+        /invalid-move/,
+      );
+      const cmd = command(match, move),
+        next = service.command(mover, cmd);
+      assert.equal(next.state.ply, 1);
+      assert.equal(service.command(mover, cmd).state.ply, 1);
+      assert.deepEqual(service.get(next.id, b.id).state, next.state);
+      service.command(mover, {
+        type: 'resign',
+        matchId: next.id,
+        commandId: randomUUID(),
+        expectedRevision: next.revision,
+      });
+      const ranked = service.create(id, [a.id, b.id], true);
+      const result = service.command(a.id, {
+        type: 'resign',
+        matchId: ranked.id,
+        commandId: randomUUID(),
+        expectedRevision: 0,
+      });
+      assert.equal(result.result?.winner, 1);
+      assert.equal(store.rating(a.id, id), 984);
+      assert.equal(store.rating(a.id, 'abalone'), 1000);
+    } finally {
+      store.close();
+    }
+  });
+}
+
+test('online Checkers multi-jumps retain seat and clock, reject opposing moves, and survive reload', () => {
+  const { store, service, a, b, advance } = setup();
+  try {
+    const match = service.create('checkers', [a.id, b.id]);
+    const stored = store.loadMatch(match.id);
+    const s = createCheckers();
+    s.board.fill(null);
+    s.board[40] = { owner: 0, king: false };
+    s.board[33] = { owner: 1, king: false };
+    s.board[19] = { owner: 1, king: false };
+    s.board[7] = { owner: 1, king: false };
+    stored.state = s;
+    store.saveMatch(stored);
+    advance(1000);
+    let next = service.command(a.id, command(match, { from: 40, to: 26 }));
+    assert.equal(next.state.turn, 0);
+    assert.deepEqual(next.clockMs, [59000, 60000]);
+    assert.throws(() => service.command(b.id, command(next, { from: 7, to: 14 })), /not-your-turn/);
+    const recovered = new MatchService(store, games, { now: () => next.turnStartedAt + 2000 });
+    next = recovered.command(a.id, command(next, { from: 26, to: 12 }));
+    assert.equal(next.state.turn, 1);
+    assert.deepEqual(next.clockMs, [57000, 60000]);
+  } finally {
+    store.close();
+  }
+});
+
+test('online Morris mill capture keeps the same seat and settles a two-piece loss', () => {
+  const { store, service, a, b } = setup();
+  try {
+    const match = service.create('nineMensMorris', [a.id, b.id]);
+    const stored = store.loadMatch(match.id);
+    const s = createMorris();
+    s.remaining = [0, 0];
+    for (const i of [0, 2, 9]) s.board[i] = 0;
+    for (const i of [8, 10, 12]) s.board[i] = 1;
+    stored.state = s;
+    store.saveMatch(stored);
+    let next = service.command(a.id, command(match, { kind: 'move', from: 9, to: 1 }));
+    assert.equal(next.state.turn, 0);
+    assert.equal(next.result, null);
+    assert.throws(
+      () => service.command(b.id, command(next, { kind: 'move', from: 8, to: 15 })),
+      /not-your-turn/,
+    );
+    next = service.command(a.id, command(next, { kind: 'capture', at: 8 }));
+    assert.equal(next.result?.winner, 0);
+    assert.equal(next.result?.reason, 'morris-win');
+  } finally {
+    store.close();
+  }
+});
+
+test('online Connect Four full-board draw settles once, persists, and supports rematch', () => {
+  const { store, service, a, b } = setup();
+  try {
+    let m = service.create('connectFour', [a.id, b.id], true);
+    const columns = [
+      6, 3, 1, 3, 3, 2, 4, 4, 5, 3, 1, 5, 0, 3, 3, 1, 2, 0, 5, 5, 4, 2, 2, 5, 6, 1, 5, 4, 1, 4, 1,
+      4, 2, 0, 0, 6, 0, 2, 6, 0, 6, 6,
+    ];
+    let last: MatchCommand | undefined;
+    for (const column of columns) {
+      assert.equal(m.result, null);
+      last = command(m, { column });
+      m = service.command(m.players[m.state.turn].id, last);
+    }
+    assert.equal(m.result?.winner, null);
+    assert.equal(m.result?.reason, 'board-full');
+    assert.ok(m.endedAt);
+    assert.equal(store.rating(a.id, 'connectFour'), 1000);
+    assert.equal(store.profile(a.id, games.ids()).draws, 1);
+    assert.equal(service.command(b.id, last!).result?.reason, 'board-full');
+    assert.equal(store.profile(a.id, games.ids()).draws, 1);
+    assert.equal(new MatchService(store, games).get(m.id, a.id).result?.reason, 'board-full');
+    service.rematch(a.id, m.id);
+    const rematch = service.rematch(b.id, m.id);
+    assert.notEqual(rematch.id, m.id);
+    assert.equal(rematch.state.ply, 0);
+    assert.equal(rematch.state.drawReason, null);
+  } finally {
+    store.close();
+  }
+});
+
+test('online Checkers automatic draw is terminal and recorded as a draw', () => {
+  const { store, service, a, b } = setup();
+  try {
+    const m = service.create('checkers', [a.id, b.id]);
+    const stored = store.loadMatch(m.id);
+    const s = createCheckers();
+    s.board.fill(null);
+    s.board[56] = { owner: 0, king: true };
+    s.board[7] = { owner: 1, king: true };
+    s.quietTurns = 79;
+    stored.state = s;
+    store.saveMatch(stored);
+    const next = service.command(a.id, command(m, { from: 56, to: 49 }));
+    assert.equal(next.result?.winner, null);
+    assert.equal(next.result?.reason, 'forty-move-rule');
+    assert.equal(store.profile(a.id, games.ids()).draws, 1);
+    assert.throws(() => service.command(b.id, command(next, { from: 7, to: 14 })), /game-over/);
+  } finally {
+    store.close();
+  }
+});
+>>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97

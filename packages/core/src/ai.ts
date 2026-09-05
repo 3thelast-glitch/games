@@ -1,4 +1,14 @@
+<<<<<<< HEAD
 import { type BaseState, type Difficulty, type GamePlugin, type Player } from './game.ts';
+=======
+import {
+  isGameOver,
+  type BaseState,
+  type Difficulty,
+  type GamePlugin,
+  type Player,
+} from './game.ts';
+>>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
 export interface AIOptions {
   random?: () => number;
   budgetMs?: number;
@@ -11,7 +21,11 @@ export function chooseMove(
   difficulty: Difficulty,
   options: AIOptions = {},
 ): unknown | null {
+<<<<<<< HEAD
   if (state.winner !== null) return null;
+=======
+  if (isGameOver(state)) return null;
+>>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
   const now = options.now ?? Date.now;
   const deadline = now() + (options.budgetMs ?? (difficulty === 'hard' ? 1400 : 400));
   const player = state.turn;
@@ -22,7 +36,17 @@ export function chooseMove(
       Math.min(moves.length - 1, Math.floor((options.random ?? Math.random)() * moves.length))
     ];
   const value = (s: BaseState, p: Player) =>
+<<<<<<< HEAD
     s.winner === null ? game.evaluate(s, p) : s.winner === p ? 100000 - s.ply : -100000 + s.ply;
+=======
+    s.drawReason
+      ? 0
+      : s.winner === null
+        ? game.evaluate(s, p)
+        : s.winner === p
+          ? 100000 - s.ply
+          : -100000 + s.ply;
+>>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
   const ordered = moves
     .map((move) => {
       const next = game.apply(state, move);
@@ -34,7 +58,11 @@ export function chooseMove(
   const TIMEOUT = Symbol('timeout');
   function search(s: BaseState, depth: number, alpha: number, beta: number): number {
     if (now() > deadline) throw TIMEOUT;
+<<<<<<< HEAD
     if (depth === 0 || s.winner !== null) return value(s, player);
+=======
+    if (depth === 0 || isGameOver(s)) return value(s, player);
+>>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
     const maximize = s.turn === player;
     const candidates = game
       .legalMoves(s)

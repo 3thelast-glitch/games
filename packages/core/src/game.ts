@@ -6,7 +6,14 @@ export interface BaseState {
   turn: Player;
   ply: number;
   winner: Player | null;
+<<<<<<< HEAD
 }
+=======
+  /** Automatic board draw, absent for legacy snapshots and ongoing games. */
+  drawReason?: string | null;
+}
+export const isGameOver = (state: BaseState) => state.winner !== null || !!state.drawReason;
+>>>>>>> 86095ba4b22459c5703fc305861ae0c76432fe97
 export class RuleError extends Error {
   constructor(public code: string) {
     super(code);
