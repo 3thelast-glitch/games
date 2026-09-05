@@ -35,13 +35,52 @@ jobs:
           python3 scripts/migrate_digital_multiplayer.py
           python3 - <<'PY'
           from pathlib import Path
-          p = Path('apps/mobile/src/MatchPage.tsx')
-          s = p.read_text(encoding='utf-8')
-          needle = "      <div\n        className={`player-panel player-${player} ${p.state.turn === player && !p.result ? 'active' : ''}`}"
-          replacement = "      <div\n        key={player}\n        className={`player-panel player-${player} ${p.state.turn === player && !p.result ? 'active' : ''}`}"
-          if needle not in s:
-              raise RuntimeError('MatchPage player panel root not found')
-          p.write_text(s.replace(needle, replacement, 1), encoding='utf-8')
+
+          def patch(path, old, new, count=1):
+              p = Path(path)
+              s = p.read_text(encoding='utf-8')
+              if old not in s:
+                  raise RuntimeError(f'patch target missing in {path}: {old[:100]}')
+              p.write_text(s.replace(old, new, count), encoding='utf-8')
+
+          patch(
+              'apps/mobile/src/MatchPage.tsx',
+              "      <div\n        className={`player-panel player-${player} ${p.state.turn === player && !p.result ? 'active' : ''}`}",
+              "      <div\n        key={player}\n        className={`player-panel player-${player} ${p.state.turn === player && !p.result ? 'active' : ''}`}",
+          )
+          patch('apps/mobile/src/MatchPage.tsx', '  drawAccepts: Seat[];', '  drawAccepts?: Seat[];')
+          patch('apps/mobile/src/MatchPage.tsx', 'p.drawAccepts.includes(p.self)', '(p.drawAccepts ?? []).includes(p.self)', 2)
+
+          patch(
+              'apps/mobile/src/pages.tsx',
+              "import type { Difficulty, PlayerCount } from '../../../packages/core/src/game.ts';",
+              "import type { Difficulty, PlayerCount, Seat } from '../../../packages/core/src/game.ts';",
+          )
+          patch('apps/mobile/src/pages.tsx', '  winner: 0 | 1 | null;', '  winner: Seat | null;')
+
+          patch('apps/mobile/src/gameViews.tsx', '(state as AbaloneState).captured[player]', '(state as AbaloneState).captured[player as 0 | 1]')
+          patch('apps/mobile/src/gameViews.tsx', '(state as QuoridorState).remaining[player]', '(state as QuoridorState).remaining[player as 0 | 1]')
+
+          patch("packages/core/src/ai.ts", '  type Player,', '  type Seat,')
+          patch("packages/core/src/ai.ts", '  const value = (s: BaseState, p: Player) =>', '  const value = (s: BaseState, p: Seat) =>')
+
+          patch('packages/games/digital-game/rules.ts', 'rackPenalty(state, seat)', 'rackPenalty(state, seat as Seat)', 2)
+          patch(
+              'packages/games/digital-game/rules.ts',
+              'state.hasCompletedInitialMeld[seat]',
+              'state.hasCompletedInitialMeld[seat as Seat]',
+          )
+
+          patch(
+              'tests/digital-multiplayer.test.ts',
+              "import type { MatchCommand } from '../packages/core/src/protocol.ts';",
+              "import type { MatchCommand, MatchResult } from '../packages/core/src/protocol.ts';",
+          )
+          patch(
+              'tests/digital-multiplayer.test.ts',
+              "    assert.equal(match.result?.reason, 'agreement');\n    assert.equal(match.result?.winner, null);\n    assert.equal(match.result?.ratingDelta.length, 4);",
+              "    const finalResult = match.result as MatchResult | null;\n    assert.equal(finalResult?.reason, 'agreement');\n    assert.equal(finalResult?.winner, null);\n    assert.equal(finalResult?.ratingDelta.length, 4);",
+          )
           PY
       - run: npm ci
       - run: npm test
