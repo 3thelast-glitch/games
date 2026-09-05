@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { validateDigital, validateMeld, validateTable } from './rules.ts';
 import { nextPlayer, type DigitalGameMove, type DigitalGameState, type DigitalMeld } from './state.ts';
-import './ui.css';
 
 export interface DigitalGameBoardProps {
   state: DigitalGameState;
