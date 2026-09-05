@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 import type { BaseState, Seat } from '../../../packages/core/src/game.ts';
 import type { MatchResult, PublicPlayer } from '../../../packages/core/src/protocol.ts';
+import {
+  bankTimeControl,
+  remainingTimeMs,
+  type TimeControl,
+} from '../../../packages/core/src/timing.ts';
 import { Avatar, formatTime, Icon, Modal } from './components.tsx';
 import { gameResource, gameViews } from './gameViews.tsx';
 import { useI18n } from './i18n.tsx';
@@ -12,6 +17,7 @@ export interface MatchPageProps {
   players: PublicPlayer[];
   self: Seat;
   clocks: number[];
+  timeControl?: TimeControl;
   turnStartedAt: number;
   now: number;
   createdAt: number;
@@ -49,7 +55,8 @@ export function MatchPage(p: MatchPageProps) {
     setResultOpen(true);
     setConfirmation(null);
   }, [p.id, p.result?.reason]);
-  const view = gameViews[p.state.gameId],
+  const timeControl = p.timeControl ?? bankTimeControl(600000),
+    view = gameViews[p.state.gameId],
     turnText = p.result
       ? t('game-over')
       : p.pending
@@ -64,10 +71,17 @@ export function MatchPage(p: MatchPageProps) {
   const panel = (player: Seat) => {
     const person = p.players[player],
       resource = gameResource(p.state, player),
-      clock = Math.max(
-        0,
-        p.clocks[player] - (!p.result && p.state.turn === player ? p.now - p.turnStartedAt : 0),
-      );
+      clock = p.result
+        ? Math.max(0, p.clocks[player] ?? 0)
+        : remainingTimeMs(
+            timeControl,
+            p.clocks,
+            p.state.turn,
+            player,
+            p.turnStartedAt,
+            p.now,
+          ),
+      lowThreshold = timeControl.mode === 'turn' ? Math.min(10000, timeControl.turnMs / 3) : 60000;
     return (
       <div
         key={player}
@@ -80,7 +94,7 @@ export function MatchPage(p: MatchPageProps) {
             {p.mode === 'online' ? (
               <span className={`rank-badge ${person.rank.toLowerCase()}`}>{t(person.rank)}</span>
             ) : (
-              t(player === 0 ? 'player1' : 'player2')
+              t(`player${player + 1}`)
             )}
           </span>
         </div>
@@ -88,7 +102,10 @@ export function MatchPage(p: MatchPageProps) {
           <strong>{resource.value}</strong>
           <small>{t(resource.label)}</small>
         </div>
-        <div className={`match-clock ${clock < 60000 ? 'low' : ''}`} dir="ltr">
+        <div
+          className={`match-clock ${!p.result && p.state.turn === player && clock <= lowThreshold ? 'low' : ''}`}
+          dir="ltr"
+        >
           <Icon name="clock" size={14} />
           {formatTime(clock)}
         </div>
@@ -110,6 +127,7 @@ export function MatchPage(p: MatchPageProps) {
           <small>
             {t(p.mode)}
             {p.mode === 'online' ? ` · ${t(p.ranked ? 'ranked' : 'casual')}` : ''}
+            {timeControl.mode === 'turn' ? ` · ${timeControl.turnMs / 1000}s` : ''}
           </small>
         </div>
         <span className="match-move-number">

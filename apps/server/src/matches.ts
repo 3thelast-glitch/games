@@ -9,6 +9,15 @@ import {
   type Seat,
 } from '../../../packages/core/src/game.ts';
 import type { MatchSnapshot, MatchCommand, ResultReason } from '../../../packages/core/src/protocol.ts';
+import {
+  bankTimeControl,
+  beginTurn,
+  chargeClock,
+  createClocks,
+  isTurnTimerMs,
+  timeoutAt,
+  type TimeControl,
+} from '../../../packages/core/src/timing.ts';
 import { Store, digest } from './store.ts';
 export interface StoredMatch extends Omit<MatchSnapshot, 'serverNow'> {
   commands: Record<string, { fingerprint: string; revision: number }>;
@@ -23,8 +32,23 @@ export class MatchService {
   constructor(readonly store: Store, readonly games: GameRegistry, options: Partial<MatchOptions> = {}) {
     this.options = { clockMs: 600000, graceMs: 60000, now: Date.now, ...options };
   }
-  create(gameId: string, users: string[], ranked = false): MatchSnapshot {
-    const game = this.games.get(gameId);
+  private control(gameId: string, requested?: TimeControl): TimeControl {
+    const control = requested ?? bankTimeControl(this.options.clockMs);
+    if (control.mode === 'bank') {
+      if (!Number.isFinite(control.initialMs) || control.initialMs < 1000)
+        throw new RuleError('invalid-time-control');
+      return control;
+    }
+    if (gameId !== 'digitalGame' || !isTurnTimerMs(control.turnMs))
+      throw new RuleError('turn-timer-not-supported');
+    return control;
+  }
+  private controlOf(match: Pick<StoredMatch, 'gameId' | 'timeControl'>): TimeControl {
+    return this.control(match.gameId, match.timeControl);
+  }
+  create(gameId: string, users: string[], ranked = false, requestedTimeControl?: TimeControl): MatchSnapshot {
+    const game = this.games.get(gameId),
+      timeControl = this.control(gameId, requestedTimeControl);
     if (users.length < game.minPlayers || users.length > game.maxPlayers)
       throw new RuleError('player-count-not-supported');
     if (new Set(users).size !== users.length) throw new RuleError('cannot-play-yourself');
@@ -40,7 +64,8 @@ export class MatchService {
       state: game.create(playerCount),
       ranked,
       revision: 0,
-      clockMs: users.map(() => this.options.clockMs),
+      clockMs: createClocks(timeControl, users.length),
+      timeControl,
       turnStartedAt: now,
       createdAt: now,
       endedAt: null,
@@ -63,7 +88,7 @@ export class MatchService {
   }
   snapshot(match: StoredMatch): MatchSnapshot {
     const { commands, ...publicMatch } = match;
-    return { ...publicMatch, serverNow: this.options.now() };
+    return { ...publicMatch, timeControl: this.controlOf(match), serverNow: this.options.now() };
   }
   forUser(match: MatchSnapshot, userId: string): MatchSnapshot {
     const index = match.players.findIndex((player) => player.id === userId);
@@ -90,7 +115,7 @@ export class MatchService {
   }
   private finish(m: StoredMatch, winner: Seat | null, reason: ResultReason, at = this.options.now()) {
     if (m.result) return m;
-    m.clockMs[m.state.turn] = Math.max(0, m.clockMs[m.state.turn] - Math.max(0, at - m.turnStartedAt));
+    m.clockMs = chargeClock(this.controlOf(m), m.clockMs, m.state.turn, m.turnStartedAt, at);
     m.turnStartedAt = at;
     m.endedAt = at;
     m.state = { ...m.state, winner };
@@ -105,7 +130,7 @@ export class MatchService {
     if (m.result) return m;
     const now = this.options.now();
     const deadlines: { at: number; loser: Seat; reason: 'timeout' | 'disconnect' }[] = [
-      { at: m.turnStartedAt + m.clockMs[m.state.turn], loser: m.state.turn, reason: 'timeout' },
+      { at: timeoutAt(this.controlOf(m), m.clockMs, m.state.turn, m.turnStartedAt), loser: m.state.turn, reason: 'timeout' },
     ];
     for (const seat of seats(m.players.length))
       if (m.disconnectedAt[seat] !== null)
@@ -137,8 +162,9 @@ export class MatchService {
     const now = this.options.now();
     if (command.type === 'move') {
       if (m.state.turn !== seat) throw new RuleError('not-your-turn');
-      const next = this.games.get(m.gameId).apply(m.state, command.move);
-      m.clockMs[seat] = Math.max(0, m.clockMs[seat] - Math.max(0, now - m.turnStartedAt));
+      const previousTurn = m.state.turn,
+        next = this.games.get(m.gameId).apply(m.state, command.move);
+      m.clockMs = chargeClock(this.controlOf(m), m.clockMs, seat, m.turnStartedAt, now);
       m.turnStartedAt = now;
       m.state = next;
       m.revision++;
@@ -148,6 +174,7 @@ export class MatchService {
       if (next.winner !== null)
         return this.snapshot(this.finish(m, next.winner, this.games.get(m.gameId).winReason, now));
       if (next.drawReason) return this.snapshot(this.finish(m, null, next.drawReason, now));
+      m.clockMs = beginTurn(this.controlOf(m), m.clockMs, previousTurn, next.turn);
     } else if (command.type === 'resign') {
       m.commands[key] = { fingerprint, revision: m.revision + 1 };
       const winner =
@@ -208,7 +235,7 @@ export class MatchService {
     if (!m.rematchVotes.includes(seat)) m.rematchVotes.push(seat);
     if (m.rematchVotes.length === m.players.length) {
       const users = [...m.players.slice(1).map((player) => player.id), m.players[0].id];
-      const next = this.create(m.gameId, users, m.ranked);
+      const next = this.create(m.gameId, users, m.ranked, this.controlOf(m));
       m.rematchId = next.id;
       this.store.saveMatch(m);
       return next;

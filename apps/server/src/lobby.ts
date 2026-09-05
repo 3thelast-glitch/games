@@ -1,12 +1,18 @@
 import { randomInt } from 'node:crypto';
 import { RuleError, type PlayerCount } from '../../../packages/core/src/game.ts';
 import type { MatchSnapshot } from '../../../packages/core/src/protocol.ts';
+import {
+  DEFAULT_TURN_TIMER_SECONDS,
+  turnTimeControl,
+  type TurnTimerSeconds,
+} from '../../../packages/core/src/timing.ts';
 import { MatchService } from './matches.ts';
 interface QueueEntry {
   userId: string;
   gameId: string;
   ranked: boolean;
   playerCount: PlayerCount;
+  turnSeconds: TurnTimerSeconds | null;
   at: number;
 }
 export interface Room {
@@ -15,6 +21,7 @@ export interface Room {
   code: string;
   gameId: string;
   playerCount: PlayerCount;
+  turnSeconds: TurnTimerSeconds | null;
   expiresAt: number;
 }
 export interface RoomJoinResult {
@@ -43,6 +50,13 @@ export class Lobby {
       throw new RuleError('player-count-not-supported');
     return value as PlayerCount;
   }
+  private normalizeTurnSeconds(gameId: string, value?: TurnTimerSeconds): TurnTimerSeconds | null {
+    if (gameId !== 'digitalGame') {
+      if (value !== undefined) throw new RuleError('turn-timer-not-supported');
+      return null;
+    }
+    return value ?? DEFAULT_TURN_TIMER_SECONDS;
+  }
   private eligible(userId: string, gameId: string, ranked = false) {
     this.matches.games.get(gameId);
     if (this.matches.activeFor(userId) && !this.matches.activeFor(userId)!.result)
@@ -58,19 +72,38 @@ export class Lobby {
     }
     return out;
   }
-  private group(gameId: string, users: string[], ranked: boolean) {
-    return this.matches.create(gameId, this.shuffled(users), ranked);
+  private group(
+    gameId: string,
+    users: string[],
+    ranked: boolean,
+    turnSeconds: TurnTimerSeconds | null,
+  ) {
+    return this.matches.create(
+      gameId,
+      this.shuffled(users),
+      ranked,
+      turnSeconds === null ? undefined : turnTimeControl(turnSeconds),
+    );
   }
   enqueue(
     userId: string,
     gameId: string,
     ranked: boolean,
     requestedPlayerCount: PlayerCount = 2,
+    requestedTurnSeconds?: TurnTimerSeconds,
   ): MatchSnapshot | null {
     this.eligible(userId, gameId, ranked);
-    const playerCount = this.normalizePlayerCount(gameId, requestedPlayerCount);
+    const playerCount = this.normalizePlayerCount(gameId, requestedPlayerCount),
+      turnSeconds = this.normalizeTurnSeconds(gameId, requestedTurnSeconds);
     this.cancel(userId);
-    const entry: QueueEntry = { userId, gameId, ranked, playerCount, at: this.matches.options.now() };
+    const entry: QueueEntry = {
+      userId,
+      gameId,
+      ranked,
+      playerCount,
+      turnSeconds,
+      at: this.matches.options.now(),
+    };
     this.queue.push(entry);
     return this.tryGroup(entry);
   }
@@ -84,6 +117,7 @@ export class Lobby {
           q.gameId === entry.gameId &&
           q.ranked === entry.ranked &&
           q.playerCount === entry.playerCount &&
+          q.turnSeconds === entry.turnSeconds &&
           (!entry.ranked ||
             Math.abs(this.matches.store.rating(q.userId, q.gameId) - rating) <=
               150 + Math.floor((now - Math.min(q.at, entry.at)) / 10000) * 50),
@@ -91,7 +125,12 @@ export class Lobby {
       .sort((a, b) => a.at - b.at);
     if (compatible.length < entry.playerCount) return null;
     const selected = compatible.slice(0, entry.playerCount);
-    const match = this.group(entry.gameId, selected.map((item) => item.userId), entry.ranked);
+    const match = this.group(
+      entry.gameId,
+      selected.map((item) => item.userId),
+      entry.ranked,
+      entry.turnSeconds,
+    );
     for (const item of selected) this.cancel(item.userId);
     return match;
   }
@@ -105,9 +144,15 @@ export class Lobby {
       if (room.expiresAt < this.matches.options.now()) this.rooms.delete(code);
     return result;
   }
-  createRoom(userId: string, gameId: string, requestedPlayerCount: PlayerCount = 2): Room {
+  createRoom(
+    userId: string,
+    gameId: string,
+    requestedPlayerCount: PlayerCount = 2,
+    requestedTurnSeconds?: TurnTimerSeconds,
+  ): Room {
     this.eligible(userId, gameId);
-    const playerCount = this.normalizePlayerCount(gameId, requestedPlayerCount);
+    const playerCount = this.normalizePlayerCount(gameId, requestedPlayerCount),
+      turnSeconds = this.normalizeTurnSeconds(gameId, requestedTurnSeconds);
     this.cancel(userId);
     const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code: string;
@@ -119,6 +164,7 @@ export class Lobby {
       members: [userId],
       gameId,
       playerCount,
+      turnSeconds,
       code,
       expiresAt: this.matches.options.now() + 600000,
     };
@@ -134,7 +180,7 @@ export class Lobby {
     this.queue = this.queue.filter((q) => q.userId !== userId);
     if (room.members.length < room.playerCount) return { room, match: null };
     if (room.members.length > room.playerCount) throw new RuleError('room-full');
-    const match = this.group(room.gameId, room.members, false);
+    const match = this.group(room.gameId, room.members, false, room.turnSeconds);
     this.rooms.delete(code);
     return { room, match };
   }

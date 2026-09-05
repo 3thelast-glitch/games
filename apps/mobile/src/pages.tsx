@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Profile, PublicPlayer } from '../../../packages/core/src/protocol.ts';
 import type { Difficulty, PlayerCount, Seat } from '../../../packages/core/src/game.ts';
+import type { TurnTimerSeconds } from '../../../packages/core/src/timing.ts';
 import { RANKS } from '../../../packages/core/src/ranking.ts';
 import { Avatar, avatars, Empty, GameArt, Icon, Modal, formatTime } from './components.tsx';
 import { gameInfo, upcoming } from './gameViews.tsx';
@@ -171,7 +172,14 @@ export function ModeDialog({
   gameId: string;
   initialMode?: PlayMode;
   onClose: () => void;
-  onStart: (mode: PlayMode, difficulty: Difficulty, ranked: boolean, playerCount: PlayerCount, code?: string) => void;
+  onStart: (
+    mode: PlayMode,
+    difficulty: Difficulty,
+    ranked: boolean,
+    playerCount: PlayerCount,
+    turnSeconds: TurnTimerSeconds,
+    code?: string,
+  ) => void;
   guest: boolean;
   onSignIn: () => void;
   busy: boolean;
@@ -181,6 +189,7 @@ export function ModeDialog({
     [difficulty, setDifficulty] = useState<Difficulty>('medium'),
     [ranked, setRanked] = useState(false),
     [playerCount, setPlayerCount] = useState<PlayerCount>(2),
+    [turnSeconds, setTurnSeconds] = useState<TurnTimerSeconds>(60),
     [code, setCode] = useState('');
   return (
     <Modal title={t('chooseMode')} onClose={onClose}>
@@ -223,6 +232,22 @@ export function ModeDialog({
           </div>
         </fieldset>
       )}
+      {gameId === 'digitalGame' && (
+        <fieldset>
+          <legend>{t('turn')} ⏱</legend>
+          <div className="segmented">
+            {([30, 45, 60, 90] as TurnTimerSeconds[]).map((seconds) => (
+              <button
+                key={seconds}
+                aria-pressed={turnSeconds === seconds}
+                onClick={() => setTurnSeconds(seconds)}
+              >
+                {seconds}s
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      )}
       {mode === 'ai' && (
         <fieldset>
           <legend>{t('difficulty')}</legend>
@@ -260,7 +285,7 @@ export function ModeDialog({
           <button
             className="button primary"
             disabled={busy}
-            onClick={() => onStart(mode, difficulty, false, playerCount)}
+            onClick={() => onStart(mode, difficulty, false, playerCount, turnSeconds)}
           >
             <Icon name="lock" />
             {t('createRoom')}
@@ -268,7 +293,7 @@ export function ModeDialog({
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              onStart(mode, difficulty, false, playerCount, code);
+              onStart(mode, difficulty, false, playerCount, turnSeconds, code);
             }}
           >
             <label>
@@ -300,7 +325,9 @@ export function ModeDialog({
         <button
           className="button primary full"
           disabled={busy || (ranked && guest && mode === 'online')}
-          onClick={() => onStart(mode, difficulty, ranked, mode === 'ai' ? 2 : playerCount)}
+          onClick={() =>
+            onStart(mode, difficulty, ranked, mode === 'ai' ? 2 : playerCount, turnSeconds)
+          }
         >
           {t(mode === 'online' ? 'quickMatch' : 'start')}
           <Icon name="arrow" />
@@ -315,8 +342,22 @@ export function WaitingDialog({
   onCopy,
 }: {
   room:
-    | { type: 'room'; code: string; gameId: string; expiresAt: number; playerCount: PlayerCount; joined: number }
-    | { type: 'queued'; gameId: string; ranked: boolean; playerCount: PlayerCount };
+    | {
+        type: 'room';
+        code: string;
+        gameId: string;
+        expiresAt: number;
+        playerCount: PlayerCount;
+        turnSeconds: TurnTimerSeconds | null;
+        joined: number;
+      }
+    | {
+        type: 'queued';
+        gameId: string;
+        ranked: boolean;
+        playerCount: PlayerCount;
+        turnSeconds: TurnTimerSeconds | null;
+      };
   onCancel: () => void;
   onCopy: (text: string) => void;
 }) {
@@ -333,6 +374,11 @@ export function WaitingDialog({
         <p className="small-muted">
           {t('playerCountLabel')}: {room.type === 'room' ? `${room.joined}/${room.playerCount}` : room.playerCount}
         </p>
+        {room.turnSeconds !== null && (
+          <p className="small-muted">
+            {t('turn')}: {room.turnSeconds}s
+          </p>
+        )}
         {room.type === 'room' && (
           <>
             <div className="room-code" dir="ltr">

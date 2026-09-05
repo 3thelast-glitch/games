@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Difficulty, PlayerCount, Seat } from '../../../packages/core/src/game.ts';
 import { OfflineMatch, type OfflineSnapshot } from '../../../packages/core/src/offline.ts';
+import {
+  bankTimeControl,
+  turnTimeControl,
+  type TimeControl,
+  type TurnTimerSeconds,
+} from '../../../packages/core/src/timing.ts';
 import type {
   MatchCommand,
   MatchSnapshot,
@@ -277,6 +283,7 @@ function ArenaApp({
             saved.mode,
             Date.now,
             (saved.current.state.playerCount ?? 2) as PlayerCount,
+            saved.current.timeControl ?? bankTimeControl(600000),
           );
           controller.current = {
             ...saved.current,
@@ -393,10 +400,17 @@ function ArenaApp({
     mode: 'local' | 'ai',
     difficulty: Difficulty,
     playerCount: PlayerCount = 2,
+    timeControl: TimeControl = bankTimeControl(600000),
   ) => {
     const session = {
       id: crypto.randomUUID(),
-      controller: new OfflineMatch(games.get(gameId), mode, Date.now, mode === 'ai' ? 2 : playerCount),
+      controller: new OfflineMatch(
+        games.get(gameId),
+        mode,
+        Date.now,
+        mode === 'ai' ? 2 : playerCount,
+        timeControl,
+      ),
       difficulty,
     };
     offlineRef.current = session;
@@ -413,13 +427,22 @@ function ArenaApp({
     difficulty: Difficulty,
     ranked: boolean,
     playerCount: PlayerCount,
+    turnSeconds: TurnTimerSeconds,
     code?: string,
   ) => {
     if (!choice) return;
     try {
       if (onlineRef.current && !onlineRef.current.result) throw new Error('already-in-match');
       if (mode === 'local' || mode === 'ai') {
-        startOffline(choice.gameId, mode, difficulty, playerCount);
+        startOffline(
+          choice.gameId,
+          mode,
+          difficulty,
+          playerCount,
+          choice.gameId === 'digitalGame'
+            ? turnTimeControl(turnSeconds)
+            : bankTimeControl(600000),
+        );
         return;
       }
       setBusy(true);
@@ -429,9 +452,21 @@ function ArenaApp({
         connection.send(
           code
             ? { type: 'join-room', code }
-            : { type: 'create-room', gameId: choice.gameId, playerCount },
+            : {
+                type: 'create-room',
+                gameId: choice.gameId,
+                playerCount,
+                ...(choice.gameId === 'digitalGame' ? { turnSeconds } : {}),
+              },
         );
-      else connection.send({ type: 'queue', gameId: choice.gameId, ranked, playerCount });
+      else
+        connection.send({
+          type: 'queue',
+          gameId: choice.gameId,
+          ranked,
+          playerCount,
+          ...(choice.gameId === 'digitalGame' ? { turnSeconds } : {}),
+        });
     } catch (e) {
       notify(e);
       setBusy(false);
@@ -703,6 +738,9 @@ function ArenaApp({
                 players={online?.players ?? localPlayers}
                 self={self >= 0 ? self : 0}
                 clocks={online?.clockMs ?? local!.clocks}
+                timeControl={
+                  online?.timeControl ?? local!.timeControl ?? bankTimeControl(600000)
+                }
                 turnStartedAt={online?.turnStartedAt ?? local!.turnStartedAt}
                 now={matchNow}
                 createdAt={online?.createdAt ?? local!.createdAt}
@@ -761,6 +799,7 @@ function ArenaApp({
                     offline!.controller.mode,
                     offline!.difficulty,
                     (offline!.controller.current.state.playerCount ?? 2) as PlayerCount,
+                    offline!.controller.current.timeControl ?? bankTimeControl(600000),
                   )
                 }
                 onResign={() => {

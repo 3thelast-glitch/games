@@ -85,6 +85,7 @@ export function createArenaServer(options: ServerOptions = {}) {
         expiresAt: room.expiresAt,
         gameId: room.gameId,
         playerCount: room.playerCount,
+        turnSeconds: room.turnSeconds,
         joined: room.members.length,
       });
   };
@@ -395,7 +396,13 @@ export function createArenaServer(options: ServerOptions = {}) {
         store.authenticate(tokenBySocket.get(ws)!);
         if (message.type === 'ping') return send(ws, { type: 'pong', serverNow: Date.now() });
         if (message.type === 'queue') {
-          const match = lobby.enqueue(userId, message.gameId, message.ranked, message.playerCount);
+          const match = lobby.enqueue(
+            userId,
+            message.gameId,
+            message.ranked,
+            message.playerCount,
+            message.turnSeconds,
+          );
           if (match) broadcast(match);
           else
             send(ws, {
@@ -403,6 +410,8 @@ export function createArenaServer(options: ServerOptions = {}) {
               gameId: message.gameId,
               ranked: message.ranked,
               playerCount: message.playerCount,
+              turnSeconds:
+                message.gameId === 'digitalGame' ? (message.turnSeconds ?? 60) : null,
             });
           return;
         }
@@ -411,7 +420,12 @@ export function createArenaServer(options: ServerOptions = {}) {
           return send(ws, { type: 'cancelled' });
         }
         if (message.type === 'create-room') {
-          const room = lobby.createRoom(userId, message.gameId, message.playerCount);
+          const room = lobby.createRoom(
+            userId,
+            message.gameId,
+            message.playerCount,
+            message.turnSeconds,
+          );
           broadcastRoom(room);
           return;
         }
