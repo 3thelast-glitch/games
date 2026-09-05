@@ -21,6 +21,25 @@ function user(store: Store, name: string) {
   return store.createUser(name, 'email', `${name}-${randomUUID()}`);
 }
 
+function exhaustDrawPool(state: DigitalGameState, targetSeat = state.playerCount - 1) {
+  state.racks[targetSeat].push(...state.drawPool);
+  state.drawPool = [];
+  state.rackCounts = state.racks.map((rack) => rack.length);
+}
+
+function assertDigitalInventoryConsistent(state: DigitalGameState) {
+  const placed = [
+    ...state.racks.flat(),
+    ...state.table.flatMap((meld) => meld.tiles),
+    ...state.drawPool,
+  ];
+  const catalog = Object.keys(state.tiles);
+  assert.equal(placed.length, catalog.length);
+  assert.equal(new Set(placed).size, catalog.length);
+  assert.ok(placed.every((id) => state.tiles[id] !== undefined));
+  assert.deepEqual(state.rackCounts, state.racks.map((rack) => rack.length));
+}
+
 test('shared turn timing counts down only the active seat and resets on turn advance', () => {
   const control = turnTimeControl(30),
     clocks = createClocks(control, 3);
@@ -70,6 +89,46 @@ for (const seconds of TURN_TIMER_SECONDS) {
     assert.equal(secondState.rackCounts[1], 15);
     assert.equal(secondState.drawPool.length, initialPool - 2);
     assert.equal(afterSecond.turnStartedAt, durationMs * 2);
+  });
+}
+
+for (const seconds of TURN_TIMER_SECONDS) {
+  test(`Digital local ${seconds}-second timeout with an empty pool records an empty draw pass and advances consistently`, () => {
+    let now = 0;
+    const durationMs = seconds * 1000,
+      match = new OfflineMatch(
+        games.get('digitalGame'),
+        'local',
+        () => now,
+        3,
+        turnTimeControl(seconds),
+      ),
+      initial = match.current.state as DigitalGameState;
+
+    exhaustDrawPool(initial);
+    const racksBefore = initial.racks.map((rack) => [...rack]);
+    assert.equal(initial.drawPool.length, 0);
+    assert.equal(initial.emptyPoolPasses, 0);
+    assertDigitalInventoryConsistent(initial);
+
+    now = durationMs - 1;
+    assert.equal(match.tick().result, null);
+    assert.equal(match.current.state.turn, 0);
+
+    now = durationMs;
+    const after = match.tick(),
+      state = after.state as DigitalGameState;
+    assert.equal(after.result, null);
+    assert.equal(after.endedAt, null);
+    assert.equal(state.turn, 1);
+    assert.equal(state.ply, 1);
+    assert.equal(state.lastAction, 'draw');
+    assert.equal(state.emptyPoolPasses, 1);
+    assert.equal(state.drawPool.length, 0);
+    assert.deepEqual(state.racks, racksBefore);
+    assert.deepEqual(after.clocks, [durationMs, durationMs, durationMs]);
+    assert.equal(after.turnStartedAt, durationMs);
+    assertDigitalInventoryConsistent(state);
   });
 }
 
@@ -133,6 +192,69 @@ for (const seconds of TURN_TIMER_SECONDS) {
       assert.equal(secondState.rackCounts[1], 15);
       assert.equal(secondState.drawPool.length, initialPool - 2);
       assert.equal(afterSecond.turnStartedAt, durationMs * 2);
+    } finally {
+      store.close();
+    }
+  });
+}
+
+for (const seconds of TURN_TIMER_SECONDS) {
+  test(`authoritative Digital ${seconds}-second timeout with an empty pool persists the empty-pass event without a timeout result`, () => {
+    let now = 0;
+    const durationMs = seconds * 1000,
+      store = new Store(),
+      service = new MatchService(store, games, { now: () => now }),
+      a = user(store, `EA-${seconds}`),
+      b = user(store, `EB-${seconds}`),
+      c = user(store, `EC-${seconds}`);
+    try {
+      const match = service.create(
+        'digitalGame',
+        [a.id, b.id, c.id],
+        false,
+        turnTimeControl(seconds),
+      );
+      const stored = store.loadMatch(match.id),
+        initial = stored.state as DigitalGameState;
+      exhaustDrawPool(initial);
+      const racksBefore = initial.racks.map((rack) => [...rack]);
+      assertDigitalInventoryConsistent(initial);
+      store.saveMatch(stored);
+
+      now = durationMs - 1;
+      const beforeDeadline = service.get(match.id, a.id);
+      assert.equal(beforeDeadline.result, null);
+      assert.equal(beforeDeadline.revision, 0);
+      assert.equal(beforeDeadline.state.turn, 0);
+
+      now = durationMs;
+      const after = service.get(match.id, a.id),
+        projectedState = after.state as DigitalGameState;
+      assert.equal(after.result, null);
+      assert.equal(after.endedAt, null);
+      assert.equal(after.revision, 1);
+      assert.equal(projectedState.turn, 1);
+      assert.equal(projectedState.ply, 1);
+      assert.equal(projectedState.lastAction, 'draw');
+      assert.equal(projectedState.emptyPoolPasses, 1);
+      assert.equal(projectedState.drawPool.length, 0);
+      assert.deepEqual(after.clockMs, [durationMs, durationMs, durationMs]);
+      assert.equal(after.turnStartedAt, durationMs);
+
+      const storedAfter = store.loadMatch(match.id),
+        authoritativeState = storedAfter.state as DigitalGameState;
+      assert.equal(storedAfter.result, null);
+      assert.equal(storedAfter.revision, 1);
+      assert.equal(authoritativeState.lastAction, 'draw');
+      assert.equal(authoritativeState.emptyPoolPasses, 1);
+      assert.equal(authoritativeState.drawPool.length, 0);
+      assert.deepEqual(authoritativeState.racks, racksBefore);
+      assertDigitalInventoryConsistent(authoritativeState);
+
+      const resultRows = store.db
+        .prepare('SELECT reason FROM results WHERE match_id=?')
+        .all(match.id) as { reason: string }[];
+      assert.deepEqual(resultRows, []);
     } finally {
       store.close();
     }
