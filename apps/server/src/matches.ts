@@ -70,6 +70,13 @@ export class MatchService {
     const { commands, ...publicMatch } = match;
     return { ...publicMatch, serverNow: this.options.now() };
   }
+  /** Apply a game's optional private-information projection before a snapshot leaves the server. */
+  forUser(match: MatchSnapshot, userId: string): MatchSnapshot {
+    const index = match.players.findIndex((player) => player.id === userId);
+    if (index !== 0 && index !== 1) throw new RuleError('not-in-match');
+    const game = this.games.get(match.gameId);
+    return game.view ? { ...match, state: game.view(match.state, index) } : match;
+  }
   get(id: string, userId: string): MatchSnapshot {
     let m = this.store.loadMatch(id);
     this.seat(m, userId);
