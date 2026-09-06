@@ -171,7 +171,7 @@ export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoar
   };
 
   return (
-    <div className="digital-game" dir={document.documentElement.dir || 'ltr'}>
+    <div className="digital-game">
       <div className="digital-status-row">
         <span>{t('digitalPool')}: <b>{state.drawPool.length}</b></span>
         <span>{t('digitalRack')}: <b>{state.rackCounts[visibleSeat]}</b></span>
