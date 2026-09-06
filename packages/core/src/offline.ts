@@ -65,8 +65,16 @@ export class OfflineMatch {
   move(input: unknown) {
     this.tick();
     if (this.current.result) throw new RuleError('game-over');
-    const previousTurn = this.current.state.turn,
-      next = this.game.apply(this.current.state, input);
+    const previousState = this.current.state,
+      previousTurn = previousState.turn,
+      metadata = this.game.isTurnMetadataMove?.(input) ?? false,
+      next = this.game.apply(previousState, input);
+    if (metadata) {
+      if (next.turn !== previousTurn || next.ply !== previousState.ply)
+        throw new RuleError('invalid-turn-metadata');
+      this.current = { ...this.current, state: next };
+      return this.current;
+    }
     this.history.push(structuredClone(this.current));
     this.charge();
     this.current = { ...this.current, state: next };
