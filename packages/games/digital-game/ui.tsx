@@ -33,7 +33,7 @@ export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoar
     setWorkingTable(cloneTable(state.table));
     setWorkingRack([...(state.racks[seat] ?? [])]);
     setSelected([]);
-  }, [state.ply, state.turn, state.racks, state.table]);
+  }, [state.ply, state.turn, visibleSeat]);
 
   const startRack = useMemo(
     () => new Set(state.racks[visibleSeat].filter((id) => !!state.tiles[id])),
@@ -60,6 +60,11 @@ export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoar
   );
   const changed = tableFingerprint(workingTable) !== tableFingerprint(state.table);
 
+  useEffect(() => {
+    if (canEdit && state.manipulationInProgress && !changed)
+      onMove({ type: 'manipulation-reset', ply: state.ply });
+  }, [canEdit, changed, state.manipulationInProgress, state.ply, onMove]);
+
   const initialScore = useMemo(() => {
     if (state.hasCompletedInitialMeld[visibleSeat]) return null;
     let score = 0;
@@ -71,6 +76,11 @@ export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoar
     }
     return score;
   }, [workingTable, visibleSeat, state.hasCompletedInitialMeld, state.tiles, oldTableIds]);
+
+  const markManipulation = () => {
+    if (!state.manipulationInProgress)
+      onMove({ type: 'manipulation-start', ply: state.ply });
+  };
 
   const toggle = (id: string) => {
     if (!canEdit) return;
@@ -89,7 +99,8 @@ export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoar
   };
 
   const newMeld = () => {
-    if (!selected.length) return;
+    if (!selected.length || !canEdit) return;
+    markManipulation();
     detach(selected);
     const id = `draft-${state.ply}-${Date.now()}-${workingTable.length}`;
     setWorkingTable((table) => [...table, { id, type: 'group', tiles: [...selected] }]);
@@ -97,7 +108,8 @@ export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoar
   };
 
   const addToMeld = (meldId: string) => {
-    if (!selected.length) return;
+    if (!selected.length || !canEdit) return;
+    markManipulation();
     const ids = [...selected];
     detach(ids);
     setWorkingTable((table) =>
@@ -107,9 +119,15 @@ export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoar
   };
 
   const returnToRack = () => {
-    if (!selected.length || selected.some((id) => !startRack.has(id))) return;
+    if (!selected.length || selected.some((id) => !startRack.has(id)) || !canEdit) return;
+    const set = new Set(selected);
+    const removesFromTable = workingTable.some((meld) => meld.tiles.some((id) => set.has(id)));
+    if (!removesFromTable) {
+      setSelected([]);
+      return;
+    }
+    markManipulation();
     const ids = [...selected];
-    const set = new Set(ids);
     setWorkingTable((table) =>
       table
         .map((meld) => ({ ...meld, tiles: meld.tiles.filter((id) => !set.has(id)) }))
@@ -120,16 +138,22 @@ export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoar
   };
 
   const shiftSelected = (offset: -1 | 1) => {
-    if (selected.length !== 1) return;
+    if (selected.length !== 1 || !canEdit) return;
     const id = selected[0];
+    const source = workingTable.find((meld) => meld.tiles.includes(id));
+    if (!source) return;
+    const index = source.tiles.indexOf(id),
+      next = index + offset;
+    if (next < 0 || next >= source.tiles.length) return;
+    markManipulation();
     setWorkingTable((table) =>
       table.map((meld) => {
-        const index = meld.tiles.indexOf(id);
-        if (index < 0) return meld;
-        const next = index + offset;
-        if (next < 0 || next >= meld.tiles.length) return meld;
+        const currentIndex = meld.tiles.indexOf(id);
+        if (currentIndex < 0) return meld;
+        const target = currentIndex + offset;
+        if (target < 0 || target >= meld.tiles.length) return meld;
         const tiles = [...meld.tiles];
-        [tiles[index], tiles[next]] = [tiles[next], tiles[index]];
+        [tiles[currentIndex], tiles[target]] = [tiles[target], tiles[currentIndex]];
         return { ...meld, tiles };
       }),
     );
@@ -152,6 +176,8 @@ export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoar
     setWorkingTable(cloneTable(state.table));
     setWorkingRack([...state.racks[visibleSeat]]);
     setSelected([]);
+    if (state.manipulationInProgress)
+      onMove({ type: 'manipulation-reset', ply: state.ply });
   };
 
   const renderTile = (id: string, location: 'rack' | 'table') => {
@@ -239,7 +265,7 @@ export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoar
         >
           {poolEmpty ? passLabel : t('digitalDraw')}
         </button>
-        <button disabled={!changed} onClick={reset}>{t('digitalReset')}</button>
+        <button disabled={!canEdit || !changed} onClick={reset}>{t('digitalReset')}</button>
         <button
           className="digital-commit"
           disabled={!canEdit || !changed || !tableValidation.ok || !validation.ok}
