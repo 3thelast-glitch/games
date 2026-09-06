@@ -28,8 +28,8 @@ type TimeoutMove = { type: '__classic-timeout__'; [timeoutMarker]: true };
 type InternalClassicMove = ClassicDigitalGameMove | TimeoutMove;
 
 const timeoutMove: TimeoutMove = Object.freeze({
-  type: '__classic-timeout__',
-  [timeoutMarker]: true,
+  type: '__classic-timeout__' as const,
+  [timeoutMarker]: true as const,
 });
 
 function isTimeoutMove(value: unknown): value is TimeoutMove {
