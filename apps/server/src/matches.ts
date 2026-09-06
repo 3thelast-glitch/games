@@ -18,6 +18,7 @@ import {
   timeoutAt,
   type TimeControl,
 } from '../../../packages/core/src/timing.ts';
+import { compareAndSwapMatch } from './match-cas.ts';
 import { Store, digest } from './store.ts';
 export interface StoredMatch extends Omit<MatchSnapshot, 'serverNow'> {
   commands: Record<string, { fingerprint: string; revision: number }>;
@@ -130,7 +131,8 @@ export class MatchService {
     const game = this.games.get(m.gameId),
       automatic = game.timeoutMove;
     if (automatic === undefined) return null;
-    const previousTurn = m.state.turn;
+    const expectedRevision = m.revision,
+      previousTurn = m.state.turn;
     m.clockMs = chargeClock(this.controlOf(m), m.clockMs, previousTurn, m.turnStartedAt, at);
     m.turnStartedAt = at;
     const next = game.apply(m.state, automatic);
@@ -141,7 +143,7 @@ export class MatchService {
     if (next.winner !== null) return this.finish(m, next.winner, game.winReason, at);
     if (next.drawReason) return this.finish(m, null, next.drawReason, at);
     m.clockMs = beginTurn(this.controlOf(m), m.clockMs, previousTurn, next.turn);
-    this.store.saveMatch(m);
+    if (!compareAndSwapMatch(this.store, m, expectedRevision)) return this.store.loadMatch(m.id);
     return m;
   }
   expire(m: StoredMatch): StoredMatch {
