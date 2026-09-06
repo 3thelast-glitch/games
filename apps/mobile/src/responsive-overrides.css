@@ -26,6 +26,12 @@
   overscroll-behavior-inline: contain;
 }
 
+/* Use an explicit line box so Arabic/English glyph metrics do not change the
+   Digital Game board height by a few pixels. */
+.digital-game {
+  line-height: 1.25;
+}
+
 /* The responsive smoke suite requires every visible match-header control to
    remain a real 40x40 touch target, including narrow phone layouts. */
 @media (max-width: 440px) {
@@ -35,5 +41,13 @@
     height: 40px;
     min-height: 40px;
     flex: 0 0 40px;
+  }
+}
+
+/* The fixed bottom navigation sits above match controls on short phone
+   viewports. During an active match it must not cover interactive controls. */
+@media (max-width: 700px) {
+  body:has(.match-page) .mobile-nav {
+    display: none;
   }
 }
