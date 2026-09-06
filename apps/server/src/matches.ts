@@ -189,8 +189,19 @@ export class MatchService {
     const now = this.options.now();
     if (command.type === 'move') {
       if (m.state.turn !== seat) throw new RuleError('not-your-turn');
-      const previousTurn = m.state.turn,
-        next = this.games.get(m.gameId).apply(m.state, command.move);
+      const game = this.games.get(m.gameId),
+        previousState = m.state,
+        previousTurn = previousState.turn,
+        metadata = game.isTurnMetadataMove?.(command.move) ?? false,
+        next = game.apply(previousState, command.move);
+      if (metadata) {
+        if (next.turn !== previousTurn || next.ply !== previousState.ply)
+          throw new RuleError('invalid-turn-metadata');
+        m.state = next;
+        m.commands[key] = { fingerprint, revision: m.revision };
+        this.store.saveMatch(m);
+        return this.snapshot(m);
+      }
       m.clockMs = chargeClock(this.controlOf(m), m.clockMs, seat, m.turnStartedAt, now);
       m.turnStartedAt = now;
       m.state = next;
@@ -199,7 +210,7 @@ export class MatchService {
       m.drawAccepts = [];
       m.commands[key] = { fingerprint, revision: m.revision };
       if (next.winner !== null)
-        return this.snapshot(this.finish(m, next.winner, this.games.get(m.gameId).winReason, now));
+        return this.snapshot(this.finish(m, next.winner, game.winReason, now));
       if (next.drawReason) return this.snapshot(this.finish(m, null, next.drawReason, now));
       m.clockMs = beginTurn(this.controlOf(m), m.clockMs, previousTurn, next.turn);
     } else if (command.type === 'resign') {

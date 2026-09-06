@@ -21,6 +21,8 @@ import {
 export type ClassicDigitalGameMove =
   | { type: 'draw' }
   | { type: 'pass' }
+  | { type: 'manipulation-start'; ply: number }
+  | { type: 'manipulation-reset'; ply: number }
   | { type: 'commit'; table: CommitMeldIntent[] };
 
 const timeoutMarker = Symbol('digital-classic-timeout');
@@ -34,6 +36,12 @@ const timeoutMove: TimeoutMove = Object.freeze({
 
 function isTimeoutMove(value: unknown): value is TimeoutMove {
   return !!value && typeof value === 'object' && (value as TimeoutMove)[timeoutMarker] === true;
+}
+
+function isManipulationMetadataMove(
+  move: InternalClassicMove,
+): move is Extract<ClassicDigitalGameMove, { type: 'manipulation-start' | 'manipulation-reset' }> {
+  return move.type === 'manipulation-start' || move.type === 'manipulation-reset';
 }
 
 const meldSignature = (tiles: string[]) => [...tiles].sort().join('|');
@@ -87,21 +95,42 @@ function assertClassicJokerCommit(
 /**
  * Applies the Classic one-minute timeout to the last authoritative turn state.
  *
- * Digital table/rack manipulation is intentionally transactional in the UI:
- * workingTable/workingRack are never authoritative before Commit. Therefore a
- * timeout must never attempt to serialize an incomplete draft. Applying the
- * existing automatic draw/pass transition to the canonical state preserves the
- * complete pre-turn table and all pre-turn rack tiles, then advances ply/turn.
- * That ply/turn change causes every client to rebuild its local draft from this
- * authoritative snapshot, producing a full rollback of unfinished manipulation.
+ * workingTable/workingRack remain client-local until Commit, so the state passed
+ * here is already the complete pre-turn authoritative snapshot. A dirty draft
+ * therefore rolls back by simply discarding that draft and applying the Classic
+ * penalty to this canonical state.
  *
- * The existing one-tile timeout consequence is retained when the pool has a
- * tile; an empty pool behaves as a pass. The separate three-tile incomplete
- * manipulation penalty remains a later Classic migration phase.
+ * Clean timeout: existing one-tile draw/pass behavior.
+ * Incomplete manipulation: draw three tiles from the pool when available (or
+ * every remaining tile when fewer than three remain), then advance the turn
+ * once. The table and all pre-turn rack tiles are preserved exactly before the
+ * penalty tiles are appended.
  */
 export function applyClassicTimeoutRollback(state: DigitalGameState): DigitalGameState {
-  const next = applyDigital(state, { type: 'draw' });
-  return { ...next, lastAction: 'timeout' };
+  const requestedDraws = state.manipulationInProgress ? 3 : 1;
+  const availableDraws = Math.min(requestedDraws, state.drawPool.length);
+  let staged = state;
+
+  // applyDigital draws one tile and advances the turn. Pre-stage all but the
+  // final penalty tile so every penalty tile goes to the timed-out seat while
+  // the turn still advances exactly once.
+  if (availableDraws > 1) {
+    const racks = state.racks.map((rack) => [...rack]);
+    const drawPool = [...state.drawPool];
+    for (let index = 0; index < availableDraws - 1; index++) {
+      const tile = drawPool.pop();
+      if (tile) racks[state.turn].push(tile);
+    }
+    staged = {
+      ...state,
+      racks,
+      rackCounts: racks.map((rack) => rack.length),
+      drawPool,
+    };
+  }
+
+  const next = applyDigital(staged, { type: 'draw' });
+  return { ...next, lastAction: 'timeout', manipulationInProgress: false };
 }
 
 /**
@@ -120,6 +149,13 @@ export function parseClassicDigitalMove(input: unknown): InternalClassicMove {
       if (Object.keys(move).some((key) => key !== 'type')) throw new RuleError('invalid-move');
       return { type: 'pass' };
     }
+    if (move.type === 'manipulation-start' || move.type === 'manipulation-reset') {
+      if (Object.keys(move).some((key) => !['type', 'ply'].includes(key)))
+        throw new RuleError('invalid-move');
+      if (!Number.isInteger(move.ply) || (move.ply as number) < 0)
+        throw new RuleError('invalid-move');
+      return { type: move.type, ply: move.ply as number };
+    }
   }
   return parseDigitalMove(input) as ClassicDigitalGameMove;
 }
@@ -132,6 +168,10 @@ export function validateClassicDigital(
     const move = parseClassicDigitalMove(input);
     if (isTimeoutMove(move)) return { ok: true };
     if (state.winner !== null || state.drawReason) throw new RuleError('game-over');
+    if (isManipulationMetadataMove(move)) {
+      if (move.ply !== state.ply) throw new RuleError('stale-turn-draft');
+      return { ok: true };
+    }
     if (move.type === 'pass') {
       if (state.drawPool.length) throw new RuleError('pass-pool-not-empty');
       return { ok: true };
@@ -151,18 +191,25 @@ export function applyClassicDigital(
 ): DigitalGameState {
   const move = parseClassicDigitalMove(input);
   if (isTimeoutMove(move)) return applyClassicTimeoutRollback(state);
+  if (state.winner !== null || state.drawReason) throw new RuleError('game-over');
+  if (isManipulationMetadataMove(move)) {
+    if (move.ply !== state.ply) throw new RuleError('stale-turn-draft');
+    return {
+      ...state,
+      manipulationInProgress: move.type === 'manipulation-start',
+    };
+  }
   if (move.type === 'pass') {
-    if (state.winner !== null || state.drawReason) throw new RuleError('game-over');
     if (state.drawPool.length) throw new RuleError('pass-pool-not-empty');
     const next = applyDigital(state, { type: 'draw' });
-    return { ...next, lastAction: 'pass' };
+    return { ...next, lastAction: 'pass', manipulationInProgress: false };
   }
   if (move.type === 'draw' && !state.drawPool.length) {
     const next = applyDigital(state, move);
-    return { ...next, lastAction: 'pass' };
+    return { ...next, lastAction: 'pass', manipulationInProgress: false };
   }
   if (move.type === 'commit') assertClassicJokerCommit(state, move);
-  return applyDigital(state, move);
+  return { ...applyDigital(state, move), manipulationInProgress: false };
 }
 
 export function classicDigitalLegalMoves(state: DigitalGameState): ClassicDigitalGameMove[] {
@@ -185,6 +232,7 @@ export const classicDigitalGameEngine: RulesEngine<DigitalGameState, InternalCla
   apply: applyClassicDigital,
   legalMoves: classicDigitalLegalMoves,
   evaluate: evaluateDigital,
+  isTurnMetadataMove: isManipulationMetadataMove,
   timeoutMove,
   view: projectDigitalState,
 };

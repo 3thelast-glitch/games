@@ -21,9 +21,16 @@ function user(store: Store, name: string) {
   return store.createUser(name, 'email', `${name}-${randomUUID()}`);
 }
 
-function exhaustDrawPool(state: DigitalGameState, targetSeat = state.playerCount - 1) {
+function exhaustDrawPool(state: DigitalGameState, targetSeat: number) {
   state.racks[targetSeat].push(...state.drawPool);
   state.drawPool = [];
+  state.rackCounts = state.racks.map((rack) => rack.length);
+}
+
+function leaveDrawPool(state: DigitalGameState, remaining: number, targetSeat: number) {
+  const moveCount = Math.max(0, state.drawPool.length - remaining),
+    moved = state.drawPool.splice(0, moveCount);
+  state.racks[targetSeat].push(...moved);
   state.rackCounts = state.racks.map((rack) => rack.length);
 }
 
@@ -64,7 +71,64 @@ test('Digital Classic offline always normalizes requested turn clocks to 60 seco
   }
 });
 
-test('Digital Classic 60-second timeout rolls back the uncommitted turn to the authoritative table and rack', () => {
+test('Digital manipulation metadata does not advance ply, create undo history, or restart the 60-second clock', () => {
+  let now = 0;
+  const match = new OfflineMatch(
+      games.get('digitalGame'),
+      'local',
+      () => now,
+      3,
+      turnTimeControl(60),
+    ),
+    startingSeat = match.current.state.turn;
+
+  now = 10000;
+  match.move({ type: 'manipulation-start', ply: 0 });
+  let state = match.current.state as DigitalGameState;
+  assert.equal(state.manipulationInProgress, true);
+  assert.equal(state.turn, startingSeat);
+  assert.equal(state.ply, 0);
+  assert.equal(match.current.turnStartedAt, 0);
+  assert.equal(match.history.length, 0);
+
+  now = 20000;
+  match.move({ type: 'manipulation-reset', ply: 0 });
+  state = match.current.state as DigitalGameState;
+  assert.equal(state.manipulationInProgress, false);
+  assert.equal(state.turn, startingSeat);
+  assert.equal(state.ply, 0);
+  assert.equal(match.current.turnStartedAt, 0);
+  assert.equal(match.history.length, 0);
+});
+
+test('clean Digital Classic timeout keeps the normal one-tile draw consequence', () => {
+  let now = 0;
+  const match = new OfflineMatch(
+      games.get('digitalGame'),
+      'local',
+      () => now,
+      3,
+      turnTimeControl(60),
+    ),
+    initial = match.current.state as DigitalGameState,
+    startingSeat = initial.turn,
+    rackBefore = [...initial.racks[startingSeat]],
+    poolBefore = [...initial.drawPool];
+
+  now = CLASSIC_DIGITAL_TURN_MS;
+  const state = match.tick().state as DigitalGameState;
+
+  assert.equal(state.turn, nextSeat(startingSeat, 3));
+  assert.equal(state.ply, 1);
+  assert.equal(state.lastAction, 'timeout');
+  assert.equal(state.manipulationInProgress, false);
+  assert.equal(state.racks[startingSeat].length, rackBefore.length + 1);
+  assert.equal(state.racks[startingSeat].at(-1), poolBefore.at(-1));
+  assert.equal(state.drawPool.length, poolBefore.length - 1);
+  assertDigitalInventoryConsistent(state);
+});
+
+test('Digital Classic 60-second timeout rolls back an unfinished manipulation and draws three penalty tiles', () => {
   let now = 0;
   const match = new OfflineMatch(
       games.get('digitalGame'),
@@ -80,8 +144,9 @@ test('Digital Classic 60-second timeout rolls back the uncommitted turn to the a
     tableBefore = initial.table.map((meld) => ({ ...meld, tiles: [...meld.tiles] })),
     rackBefore = [...initial.racks[startingSeat]];
 
-  // UI manipulation is transactional and has not been committed to this state.
-  // At 59.999s the canonical state is untouched.
+  match.move({ type: 'manipulation-start', ply: initial.ply });
+  assert.equal((match.current.state as DigitalGameState).manipulationInProgress, true);
+
   now = CLASSIC_DIGITAL_TURN_MS - 1;
   match.tick();
   assert.equal(match.current.state.turn, startingSeat);
@@ -95,17 +160,48 @@ test('Digital Classic 60-second timeout rolls back the uncommitted turn to the a
   assert.equal(state.turn, next);
   assert.equal(state.ply, 1);
   assert.equal(state.lastAction, 'timeout');
+  assert.equal(state.manipulationInProgress, false);
   assert.deepEqual(state.table, tableBefore);
   assert.deepEqual(state.racks[startingSeat].slice(0, rackBefore.length), rackBefore);
-  assert.equal(state.racks[startingSeat].length, rackBefore.length + 1);
-  assert.equal(state.racks[startingSeat].at(-1), poolBefore.at(-1));
-  assert.equal(state.drawPool.length, poolBefore.length - 1);
+  assert.equal(state.racks[startingSeat].length, rackBefore.length + 3);
+  assert.deepEqual(state.racks[startingSeat].slice(-3), poolBefore.slice(-3).reverse());
+  assert.equal(state.drawPool.length, poolBefore.length - 3);
   assert.equal(after.turnStartedAt, CLASSIC_DIGITAL_TURN_MS);
   assert.deepEqual(after.clocks, [60000, 60000, 60000]);
   assertDigitalInventoryConsistent(state);
 });
 
-test('Digital Classic timeout with an empty pool performs a complete rollback without changing any rack or table tile', () => {
+test('unfinished manipulation timeout draws every remaining tile when fewer than three remain', () => {
+  let now = 0;
+  const match = new OfflineMatch(
+      games.get('digitalGame'),
+      'local',
+      () => now,
+      3,
+      turnTimeControl(60),
+    ),
+    initial = match.current.state as DigitalGameState,
+    startingSeat = initial.turn,
+    holder = nextSeat(startingSeat, 3),
+    rackBefore = [...initial.racks[startingSeat]];
+
+  leaveDrawPool(initial, 2, holder);
+  const finalPool = [...initial.drawPool];
+  assert.equal(finalPool.length, 2);
+  match.move({ type: 'manipulation-start', ply: initial.ply });
+
+  now = CLASSIC_DIGITAL_TURN_MS;
+  const state = match.tick().state as DigitalGameState;
+
+  assert.equal(state.racks[startingSeat].length, rackBefore.length + 2);
+  assert.deepEqual(state.racks[startingSeat].slice(-2), finalPool.slice().reverse());
+  assert.equal(state.drawPool.length, 0);
+  assert.equal(state.manipulationInProgress, false);
+  assert.equal(state.lastAction, 'timeout');
+  assertDigitalInventoryConsistent(state);
+});
+
+test('Digital Classic dirty timeout with an empty pool performs complete rollback without changing any rack or table tile', () => {
   let now = 0;
   const match = new OfflineMatch(
       games.get('digitalGame'),
@@ -116,11 +212,13 @@ test('Digital Classic timeout with an empty pool performs a complete rollback wi
     ),
     initial = match.current.state as DigitalGameState,
     startingSeat = initial.turn,
-    next = nextSeat(startingSeat, 3);
+    next = nextSeat(startingSeat, 3),
+    holder = nextSeat(startingSeat, 3);
 
-  exhaustDrawPool(initial);
+  exhaustDrawPool(initial, holder);
   const tableBefore = initial.table.map((meld) => ({ ...meld, tiles: [...meld.tiles] })),
     racksBefore = initial.racks.map((rack) => [...rack]);
+  match.move({ type: 'manipulation-start', ply: initial.ply });
 
   now = CLASSIC_DIGITAL_TURN_MS;
   const after = match.tick(),
@@ -130,6 +228,7 @@ test('Digital Classic timeout with an empty pool performs a complete rollback wi
   assert.equal(state.turn, next);
   assert.equal(state.ply, 1);
   assert.equal(state.lastAction, 'timeout');
+  assert.equal(state.manipulationInProgress, false);
   assert.deepEqual(state.table, tableBefore);
   assert.deepEqual(state.racks, racksBefore);
   assert.equal(state.drawPool.length, 0);
@@ -137,7 +236,34 @@ test('Digital Classic timeout with an empty pool performs a complete rollback wi
   assertDigitalInventoryConsistent(state);
 });
 
-test('authoritative Digital 60-second timeout persists rollback, advances revision, and rejects a late stale move', () => {
+test('resetting an unfinished manipulation before timeout restores the normal one-tile consequence', () => {
+  let now = 0;
+  const match = new OfflineMatch(
+      games.get('digitalGame'),
+      'local',
+      () => now,
+      2,
+      turnTimeControl(60),
+    ),
+    initial = match.current.state as DigitalGameState,
+    seat = initial.turn,
+    rackBefore = initial.racks[seat].length,
+    poolBefore = initial.drawPool.length;
+
+  now = 10000;
+  match.move({ type: 'manipulation-start', ply: 0 });
+  now = 30000;
+  match.move({ type: 'manipulation-reset', ply: 0 });
+  assert.equal(match.current.turnStartedAt, 0);
+
+  now = CLASSIC_DIGITAL_TURN_MS;
+  const state = match.tick().state as DigitalGameState;
+  assert.equal(state.racks[seat].length, rackBefore + 1);
+  assert.equal(state.drawPool.length, poolBefore - 1);
+  assert.equal(state.lastAction, 'timeout');
+});
+
+test('authoritative Digital draft marker preserves revision/deadline, then timeout rolls back, draws three, and rejects a late stale move', () => {
   let now = 0;
   const store = new Store(),
     service = new MatchService(store, games, { now: () => now }),
@@ -149,9 +275,22 @@ test('authoritative Digital 60-second timeout persists rollback, advances revisi
       storedInitial = store.loadMatch(match.id),
       initial = storedInitial.state as DigitalGameState,
       startingSeat = initial.turn,
+      startingUser = [a, b, c][startingSeat],
       tableBefore = initial.table.map((meld) => ({ ...meld, tiles: [...meld.tiles] })),
       rackBefore = [...initial.racks[startingSeat]],
-      poolBefore = initial.drawPool.length;
+      poolBefore = [...initial.drawPool];
+
+    now = 15000;
+    const marked = service.command(startingUser.id, {
+      type: 'move',
+      matchId: match.id,
+      commandId: randomUUID(),
+      expectedRevision: 0,
+      move: { type: 'manipulation-start', ply: 0 },
+    });
+    assert.equal(marked.revision, 0);
+    assert.equal(marked.turnStartedAt, 0);
+    assert.equal((store.loadMatch(match.id).state as DigitalGameState).manipulationInProgress, true);
 
     now = CLASSIC_DIGITAL_TURN_MS;
     const after = service.get(match.id, a.id),
@@ -162,11 +301,12 @@ test('authoritative Digital 60-second timeout persists rollback, advances revisi
     assert.equal(state.turn, nextSeat(startingSeat, 3));
     assert.equal(state.ply, 1);
     assert.equal(state.lastAction, 'timeout');
+    assert.equal(state.manipulationInProgress, false);
     assert.deepEqual(state.table, tableBefore);
     assert.deepEqual(state.racks[startingSeat].slice(0, rackBefore.length), rackBefore);
-    assert.equal(state.drawPool.length, poolBefore - 1);
+    assert.deepEqual(state.racks[startingSeat].slice(-3), poolBefore.slice(-3).reverse());
+    assert.equal(state.drawPool.length, poolBefore.length - 3);
 
-    const startingUser = [a, b, c][startingSeat];
     assert.throws(
       () =>
         service.command(startingUser.id, {
