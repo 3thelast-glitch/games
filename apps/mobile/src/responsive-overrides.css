@@ -1,0 +1,39 @@
+/* Responsive regression fixes shared by every match view. */
+
+/* Allow intrinsically wide game content to shrink inside the match column.
+   Horizontal overflow must stay owned by the intentional inner scroller. */
+.match-layout,
+.board-column,
+.digital-game,
+.digital-game > *,
+.digital-rack-wrap,
+.digital-rack,
+.digital-table,
+.digital-selection-bar,
+.digital-actions {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.digital-rack-wrap,
+.digital-rack,
+.digital-table {
+  width: 100%;
+}
+
+.digital-rack {
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+/* The responsive smoke suite requires every visible match-header control to
+   remain a real 40x40 touch target, including narrow phone layouts. */
+@media (max-width: 440px) {
+  .match-header .icon-button {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    flex: 0 0 40px;
+  }
+}
