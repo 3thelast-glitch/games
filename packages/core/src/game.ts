@@ -43,6 +43,11 @@ export interface RulesEngine<S extends BaseState, M, P extends Seat = Player> {
   apply(state: S, move: M): S;
   legalMoves(state: S): M[];
   evaluate(state: S, player: P): number;
+  /**
+   * Optional metadata move that changes turn-local bookkeeping without advancing
+   * ply/turn or restarting the active clock.
+   */
+  isTurnMetadataMove?(move: M): boolean;
   /** Optional move automatically applied when this game's clock expires. */
   timeoutMove?: M;
   /** Optional online projection used to hide private information from other seats. */
@@ -59,6 +64,8 @@ export interface GamePlugin {
   apply(state: BaseState, move: unknown): BaseState;
   legalMoves(state: BaseState): unknown[];
   evaluate(state: BaseState, player: Seat): number;
+  /** Optional metadata move that must not advance ply/turn or restart the active clock. */
+  isTurnMetadataMove?(move: unknown): boolean;
   /** Optional move automatically applied when this game's clock expires. */
   timeoutMove?: unknown;
   view?(state: BaseState, player: Seat): BaseState;
@@ -76,6 +83,9 @@ export function asPlugin<S extends BaseState, M, P extends Seat = Player>(
     apply: (state, move) => engine.apply(state as S, engine.parseMove(move)),
     legalMoves: (state) => engine.legalMoves(state as S),
     evaluate: (state, player) => engine.evaluate(state as S, player as P),
+    isTurnMetadataMove: engine.isTurnMetadataMove
+      ? (move) => engine.isTurnMetadataMove!(engine.parseMove(move))
+      : undefined,
     timeoutMove: engine.timeoutMove,
     view: engine.view ? (state, player) => engine.view!(state as S, player as P) : undefined,
   };
