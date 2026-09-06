@@ -6,7 +6,11 @@ import { eloChange, periodStart, rankFor } from '../../../packages/core/src/rank
 import { RuleError } from '../../../packages/core/src/game.ts';
 import type { Profile, PublicPlayer, HistoryEntry } from '../../../packages/core/src/protocol.ts';
 import type { StoredMatch } from './matches.ts';
+
 export const digest = (value: string) => createHash('sha256').update(value).digest('hex');
+
+const loadedMatchRevisions = new WeakMap<StoredMatch, number>();
+
 export interface User {
   id: string;
   name: string;
@@ -20,8 +24,10 @@ export interface User {
   friend_code: string;
   created_at: number;
 }
+
 export class Store {
   readonly db: DatabaseSync;
+
   constructor(path: string = ':memory:') {
     if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
     this.db = new DatabaseSync(path);
@@ -43,6 +49,7 @@ export class Store {
     if (!resultColumns.has('player_count'))
       this.db.exec('ALTER TABLE results ADD COLUMN player_count INTEGER NOT NULL DEFAULT 2');
   }
+
   transaction<T>(fn: () => T): T {
     this.db.exec('BEGIN IMMEDIATE');
     try {
@@ -54,17 +61,39 @@ export class Store {
       throw error;
     }
   }
+
+  private trackMatch(match: StoredMatch, revision = match.revision): StoredMatch {
+    loadedMatchRevisions.set(match, revision);
+    return match;
+  }
+
+  compareAndSwapMatch(match: StoredMatch, expectedRevision: number): boolean {
+    const result = this.db
+      .prepare(
+        `UPDATE matches
+         SET body=?, finished=?
+         WHERE id=?
+           AND CAST(json_extract(body, '$.revision') AS INTEGER)=?`,
+      )
+      .run(JSON.stringify(match), match.result ? 1 : 0, match.id, expectedRevision);
+    if (Number(result.changes) !== 1) return false;
+    this.trackMatch(match);
+    return true;
+  }
+
   user(id: string): User {
     const user = this.db.prepare('SELECT * FROM users WHERE id=?').get(id) as unknown as
       User | undefined;
     if (!user) throw new RuleError('account-not-found');
     return user;
   }
+
   identity(provider: string, subject: string) {
     return this.db
       .prepare('SELECT * FROM users WHERE provider=? AND subject=?')
       .get(provider, subject) as unknown as User | undefined;
   }
+
   createUser(
     name: string,
     provider = 'guest',
@@ -92,6 +121,7 @@ export class Store {
       );
     return this.user(id);
   }
+
   newSession(userId: string, now = Date.now()) {
     const token = randomBytes(32).toString('base64url');
     this.db
@@ -99,6 +129,7 @@ export class Store {
       .run(digest(token), userId, now + 30 * 86400000);
     return token;
   }
+
   authenticate(token: string, now = Date.now()): User {
     const session = this.db
       .prepare('SELECT user_id FROM sessions WHERE hash=? AND expires_at>?')
@@ -106,13 +137,16 @@ export class Store {
     if (!session) throw new RuleError('unauthorized');
     return this.user(session.user_id);
   }
+
   logout(token: string) {
     this.db.prepare('DELETE FROM sessions WHERE hash=?').run(digest(token));
   }
+
   cleanup(now = Date.now()) {
     for (const table of ['sessions', 'oauth_flows', 'auth_codes'])
       this.db.prepare(`DELETE FROM ${table} WHERE expires_at<=?`).run(now);
   }
+
   rating(userId: string, gameId: string): number {
     return (
       (
@@ -122,6 +156,7 @@ export class Store {
       )?.rating ?? 1000
     );
   }
+
   publicPlayer(userId: string, gameId: string): PublicPlayer {
     const u = this.user(userId),
       rating = this.rating(userId, gameId);
@@ -133,33 +168,56 @@ export class Store {
       rank: rankFor(rating),
     };
   }
+
   saveMatch(match: StoredMatch) {
-    this.db
-      .prepare(
-        'INSERT INTO matches(id,body,finished) VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET body=excluded.body,finished=excluded.finished',
-      )
-      .run(match.id, JSON.stringify(match), match.result ? 1 : 0);
+    const expectedRevision = loadedMatchRevisions.get(match),
+      body = JSON.stringify(match),
+      finished = match.result ? 1 : 0;
+
+    if (expectedRevision !== undefined) {
+      if (!this.compareAndSwapMatch(match, expectedRevision)) throw new RuleError('stale-revision');
+      return;
+    }
+
+    const existing = this.db
+      .prepare("SELECT CAST(json_extract(body, '$.revision') AS INTEGER) AS revision FROM matches WHERE id=?")
+      .get(match.id) as { revision: number } | undefined;
+    if (!existing) {
+      this.db.prepare('INSERT INTO matches(id,body,finished) VALUES(?,?,?)').run(match.id, body, finished);
+      this.trackMatch(match);
+      return;
+    }
+
+    if (!this.compareAndSwapMatch(match, match.revision)) throw new RuleError('stale-revision');
   }
+
   loadMatch(id: string): StoredMatch {
     const row = this.db.prepare('SELECT body FROM matches WHERE id=?').get(id) as { body: string } | undefined;
     if (!row) throw new RuleError('match-not-found');
     const match = JSON.parse(row.body) as StoredMatch;
     match.drawAccepts ??= match.drawOffer === null ? [] : [match.drawOffer];
     match.state.playerCount ??= match.players.length as 2 | 3 | 4;
-    return match;
+    return this.trackMatch(match);
   }
+
   activeMatches(): StoredMatch[] {
     return (
       this.db.prepare('SELECT body FROM matches WHERE finished=0').all() as {
         body: string;
       }[]
-    ).map((r) => JSON.parse(r.body));
+    ).map((r) => this.trackMatch(JSON.parse(r.body) as StoredMatch));
   }
+
   settle(match: StoredMatch) {
     if (!match.result || match.endedAt === null) throw new Error('Cannot settle active match');
     this.transaction(() => {
+      // Claim the terminal revision before touching ratings/results. A stale
+      // server instance fails here and the whole transaction rolls back.
+      this.saveMatch(match);
+
       const existing = this.db.prepare('SELECT match_id FROM results WHERE match_id=? LIMIT 1').get(match.id);
       if (existing) return;
+
       const result = match.result!;
       if (match.ranked && result.reason !== 'abandoned') {
         const ratings = match.players.map((player) => this.rating(player.id, match.gameId));
@@ -183,6 +241,8 @@ export class Store {
             )
             .run(match.players[seat].id, match.gameId, ratings[seat] + result.ratingDelta[seat]);
       }
+
+      // Persist the final rating deltas at the already-claimed terminal revision.
       this.saveMatch(match);
       for (let seat = 0; seat < match.players.length; seat++) {
         const opponents = match.players.filter((_, index) => index !== seat).map((player) => player.name);
@@ -207,6 +267,7 @@ export class Store {
       }
     });
   }
+
   profile(userId: string, gameIds: string[]): Profile {
     const user = this.user(userId),
       stats = this.db
@@ -274,12 +335,14 @@ export class Store {
       friends,
     };
   }
+
   addFriend(userId: string, code: string) {
     const friend = this.db.prepare('SELECT id FROM users WHERE friend_code=?').get(code) as
       { id: string } | undefined;
     if (!friend || friend.id === userId) throw new RuleError('friend-not-found');
     this.db.prepare('INSERT OR IGNORE INTO friends VALUES(?,?)').run(userId, friend.id);
   }
+
   leaderboard(
     gameId: string,
     period: 'global' | 'weekly' | 'monthly' | 'friends',
@@ -318,6 +381,7 @@ export class Store {
         played: row.played,
       }));
   }
+
   close() {
     this.db.close();
   }
