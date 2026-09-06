@@ -36,6 +36,73 @@ function isTimeoutMove(value: unknown): value is TimeoutMove {
   return !!value && typeof value === 'object' && (value as TimeoutMove)[timeoutMarker] === true;
 }
 
+const meldSignature = (tiles: string[]) => [...tiles].sort().join('|');
+
+/**
+ * Enforces the Rummikub Classic joker-retrieval constraints that are not
+ * expressible by whole-table validity alone.
+ *
+ * The Digital protocol commits one atomic final table, so a table joker is
+ * considered untouched when it finishes in the exact same physical meld. If
+ * that meld changes, the player is manipulating/retrieving the joker and the
+ * Classic restrictions apply:
+ * - the player must already have completed the initial meld;
+ * - every retrieved joker must still be present in a legal final meld during
+ *   the same commit (it can never be taken onto the rack for later use);
+ * - at least one tile from the acting player's rack must be used that turn;
+ * - a retrieved joker cannot merely be appended to an otherwise unchanged
+ *   pre-existing meld: its destination must be a newly formed set.
+ *
+ * Direct replacement is intentionally not limited to a rack tile. Current
+ * Classic rules allow the replacement material to come from the rack or from
+ * another set on the table, including split/repartition manipulations; the
+ * base Digital whole-table validator proves that all resulting sets remain
+ * legitimate.
+ */
+function assertClassicJokerCommit(
+  state: DigitalGameState,
+  move: Extract<ClassicDigitalGameMove, { type: 'commit' }>,
+): void {
+  const oldTableIds = new Set(state.table.flatMap((meld) => meld.tiles));
+  const newTableIds = new Set(move.table.flatMap((meld) => meld.tiles));
+  const rack = new Set(state.racks[state.turn] ?? []);
+  const playedRackTiles = [...newTableIds].filter((id) => !oldTableIds.has(id) && rack.has(id));
+  const oldMeldSignatures = new Set(state.table.map((meld) => meldSignature(meld.tiles)));
+
+  for (const source of state.table) {
+    const tableJokers = source.tiles.filter((id) => state.tiles[id]?.isJoker);
+    if (!tableJokers.length) continue;
+    const sourceSignature = meldSignature(source.tiles);
+
+    for (const jokerId of tableJokers) {
+      const destinations = move.table.filter((meld) => meld.tiles.includes(jokerId));
+      if (destinations.length > 1) continue; // Base validation reports duplicate-tile.
+
+      const destination = destinations[0];
+      const untouched = destination && meldSignature(destination.tiles) === sourceSignature;
+      if (untouched) continue;
+
+      if (!state.hasCompletedInitialMeld[state.turn]) throw new RuleError('joker-before-initial-meld');
+      if (!destination) throw new RuleError('joker-must-be-reused');
+      if (!playedRackTiles.length) throw new RuleError('joker-rack-tile-required');
+
+      const destinationSignature = meldSignature(destination.tiles);
+      if (oldMeldSignatures.has(destinationSignature)) throw new RuleError('joker-new-set-required');
+
+      // A retrieved joker must make a new set, not simply extend an otherwise
+      // unchanged set that already existed before this turn.
+      const destinationIds = new Set(destination.tiles);
+      const merelyExtendsExistingSet = state.table.some(
+        (oldMeld) =>
+          !oldMeld.tiles.includes(jokerId) &&
+          oldMeld.tiles.length < destination.tiles.length &&
+          oldMeld.tiles.every((id) => destinationIds.has(id)),
+      );
+      if (merelyExtendsExistingSet) throw new RuleError('joker-new-set-required');
+    }
+  }
+}
+
 /**
  * Transitional Classic protocol adapter.
  *
@@ -72,6 +139,7 @@ export function validateClassicDigital(
       // Kept valid during the v1 -> Classic protocol migration. New clients emit `pass`.
       return { ok: true };
     }
+    if (move.type === 'commit') assertClassicJokerCommit(state, move);
     return validateDigital(state, move);
   } catch (error) {
     if (error instanceof RuleError) return { ok: false, code: error.code };
@@ -101,6 +169,7 @@ export function applyClassicDigital(
     const next = applyDigital(state, move);
     return { ...next, lastAction: 'pass' };
   }
+  if (move.type === 'commit') assertClassicJokerCommit(state, move);
   return applyDigital(state, move);
 }
 
