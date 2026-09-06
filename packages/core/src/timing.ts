@@ -3,8 +3,10 @@ import type { Seat } from './game.ts';
 export const TURN_TIMER_SECONDS = [30, 45, 60, 90] as const;
 export type TurnTimerSeconds = (typeof TURN_TIMER_SECONDS)[number];
 export const DEFAULT_TURN_TIMER_SECONDS: TurnTimerSeconds = 60;
+export const CLASSIC_DIGITAL_TURN_SECONDS = 60 as const;
 export const TURN_TIMER_MS = [30000, 45000, 60000, 90000] as const;
 export type TurnTimerMs = (typeof TURN_TIMER_MS)[number];
+export const CLASSIC_DIGITAL_TURN_MS: TurnTimerMs = 60000;
 
 export type TimeControl =
   | { mode: 'bank'; initialMs: number }
@@ -14,6 +16,10 @@ export const bankTimeControl = (initialMs: number): TimeControl => ({ mode: 'ban
 export const turnTimeControl = (seconds: TurnTimerSeconds): TimeControl => ({
   mode: 'turn',
   turnMs: (seconds * 1000) as TurnTimerMs,
+});
+export const classicDigitalTurnTimeControl = (): TimeControl => ({
+  mode: 'turn',
+  turnMs: CLASSIC_DIGITAL_TURN_MS,
 });
 export const isTurnTimerMs = (value: number): value is TurnTimerMs =>
   (TURN_TIMER_MS as readonly number[]).includes(value);
