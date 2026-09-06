@@ -36,6 +36,14 @@ function isTimeoutMove(value: unknown): value is TimeoutMove {
   return !!value && typeof value === 'object' && (value as TimeoutMove)[timeoutMarker] === true;
 }
 
+/**
+ * Transitional Classic protocol adapter.
+ *
+ * New clients use an explicit `pass` when the pool is empty. Legacy clients may
+ * still send `draw` in that state until the protocol migration is complete.
+ * The internal timeout sentinel cannot be forged through JSON because its
+ * authority marker is a private Symbol.
+ */
 export function parseClassicDigitalMove(input: unknown): InternalClassicMove {
   if (isTimeoutMove(input)) return input;
   if (input && typeof input === 'object' && !Array.isArray(input)) {
