@@ -41,23 +41,6 @@ const meldSignature = (tiles: string[]) => [...tiles].sort().join('|');
 /**
  * Enforces the Rummikub Classic joker-retrieval constraints that are not
  * expressible by whole-table validity alone.
- *
- * The Digital protocol commits one atomic final table, so a table joker is
- * considered untouched when it finishes in the exact same physical meld. If
- * that meld changes, the player is manipulating/retrieving the joker and the
- * Classic restrictions apply:
- * - the player must already have completed the initial meld;
- * - every retrieved joker must still be present in a legal final meld during
- *   the same commit (it can never be taken onto the rack for later use);
- * - at least one tile from the acting player's rack must be used that turn;
- * - a retrieved joker cannot merely be appended to an otherwise unchanged
- *   pre-existing meld: its destination must be a newly formed set.
- *
- * Direct replacement is intentionally not limited to a rack tile. Current
- * Classic rules allow the replacement material to come from the rack or from
- * another set on the table, including split/repartition manipulations; the
- * base Digital whole-table validator proves that all resulting sets remain
- * legitimate.
  */
 function assertClassicJokerCommit(
   state: DigitalGameState,
@@ -76,7 +59,7 @@ function assertClassicJokerCommit(
 
     for (const jokerId of tableJokers) {
       const destinations = move.table.filter((meld) => meld.tiles.includes(jokerId));
-      if (destinations.length > 1) continue; // Base validation reports duplicate-tile.
+      if (destinations.length > 1) continue;
 
       const destination = destinations[0];
       const untouched = destination && meldSignature(destination.tiles) === sourceSignature;
@@ -89,8 +72,6 @@ function assertClassicJokerCommit(
       const destinationSignature = meldSignature(destination.tiles);
       if (oldMeldSignatures.has(destinationSignature)) throw new RuleError('joker-new-set-required');
 
-      // A retrieved joker must make a new set, not simply extend an otherwise
-      // unchanged set that already existed before this turn.
       const destinationIds = new Set(destination.tiles);
       const merelyExtendsExistingSet = state.table.some(
         (oldMeld) =>
@@ -101,6 +82,26 @@ function assertClassicJokerCommit(
       if (merelyExtendsExistingSet) throw new RuleError('joker-new-set-required');
     }
   }
+}
+
+/**
+ * Applies the Classic one-minute timeout to the last authoritative turn state.
+ *
+ * Digital table/rack manipulation is intentionally transactional in the UI:
+ * workingTable/workingRack are never authoritative before Commit. Therefore a
+ * timeout must never attempt to serialize an incomplete draft. Applying the
+ * existing automatic draw/pass transition to the canonical state preserves the
+ * complete pre-turn table and all pre-turn rack tiles, then advances ply/turn.
+ * That ply/turn change causes every client to rebuild its local draft from this
+ * authoritative snapshot, producing a full rollback of unfinished manipulation.
+ *
+ * The existing one-tile timeout consequence is retained when the pool has a
+ * tile; an empty pool behaves as a pass. The separate three-tile incomplete
+ * manipulation penalty remains a later Classic migration phase.
+ */
+export function applyClassicTimeoutRollback(state: DigitalGameState): DigitalGameState {
+  const next = applyDigital(state, { type: 'draw' });
+  return { ...next, lastAction: 'timeout' };
 }
 
 /**
@@ -135,10 +136,7 @@ export function validateClassicDigital(
       if (state.drawPool.length) throw new RuleError('pass-pool-not-empty');
       return { ok: true };
     }
-    if (move.type === 'draw' && !state.drawPool.length) {
-      // Kept valid during the v1 -> Classic protocol migration. New clients emit `pass`.
-      return { ok: true };
-    }
+    if (move.type === 'draw' && !state.drawPool.length) return { ok: true };
     if (move.type === 'commit') assertClassicJokerCommit(state, move);
     return validateDigital(state, move);
   } catch (error) {
@@ -152,11 +150,7 @@ export function applyClassicDigital(
   input: InternalClassicMove,
 ): DigitalGameState {
   const move = parseClassicDigitalMove(input);
-  if (isTimeoutMove(move)) {
-    // Existing timeout semantics remain compatible until the dedicated Classic
-    // 60-second / incomplete-turn penalty phase lands.
-    return applyDigital(state, { type: 'draw' });
-  }
+  if (isTimeoutMove(move)) return applyClassicTimeoutRollback(state);
   if (move.type === 'pass') {
     if (state.winner !== null || state.drawReason) throw new RuleError('game-over');
     if (state.drawPool.length) throw new RuleError('pass-pool-not-empty');
@@ -164,8 +158,6 @@ export function applyClassicDigital(
     return { ...next, lastAction: 'pass' };
   }
   if (move.type === 'draw' && !state.drawPool.length) {
-    // Legacy compatibility: old clients used `draw` as an empty-pool pass.
-    // Treat it exactly as `pass` but mark the state with the new semantic action.
     const next = applyDigital(state, move);
     return { ...next, lastAction: 'pass' };
   }

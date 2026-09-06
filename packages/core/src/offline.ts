@@ -11,6 +11,7 @@ import {
   bankTimeControl,
   beginTurn,
   chargeClock,
+  classicDigitalTurnTimeControl,
   createClocks,
   timeoutAt,
   type TimeControl,
@@ -27,13 +28,15 @@ export interface OfflineSnapshot {
 export class OfflineMatch {
   current: OfflineSnapshot;
   history: OfflineSnapshot[] = [];
+  readonly timeControl: TimeControl;
   constructor(
     readonly game: GamePlugin,
     readonly mode: 'local' | 'ai',
     readonly now: () => number = Date.now,
     readonly playerCount: PlayerCount = 2,
-    readonly timeControl: TimeControl = bankTimeControl(600000),
+    requestedTimeControl: TimeControl = bankTimeControl(600000),
   ) {
+    this.timeControl = game.id === 'digitalGame' ? classicDigitalTurnTimeControl() : requestedTimeControl;
     const nowValue = now();
     this.current = {
       state: game.create(playerCount),
