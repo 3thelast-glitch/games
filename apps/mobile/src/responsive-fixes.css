@@ -60,6 +60,18 @@
   }
 }
 
+/* A match already has its own Home/back action. Hiding the fixed app nav here
+   prevents it from covering match controls near the bottom of the viewport. */
+@media (max-width: 700px) {
+  body:has(.match-page) .mobile-nav {
+    display: none;
+  }
+
+  body:has(.match-page) .match-content {
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
+  }
+}
+
 /* Keep match-header controls usable as touch targets even on 320px screens. */
 @media (max-width: 440px) {
   .match-header .icon-button {
