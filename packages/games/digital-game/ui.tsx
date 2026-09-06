@@ -175,9 +175,6 @@ export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoar
   };
 
   const poolEmpty = state.drawPool.length === 0;
-  const drawOrPassLabel = poolEmpty
-    ? (document.documentElement.dir === 'rtl' ? 'تمرير الدور' : 'Pass')
-    : t('digitalDraw');
 
   return (
     <div className="digital-game" dir={document.documentElement.dir || 'ltr'}>
@@ -239,7 +236,7 @@ export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoar
           disabled={!canEdit || changed}
           onClick={() => onMove(poolEmpty ? { type: 'pass' } : { type: 'draw' })}
         >
-          {drawOrPassLabel}
+          {poolEmpty ? t('digitalPass') : t('digitalDraw')}
         </button>
         <button disabled={!changed} onClick={reset}>{t('digitalReset')}</button>
         <button
