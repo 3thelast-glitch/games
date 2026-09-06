@@ -13,5 +13,6 @@
     "esModuleInterop": true,
     "types": ["node", "vite/client"]
   },
-  "include": ["apps", "packages", "tests", "capacitor.config.ts"]
+  "include": ["apps", "packages", "tests", "capacitor.config.ts"],
+  "exclude": ["tests/e2e"]
 }
