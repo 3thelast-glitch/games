@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { validateDigital, validateMeld, validateTable } from './rules.ts';
-import type { DigitalGameMove, DigitalGameState, DigitalMeld } from './state.ts';
+import { validateMeld, validateTable } from './rules.ts';
+import {
+  validateClassicDigital,
+  type ClassicDigitalGameMove,
+} from './classic-engine.ts';
+import type { DigitalGameState, DigitalMeld } from './state.ts';
 
 export interface DigitalGameBoardProps {
   state: DigitalGameState;
   disabled: boolean;
-  onMove: (move: DigitalGameMove) => void;
+  onMove: (move: ClassicDigitalGameMove) => void;
   t: (key: string) => string;
 }
 
@@ -39,7 +43,7 @@ export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoar
     () => new Set(state.table.flatMap((meld) => meld.tiles)),
     [state.ply, state.table],
   );
-  const move: DigitalGameMove = useMemo(
+  const move: ClassicDigitalGameMove = useMemo(
     () => ({
       type: 'commit',
       table: workingTable.map((meld) => ({ id: meld.id, tiles: meld.tiles })),
@@ -47,7 +51,7 @@ export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoar
     [workingTable],
   );
   const validation = useMemo(
-    () => (canEdit ? validateDigital(state, move) : ({ ok: false, code: 'not-your-turn' } as const)),
+    () => (canEdit ? validateClassicDigital(state, move) : ({ ok: false, code: 'not-your-turn' } as const)),
     [canEdit, move, state],
   );
   const tableValidation = useMemo(
@@ -170,6 +174,11 @@ export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoar
     );
   };
 
+  const poolEmpty = state.drawPool.length === 0;
+  const drawOrPassLabel = poolEmpty
+    ? (document.documentElement.dir === 'rtl' ? 'تمرير الدور' : 'Pass')
+    : t('digitalDraw');
+
   return (
     <div className="digital-game" dir={document.documentElement.dir || 'ltr'}>
       <div className="digital-status-row">
@@ -225,8 +234,12 @@ export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoar
       </div>
 
       <div className="digital-actions">
-        <button className="digital-draw" disabled={!canEdit || changed} onClick={() => onMove({ type: 'draw' })}>
-          {t('digitalDraw')}
+        <button
+          className="digital-draw"
+          disabled={!canEdit || changed}
+          onClick={() => onMove(poolEmpty ? { type: 'pass' } : { type: 'draw' })}
+        >
+          {drawOrPassLabel}
         </button>
         <button disabled={!changed} onClick={reset}>{t('digitalReset')}</button>
         <button
