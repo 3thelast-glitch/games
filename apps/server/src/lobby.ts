@@ -2,7 +2,7 @@ import { randomInt } from 'node:crypto';
 import { RuleError, type PlayerCount } from '../../../packages/core/src/game.ts';
 import type { MatchSnapshot } from '../../../packages/core/src/protocol.ts';
 import {
-  DEFAULT_TURN_TIMER_SECONDS,
+  CLASSIC_DIGITAL_TURN_SECONDS,
   turnTimeControl,
   type TurnTimerSeconds,
 } from '../../../packages/core/src/timing.ts';
@@ -55,7 +55,10 @@ export class Lobby {
       if (value !== undefined) throw new RuleError('turn-timer-not-supported');
       return null;
     }
-    return value ?? DEFAULT_TURN_TIMER_SECONDS;
+    // Rummikub Classic uses one fixed minute per turn. Legacy clients may still
+    // submit 30/45/90, but all Digital Classic lobbies are canonicalized to 60.
+    void value;
+    return CLASSIC_DIGITAL_TURN_SECONDS;
   }
   private eligible(userId: string, gameId: string, ranked = false) {
     this.matches.games.get(gameId);
