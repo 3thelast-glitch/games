@@ -38,6 +38,12 @@ export interface DigitalGameState extends BaseState {
   viewerSeat?: Seat;
   /** `timeout` means the 60-second Classic turn expired and any uncommitted UI manipulation was rolled back. */
   lastAction: 'commit' | 'draw' | 'pass' | 'timeout' | null;
+  /**
+   * True while the active player's transactional UI draft is known to differ from
+   * the last authoritative table. Optional so persisted pre-migration snapshots
+   * safely behave as clean turns.
+   */
+  manipulationInProgress?: boolean;
   /** Transitional empty-pool pass counter; blocked adjudication still requires the Classic solver. */
   emptyPoolPasses: number;
 }
@@ -166,6 +172,7 @@ export function createDigitalGame(seed = randomSeed(), playerCount: PlayerCount 
     seed,
     startingSeat,
     lastAction: null,
+    manipulationInProgress: false,
     emptyPoolPasses: 0,
     turn: startingSeat,
     ply: 0,
