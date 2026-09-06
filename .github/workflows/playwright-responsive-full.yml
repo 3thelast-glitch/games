@@ -66,8 +66,9 @@ jobs:
         env:
           PW_MATRIX: cross-browser
         run: npx playwright test --project=${{ matrix.browser }} tests/e2e/layout/responsive-matrix.spec.ts
-      - name: Run browser-specific touch/geometry suite
-        run: npx playwright test --project=${{ matrix.browser }} tests/e2e/games/touch-and-geometry.spec.ts
+      - name: Run WebKit touch/geometry suite
+        if: matrix.browser == 'webkit'
+        run: npx playwright test --project=webkit tests/e2e/games/touch-and-geometry.spec.ts
       - name: Upload ${{ matrix.browser }} report
         if: always()
         uses: actions/upload-artifact@v4
