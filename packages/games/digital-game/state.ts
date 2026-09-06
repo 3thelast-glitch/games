@@ -36,7 +36,8 @@ export interface DigitalGameState extends BaseState {
   startingSeat: Seat;
   /** Present only in a projected online state so the UI knows which private rack is visible. */
   viewerSeat?: Seat;
-  lastAction: 'commit' | 'draw' | 'pass' | null;
+  /** `timeout` means the 60-second Classic turn expired and any uncommitted UI manipulation was rolled back. */
+  lastAction: 'commit' | 'draw' | 'pass' | 'timeout' | null;
   /** Transitional empty-pool pass counter; blocked adjudication still requires the Classic solver. */
   emptyPoolPasses: number;
 }
