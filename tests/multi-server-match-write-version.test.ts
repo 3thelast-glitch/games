@@ -136,7 +136,8 @@ test('dirty metadata racing a 60-second timeout cannot be overwritten by a stale
     assert.equal(dirty.writeVersion, 1);
     assert.equal((dirty.state as DigitalGameState).manipulationInProgress, true);
 
-    fixture.setNow(60_000);
+    // The match was created at t=1,000ms, so its exact 60-second deadline is t=61,000ms.
+    fixture.setNow(61_000);
     const expired = fixture.serviceB.expire(staleTimeout),
       canonical = fixture.storeA.fresh(created.id),
       state = canonical.state as DigitalGameState;
