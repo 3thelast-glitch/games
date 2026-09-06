@@ -1,0 +1,118 @@
+/* Responsive invariants verified by the Playwright viewport matrix. */
+
+/* Grid/flex children must be allowed to shrink instead of forcing body overflow. */
+.match-layout,
+.board-column,
+.digital-game,
+.digital-status-row,
+.digital-table,
+.digital-selection-bar,
+.digital-rack-wrap,
+.digital-rack-head,
+.digital-rack-head > span,
+.digital-rack,
+.digital-actions {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.digital-game {
+  overflow-x: clip;
+}
+
+.digital-table,
+.digital-rack {
+  width: 100%;
+}
+
+.digital-rack-wrap {
+  overflow: hidden;
+}
+
+.digital-rack {
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.digital-selection-bar > * {
+  min-width: 0;
+}
+
+.digital-selection-bar button,
+.digital-rack-head button,
+.digital-actions button {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 620px) {
+  .digital-meld {
+    min-width: min(145px, 100%);
+  }
+
+  .digital-rack-head > span {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .digital-rack-head button {
+    min-width: 0;
+  }
+}
+
+/* A match already has its own Home/back action. Hiding the fixed app nav here
+   prevents it from covering match controls near the bottom of the viewport. */
+@media (max-width: 700px) {
+  body:has(.match-page) .mobile-nav {
+    display: none;
+  }
+
+  body:has(.match-page) .match-content {
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
+  }
+}
+
+/* Keep match-header controls usable as touch targets even on 320px screens. */
+@media (max-width: 440px) {
+  .match-header .icon-button {
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    padding: 8px;
+  }
+
+  .match-header {
+    gap: 5px;
+  }
+
+  .match-header > div {
+    min-width: 0;
+  }
+
+  .match-header h1,
+  .match-header small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .match-move-number {
+    min-width: 0;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 350px) {
+  .match-header {
+    gap: 3px;
+  }
+
+  .match-header h1 {
+    font-size: 18px;
+  }
+
+  .match-move-number {
+    font-size: 8px;
+  }
+}

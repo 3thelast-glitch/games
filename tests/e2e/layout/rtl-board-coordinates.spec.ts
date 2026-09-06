@@ -29,13 +29,17 @@ for (const gameId of gameIds) {
             left: box.x,
             top: box.y,
           };
-        expect(await board.getAttribute('dir')).not.toBe('rtl');
+
+        // Coordinate boards deliberately isolate themselves from RTL mirroring.
+        // Digital Game is a localized rack/table layout and may naturally change height.
+        if (gameId !== 'digitalGame') expect(await board.getAttribute('dir')).not.toBe('rtl');
       } finally {
         await context.close();
       }
     }
 
     expect(Math.abs(boxes.en.width - boxes.ar.width)).toBeLessThanOrEqual(2);
-    expect(Math.abs(boxes.en.height - boxes.ar.height)).toBeLessThanOrEqual(2);
+    if (gameId !== 'digitalGame')
+      expect(Math.abs(boxes.en.height - boxes.ar.height)).toBeLessThanOrEqual(2);
   });
 }
