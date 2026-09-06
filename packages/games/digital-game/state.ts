@@ -32,9 +32,12 @@ export interface DigitalGameState extends BaseState {
   scores: number[];
   /** Authoritative shuffle seed. Online projections deliberately replace it with 0. */
   seed: number;
+  /** Seat selected by the Classic pre-deal highest-tile draw. */
+  startingSeat: Seat;
   /** Present only in a projected online state so the UI knows which private rack is visible. */
   viewerSeat?: Seat;
-  lastAction: 'commit' | 'draw' | null;
+  lastAction: 'commit' | 'draw' | 'pass' | null;
+  /** Transitional empty-pool pass counter; blocked adjudication still requires the Classic solver. */
   emptyPoolPasses: number;
 }
 
@@ -43,6 +46,7 @@ export interface CommitMeldIntent {
   tiles: string[];
 }
 
+/** Legacy engine move shape. The Classic adapter adds an explicit `pass` command. */
 export type DigitalGameMove =
   | { type: 'draw' }
   | {
@@ -104,9 +108,48 @@ export function shuffleTileIds(ids: string[], seed: number): string[] {
   return out;
 }
 
+/**
+ * Classic setup: every seat draws a temporary numbered tile and the highest value starts.
+ * Jokers are redrawn. If the highest value ties, only tied seats redraw until one remains.
+ * Temporary setup tiles are not consumed from the actual deal; the complete set is shuffled again.
+ */
+export function chooseClassicStartingSeat(
+  list: DigitalTile[],
+  playerCount: PlayerCount,
+  seed: number,
+): Seat {
+  const byId = new Map(list.map((tile) => [tile.id, tile]));
+  const setupSeed = ((seed ^ 0x9e3779b9) >>> 0) || 1;
+  const setupPool = shuffleTileIds(list.map((tile) => tile.id), setupSeed);
+  let cursor = 0;
+  let contenders = Array.from({ length: playerCount }, (_, index) => index as Seat);
+
+  const drawNumber = (): number | null => {
+    while (cursor < setupPool.length) {
+      const tile = byId.get(setupPool[cursor++]);
+      if (tile && !tile.isJoker && tile.value !== null) return tile.value;
+    }
+    return null;
+  };
+
+  while (contenders.length > 1) {
+    const draws: { seat: Seat; value: number }[] = [];
+    for (const seat of contenders) {
+      const value = drawNumber();
+      if (value === null) return contenders[0];
+      draws.push({ seat, value });
+    }
+    const highest = Math.max(...draws.map((draw) => draw.value));
+    contenders = draws.filter((draw) => draw.value === highest).map((draw) => draw.seat);
+  }
+  return contenders[0] ?? 0;
+}
+
 export function createDigitalGame(seed = randomSeed(), playerCount: PlayerCount = 2): DigitalGameState {
   const list = createTileSet();
   const tiles = Object.fromEntries(list.map((tile) => [tile.id, tile]));
+  const startingSeat = chooseClassicStartingSeat(list, playerCount, seed);
+  // The setup draw is returned before the real deal, so all 106 tiles are shuffled again here.
   const pool = shuffleTileIds(list.map((tile) => tile.id), seed);
   const racks = Array.from({ length: playerCount }, () => pool.splice(0, TILES_PER_PLAYER));
   return {
@@ -120,9 +163,10 @@ export function createDigitalGame(seed = randomSeed(), playerCount: PlayerCount 
     hasCompletedInitialMeld: Array.from({ length: playerCount }, () => false),
     scores: Array.from({ length: playerCount }, () => 0),
     seed,
+    startingSeat,
     lastAction: null,
     emptyPoolPasses: 0,
-    turn: 0,
+    turn: startingSeat,
     ply: 0,
     winner: null,
     drawReason: null,
