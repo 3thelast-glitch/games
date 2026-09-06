@@ -5,6 +5,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { RuleError } from '../packages/core/src/game.ts';
+import { turnTimeControl } from '../packages/core/src/timing.ts';
 import { games } from '../packages/games/registry.ts';
 import type { DigitalGameState } from '../packages/games/digital-game/state.ts';
 import { MatchService, type StoredMatch } from '../apps/server/src/matches.ts';
@@ -115,7 +116,12 @@ test('dirty metadata racing a 60-second timeout cannot be overwritten by a stale
   const fixture = sharedServices('metadata-timeout-write-version');
   try {
     const users = [user(fixture.storeA, 'TIME-A'), user(fixture.storeA, 'TIME-B')],
-      created = fixture.serviceA.create('digitalGame', users.map((entry) => entry.id)),
+      created = fixture.serviceA.create(
+        'digitalGame',
+        users.map((entry) => entry.id),
+        false,
+        turnTimeControl(60),
+      ),
       staleTimeout = fixture.storeB.fresh(created.id),
       before = staleTimeout.state as DigitalGameState,
       activeUser = users[before.turn],
