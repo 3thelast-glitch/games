@@ -186,7 +186,11 @@ async function setupEmptyPoolTimeout(playerCount: 3 | 4, prefix: string): Promis
     ).map(asMatch);
     const matchId = initial[0].id;
     assert.ok(initial.every((match) => match.id === matchId && match.revision === 0));
-    assert.ok(initial.every((match) => match.timeControl.mode === 'turn' && match.timeControl.turnMs === 60000));
+    for (const match of initial) {
+      assert.equal(match.timeControl?.mode, 'turn');
+      if (match.timeControl?.mode !== 'turn') throw new Error('expected Digital Classic turn timer');
+      assert.equal(match.timeControl.turnMs, 60000);
+    }
 
     const stored = store.loadMatch(matchId),
       state = stored.state as DigitalGameState,
