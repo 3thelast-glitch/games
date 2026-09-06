@@ -19,18 +19,18 @@ function users(store: Store, count: number, guests = false) {
   );
 }
 
-test('Digital Game deals 14 tiles to 3 and 4 seats and rotates every turn', () => {
+test('Digital Game deals 14 tiles to 3 and 4 seats and rotates from the Classic starting seat', () => {
   for (const count of [3, 4] as const) {
     let state = createDigitalGame(12345, count);
     assert.equal(state.playerCount, count);
     assert.deepEqual(state.rackCounts, Array.from({ length: count }, () => 14));
     assert.equal(state.drawPool.length, 106 - count * 14);
-    for (let seat = 1; seat < count; seat++) {
+    const startingSeat = state.turn;
+    assert.equal(state.startingSeat, startingSeat);
+    for (let step = 1; step <= count; step++) {
       state = applyDigital(state, { type: 'draw' });
-      assert.equal(state.turn, seat);
+      assert.equal(state.turn, (startingSeat + step) % count);
     }
-    state = applyDigital(state, { type: 'draw' });
-    assert.equal(state.turn, 0);
   }
 });
 
