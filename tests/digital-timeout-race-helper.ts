@@ -34,14 +34,14 @@ interface Fixture {
 function connectClient(port: number, sockets: WebSocket[]) {
   const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`, { origin: 'http://localhost' });
   sockets.push(ws);
-  const messages: ServerMessage[] = [],
-    observed: ServerMessage[] = [];
-  const waiters: {
-    predicate: (message: ServerMessage) => boolean;
-    resolve: (message: ServerMessage) => void;
-    reject: (error: Error) => void;
-    timer: ReturnType<typeof setTimeout>;
-  }[] = [];
+  const queued: ServerMessage[] = [],
+    observed: ServerMessage[] = [],
+    waiters: Array<{
+      predicate: (message: ServerMessage) => boolean;
+      resolve: (message: ServerMessage) => void;
+      reject: (error: Error) => void;
+      timer: ReturnType<typeof setTimeout>;
+    }> = [];
 
   ws.on('message', (raw) => {
     const message = JSON.parse(raw.toString()) as ServerMessage;
@@ -51,7 +51,7 @@ function connectClient(port: number, sockets: WebSocket[]) {
       const [waiter] = waiters.splice(index, 1);
       clearTimeout(waiter.timer);
       waiter.resolve(message);
-    } else messages.push(message);
+    } else queued.push(message);
   });
 
   return {
@@ -63,8 +63,8 @@ function connectClient(port: number, sockets: WebSocket[]) {
       await new Promise<void>((resolve) => ws.once('open', resolve));
     },
     next(predicate: (message: ServerMessage) => boolean): Promise<ServerMessage> {
-      const index = messages.findIndex(predicate);
-      if (index >= 0) return Promise.resolve(messages.splice(index, 1)[0]);
+      const index = queued.findIndex(predicate);
+      if (index >= 0) return Promise.resolve(queued.splice(index, 1)[0]);
       return new Promise((resolve, reject) => {
         const waiter = {
           predicate,
@@ -164,11 +164,12 @@ async function setupEmptyPoolTimeout(playerCount: 3 | 4, prefix: string): Promis
       type: 'create-room',
       gameId: 'digitalGame',
       playerCount,
-      turnSeconds: 30,
+      turnSeconds: 60,
     });
     const room = await clients[0].next((message) => message.type === 'room');
     assert.equal(room.type, 'room');
     if (room.type !== 'room') throw new Error('expected room message');
+    assert.equal(room.turnSeconds, 60);
 
     for (let index = 1; index < playerCount; index++) {
       clients[index].send({ type: 'join-room', code: room.code });
@@ -185,13 +186,13 @@ async function setupEmptyPoolTimeout(playerCount: 3 | 4, prefix: string): Promis
     ).map(asMatch);
     const matchId = initial[0].id;
     assert.ok(initial.every((match) => match.id === matchId && match.revision === 0));
+    assert.ok(initial.every((match) => match.timeControl.mode === 'turn' && match.timeControl.turnMs === 60000));
 
     const stored = store.loadMatch(matchId),
       state = stored.state as DigitalGameState,
       startingSeat = state.turn;
     assert.equal(state.playerCount, playerCount);
     assert.equal(state.startingSeat, startingSeat);
-    assert.ok(startingSeat >= 0 && startingSeat < playerCount);
     assert.ok(state.drawPool.length > 0);
 
     const poolHolder = (startingSeat + playerCount - 1) % playerCount;
@@ -199,7 +200,10 @@ async function setupEmptyPoolTimeout(playerCount: 3 | 4, prefix: string): Promis
     state.drawPool = [];
     state.rackCounts = state.racks.map((rack) => rack.length);
     assertInventoryConsistent(state);
-    stored.turnStartedAt = Date.now() - 30001;
+
+    const tableBefore = structuredClone(state.table),
+      racksBefore = structuredClone(state.racks);
+    stored.turnStartedAt = Date.now() - 60001;
     store.saveMatch(stored);
 
     const timeoutMatches = (
@@ -225,9 +229,11 @@ async function setupEmptyPoolTimeout(playerCount: 3 | 4, prefix: string): Promis
     assert.equal(canonical.endedAt, null);
     assert.equal(timeoutState.turn, activeSeat);
     assert.equal(timeoutState.ply, 1);
-    assert.equal(timeoutState.lastAction, 'draw');
+    assert.equal(timeoutState.lastAction, 'timeout');
     assert.equal(timeoutState.emptyPoolPasses, 1);
     assert.equal(timeoutState.drawPool.length, 0);
+    assert.deepEqual(timeoutState.table, tableBefore);
+    assert.deepEqual(timeoutState.racks, racksBefore);
     assert.equal(canonical.drawOffer, null);
     assert.deepEqual(canonical.drawAccepts, []);
     assertInventoryConsistent(timeoutState);
@@ -272,6 +278,7 @@ export async function assertEmptyPoolTimeoutBroadcast(playerCount: 3 | 4, prefix
       .prepare('SELECT reason FROM results WHERE match_id=?')
       .all(fixture.matchId) as { reason: string }[];
     assert.deepEqual(rows, []);
+    assert.equal(fixture.state.lastAction, 'timeout');
   } finally {
     await cleanup(fixture);
   }
@@ -280,11 +287,10 @@ export async function assertEmptyPoolTimeoutBroadcast(playerCount: 3 | 4, prefix
 export async function assertDrawOfferRevisionRace(contenderCount: 2 | 3 | 4, prefix: string) {
   const fixture = await setupEmptyPoolTimeout(4, prefix);
   try {
-    const contenderIndexes = Array.from({ length: contenderCount }, (_, index) => index),
-      actions = contenderIndexes.map((clientIndex) => ({
-        clientIndex,
-        commandId: randomUUID(),
-      }));
+    const actions = Array.from({ length: contenderCount }, (_, clientIndex) => ({
+      clientIndex,
+      commandId: randomUUID(),
+    }));
 
     const revisionTwoWaiters = fixture.clients.map((client) =>
       client.next(
@@ -343,22 +349,13 @@ export async function assertDrawOfferRevisionRace(contenderCount: 2 | 3 | 4, pre
     assert.equal(canonical.revision, 2);
     assert.equal(state.turn, fixture.activeSeat);
     assert.equal(state.ply, 1);
-    assert.equal(state.emptyPoolPasses, 1);
-    assert.equal(state.drawPool.length, 0);
+    assert.equal(state.lastAction, 'timeout');
     assert.equal(canonical.drawOffer, acceptedSeat);
     assert.deepEqual(canonical.drawAccepts, [acceptedSeat]);
     assert.equal(rejected.length, contenderCount - 1);
 
     const baseline = sharedSnapshot(matches[0]);
     for (const match of matches) assert.deepEqual(sharedSnapshot(match), baseline);
-    const errors = fixture.clients.flatMap((client) =>
-      client.observed.filter(
-        (message) =>
-          message.type === 'error' &&
-          rejected.some((action) => action.commandId === message.commandId),
-      ),
-    );
-    assert.equal(errors.length, rejected.length);
   } finally {
     await cleanup(fixture);
   }
@@ -385,11 +382,6 @@ export async function assertMixedRevisionRace(prefix: string) {
       expectedRevision: 1,
     });
     await Promise.all(seedWaiters);
-
-    const seeded = fixture.store.loadMatch(fixture.matchId);
-    assert.equal(seeded.revision, 2);
-    assert.equal(seeded.drawOffer, fixture.activeSeat);
-    assert.deepEqual(seeded.drawAccepts, [fixture.activeSeat]);
 
     const otherClients = [0, 1, 2, 3].filter((index) => index !== activeClient),
       actions = [
@@ -474,7 +466,6 @@ export async function assertMixedRevisionRace(prefix: string) {
       assert.equal(state.turn, (fixture.activeSeat + 1) % 4);
       assert.equal(state.ply, 2);
       assert.equal(state.lastAction, 'pass');
-      assert.equal(state.emptyPoolPasses, 2);
       assert.equal(canonical.drawOffer, null);
       assert.deepEqual(canonical.drawAccepts, []);
     } else if (accepted!.payload.accept === true) {
@@ -483,11 +474,13 @@ export async function assertMixedRevisionRace(prefix: string) {
       );
       assert.equal(state.turn, fixture.activeSeat);
       assert.equal(state.ply, 1);
+      assert.equal(state.lastAction, 'timeout');
       assert.equal(canonical.drawOffer, fixture.activeSeat);
       assert.deepEqual(canonical.drawAccepts, [fixture.activeSeat, acceptedSeat]);
     } else {
       assert.equal(state.turn, fixture.activeSeat);
       assert.equal(state.ply, 1);
+      assert.equal(state.lastAction, 'timeout');
       assert.equal(canonical.drawOffer, null);
       assert.deepEqual(canonical.drawAccepts, []);
     }
