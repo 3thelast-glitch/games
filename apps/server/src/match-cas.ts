@@ -19,7 +19,7 @@ export function compareAndSwapMatch(
        WHERE id=?
          AND CAST(json_extract(body, '$.revision') AS INTEGER)=?`,
     )
-    .run(match.id ? JSON.stringify(match) : '', match.result ? 1 : 0, match.id, expectedRevision);
+    .run(JSON.stringify(match), match.result ? 1 : 0, match.id, expectedRevision);
 
   return Number(result.changes) === 1;
 }
