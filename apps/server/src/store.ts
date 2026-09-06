@@ -9,7 +9,14 @@ import type { StoredMatch } from './matches.ts';
 
 export const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 
-const loadedMatchRevisions = new WeakMap<StoredMatch, number>();
+interface LoadedMatchVersion {
+  revision: number;
+  writeVersion: number;
+}
+
+const loadedMatchVersions = new WeakMap<StoredMatch, LoadedMatchVersion>();
+const writeVersionOf = (match: StoredMatch) =>
+  Number.isInteger(match.writeVersion) && (match.writeVersion ?? -1) >= 0 ? match.writeVersion! : 0;
 
 export interface User {
   id: string;
@@ -62,22 +69,35 @@ export class Store {
     }
   }
 
-  private trackMatch(match: StoredMatch, revision = match.revision): StoredMatch {
-    loadedMatchRevisions.set(match, revision);
+  private trackMatch(
+    match: StoredMatch,
+    revision = match.revision,
+    writeVersion = writeVersionOf(match),
+  ): StoredMatch {
+    match.writeVersion = writeVersion;
+    loadedMatchVersions.set(match, { revision, writeVersion });
     return match;
   }
 
-  compareAndSwapMatch(match: StoredMatch, expectedRevision: number): boolean {
-    const result = this.db
-      .prepare(
-        `UPDATE matches
-         SET body=?, finished=?
-         WHERE id=?
-           AND CAST(json_extract(body, '$.revision') AS INTEGER)=?`,
-      )
-      .run(JSON.stringify(match), match.result ? 1 : 0, match.id, expectedRevision);
+  compareAndSwapMatch(
+    match: StoredMatch,
+    expectedRevision: number,
+    expectedWriteVersion = loadedMatchVersions.get(match)?.writeVersion ?? writeVersionOf(match),
+  ): boolean {
+    const nextWriteVersion = expectedWriteVersion + 1,
+      body = JSON.stringify({ ...match, writeVersion: nextWriteVersion }),
+      result = this.db
+        .prepare(
+          `UPDATE matches
+           SET body=?, finished=?
+           WHERE id=?
+             AND CAST(json_extract(body, '$.revision') AS INTEGER)=?
+             AND COALESCE(CAST(json_extract(body, '$.writeVersion') AS INTEGER), 0)=?`,
+        )
+        .run(body, match.result ? 1 : 0, match.id, expectedRevision, expectedWriteVersion);
     if (Number(result.changes) !== 1) return false;
-    this.trackMatch(match);
+    match.writeVersion = nextWriteVersion;
+    this.trackMatch(match, match.revision, nextWriteVersion);
     return true;
   }
 
@@ -170,25 +190,34 @@ export class Store {
   }
 
   saveMatch(match: StoredMatch) {
-    const expectedRevision = loadedMatchRevisions.get(match),
-      body = JSON.stringify(match),
+    const expected = loadedMatchVersions.get(match),
       finished = match.result ? 1 : 0;
 
-    if (expectedRevision !== undefined) {
-      if (!this.compareAndSwapMatch(match, expectedRevision)) throw new RuleError('stale-revision');
+    if (expected !== undefined) {
+      if (!this.compareAndSwapMatch(match, expected.revision, expected.writeVersion))
+        throw new RuleError('stale-revision');
       return;
     }
 
     const existing = this.db
-      .prepare("SELECT CAST(json_extract(body, '$.revision') AS INTEGER) AS revision FROM matches WHERE id=?")
-      .get(match.id) as { revision: number } | undefined;
+      .prepare(
+        `SELECT
+           CAST(json_extract(body, '$.revision') AS INTEGER) AS revision,
+           COALESCE(CAST(json_extract(body, '$.writeVersion') AS INTEGER), 0) AS writeVersion
+         FROM matches WHERE id=?`,
+      )
+      .get(match.id) as { revision: number; writeVersion: number } | undefined;
     if (!existing) {
-      this.db.prepare('INSERT INTO matches(id,body,finished) VALUES(?,?,?)').run(match.id, body, finished);
+      match.writeVersion ??= 0;
+      this.db
+        .prepare('INSERT INTO matches(id,body,finished) VALUES(?,?,?)')
+        .run(match.id, JSON.stringify(match), finished);
       this.trackMatch(match);
       return;
     }
 
-    if (!this.compareAndSwapMatch(match, match.revision)) throw new RuleError('stale-revision');
+    if (!this.compareAndSwapMatch(match, match.revision, writeVersionOf(match)))
+      throw new RuleError('stale-revision');
   }
 
   loadMatch(id: string): StoredMatch {
@@ -197,6 +226,7 @@ export class Store {
     const match = JSON.parse(row.body) as StoredMatch;
     match.drawAccepts ??= match.drawOffer === null ? [] : [match.drawOffer];
     match.state.playerCount ??= match.players.length as 2 | 3 | 4;
+    match.writeVersion ??= 0;
     return this.trackMatch(match);
   }
 
@@ -205,14 +235,18 @@ export class Store {
       this.db.prepare('SELECT body FROM matches WHERE finished=0').all() as {
         body: string;
       }[]
-    ).map((r) => this.trackMatch(JSON.parse(r.body) as StoredMatch));
+    ).map((r) => {
+      const match = JSON.parse(r.body) as StoredMatch;
+      match.writeVersion ??= 0;
+      return this.trackMatch(match);
+    });
   }
 
   settle(match: StoredMatch) {
     if (!match.result || match.endedAt === null) throw new Error('Cannot settle active match');
     this.transaction(() => {
-      // Claim the terminal revision before touching ratings/results. A stale
-      // server instance fails here and the whole transaction rolls back.
+      // Claim the terminal revision and write-version before touching ratings/results.
+      // A stale server instance fails here and the whole transaction rolls back.
       this.saveMatch(match);
 
       const existing = this.db.prepare('SELECT match_id FROM results WHERE match_id=? LIMIT 1').get(match.id);

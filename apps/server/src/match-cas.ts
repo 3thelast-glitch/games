@@ -2,9 +2,10 @@ import type { Store } from './store.ts';
 import type { StoredMatch } from './matches.ts';
 
 /**
- * Atomically persists a match transition only when the stored match still has
- * the expected revision. Store also advances the in-memory persisted revision
- * marker so later writes on the same object remain compare-and-swap safe.
+ * Atomically persists a match transition only when both the stored gameplay
+ * revision and the internal write-version still match the snapshot observed by
+ * this server instance. This prevents revision-changing timeout transitions
+ * from overwriting same-revision metadata written by another server.
  */
 export function compareAndSwapMatch(
   store: Store,

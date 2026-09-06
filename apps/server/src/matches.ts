@@ -22,6 +22,8 @@ import { compareAndSwapMatch } from './match-cas.ts';
 import { Store, digest } from './store.ts';
 export interface StoredMatch extends Omit<MatchSnapshot, 'serverNow'> {
   commands: Record<string, { fingerprint: string; revision: number }>;
+  /** Internal persistence version; never exposed in MatchSnapshot. */
+  writeVersion?: number;
 }
 export interface MatchOptions {
   clockMs: number;
@@ -47,6 +49,9 @@ export class MatchService {
   private controlOf(match: Pick<StoredMatch, 'gameId' | 'timeControl'>): TimeControl {
     return this.control(match.gameId, match.timeControl);
   }
+  private isStaleWrite(error: unknown): error is RuleError {
+    return error instanceof RuleError && error.code === 'stale-revision';
+  }
   create(gameId: string, users: string[], ranked = false, requestedTimeControl?: TimeControl): MatchSnapshot {
     const game = this.games.get(gameId),
       timeControl = this.control(gameId, requestedTimeControl);
@@ -65,6 +70,7 @@ export class MatchService {
       state: game.create(playerCount),
       ranked,
       revision: 0,
+      writeVersion: 0,
       clockMs: createClocks(timeControl, users.length),
       timeControl,
       turnStartedAt: now,
@@ -88,7 +94,7 @@ export class MatchService {
     return index as Seat;
   }
   snapshot(match: StoredMatch): MatchSnapshot {
-    const { commands, ...publicMatch } = match;
+    const { commands, writeVersion: _writeVersion, ...publicMatch } = match;
     return { ...publicMatch, timeControl: this.controlOf(match), serverNow: this.options.now() };
   }
   forUser(match: MatchSnapshot, userId: string): MatchSnapshot {
@@ -245,42 +251,78 @@ export class MatchService {
     return this.snapshot(m);
   }
   connection(userId: string, connected: boolean): MatchSnapshot[] {
-    const result: MatchSnapshot[] = [];
-    for (let m of this.store.activeMatches().filter((match) => match.players.some((p) => p.id === userId))) {
-      m = this.expire(m);
-      if (!m.result) {
-        const seat = this.seat(m, userId);
-        m.disconnectedAt[seat] = connected ? null : (m.disconnectedAt[seat] ?? this.options.now());
-        this.store.saveMatch(m);
+    const ids = this.store
+        .activeMatches()
+        .filter((match) => match.players.some((p) => p.id === userId))
+        .map((match) => match.id),
+      result: MatchSnapshot[] = [];
+    for (const id of ids) {
+      let saved: StoredMatch | null = null;
+      for (let attempt = 0; attempt < 4 && !saved; attempt++) {
+        try {
+          let m = this.store.loadMatch(id);
+          const seat = this.seat(m, userId);
+          m = this.expire(m);
+          if (m.result) {
+            saved = m;
+            break;
+          }
+          const nextDisconnectedAt = connected ? null : (m.disconnectedAt[seat] ?? this.options.now());
+          if (m.disconnectedAt[seat] === nextDisconnectedAt) {
+            saved = m;
+            break;
+          }
+          m.disconnectedAt[seat] = nextDisconnectedAt;
+          this.store.saveMatch(m);
+          saved = m;
+        } catch (error) {
+          if (!this.isStaleWrite(error) || attempt === 3) throw error;
+        }
       }
-      result.push(this.snapshot(m));
+      if (saved) result.push(this.snapshot(saved));
     }
     return result;
   }
   recoverAfterRestart() {
-    const now = this.options.now();
-    for (const m of this.store.activeMatches()) {
-      m.disconnectedAt = m.disconnectedAt.map((at) => at ?? now);
-      this.store.saveMatch(m);
+    const ids = this.store.activeMatches().map((match) => match.id),
+      now = this.options.now();
+    for (const id of ids) {
+      for (let attempt = 0; attempt < 4; attempt++) {
+        try {
+          const m = this.store.loadMatch(id),
+            next = m.disconnectedAt.map((at) => at ?? now);
+          if (next.every((at, seat) => at === m.disconnectedAt[seat])) break;
+          m.disconnectedAt = next;
+          this.store.saveMatch(m);
+          break;
+        } catch (error) {
+          if (!this.isStaleWrite(error) || attempt === 3) throw error;
+        }
+      }
     }
   }
   tick(): MatchSnapshot[] {
     return this.store.activeMatches().map((m) => this.snapshot(this.expire(m)));
   }
   rematch(userId: string, id: string): MatchSnapshot {
-    const m = this.store.loadMatch(id),
-      seat = this.seat(m, userId);
-    if (!m.result) throw new RuleError('match-still-active');
-    if (m.rematchId) return this.get(m.rematchId, userId);
-    if (!m.rematchVotes.includes(seat)) m.rematchVotes.push(seat);
-    if (m.rematchVotes.length === m.players.length) {
-      const users = [...m.players.slice(1).map((player) => player.id), m.players[0].id];
-      const next = this.create(m.gameId, users, m.ranked, this.controlOf(m));
-      m.rematchId = next.id;
-      this.store.saveMatch(m);
-      return next;
-    }
-    this.store.saveMatch(m);
-    return this.snapshot(m);
+    const outcome = this.store.transaction(
+      (): { kind: 'existing'; id: string } | { kind: 'snapshot'; snapshot: MatchSnapshot } => {
+        const m = this.store.loadMatch(id),
+          seat = this.seat(m, userId);
+        if (!m.result) throw new RuleError('match-still-active');
+        if (m.rematchId) return { kind: 'existing', id: m.rematchId };
+        if (!m.rematchVotes.includes(seat)) m.rematchVotes.push(seat);
+        if (m.rematchVotes.length === m.players.length) {
+          const users = [...m.players.slice(1).map((player) => player.id), m.players[0].id],
+            next = this.create(m.gameId, users, m.ranked, this.controlOf(m));
+          m.rematchId = next.id;
+          this.store.saveMatch(m);
+          return { kind: 'snapshot', snapshot: next };
+        }
+        this.store.saveMatch(m);
+        return { kind: 'snapshot', snapshot: this.snapshot(m) };
+      },
+    );
+    return outcome.kind === 'existing' ? this.get(outcome.id, userId) : outcome.snapshot;
   }
 }
