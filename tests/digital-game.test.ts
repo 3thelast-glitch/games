@@ -173,6 +173,7 @@ test('initial meld cannot manipulate or count existing table tiles', () => {
   s.racks = [[...own], []];
   s.rackCounts = [own.length, 0];
   s.drawPool = [];
+  s.turn = 0;
   assert.deepEqual(
     validateDigital(s, {
       type: 'commit',
@@ -200,6 +201,7 @@ test('whole-table validation rejects taking a tile that breaks its original run'
   s.racks = [[red4, black4], []];
   s.rackCounts = [2, 0];
   s.drawPool = [];
+  s.turn = 0;
   s.hasCompletedInitialMeld = [true, true];
   const result = validateDigital(s, {
     type: 'commit',
@@ -219,6 +221,7 @@ test('tile may leave a four-tile group when the remaining group stays valid', ()
   s.racks = [[blue3, blue4], []];
   s.rackCounts = [2, 0];
   s.drawPool = [];
+  s.turn = 0;
   s.hasCompletedInitialMeld = [true, true];
   assert.equal(
     validateDigital(s, {
@@ -240,6 +243,7 @@ test('a long run can be split while playing a rack tile', () => {
   s.racks = [[seven], []];
   s.rackCounts = [1, 0];
   s.drawPool = [];
+  s.turn = 0;
   s.hasCompletedInitialMeld = [true, true];
   assert.equal(
     validateDigital(s, {
@@ -262,6 +266,7 @@ test('retrieved joker must remain legally assigned on the table in the same turn
   s.racks = [[b6, r9, b9], []];
   s.rackCounts = [3, 0];
   s.drawPool = [];
+  s.turn = 0;
   s.hasCompletedInitialMeld = [true, true];
   assert.equal(
     validateDigital(s, {
@@ -288,6 +293,7 @@ test('draw takes one tile, makes it unavailable until the next turn, and ends tu
   s.racks = [[], []];
   s.rackCounts = [0, 0];
   s.drawPool = [draw];
+  s.turn = 0;
   const next = applyDigital(s, { type: 'draw' });
   assert.deepEqual(next.racks[0], [draw]);
   assert.equal(next.drawPool.length, 0);
@@ -301,6 +307,7 @@ test('two empty-pool passes end a blocked round by lowest rack penalty', () => {
   s.racks = [[low], [high]];
   s.rackCounts = [1, 1];
   s.drawPool = [];
+  s.turn = 0;
   const one = applyDigital(s, { type: 'draw' });
   assert.equal(one.winner, null);
   const two = applyDigital(one, { type: 'draw' });
@@ -314,6 +321,7 @@ test('empty rack after a valid commit wins and scores the opponent rack', () => 
   s.racks = [[...winningRun], [...opponentRack]];
   s.rackCounts = [3, 4];
   s.drawPool = [];
+  s.turn = 0;
   const next = applyDigital(s, { type: 'commit', table: [{ tiles: winningRun }] });
   assert.equal(next.winner, 0);
   assert.deepEqual(next.scores, [51, -51]);

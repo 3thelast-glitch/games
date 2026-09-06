@@ -40,6 +40,8 @@ function assertDigitalInventoryConsistent(state: DigitalGameState) {
   assert.deepEqual(state.rackCounts, state.racks.map((rack) => rack.length));
 }
 
+const nextSeat = (seat: number, count: number, steps = 1) => (seat + steps) % count;
+
 test('shared turn timing counts down only the active seat and resets on turn advance', () => {
   const control = turnTimeControl(30),
     clocks = createClocks(control, 3);
@@ -60,21 +62,25 @@ for (const seconds of TURN_TIMER_SECONDS) {
         turnTimeControl(seconds),
       ),
       initial = match.current.state as DigitalGameState,
-      initialPool = initial.drawPool.length;
+      initialPool = initial.drawPool.length,
+      startingSeat = initial.turn,
+      secondSeat = nextSeat(startingSeat, 3),
+      thirdSeat = nextSeat(startingSeat, 3, 2);
 
+    assert.equal(initial.startingSeat, startingSeat);
     now = durationMs - 1;
     assert.equal(match.tick().result, null);
-    assert.equal(match.current.state.turn, 0);
-    assert.equal((match.current.state as DigitalGameState).rackCounts[0], 14);
+    assert.equal(match.current.state.turn, startingSeat);
+    assert.equal((match.current.state as DigitalGameState).rackCounts[startingSeat], 14);
 
     now = durationMs;
     const afterFirst = match.tick(),
       firstState = afterFirst.state as DigitalGameState;
     assert.equal(afterFirst.result, null);
-    assert.equal(firstState.turn, 1);
+    assert.equal(firstState.turn, secondSeat);
     assert.equal(firstState.ply, 1);
-    assert.equal(firstState.rackCounts[0], 15);
-    assert.equal(firstState.rackCounts[1], 14);
+    assert.equal(firstState.rackCounts[startingSeat], 15);
+    assert.equal(firstState.rackCounts[secondSeat], 14);
     assert.equal(firstState.drawPool.length, initialPool - 1);
     assert.equal(firstState.lastAction, 'draw');
     assert.equal(afterFirst.turnStartedAt, durationMs);
@@ -84,9 +90,9 @@ for (const seconds of TURN_TIMER_SECONDS) {
     const afterSecond = match.tick(),
       secondState = afterSecond.state as DigitalGameState;
     assert.equal(afterSecond.result, null);
-    assert.equal(secondState.turn, 2);
+    assert.equal(secondState.turn, thirdSeat);
     assert.equal(secondState.ply, 2);
-    assert.equal(secondState.rackCounts[1], 15);
+    assert.equal(secondState.rackCounts[secondSeat], 15);
     assert.equal(secondState.drawPool.length, initialPool - 2);
     assert.equal(afterSecond.turnStartedAt, durationMs * 2);
   });
@@ -103,7 +109,9 @@ for (const seconds of TURN_TIMER_SECONDS) {
         3,
         turnTimeControl(seconds),
       ),
-      initial = match.current.state as DigitalGameState;
+      initial = match.current.state as DigitalGameState,
+      startingSeat = initial.turn,
+      next = nextSeat(startingSeat, 3);
 
     exhaustDrawPool(initial);
     const racksBefore = initial.racks.map((rack) => [...rack]);
@@ -113,14 +121,14 @@ for (const seconds of TURN_TIMER_SECONDS) {
 
     now = durationMs - 1;
     assert.equal(match.tick().result, null);
-    assert.equal(match.current.state.turn, 0);
+    assert.equal(match.current.state.turn, startingSeat);
 
     now = durationMs;
     const after = match.tick(),
       state = after.state as DigitalGameState;
     assert.equal(after.result, null);
     assert.equal(after.endedAt, null);
-    assert.equal(state.turn, 1);
+    assert.equal(state.turn, next);
     assert.equal(state.ply, 1);
     assert.equal(state.lastAction, 'draw');
     assert.equal(state.emptyPoolPasses, 1);
@@ -149,14 +157,17 @@ for (const seconds of TURN_TIMER_SECONDS) {
           turnTimeControl(seconds),
         ),
         initialState = match.state as DigitalGameState,
-        initialPool = initialState.drawPool.length;
+        initialPool = initialState.drawPool.length,
+        startingSeat = initialState.turn,
+        secondSeat = nextSeat(startingSeat, 3),
+        thirdSeat = nextSeat(startingSeat, 3, 2);
       assert.deepEqual(match.timeControl, turnTimeControl(seconds));
       assert.deepEqual(match.clockMs, [durationMs, durationMs, durationMs]);
 
       now = durationMs - 1;
       const beforeDeadline = service.get(match.id, a.id);
       assert.equal(beforeDeadline.result, null);
-      assert.equal(beforeDeadline.state.turn, 0);
+      assert.equal(beforeDeadline.state.turn, startingSeat);
       assert.equal(beforeDeadline.revision, 0);
 
       now = durationMs;
@@ -165,9 +176,9 @@ for (const seconds of TURN_TIMER_SECONDS) {
       assert.equal(afterFirst.result, null);
       assert.equal(afterFirst.endedAt, null);
       assert.equal(afterFirst.revision, 1);
-      assert.equal(firstState.turn, 1);
+      assert.equal(firstState.turn, secondSeat);
       assert.equal(firstState.ply, 1);
-      assert.equal(firstState.rackCounts[0], 15);
+      assert.equal(firstState.rackCounts[startingSeat], 15);
       assert.equal(firstState.drawPool.length, initialPool - 1);
       assert.equal(firstState.lastAction, 'draw');
       assert.equal(afterFirst.turnStartedAt, durationMs);
@@ -176,7 +187,7 @@ for (const seconds of TURN_TIMER_SECONDS) {
       const storedAfterFirst = store.loadMatch(match.id);
       assert.equal(storedAfterFirst.result, null);
       assert.equal(storedAfterFirst.revision, 1);
-      assert.equal((storedAfterFirst.state as DigitalGameState).rackCounts[0], 15);
+      assert.equal((storedAfterFirst.state as DigitalGameState).rackCounts[startingSeat], 15);
       const rowsAfterFirst = store.db
         .prepare('SELECT reason FROM results WHERE match_id=?')
         .all(match.id) as { reason: string }[];
@@ -187,9 +198,9 @@ for (const seconds of TURN_TIMER_SECONDS) {
         secondState = afterSecond.state as DigitalGameState;
       assert.equal(afterSecond.result, null);
       assert.equal(afterSecond.revision, 2);
-      assert.equal(secondState.turn, 2);
+      assert.equal(secondState.turn, thirdSeat);
       assert.equal(secondState.ply, 2);
-      assert.equal(secondState.rackCounts[1], 15);
+      assert.equal(secondState.rackCounts[secondSeat], 15);
       assert.equal(secondState.drawPool.length, initialPool - 2);
       assert.equal(afterSecond.turnStartedAt, durationMs * 2);
     } finally {
@@ -215,7 +226,9 @@ for (const seconds of TURN_TIMER_SECONDS) {
         turnTimeControl(seconds),
       );
       const stored = store.loadMatch(match.id),
-        initial = stored.state as DigitalGameState;
+        initial = stored.state as DigitalGameState,
+        startingSeat = initial.turn,
+        next = nextSeat(startingSeat, 3);
       exhaustDrawPool(initial);
       const racksBefore = initial.racks.map((rack) => [...rack]);
       assertDigitalInventoryConsistent(initial);
@@ -225,7 +238,7 @@ for (const seconds of TURN_TIMER_SECONDS) {
       const beforeDeadline = service.get(match.id, a.id);
       assert.equal(beforeDeadline.result, null);
       assert.equal(beforeDeadline.revision, 0);
-      assert.equal(beforeDeadline.state.turn, 0);
+      assert.equal(beforeDeadline.state.turn, startingSeat);
 
       now = durationMs;
       const after = service.get(match.id, a.id),
@@ -233,7 +246,7 @@ for (const seconds of TURN_TIMER_SECONDS) {
       assert.equal(after.result, null);
       assert.equal(after.endedAt, null);
       assert.equal(after.revision, 1);
-      assert.equal(projectedState.turn, 1);
+      assert.equal(projectedState.turn, next);
       assert.equal(projectedState.ply, 1);
       assert.equal(projectedState.lastAction, 'draw');
       assert.equal(projectedState.emptyPoolPasses, 1);
