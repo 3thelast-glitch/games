@@ -7,6 +7,7 @@ import {
   type Validation,
 } from '../../core/src/game.ts';
 import {
+  DIGITAL_COLORS,
   INITIAL_MELD_POINTS,
   JOKER_PENALTY,
   createDigitalGameForPlayers,
@@ -161,18 +162,229 @@ export function calculateRoundScores(
   return scores;
 }
 
+/** Classic blocked-game scoring is relative to the winner's remaining rack. */
+export function calculateBlockedScores(state: DigitalGameState, winner: Seat): number[] {
+  const scores = state.racks.map(() => 0);
+  const winnerPenalty = rackPenalty(state, winner);
+  let won = 0;
+  for (const seat of seats(state.racks.length)) {
+    if (seat === winner) continue;
+    const delta = rackPenalty(state, seat) - winnerPenalty;
+    scores[seat] = -delta;
+    won += delta;
+  }
+  scores[winner] = won;
+  return scores;
+}
+
+type SolverMeld = { ids: string[]; score: number };
+function combinations<T>(items: T[], count: number): T[][] {
+  const out: T[][] = [];
+  const pick = (start: number, chosen: T[]) => {
+    if (chosen.length === count) {
+      out.push([...chosen]);
+      return;
+    }
+    for (let index = start; index <= items.length - (count - chosen.length); index++) {
+      chosen.push(items[index]);
+      pick(index + 1, chosen);
+      chosen.pop();
+    }
+  };
+  pick(0, []);
+  return out;
+}
+function candidateKey(ids: string[]): string {
+  return [...ids].sort().join('|');
+}
+function pushSolverMeld(state: DigitalGameState, found: Map<string, SolverMeld>, ids: string[]): void {
+  if (new Set(ids).size !== ids.length) return;
+  const result = validateMeld(ids.map((id) => state.tiles[id]));
+  if (!result.ok) return;
+  const key = candidateKey(ids);
+  if (!found.has(key)) found.set(key, { ids: [...ids], score: result.score });
+}
+function solverCandidatesContaining(state: DigitalGameState, availableIds: string[], requiredId: string): SolverMeld[] {
+  const required = state.tiles[requiredId];
+  if (!required || !availableIds.includes(requiredId)) return [];
+  const jokerIds = availableIds.filter((id) => state.tiles[id]?.isJoker);
+  const found = new Map<string, SolverMeld>();
+  if (required.isJoker) {
+    for (let value = 1; value <= 13; value++) {
+      const eligible = availableIds.filter((id) => {
+        if (id === requiredId) return false;
+        const tile = state.tiles[id];
+        return tile?.isJoker || tile?.value === value;
+      });
+      for (const size of [3, 4])
+        for (const rest of combinations(eligible, size - 1)) pushSolverMeld(state, found, [requiredId, ...rest]);
+    }
+  } else {
+    const eligible = availableIds.filter((id) => {
+      if (id === requiredId) return false;
+      const tile = state.tiles[id];
+      return tile?.isJoker || tile?.value === required.value;
+    });
+    for (const size of [3, 4])
+      for (const rest of combinations(eligible, size - 1)) pushSolverMeld(state, found, [requiredId, ...rest]);
+  }
+  const runChoices = (color: DigitalTile['color'], start: number, end: number, fixedJokerPosition: number | null) => {
+    if (!color) return;
+    const values = Array.from({ length: end - start + 1 }, (_, index) => start + index);
+    const chosen: string[] = [];
+    const used = new Set<string>();
+    const recurse = (index: number) => {
+      if (index === values.length) {
+        if (chosen.includes(requiredId)) pushSolverMeld(state, found, chosen);
+        return;
+      }
+      const value = values[index];
+      if (!required.isJoker && value === required.value) {
+        chosen.push(requiredId);
+        used.add(requiredId);
+        recurse(index + 1);
+        used.delete(requiredId);
+        chosen.pop();
+        return;
+      }
+      if (required.isJoker && index === fixedJokerPosition) {
+        chosen.push(requiredId);
+        used.add(requiredId);
+        recurse(index + 1);
+        used.delete(requiredId);
+        chosen.pop();
+        return;
+      }
+      const numbered = availableIds.filter((id) => {
+        if (used.has(id) || id === requiredId) return false;
+        const tile = state.tiles[id];
+        return !tile?.isJoker && tile?.color === color && tile?.value === value;
+      });
+      const jokers = jokerIds.filter((id) => id !== requiredId && !used.has(id));
+      for (const id of [...numbered, ...jokers]) {
+        chosen.push(id);
+        used.add(id);
+        recurse(index + 1);
+        used.delete(id);
+        chosen.pop();
+      }
+    };
+    recurse(0);
+  };
+  if (required.isJoker) {
+    for (const color of DIGITAL_COLORS)
+      for (let start = 1; start <= 11; start++)
+        for (let end = start + 2; end <= 13; end++)
+          for (let jokerPosition = 0; jokerPosition <= end - start; jokerPosition++)
+            runChoices(color, start, end, jokerPosition);
+  } else if (required.color && required.value !== null) {
+    for (let start = 1; start <= required.value; start++)
+      for (let end = Math.max(start + 2, required.value); end <= 13; end++)
+        if (start <= required.value && required.value <= end) runChoices(required.color, start, end, null);
+  }
+  return [...found.values()];
+}
+function rackOnlySolverCandidates(state: DigitalGameState, player: Seat): SolverMeld[] {
+  const rack = state.racks[player] ?? [];
+  const found = new Map<string, SolverMeld>();
+  for (const id of rack)
+    for (const candidate of solverCandidatesContaining(state, rack, id)) found.set(candidateKey(candidate.ids), candidate);
+  return [...found.values()];
+}
+function hasInitialThirty(state: DigitalGameState, player: Seat): boolean {
+  const candidates = rackOnlySolverCandidates(state, player).sort((a, b) => b.score - a.score);
+  const used = new Set<string>();
+  const memo = new Set<string>();
+  const search = (index: number, score: number): boolean => {
+    if (score >= INITIAL_MELD_POINTS) return true;
+    if (index >= candidates.length) return false;
+    const key = `${index}:${score}:${[...used].sort().join(',')}`;
+    if (memo.has(key)) return false;
+    memo.add(key);
+    for (let i = index; i < candidates.length; i++) {
+      const candidate = candidates[i];
+      if (candidate.ids.some((id) => used.has(id))) continue;
+      for (const id of candidate.ids) used.add(id);
+      if (search(i + 1, score + candidate.score)) return true;
+      for (const id of candidate.ids) used.delete(id);
+    }
+    return false;
+  };
+  return search(0, 0);
+}
+
+/** Exhaustive Classic rules oracle for blocked-game adjudication; not an AI move list. */
+export function hasClassicLegalPlay(state: DigitalGameState, player: Seat): boolean {
+  if (state.winner !== null || state.drawReason) return false;
+  const rack = state.racks[player] ?? [];
+  if (!rack.length) return false;
+  if (!state.hasCompletedInitialMeld[player]) return hasInitialThirty(state, player);
+  if (rackOnlySolverCandidates(state, player).length) return true;
+  const tableIds = state.table.flatMap((meld) => meld.tiles);
+  if (!tableIds.length) return false;
+  const availableIds = [...tableIds, ...rack];
+  const tableSet = new Set(tableIds);
+  const rackSet = new Set(rack);
+  const candidateCache = new Map<string, SolverMeld[]>();
+  const candidatesFor = (requiredId: string) => {
+    const cached = candidateCache.get(requiredId);
+    if (cached) return cached;
+    const candidates = solverCandidatesContaining(state, availableIds, requiredId);
+    candidateCache.set(requiredId, candidates);
+    return candidates;
+  };
+  const memo = new Set<string>();
+  const search = (remaining: Set<string>, usedRack: Set<string>): boolean => {
+    if (!remaining.size) return usedRack.size > 0;
+    const memoKey = `${[...remaining].sort().join(',')}|${[...usedRack].sort().join(',')}`;
+    if (memo.has(memoKey)) return false;
+    memo.add(memoKey);
+    let compatible: SolverMeld[] = [];
+    let minimum = Infinity;
+    for (const id of remaining) {
+      const list = candidatesFor(id).filter((candidate) => {
+        for (const candidateId of candidate.ids) {
+          if (tableSet.has(candidateId) && !remaining.has(candidateId)) return false;
+          if (rackSet.has(candidateId) && usedRack.has(candidateId)) return false;
+        }
+        return true;
+      });
+      if (!list.length) return false;
+      if (list.length < minimum) {
+        compatible = list;
+        minimum = list.length;
+      }
+    }
+    compatible.sort((a, b) => {
+      const aRack = a.ids.some((id) => rackSet.has(id)) ? 1 : 0;
+      const bRack = b.ids.some((id) => rackSet.has(id)) ? 1 : 0;
+      return bRack - aRack || b.ids.length - a.ids.length;
+    });
+    for (const candidate of compatible) {
+      const nextRemaining = new Set(remaining);
+      const nextUsedRack = new Set(usedRack);
+      for (const id of candidate.ids) {
+        if (tableSet.has(id)) nextRemaining.delete(id);
+        else if (rackSet.has(id)) nextUsedRack.add(id);
+      }
+      if (search(nextRemaining, nextUsedRack)) return true;
+    }
+    return false;
+  };
+  return search(new Set(tableIds), new Set());
+}
+export function isClassicBlocked(state: DigitalGameState): boolean {
+  if (state.drawPool.length) return false;
+  return seats(countOf(state)).every((seat) => !hasClassicLegalPlay(state, seat));
+}
+
 function parseMeld(value: unknown): CommitMeldIntent {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new RuleError('invalid-move');
   const meld = value as Record<string, unknown>;
   if (Object.keys(meld).some((key) => !['id', 'tiles'].includes(key))) throw new RuleError('invalid-move');
   if (meld.id !== undefined && (typeof meld.id !== 'string' || !meld.id || meld.id.length > 80))
     throw new RuleError('invalid-move');
-  if (
-    !Array.isArray(meld.tiles) ||
-    meld.tiles.length < 1 ||
-    meld.tiles.length > 13 ||
-    !meld.tiles.every((id) => typeof id === 'string' && id.length > 0 && id.length <= 80)
-  )
+  if (!Array.isArray(meld.tiles) || meld.tiles.length < 1 || meld.tiles.length > 13 || !meld.tiles.every((id) => typeof id === 'string' && id.length > 0 && id.length <= 80))
     throw new RuleError('invalid-move');
   return { id: meld.id as string | undefined, tiles: [...(meld.tiles as string[])] };
 }
@@ -192,11 +404,7 @@ export function parseDigitalMove(input: unknown): DigitalGameMove {
 }
 
 const signature = (tiles: string[]) => [...tiles].sort().join('|');
-function initialMeldScore(
-  state: DigitalGameState,
-  table: CommitMeldIntent[],
-  oldTableIds: Set<string>,
-): number {
+function initialMeldScore(state: DigitalGameState, table: CommitMeldIntent[], oldTableIds: Set<string>): number {
   let score = 0;
   for (const meld of table) {
     if (meld.tiles.some((id) => oldTableIds.has(id))) continue;
@@ -215,9 +423,7 @@ function commitPlan(state: DigitalGameState, move: Extract<DigitalGameMove, { ty
   const newTableIds = new Set(move.table.flatMap((meld) => meld.tiles));
   for (const id of oldTableIds) if (!newTableIds.has(id)) throw new RuleError('table-tile-missing');
   const rack = new Set(state.racks[player] ?? []);
-  const otherRackTiles = new Set(
-    state.racks.flatMap((items, index) => (index === player ? [] : items)),
-  );
+  const otherRackTiles = new Set(state.racks.flatMap((items, index) => (index === player ? [] : items)));
   const played: string[] = [];
   for (const id of newTableIds) {
     if (oldTableIds.has(id)) continue;
@@ -236,20 +442,15 @@ function commitPlan(state: DigitalGameState, move: Extract<DigitalGameMove, { ty
     for (const meld of move.table) {
       const key = signature(meld.tiles);
       newSignatures.set(key, (newSignatures.get(key) ?? 0) + 1);
-      if (meld.tiles.some((id) => oldTableIds.has(id)) && !oldSignatures.has(key))
-        throw new RuleError('initial-table-locked');
+      if (meld.tiles.some((id) => oldTableIds.has(id)) && !oldSignatures.has(key)) throw new RuleError('initial-table-locked');
     }
     for (const [key, count] of oldSignatures)
       if ((newSignatures.get(key) ?? 0) < count) throw new RuleError('initial-table-locked');
-    if (initialMeldScore(state, move.table, oldTableIds) < INITIAL_MELD_POINTS)
-      throw new RuleError('initial-meld-30');
+    if (initialMeldScore(state, move.table, oldTableIds) < INITIAL_MELD_POINTS) throw new RuleError('initial-meld-30');
   }
   const playedSet = new Set(played);
   const nextRack = (state.racks[player] ?? []).filter((id) => !playedSet.has(id));
-  const melds = tableValidation.melds.map((meld, index) => ({
-    ...meld,
-    id: move.table[index].id ?? `m${state.ply + 1}-${index}`,
-  }));
+  const melds = tableValidation.melds.map((meld, index) => ({ ...meld, id: move.table[index].id ?? `m${state.ply + 1}-${index}` }));
   return { player, played, nextRack, melds };
 }
 export function validateDigital(state: DigitalGameState, move: DigitalGameMove): Validation {
@@ -268,12 +469,12 @@ export function validateDigital(state: DigitalGameState, move: DigitalGameMove):
 }
 function finishBlockedRound(state: DigitalGameState): DigitalGameState {
   const activeSeats = seats(countOf(state));
-  const penalties = activeSeats.map((seat) => rackPenalty(state, seat as Seat));
+  const penalties = activeSeats.map((seat) => rackPenalty(state, seat));
   const minimum = Math.min(...penalties);
   const best = activeSeats.filter((seat) => penalties[seat] === minimum);
   if (best.length !== 1) return { ...state, drawReason: 'blocked-round' };
   const winner = best[0];
-  return { ...state, winner, scores: calculateRoundScores(state, winner) };
+  return { ...state, winner, scores: calculateBlockedScores(state, winner) };
 }
 export function applyDigital(state: DigitalGameState, input: DigitalGameMove): DigitalGameState {
   const move = parseDigitalMove(input);
@@ -300,7 +501,7 @@ export function applyDigital(state: DigitalGameState, input: DigitalGameMove): D
       turn: nextPlayer(player, playerCount),
       ply: state.ply + 1,
     };
-    if (!drawPool.length && emptyPoolPasses >= playerCount) next = finishBlockedRound(next);
+    if (!drawPool.length && emptyPoolPasses >= playerCount && isClassicBlocked(next)) next = finishBlockedRound(next);
     return next;
   }
   const plan = commitPlan(state, move);
@@ -331,18 +532,16 @@ function simpleCandidateMelds(state: DigitalGameState, player: Seat): string[][]
   for (let value = 1; value <= 13; value++) {
     const byColor = new Map<string, string>();
     for (const tile of rackTiles)
-      if (!tile.isJoker && tile.value === value && tile.color && !byColor.has(tile.color))
-        byColor.set(tile.color, tile.id);
+      if (!tile.isJoker && tile.value === value && tile.color && !byColor.has(tile.color)) byColor.set(tile.color, tile.id);
     const ids = [...byColor.values()];
     if (ids.length >= 3) candidates.push(ids.slice(0, 3));
     if (ids.length === 4) candidates.push(ids);
     if (ids.length === 2 && jokers.length) candidates.push([...ids, jokers[0]]);
   }
-  for (const color of ['red', 'blue', 'orange', 'black'] as const) {
+  for (const color of DIGITAL_COLORS) {
     const byValue = new Map<number, string>();
     for (const tile of rackTiles)
-      if (!tile.isJoker && tile.color === color && tile.value !== null && !byValue.has(tile.value))
-        byValue.set(tile.value, tile.id);
+      if (!tile.isJoker && tile.color === color && tile.value !== null && !byValue.has(tile.value)) byValue.set(tile.value, tile.id);
     for (let start = 1; start <= 11; start++) {
       const three = [start, start + 1, start + 2].map((value) => byValue.get(value));
       if (three.every(Boolean)) candidates.push(three as string[]);
@@ -354,6 +553,8 @@ function simpleCandidateMelds(state: DigitalGameState, player: Seat): string[][]
   }
   return candidates;
 }
+
+/** Bounded AI generator; never use this as the Classic blocked-game oracle. */
 export function digitalLegalMoves(state: DigitalGameState): DigitalGameMove[] {
   if (state.winner !== null || state.drawReason) return [];
   const moves: DigitalGameMove[] = [{ type: 'draw' }];
@@ -369,25 +570,16 @@ export function evaluateDigital(state: DigitalGameState, player: Seat): number {
   if (state.winner === player) return 100000;
   if (state.winner !== null) return -100000;
   const others = seats(countOf(state)).filter((seat) => seat !== player);
-  const averagePenalty = others.reduce<number>((sum, seat) => sum + rackPenalty(state, seat as Seat), 0) / others.length;
+  const averagePenalty = others.reduce<number>((sum, seat) => sum + rackPenalty(state, seat), 0) / others.length;
   const averageCount = others.reduce<number>((sum, seat) => sum + state.rackCounts[seat], 0) / others.length;
-  const initialLead =
-    (state.hasCompletedInitialMeld[player] ? 40 : 0) -
-    others.reduce<number>((sum, seat) => sum + (state.hasCompletedInitialMeld[seat as Seat] ? 40 : 0), 0) / others.length;
+  const initialLead = (state.hasCompletedInitialMeld[player] ? 40 : 0) - others.reduce<number>((sum, seat) => sum + (state.hasCompletedInitialMeld[seat] ? 40 : 0), 0) / others.length;
   return (averagePenalty - rackPenalty(state, player)) * 4 + (averageCount - state.rackCounts[player]) * 20 + initialLead;
 }
 export function projectDigitalState(state: DigitalGameState, viewer: Seat): DigitalGameState {
   const playerCount = countOf(state);
-  const visible = new Set<string>([
-    ...(state.racks[viewer] ?? []),
-    ...state.table.flatMap((meld) => meld.tiles),
-  ]);
+  const visible = new Set<string>([...(state.racks[viewer] ?? []), ...state.table.flatMap((meld) => meld.tiles)]);
   const tiles = Object.fromEntries(Object.entries(state.tiles).filter(([id]) => visible.has(id)));
-  const racks = state.racks.map((rack, index) =>
-    index === viewer
-      ? [...rack]
-      : Array.from({ length: state.rackCounts[index] }, (_, item) => `hidden-rack-${index}-${item}`),
-  );
+  const racks = state.racks.map((rack, index) => index === viewer ? [...rack] : Array.from({ length: state.rackCounts[index] }, (_, item) => `hidden-rack-${index}-${item}`));
   return {
     ...state,
     playerCount,
