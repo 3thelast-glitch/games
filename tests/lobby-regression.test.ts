@@ -121,7 +121,7 @@ test('Reversi supports optional per-turn timers and an Off fallback', () => {
     assert.equal(lobby.enqueue(offA.id, 'reversi', false, 2), null);
     const off = lobby.enqueue(offB.id, 'reversi', false, 2);
     assert.ok(off);
-    assert.deepEqual(off.timeControl, { mode: 'bank', initialMs: 60000 });
+    assert.deepEqual(off.timeControl, { mode: 'bank', initialMs: 600000 });
   } finally {
     store.close();
   }
