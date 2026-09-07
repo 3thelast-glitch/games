@@ -1,6 +1,16 @@
 import { z } from 'zod';
 import { RuleError, isGameOver, opponent, type GamePlugin, type Seat } from './game.ts';
-import { isTurnTimerMs, type TurnTimerSeconds } from './timing.ts';
+import {
+  bankTimeControl,
+  beginTurn,
+  chargeClock,
+  createClocks,
+  isTurnTimerMs,
+  timeoutAt,
+  turnTimeControl,
+  type TimeControl,
+  type TurnTimerSeconds,
+} from './timing.ts';
 export type { TurnTimerSeconds } from './timing.ts';
 
 export const LAN_PROTOCOL_VERSION = 1;
@@ -8,6 +18,7 @@ export const LAN_RULESET_VERSION = 1;
 export const LAN_SERVICE_TYPE = '_boardarena._tcp.';
 export const LAN_DEFAULT_PORT = 8765;
 export const LAN_GRACE_MS = 60_000;
+export const REVERSI_BANK_MS = 600_000;
 
 const id = z.string().min(8).max(96);
 const name = z.string().trim().min(1).max(24);
@@ -22,7 +33,6 @@ export const lanClientMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('leave') }).strict(),
   z.object({ type: z.literal('ping'), nonce: z.string().max(80).optional() }).strict(),
 ]);
-
 export type LanClientMessage = z.infer<typeof lanClientMessageSchema>;
 
 export interface LanPlayer {
@@ -32,7 +42,6 @@ export interface LanPlayer {
   connected: boolean;
   ready: boolean;
 }
-
 export type LanStatus = 'lobby' | 'playing' | 'finished' | 'interrupted';
 
 export interface LanSnapshot {
@@ -48,6 +57,8 @@ export interface LanSnapshot {
   state: ReturnType<GamePlugin['create']> | null;
   result: { winner: Seat | null; reason: string } | null;
   turnSeconds: TurnTimerSeconds | null;
+  timeControl: TimeControl;
+  clockMs: number[];
   turnStartedAt: number | null;
   graceMs: number;
   disconnectedAt: [number | null, number | null];
@@ -61,13 +72,6 @@ export type LanServerMessage =
   | { type: 'error'; code: string; actionId?: string; snapshot?: LanSnapshot }
   | { type: 'pong'; nonce?: string; serverNow: number };
 
-export const lanServerMessageSchema: z.ZodType<LanServerMessage> = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('welcome'), resumeToken: z.string().min(16).max(128), self: z.union([z.literal(0), z.literal(1)]), snapshot: z.unknown() }).strict(),
-  z.object({ type: z.literal('snapshot'), snapshot: z.unknown(), ack: z.string().optional() }).strict(),
-  z.object({ type: z.literal('error'), code: z.string().min(1).max(80), actionId: z.string().optional(), snapshot: z.unknown().optional() }).strict(),
-  z.object({ type: z.literal('pong'), nonce: z.string().optional(), serverNow: z.number() }).strict(),
-]) as z.ZodType<LanServerMessage>;
-
 export interface LanAdvertisement {
   roomId: string;
   roomName: string;
@@ -78,7 +82,6 @@ export interface LanAdvertisement {
   capacity: 2;
   port: number;
 }
-
 export const lanAdvertisementSchema = z.object({
   roomId: id,
   roomName: z.string().trim().min(1).max(32),
@@ -91,7 +94,6 @@ export const lanAdvertisementSchema = z.object({
 }).strict();
 
 export interface ParsedLanEndpoint { host: string; port: number }
-
 export function parseLanEndpoint(value: string, defaultPort = LAN_DEFAULT_PORT): ParsedLanEndpoint {
   const input = value.trim();
   if (!input || input.length > 260 || /[\s/@?#\\]/.test(input)) throw new RuleError('invalid-lan-address');
@@ -130,7 +132,6 @@ interface Session {
   disconnectedAt: number | null;
 }
 interface Receipt { fingerprint: string; message: LanServerMessage }
-
 export interface LanAuthorityOptions {
   game: GamePlugin;
   hostName: string;
@@ -143,12 +144,14 @@ export interface LanAuthorityOptions {
   randomId?: () => string;
 }
 
-/** Friendly-LAN host authority. Membership tokens authenticate seats but do not encrypt the transport. */
+/** Friendly-LAN host authority. Membership tokens authenticate seats but do not encrypt transport. */
 export class LanAuthority {
   readonly roomId: string;
   readonly roomName: string;
   readonly graceMs: number;
   readonly hostToken: string;
+  readonly turnSeconds: TurnTimerSeconds | null;
+  readonly timeControl: TimeControl;
   private readonly now: () => number;
   private readonly randomId: () => string;
   private readonly sessions = new Map<string, Session>();
@@ -158,9 +161,9 @@ export class LanAuthority {
   private revision = 0;
   private status: LanStatus = 'lobby';
   private result: LanSnapshot['result'] = null;
+  private clocks = [REVERSI_BANK_MS, REVERSI_BANK_MS];
   private turnStartedAt: number | null = null;
   private rematchVotes = new Set<Seat>();
-  readonly turnSeconds: TurnTimerSeconds | null;
 
   constructor(private readonly options: LanAuthorityOptions) {
     if (options.game.id !== 'reversi' || options.game.minPlayers !== 2 || options.game.maxPlayers !== 2) throw new RuleError('lan-game-not-supported');
@@ -172,62 +175,47 @@ export class LanAuthority {
     const requested = options.turnSeconds ?? null;
     if (requested !== null && !isTurnTimerMs(requested * 1000)) throw new RuleError('invalid-time-control');
     this.turnSeconds = requested;
+    this.timeControl = requested === null ? bankTimeControl(REVERSI_BANK_MS) : turnTimeControl(requested);
+    this.clocks = createClocks(this.timeControl, 2);
     const hostSeat = options.hostSeat ?? 0;
     this.hostToken = this.randomId() + this.randomId();
     this.sessions.set(this.hostToken, { token: this.hostToken, id: this.randomId(), name: options.hostName.trim().slice(0, 24) || 'Host', seat: hostSeat, connected: true, ready: false, disconnectedAt: null });
   }
 
   get hostSeat(): 0 | 1 { return this.session(this.hostToken).seat }
-
   advertisement(port: number): LanAdvertisement {
     return { roomId: this.roomId, roomName: this.roomName, gameId: 'reversi', protocolVersion: LAN_PROTOCOL_VERSION, rulesetVersion: LAN_RULESET_VERSION, occupancy: this.sessions.size === 1 ? 1 : 2, capacity: 2, port };
   }
-
   snapshot(): LanSnapshot {
     this.expire();
-    const bySeat = [...this.sessions.values()].sort((a, b) => a.seat - b.seat);
+    const players = [...this.sessions.values()].sort((a, b) => a.seat - b.seat);
     return {
-      protocolVersion: LAN_PROTOCOL_VERSION,
-      rulesetVersion: LAN_RULESET_VERSION,
-      roomId: this.roomId,
-      roomName: this.roomName,
-      gameId: 'reversi',
-      matchId: this.matchId,
-      revision: this.revision,
-      status: this.status,
-      players: bySeat.map((session) => ({ id: session.id, name: session.name, seat: session.seat, connected: session.connected, ready: session.ready })),
-      state: this.state,
-      result: this.result,
-      turnSeconds: this.turnSeconds,
-      turnStartedAt: this.turnStartedAt,
-      graceMs: this.graceMs,
+      protocolVersion: LAN_PROTOCOL_VERSION, rulesetVersion: LAN_RULESET_VERSION,
+      roomId: this.roomId, roomName: this.roomName, gameId: 'reversi', matchId: this.matchId,
+      revision: this.revision, status: this.status,
+      players: players.map((p) => ({ id: p.id, name: p.name, seat: p.seat, connected: p.connected, ready: p.ready })),
+      state: this.state, result: this.result, turnSeconds: this.turnSeconds, timeControl: this.timeControl,
+      clockMs: [...this.clocks], turnStartedAt: this.turnStartedAt, graceMs: this.graceMs,
       disconnectedAt: [this.bySeat(0)?.disconnectedAt ?? null, this.bySeat(1)?.disconnectedAt ?? null],
-      rematchVotes: [...this.rematchVotes],
-      serverNow: this.now(),
+      rematchVotes: [...this.rematchVotes], serverNow: this.now(),
     };
   }
-
   join(input: Extract<LanClientMessage, { type: 'hello' }>): LanServerMessage {
     if (input.roomId !== this.roomId) return { type: 'error', code: 'room-not-found' };
-    if (input.protocolVersion !== LAN_PROTOCOL_VERSION || input.rulesetVersion !== LAN_RULESET_VERSION) return { type: 'error', code: 'incompatible-version' };
     this.expire();
     let session = input.resumeToken ? this.sessions.get(input.resumeToken) : undefined;
     if (session) {
       if (session.token === this.hostToken) return { type: 'error', code: 'invalid-resume-token' };
-      session.connected = true;
-      session.disconnectedAt = null;
-      session.name = input.name.trim().slice(0, 24) || session.name;
+      session.connected = true; session.disconnectedAt = null; session.name = input.name.trim().slice(0, 24) || session.name;
     } else {
       if (input.resumeToken) return { type: 'error', code: 'invalid-resume-token' };
       if (this.sessions.size >= 2 || this.status !== 'lobby') return { type: 'error', code: 'room-full' };
-      const seat = opponent(this.hostSeat) as 0 | 1;
       const token = this.randomId() + this.randomId();
-      session = { token, id: this.randomId(), name: input.name.trim().slice(0, 24) || 'Guest', seat, connected: true, ready: false, disconnectedAt: null };
+      session = { token, id: this.randomId(), name: input.name.trim().slice(0, 24) || 'Guest', seat: opponent(this.hostSeat) as 0 | 1, connected: true, ready: false, disconnectedAt: null };
       this.sessions.set(token, session);
     }
     return { type: 'welcome', resumeToken: session.token, self: session.seat, snapshot: this.snapshot() };
   }
-
   handle(token: string, raw: unknown): LanServerMessage {
     let message: LanClientMessage;
     try { message = lanClientMessageSchema.parse(raw) } catch { return { type: 'error', code: 'invalid-message' } }
@@ -236,10 +224,7 @@ export class LanAuthority {
     if (!session || !session.connected) return { type: 'error', code: 'unauthorized' };
     this.expire();
     if (message.type === 'ping') return { type: 'pong', nonce: message.nonce, serverNow: this.now() };
-    if (message.type === 'sync') {
-      if (message.matchId && message.matchId !== this.matchId) return { type: 'error', code: 'old-match', snapshot: this.snapshot() };
-      return { type: 'snapshot', snapshot: this.snapshot() };
-    }
+    if (message.type === 'sync') return message.matchId && message.matchId !== this.matchId ? { type: 'error', code: 'old-match', snapshot: this.snapshot() } : { type: 'snapshot', snapshot: this.snapshot() };
     if (message.type === 'leave') { this.leave(token, true); return { type: 'snapshot', snapshot: this.snapshot() } }
     if (message.type === 'ready') {
       if (this.status !== 'lobby') return { type: 'error', code: 'match-already-started', snapshot: this.snapshot() };
@@ -250,107 +235,77 @@ export class LanAuthority {
     if (message.type === 'rematch') return this.rematch(session, message.matchId);
     return this.play(session, message);
   }
-
-  hostReady(ready: boolean): LanServerMessage { return this.handle(this.hostToken, { type: 'ready', ready }) }
-  hostMove(moveValue: { row: number; col: number }, actionId = this.randomId()): LanServerMessage {
-    if (!this.matchId) return { type: 'error', code: 'match-not-started', snapshot: this.snapshot() };
+  hostReady(ready: boolean) { return this.handle(this.hostToken, { type: 'ready', ready }) }
+  hostMove(moveValue: { row: number; col: number }, actionId = this.randomId()) {
+    if (!this.matchId) return { type: 'error', code: 'match-not-started', snapshot: this.snapshot() } satisfies LanServerMessage;
     return this.handle(this.hostToken, { type: 'move', matchId: this.matchId, actionId, expectedRevision: this.revision, move: moveValue });
   }
-
   disconnect(token: string) {
     const session = this.sessions.get(token);
-    if (!session || !session.connected) return this.snapshot();
-    session.connected = false;
-    session.disconnectedAt = this.now();
+    if (session?.connected) { session.connected = false; session.disconnectedAt = this.now() }
     return this.snapshot();
   }
-
-  reconnectHost() { const host = this.session(this.hostToken); host.connected = true; host.disconnectedAt = null; return this.snapshot() }
-
   leave(token: string, explicit = false) {
     const session = this.sessions.get(token);
     if (!session) return this.snapshot();
     if (this.status === 'lobby' && token !== this.hostToken) { this.sessions.delete(token); return this.snapshot() }
     if (explicit && (this.status === 'playing' || this.status === 'lobby')) {
-      this.status = 'interrupted';
-      this.result = { winner: null, reason: token === this.hostToken ? 'host-left' : 'opponent-left' };
-      this.revision++;
+      this.status = 'interrupted'; this.result = { winner: null, reason: token === this.hostToken ? 'host-left' : 'opponent-left' }; this.revision++;
     }
-    session.connected = false;
-    session.disconnectedAt = this.now();
+    session.connected = false; session.disconnectedAt = this.now();
     return this.snapshot();
   }
-
   tick() { this.expire(); return this.snapshot() }
 
   private play(session: Session, message: Extract<LanClientMessage, { type: 'move' }>): LanServerMessage {
     const fingerprint = JSON.stringify(message);
     const receipt = this.receipts.get(message.actionId);
-    if (receipt) {
-      if (receipt.fingerprint !== fingerprint) return { type: 'error', code: 'action-id-reused', actionId: message.actionId, snapshot: this.snapshot() };
-      return receipt.message;
-    }
+    if (receipt) return receipt.fingerprint === fingerprint ? receipt.message : { type: 'error', code: 'action-id-reused', actionId: message.actionId, snapshot: this.snapshot() };
     const reject = (code: string): LanServerMessage => ({ type: 'error', code, actionId: message.actionId, snapshot: this.snapshot() });
-    if (this.status !== 'playing' || !this.state || !this.matchId) return reject('match-not-active');
+    if (this.status !== 'playing' || !this.state || !this.matchId || this.turnStartedAt === null) return reject('match-not-active');
     if (message.matchId !== this.matchId) return reject('old-match');
     if (message.expectedRevision !== this.revision) return reject('stale-revision');
     if (this.state.turn !== session.seat) return reject('not-your-turn');
+    const previousSeat = this.state.turn;
+    const now = this.now();
+    this.clocks = chargeClock(this.timeControl, this.clocks, previousSeat, this.turnStartedAt, now);
     let next: ReturnType<GamePlugin['create']>;
     try { next = this.options.game.apply(this.state, message.move) } catch (error) { return reject(error instanceof RuleError ? error.code : 'invalid-move') }
     this.state = next;
+    this.clocks = beginTurn(this.timeControl, this.clocks, previousSeat, next.turn);
+    this.turnStartedAt = now;
     this.revision++;
-    this.turnStartedAt = this.now();
-    if (isGameOver(next)) {
-      this.status = 'finished';
-      this.result = { winner: next.winner, reason: next.drawReason ?? this.options.game.winReason };
-    }
+    if (isGameOver(next)) { this.status = 'finished'; this.result = { winner: next.winner, reason: next.drawReason ?? this.options.game.winReason } }
     const accepted: LanServerMessage = { type: 'snapshot', snapshot: this.snapshot(), ack: message.actionId };
     this.receipts.set(message.actionId, { fingerprint, message: accepted });
     return accepted;
   }
-
   private rematch(session: Session, matchId: string): LanServerMessage {
     if (this.status !== 'finished' || !this.matchId) return { type: 'error', code: 'match-still-active', snapshot: this.snapshot() };
     if (matchId !== this.matchId) return { type: 'error', code: 'old-match', snapshot: this.snapshot() };
     this.rematchVotes.add(session.seat);
-    if (this.rematchVotes.size === 2) {
-      for (const player of this.sessions.values()) player.seat = opponent(player.seat) as 0 | 1;
-      this.startMatch();
-    }
+    if (this.rematchVotes.size === 2) { for (const player of this.sessions.values()) player.seat = opponent(player.seat) as 0 | 1; this.startMatch() }
     return { type: 'snapshot', snapshot: this.snapshot() };
   }
-
   private startMatch() {
-    this.state = this.options.game.create(2);
-    this.matchId = this.randomId();
-    this.revision = 0;
-    this.status = 'playing';
-    this.result = null;
-    this.turnStartedAt = this.now();
-    this.receipts.clear();
-    this.rematchVotes.clear();
+    this.state = this.options.game.create(2); this.matchId = this.randomId(); this.revision = 0; this.status = 'playing'; this.result = null;
+    this.clocks = createClocks(this.timeControl, 2); this.turnStartedAt = this.now(); this.receipts.clear(); this.rematchVotes.clear();
     for (const session of this.sessions.values()) session.ready = false;
   }
-
   private expire() {
-    if (this.status !== 'playing') return;
+    if (this.status !== 'playing' || !this.state || this.turnStartedAt === null) return;
     const now = this.now();
     for (const session of this.sessions.values()) {
       if (!session.connected && session.disconnectedAt !== null && now - session.disconnectedAt >= this.graceMs) {
-        this.status = 'interrupted';
-        this.result = { winner: null, reason: 'connection-lost' };
-        this.revision++;
-        return;
+        this.status = 'interrupted'; this.result = { winner: null, reason: 'connection-lost' }; this.revision++; return;
       }
     }
-    if (this.turnSeconds !== null && this.turnStartedAt !== null && now - this.turnStartedAt >= this.turnSeconds * 1000) {
-      if (!this.state) return;
-      this.status = 'finished';
-      this.result = { winner: opponent(this.state.turn as 0 | 1), reason: 'timeout' };
-      this.revision++;
+    if (now >= timeoutAt(this.timeControl, this.clocks, this.state.turn, this.turnStartedAt)) {
+      const loser = this.state.turn;
+      this.clocks = chargeClock(this.timeControl, this.clocks, loser, this.turnStartedAt, now);
+      this.status = 'finished'; this.result = { winner: opponent(loser as 0 | 1), reason: 'timeout' }; this.revision++;
     }
   }
-
-  private session(token: string): Session { const session = this.sessions.get(token); if (!session) throw new RuleError('unauthorized'); return session }
+  private session(token: string) { const session = this.sessions.get(token); if (!session) throw new RuleError('unauthorized'); return session }
   private bySeat(seat: 0 | 1) { return [...this.sessions.values()].find((session) => session.seat === seat) }
 }
