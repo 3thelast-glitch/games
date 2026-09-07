@@ -36,8 +36,16 @@ export class Lobby {
     this.queue = this.queue.filter((q) => q.userId !== userId);
     const changed: Room[] = [];
     for (const [code, room] of [...this.rooms]) {
-      if (room.owner === userId) this.rooms.delete(code);
-      else if (room.members.includes(userId)) {
+      if (room.owner === userId) {
+        this.rooms.delete(code);
+        const remaining = room.members.filter((id) => id !== userId);
+        if (remaining.length) {
+          // The existing WebSocket room message is also the safest backwards-
+          // compatible closure signal: clients already dismiss rooms whose
+          // expiresAt is in the past.
+          changed.push({ ...room, members: remaining, expiresAt: 0 });
+        }
+      } else if (room.members.includes(userId)) {
         room.members = room.members.filter((id) => id !== userId);
         changed.push(room);
       }
@@ -50,7 +58,7 @@ export class Lobby {
       throw new RuleError('player-count-not-supported');
     return value as PlayerCount;
   }
-  private normalizeTurnSeconds(gameId: string, value?: TurnTimerSeconds): TurnTimerSeconds | null {
+  canonicalTurnSeconds(gameId: string, value?: TurnTimerSeconds): TurnTimerSeconds | null {
     if (gameId !== 'digitalGame') {
       if (value !== undefined) throw new RuleError('turn-timer-not-supported');
       return null;
@@ -97,7 +105,7 @@ export class Lobby {
   ): MatchSnapshot | null {
     this.eligible(userId, gameId, ranked);
     const playerCount = this.normalizePlayerCount(gameId, requestedPlayerCount),
-      turnSeconds = this.normalizeTurnSeconds(gameId, requestedTurnSeconds);
+      turnSeconds = this.canonicalTurnSeconds(gameId, requestedTurnSeconds);
     this.cancel(userId);
     const entry: QueueEntry = {
       userId,
@@ -110,31 +118,50 @@ export class Lobby {
     this.queue.push(entry);
     return this.tryGroup(entry);
   }
+  private samePool(a: QueueEntry, b: QueueEntry) {
+    return (
+      a.gameId === b.gameId &&
+      a.ranked === b.ranked &&
+      a.playerCount === b.playerCount &&
+      a.turnSeconds === b.turnSeconds
+    );
+  }
+  private pairCompatible(a: QueueEntry, b: QueueEntry, now: number) {
+    if (!this.samePool(a, b)) return false;
+    if (!a.ranked) return true;
+    const ratingA = this.matches.store.rating(a.userId, a.gameId),
+      ratingB = this.matches.store.rating(b.userId, b.gameId),
+      spread = 150 + Math.floor((now - Math.min(a.at, b.at)) / 10000) * 50;
+    return Math.abs(ratingA - ratingB) <= spread;
+  }
   private tryGroup(entry: QueueEntry): MatchSnapshot | null {
     if (!this.queue.includes(entry)) return null;
-    const now = this.matches.options.now(),
-      rating = this.matches.store.rating(entry.userId, entry.gameId);
-    const compatible = this.queue
-      .filter(
-        (q) =>
-          q.gameId === entry.gameId &&
-          q.ranked === entry.ranked &&
-          q.playerCount === entry.playerCount &&
-          q.turnSeconds === entry.turnSeconds &&
-          (!entry.ranked ||
-            Math.abs(this.matches.store.rating(q.userId, q.gameId) - rating) <=
-              150 + Math.floor((now - Math.min(q.at, entry.at)) / 10000) * 50),
-      )
+    const now = this.matches.options.now();
+    const candidates = this.queue
+      .filter((candidate) => candidate !== entry && this.samePool(entry, candidate))
       .sort((a, b) => a.at - b.at);
-    if (compatible.length < entry.playerCount) return null;
-    const selected = compatible.slice(0, entry.playerCount);
+    const selected: QueueEntry[] = [entry];
+    const findGroup = (start: number): QueueEntry[] | null => {
+      if (selected.length === entry.playerCount) return [...selected];
+      for (let index = start; index < candidates.length; index++) {
+        const candidate = candidates[index];
+        if (!selected.every((other) => this.pairCompatible(other, candidate, now))) continue;
+        selected.push(candidate);
+        const group = findGroup(index + 1);
+        if (group) return group;
+        selected.pop();
+      }
+      return null;
+    };
+    const group = findGroup(0);
+    if (!group) return null;
     const match = this.group(
       entry.gameId,
-      selected.map((item) => item.userId),
+      group.map((item) => item.userId),
       entry.ranked,
       entry.turnSeconds,
     );
-    for (const item of selected) this.cancel(item.userId);
+    for (const item of group) this.cancel(item.userId);
     return match;
   }
   tick(): MatchSnapshot[] {
@@ -155,7 +182,7 @@ export class Lobby {
   ): Room {
     this.eligible(userId, gameId);
     const playerCount = this.normalizePlayerCount(gameId, requestedPlayerCount),
-      turnSeconds = this.normalizeTurnSeconds(gameId, requestedTurnSeconds);
+      turnSeconds = this.canonicalTurnSeconds(gameId, requestedTurnSeconds);
     this.cancel(userId);
     const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code: string;
