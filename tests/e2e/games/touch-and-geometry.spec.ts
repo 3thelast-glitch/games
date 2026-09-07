@@ -1,9 +1,24 @@
-import { test, expect, type Browser, type Page } from '@playwright/test';
+import { test, expect, type Browser, type Locator, type Page } from '@playwright/test';
 import { locales, type GameId } from '../fixtures/matrix.ts';
 import { openLocalGame } from '../helpers/game.ts';
 import { expectCenterHitTarget, expectNoGlobalOverflow, expectSquare } from '../helpers/layout.ts';
 
 const mobile = { width: 390, height: 844 };
+
+async function activate(
+  target: Locator,
+  browserName: string,
+  position?: { x: number; y: number },
+) {
+  // Playwright does not expose touch emulation for Firefox. Keep real tap
+  // coverage on Chromium/WebKit and use the equivalent pointer activation on
+  // Firefox so the cross-browser geometry suite still validates hit targets.
+  if (browserName === 'firefox') {
+    await target.click(position ? { position } : undefined);
+    return;
+  }
+  await target.tap(position ? { position } : undefined);
+}
 
 async function withMobileGame(
   browser: Browser,
@@ -34,7 +49,7 @@ for (const locale of locales) {
     await withMobileGame(browser, browserName, 'abalone', locale, async (page) => {
       const marble = page.locator('.marble:not(:disabled)').first();
       await expectCenterHitTarget(marble, 'Abalone own marble');
-      await marble.tap();
+      await activate(marble, browserName);
       await expect(marble).toHaveAttribute('aria-pressed', 'true');
       await expect(page.locator('.marble:disabled').first()).toBeDisabled();
       await expectNoGlobalOverflow(page);
@@ -47,7 +62,7 @@ for (const locale of locales) {
       const before = await pawn.getAttribute('style');
       const target = page.locator('.quoridor-board .legal-square').first();
       await expectCenterHitTarget(target, 'Quoridor legal square');
-      await target.tap({ position: { x: 12, y: 12 } });
+      await activate(target, browserName, { x: 12, y: 12 });
       await expect.poll(() => pawn.getAttribute('style')).not.toBe(before);
       await expectNoGlobalOverflow(page);
     });
@@ -60,7 +75,7 @@ for (const locale of locales) {
       const enabled = board.locator('button:not(:disabled)');
       expect(await enabled.count()).toBeGreaterThan(0);
       await expectCenterHitTarget(enabled.first(), 'Checkers enabled square');
-      await enabled.first().tap();
+      await activate(enabled.first(), browserName);
       await expectNoGlobalOverflow(page);
     });
   });
@@ -103,7 +118,7 @@ for (const locale of locales) {
         }
       }
       await expectCenterHitTarget(nodes.first(), 'Morris point');
-      await nodes.first().tap();
+      await activate(nodes.first(), browserName);
       await expectNoGlobalOverflow(page);
     });
   });
@@ -116,7 +131,7 @@ for (const locale of locales) {
       await expectCenterHitTarget(columns.last(), 'Connect Four last column');
       for (const index of [0, 6, 35, 41])
         await expectSquare(page.locator('.connect-slot').nth(index), `Connect Four slot ${index}`, 2);
-      await columns.last().tap();
+      await activate(columns.last(), browserName);
       await expect(columns.last().locator('.board-disc')).toHaveCount(1);
       await expectNoGlobalOverflow(page);
     });
@@ -129,7 +144,7 @@ for (const locale of locales) {
       expect(await tiles.count()).toBeGreaterThanOrEqual(14);
       await tiles.last().scrollIntoViewIfNeeded();
       await expectCenterHitTarget(tiles.last(), 'Digital last rack tile');
-      await tiles.first().tap();
+      await activate(tiles.first(), browserName);
       await expect(tiles.first()).toHaveClass(/selected/);
       const actions = page.locator('.digital-actions button');
       expect(await actions.count()).toBeGreaterThanOrEqual(2);
