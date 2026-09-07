@@ -2,6 +2,7 @@ import { randomInt } from 'node:crypto';
 import { RuleError, type PlayerCount } from '../../../packages/core/src/game.ts';
 import type { MatchSnapshot } from '../../../packages/core/src/protocol.ts';
 import {
+  bankTimeControl,
   CLASSIC_DIGITAL_TURN_SECONDS,
   turnTimeControl,
   type TurnTimerSeconds,
@@ -90,12 +91,13 @@ export class Lobby {
     ranked: boolean,
     turnSeconds: TurnTimerSeconds | null,
   ) {
-    return this.matches.create(
-      gameId,
-      this.shuffled(users),
-      ranked,
-      turnSeconds === null ? undefined : turnTimeControl(turnSeconds),
-    );
+    const timeControl =
+      turnSeconds !== null
+        ? turnTimeControl(turnSeconds)
+        : gameId === 'reversi'
+          ? bankTimeControl(600000)
+          : undefined;
+    return this.matches.create(gameId, this.shuffled(users), ranked, timeControl);
   }
   enqueue(
     userId: string,
