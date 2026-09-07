@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -122,9 +123,7 @@ public class BoardArenaLanPlugin extends Plugin {
         stopDiscoveryInternal();
         discoveryListener = new NsdManager.DiscoveryListener() {
             @Override public void onDiscoveryStarted(String regType) {}
-            @Override public void onStartDiscoveryFailed(String serviceType, int errorCode) {
-                stopDiscoveryInternal();
-            }
+            @Override public void onStartDiscoveryFailed(String serviceType, int errorCode) { stopDiscoveryInternal(); }
             @Override public void onStopDiscoveryFailed(String serviceType, int errorCode) {}
             @Override public void onDiscoveryStopped(String serviceType) {}
             @Override public void onServiceFound(NsdServiceInfo serviceInfo) {
@@ -230,9 +229,7 @@ public class BoardArenaLanPlugin extends Plugin {
     @Override
     protected void handleOnDestroy() {
         stopDiscoveryInternal();
-        synchronized (hostLock) {
-            stopHostInternal();
-        }
+        synchronized (hostLock) { stopHostInternal(); }
         for (String id : sockets.keySet()) closeConnection(id, "destroyed");
         io.shutdownNow();
         super.handleOnDestroy();
@@ -318,9 +315,7 @@ public class BoardArenaLanPlugin extends Plugin {
         info.setPort(boundPort);
         for (Map.Entry<String, String> entry : metadata.entrySet()) {
             String value = entry.getValue();
-            if (entry.getKey().length() <= 9 && value.getBytes(StandardCharsets.UTF_8).length <= 128) {
-                info.setAttribute(entry.getKey(), value);
-            }
+            if (entry.getKey().length() <= 9 && value.getBytes(StandardCharsets.UTF_8).length <= 128) info.setAttribute(entry.getKey(), value);
         }
         registrationListener = new NsdManager.RegistrationListener() {
             @Override public void onServiceRegistered(NsdServiceInfo serviceInfo) { serviceName = serviceInfo.getServiceName(); }
@@ -358,7 +353,9 @@ public class BoardArenaLanPlugin extends Plugin {
     private Map<String, String> objectToStrings(JSObject object) {
         if (object == null) return Collections.emptyMap();
         Map<String, String> out = new HashMap<>();
-        for (String key : object.keys()) {
+        Iterator<String> keys = object.keys();
+        while (keys.hasNext()) {
+            String key = keys.next();
             Object value = object.opt(key);
             if (value != null) out.put(key, String.valueOf(value));
         }
@@ -373,8 +370,7 @@ public class BoardArenaLanPlugin extends Plugin {
             Enumeration<InetAddress> addresses = network.getInetAddresses();
             while (addresses.hasMoreElements()) {
                 InetAddress address = addresses.nextElement();
-                if (address instanceof Inet4Address && !address.isLoopbackAddress() && address.isSiteLocalAddress())
-                    return address.getHostAddress();
+                if (address instanceof Inet4Address && !address.isLoopbackAddress() && address.isSiteLocalAddress()) return address.getHostAddress();
             }
         }
         interfaces = NetworkInterface.getNetworkInterfaces();
