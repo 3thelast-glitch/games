@@ -154,14 +154,15 @@ test('Reversi move application is immutable and adds exactly one occupied cell',
 
 test('Reversi automatically passes a player with no legal moves and grants a consecutive turn', () => {
   const state = emptyReversi();
-  state.board.fill(0);
-  state.board[reversiIndex(0, 1)] = 1;
-  state.board[reversiIndex(1, 1)] = 1;
-  state.board[reversiIndex(0, 2)] = null;
-  state.board[reversiIndex(1, 2)] = null;
+  // Sparse legal position: Black can play G7/H7-axis at H7, leaving White with
+  // no legal reply while Black still has legal moves at F4/F5.
+  state.board[reversiIndex(2, 5)] = 0;
+  state.board[reversiIndex(4, 6)] = 1;
+  state.board[reversiIndex(4, 7)] = 0;
+  state.board[reversiIndex(5, 7)] = 1;
   state.scores = calculateReversiScore(state.board);
 
-  const next = applyReversi(state, { row: 0, col: 2 });
+  const next = applyReversi(state, { row: 6, col: 7 });
   assert.equal(next.turn, 0);
   assert.equal(next.lastPass, 1);
   assert.equal(next.passes, 1);
@@ -169,11 +170,10 @@ test('Reversi automatically passes a player with no legal moves and grants a con
   assert.equal(hasReversiLegalMove(next.board, 0), true);
   assert.equal(next.winner, null);
   assert.equal(next.drawReason, null);
-
-  const final = applyReversi(next, { row: 1, col: 2 });
-  assert.equal(final.scores[0] + final.scores[1], 64);
-  assert.equal(final.winner, 0);
-  assert.deepEqual(reversiEngine.legalMoves(final), []);
+  assert.deepEqual(getReversiLegalMoves(next.board, 0), [
+    { row: 3, col: 5 },
+    { row: 4, col: 5 },
+  ]);
 });
 
 test('Reversi detects that neither player can move even when an empty square remains', () => {
