@@ -3,7 +3,7 @@ on:
   push:
   pull_request:
 permissions:
-  contents: write
+  contents: read
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -13,19 +13,8 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - name: Refresh lockfile for uuid security override
-        run: |
-          npm install --package-lock-only --ignore-scripts
-          if ! git diff --quiet -- package-lock.json; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add package-lock.json
-            git commit -m "Refresh lockfile for uuid security override"
-            git push origin HEAD:${GITHUB_REF_NAME}
-          fi
       - run: npm ci
-      - name: Dependency audit diagnostics
-        run: npm audit --json || true
+      - run: npm audit --audit-level=moderate
       - run: npm test
       - run: npm run build
       - uses: actions/upload-artifact@v4
