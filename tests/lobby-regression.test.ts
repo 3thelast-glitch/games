@@ -101,3 +101,28 @@ test('Digital Classic lobby timer is canonicalized to exactly 60 seconds', () =>
     store.close();
   }
 });
+
+
+test('Reversi supports optional per-turn timers and an Off fallback', () => {
+  const { store, lobby } = setup();
+  try {
+    assert.equal(lobby.canonicalTurnSeconds('reversi'), null);
+    for (const seconds of [15, 30, 45, 60, 90] as const)
+      assert.equal(lobby.canonicalTurnSeconds('reversi', seconds), seconds);
+    assert.throws(() => lobby.canonicalTurnSeconds('abalone', 15), /turn-timer-not-supported/);
+
+    const timedA = account(store, 'TimedA'), timedB = account(store, 'TimedB');
+    assert.equal(lobby.enqueue(timedA.id, 'reversi', false, 2, 15), null);
+    const timed = lobby.enqueue(timedB.id, 'reversi', false, 2, 15);
+    assert.ok(timed);
+    assert.deepEqual(timed.timeControl, { mode: 'turn', turnMs: 15000 });
+
+    const offA = account(store, 'OffA'), offB = account(store, 'OffB');
+    assert.equal(lobby.enqueue(offA.id, 'reversi', false, 2), null);
+    const off = lobby.enqueue(offB.id, 'reversi', false, 2);
+    assert.ok(off);
+    assert.deepEqual(off.timeControl, { mode: 'bank', initialMs: 60000 });
+  } finally {
+    store.close();
+  }
+});

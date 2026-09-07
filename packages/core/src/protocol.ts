@@ -4,7 +4,7 @@ import type { TimeControl, TurnTimerSeconds } from './timing.ts';
 export const PROTOCOL_VERSION = 3;
 const id = z.string().min(1).max(80);
 const playerCount = z.union([z.literal(2), z.literal(3), z.literal(4)]);
-const turnTimerSeconds = z.union([z.literal(30), z.literal(45), z.literal(60), z.literal(90)]);
+const turnTimerSeconds = z.union([z.literal(15), z.literal(30), z.literal(45), z.literal(60), z.literal(90)]);
 const matchCommand = {
   matchId: id,
   commandId: z.string().min(8).max(80),

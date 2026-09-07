@@ -348,8 +348,8 @@ test('Digital matchmaking canonicalizes legacy 30/45/90 requests into one 60-sec
   }
 });
 
-test('legacy protocol timer values remain parseable while Digital Classic normalizes them server-side', () => {
-  for (const turnSeconds of [30, 45, 60, 90] as const) {
+test('protocol timer values remain parseable while Digital Classic normalizes them server-side', () => {
+  for (const turnSeconds of [15, 30, 45, 60, 90] as const) {
     const parsed = clientMessageSchema.parse({
       type: 'queue',
       gameId: 'digitalGame',
@@ -365,7 +365,7 @@ test('legacy protocol timer values remain parseable while Digital Classic normal
       gameId: 'digitalGame',
       ranked: false,
       playerCount: 4,
-      turnSeconds: 15,
+      turnSeconds: 20,
     }),
   );
 });

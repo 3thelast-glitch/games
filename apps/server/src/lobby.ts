@@ -59,14 +59,15 @@ export class Lobby {
     return value as PlayerCount;
   }
   canonicalTurnSeconds(gameId: string, value?: TurnTimerSeconds): TurnTimerSeconds | null {
-    if (gameId !== 'digitalGame') {
-      if (value !== undefined) throw new RuleError('turn-timer-not-supported');
-      return null;
+    if (gameId === 'digitalGame') {
+      // Rummikub Classic uses one fixed minute per turn. Legacy clients may still
+      // submit other supported timer values, but Digital Classic is always 60.
+      void value;
+      return CLASSIC_DIGITAL_TURN_SECONDS;
     }
-    // Rummikub Classic uses one fixed minute per turn. Legacy clients may still
-    // submit 30/45/90, but all Digital Classic lobbies are canonicalized to 60.
-    void value;
-    return CLASSIC_DIGITAL_TURN_SECONDS;
+    if (gameId === 'reversi') return value ?? null;
+    if (value !== undefined) throw new RuleError('turn-timer-not-supported');
+    return null;
   }
   private eligible(userId: string, gameId: string, ranked = false) {
     this.matches.games.get(gameId);

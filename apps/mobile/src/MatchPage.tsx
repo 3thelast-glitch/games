@@ -127,7 +127,11 @@ export function MatchPage(p: MatchPageProps) {
           <small>
             {t(p.mode)}
             {p.mode === 'online' ? ` · ${t(p.ranked ? 'ranked' : 'casual')}` : ''}
-            {timeControl.mode === 'turn' ? ` · ${timeControl.turnMs / 1000}s` : ''}
+            {timeControl.mode === 'turn'
+              ? ` · ${timeControl.turnMs / 1000}s`
+              : p.state.gameId === 'reversi'
+                ? ` · ${t('turn')}: ${t('off')}`
+                : ''}
           </small>
         </div>
         <span className="match-move-number">
