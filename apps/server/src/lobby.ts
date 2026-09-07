@@ -31,16 +31,7 @@ export interface RoomJoinResult {
 export class Lobby {
   queue: QueueEntry[] = [];
   rooms = new Map<string, Room>();
-  private roomSignals: Room[] = [];
   constructor(readonly matches: MatchService) {}
-  private signalRoom(room: Room) {
-    this.roomSignals.push({ ...room, members: [...room.members] });
-  }
-  drainRoomSignals(): Room[] {
-    const signals = this.roomSignals;
-    this.roomSignals = [];
-    return signals;
-  }
   cancel(userId: string): Room[] {
     this.queue = this.queue.filter((q) => q.userId !== userId);
     const changed: Room[] = [];
@@ -49,16 +40,14 @@ export class Lobby {
         this.rooms.delete(code);
         const remaining = room.members.filter((id) => id !== userId);
         if (remaining.length) {
-          // Reuse the existing room message as an immediate closed-room signal.
-          // Clients already dismiss any room whose expiresAt is in the past.
-          const closed = { ...room, members: remaining, expiresAt: 0 };
-          changed.push(closed);
-          this.signalRoom(closed);
+          // The existing WebSocket room message is also the safest backwards-
+          // compatible closure signal: clients already dismiss rooms whose
+          // expiresAt is in the past.
+          changed.push({ ...room, members: remaining, expiresAt: 0 });
         }
       } else if (room.members.includes(userId)) {
         room.members = room.members.filter((id) => id !== userId);
         changed.push(room);
-        this.signalRoom(room);
       }
     }
     return changed;
@@ -182,10 +171,7 @@ export class Lobby {
       if (match) result.push(match);
     }
     for (const [code, room] of this.rooms)
-      if (room.expiresAt < this.matches.options.now()) {
-        this.rooms.delete(code);
-        this.signalRoom({ ...room, expiresAt: 0 });
-      }
+      if (room.expiresAt < this.matches.options.now()) this.rooms.delete(code);
     return result;
   }
   createRoom(
