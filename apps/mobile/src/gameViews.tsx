@@ -6,6 +6,8 @@ import { ConnectFourBoard } from '../../../packages/games/connect-four/ui.tsx';
 import type { ConnectFourState } from '../../../packages/games/connect-four/state.ts';
 import { MorrisBoard } from '../../../packages/games/nine-mens-morris/ui.tsx';
 import type { MorrisState } from '../../../packages/games/nine-mens-morris/state.ts';
+import { ReversiBoard } from '../../../packages/games/reversi/ui.tsx';
+import type { ReversiState } from '../../../packages/games/reversi/state.ts';
 import { DigitalGameBoard } from '../../../packages/games/digital-game/ui.tsx';
 import type { DigitalGameState } from '../../../packages/games/digital-game/state.ts';
 import type { BaseState, Seat } from '../../../packages/core/src/game.ts';
@@ -24,6 +26,7 @@ export const gameViews: Record<string, (props: Props) => React.ReactNode> = {
   connectFour: (props) => <ConnectFourBoard {...props} state={props.state as ConnectFourState} />,
   gomoku: (props) => <GomokuBoard {...props} state={props.state as GomokuState} />,
   checkers: (props) => <CheckersBoard {...props} state={props.state as CheckersState} />,
+  reversi: (props) => <ReversiBoard {...props} state={props.state as ReversiState} />,
   digitalGame: (props) => <DigitalGameBoard {...props} state={props.state as DigitalGameState} />,
   abalone: (props) => <AbaloneBoard {...props} state={props.state as AbaloneState} />,
   quoridor: (props) => <QuoridorBoard {...props} state={props.state as QuoridorState} />,
@@ -34,6 +37,7 @@ export const gameInfo = [
     { id: 'gomoku', duration: '5–15', icon: '✣' },
     { id: 'nineMensMorris', duration: '10–20', icon: '▣' },
     { id: 'connectFour', duration: '5–10', icon: '⠿' },
+    { id: 'reversi', duration: '5–20', icon: '◐' },
   ].map((game) => ({ ...game, tag: `${game.id}Tag`, description: `${game.id}Desc` })),
   {
     id: 'digitalGame',
@@ -57,7 +61,7 @@ export const gameInfo = [
     icon: '▦',
   },
 ];
-export const upcoming = ['chess', 'reversi', 'mancala'];
+export const upcoming = ['chess', 'mancala'];
 const resources: Record<
   string,
   (state: BaseState, player: Seat) => { value: string; label: string }
@@ -77,7 +81,7 @@ const resources: Record<
 };
 export function gameResource(state: BaseState, player: Seat): { value: string; label: string } {
   if (resources[state.gameId]) return resources[state.gameId](state, player);
-  const board = (state as CheckersState | GomokuState | MorrisState | ConnectFourState).board;
+  const board = (state as CheckersState | GomokuState | MorrisState | ConnectFourState | ReversiState).board;
   const count = board.filter((piece) =>
     typeof piece === 'object' && piece !== null ? piece.owner === player : piece === player,
   ).length;
