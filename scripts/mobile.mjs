@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 try {
   process.loadEnvFile('.env');
@@ -23,6 +23,11 @@ for (const platform of platforms) {
     const path = 'android/app/src/main/AndroidManifest.xml';
     let manifest = readFileSync(path, 'utf8');
     manifest = manifest.replace('android:allowBackup="true"', 'android:allowBackup="false"');
+    if (!manifest.includes('android.permission.ACCESS_LOCAL_NETWORK'))
+      manifest = manifest.replace(
+        '<application',
+        '<uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />\n    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" android:usesPermissionFlags="neverForLocation" />\n    <application',
+      );
     if (!manifest.includes('android:usesCleartextTraffic'))
       manifest = manifest.replace(
         '<application',
@@ -40,6 +45,13 @@ for (const platform of platforms) {
     </activity>`,
       );
     writeFileSync(path, manifest);
+    const javaDir = 'android/app/src/main/java/com/boardarena/app';
+    mkdirSync(javaDir, { recursive: true });
+    copyFileSync('native/lan/android/BoardArenaLanPlugin.java', `${javaDir}/BoardArenaLanPlugin.java`);
+    writeFileSync(
+      `${javaDir}/MainActivity.java`,
+      `package com.boardarena.app;\n\nimport android.os.Bundle;\nimport com.getcapacitor.BridgeActivity;\n\npublic class MainActivity extends BridgeActivity {\n  @Override\n  public void onCreate(Bundle savedInstanceState) {\n    registerPlugin(BoardArenaLanPlugin.class);\n    super.onCreate(savedInstanceState);\n  }\n}\n`,
+    );
   } else {
     const path = 'ios/App/App/Info.plist';
     let plist = readFileSync(path, 'utf8');
@@ -90,5 +102,5 @@ console.log(
 );
 if (!process.env.VITE_SERVER_URL)
   console.log(
-    'Local and AI modes are bundled. Set VITE_SERVER_URL to your deployed HTTPS server and rebuild to enable online play.',
+    'Local, AI, and Reversi LAN modes are bundled. Set VITE_SERVER_URL to your deployed HTTPS server and rebuild to enable online play.',
   );
