@@ -88,7 +88,7 @@ test('LAN move authority binds the actor, validates Reversi, versions state and 
   assert.equal(first.type, 'snapshot');
   assert.equal((first as Extract<LanServerMessage, { type: 'snapshot' }>).ack, command.actionId);
   assert.equal(host.snapshot().revision, 1);
-  assert.deepEqual((host.snapshot().state as { scores: [number, number] }).scores, [4, 1]);
+  assert.deepEqual((host.snapshot().state as unknown as { scores: [number, number] }).scores, [4, 1]);
 
   const retry = host.handle(host.hostToken, command);
   assert.deepEqual(retry, first);
