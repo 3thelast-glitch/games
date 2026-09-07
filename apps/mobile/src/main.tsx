@@ -4,6 +4,7 @@ import App from './App.tsx';
 import './styles.css';
 import '../../../packages/games/digital-game/ui.css';
 import './responsive-overrides.css';
+import './reversi.css';
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
