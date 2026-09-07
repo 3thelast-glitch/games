@@ -1,0 +1,183 @@
+.reversi-game {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.reversi-score {
+  width: min(100%, 620px);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.reversi-score > span {
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 11px;
+  border: 1px solid var(--line, #343a46);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel, #161b22) 88%, transparent);
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.reversi-score > span.active {
+  border-color: #6fbca3;
+  box-shadow: 0 0 0 1px #6fbca333, 0 8px 24px #07171255;
+}
+
+.reversi-score strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reversi-score b {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.15rem;
+}
+
+.reversi-score-disc {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: block;
+  border: 2px solid;
+  box-shadow: inset 0 2px 5px #ffffff1f, 0 2px 5px #0008;
+}
+
+.reversi-board {
+  width: min(100%, 620px, 80vh);
+  aspect-ratio: 1;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-rows: repeat(8, minmax(0, 1fr));
+  overflow: hidden;
+  border: clamp(5px, 1.2vw, 10px) solid #253b35;
+  border-radius: clamp(10px, 2vw, 18px);
+  background: #174d40;
+  box-shadow: 0 18px 38px #0008, inset 0 0 0 1px #91c4af33;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.reversi-cell,
+.reversi-cell:disabled {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-inline-end: 1px solid #092e27aa;
+  border-block-end: 1px solid #092e27aa;
+  border-radius: 0;
+  background: linear-gradient(145deg, #1d6554, #175747);
+  opacity: 1;
+  cursor: default;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.reversi-cell:not(:disabled) {
+  cursor: pointer;
+}
+
+.reversi-cell:not(:disabled):hover,
+.reversi-cell:not(:disabled):focus-visible {
+  background: linear-gradient(145deg, #287560, #1c6553);
+  outline: 2px solid #a6dbc8;
+  outline-offset: -3px;
+  z-index: 2;
+}
+
+.reversi-disc {
+  width: 76%;
+  height: 76%;
+  border-radius: 50%;
+  display: block;
+  border: clamp(1px, 0.35vw, 3px) solid;
+  box-shadow: inset -5px -7px 12px #0005, inset 4px 4px 8px #fff3, 0 5px 8px #071b1680;
+  transform: translateZ(0);
+}
+
+.reversi-disc.disc-0,
+.reversi-score-disc.disc-0 {
+  background: radial-gradient(circle at 32% 24%, #59616d 0 7%, #252b33 38%, #0d1117 88%);
+  border-color: #778391;
+}
+
+.reversi-disc.disc-1,
+.reversi-score-disc.disc-1 {
+  background: radial-gradient(circle at 32% 24%, #fffef7 0 8%, #ece7d9 42%, #bdb6a7 100%);
+  border-color: #fff9eb;
+}
+
+.reversi-legal-dot {
+  width: 22%;
+  height: 22%;
+  min-width: 6px;
+  min-height: 6px;
+  border-radius: 50%;
+  background: #d8fff0a8;
+  box-shadow: 0 0 0 2px #0c322a55, 0 0 12px #b9f5dc66;
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+
+.reversi-cell:not(:disabled):hover .reversi-legal-dot,
+.reversi-cell:not(:disabled):focus-visible .reversi-legal-dot {
+  transform: scale(1.25);
+  opacity: 1;
+}
+
+.reversi-cell.last-cell::after {
+  content: '';
+  position: absolute;
+  width: 13%;
+  height: 13%;
+  min-width: 5px;
+  min-height: 5px;
+  border-radius: 50%;
+  background: #e7b96d;
+  box-shadow: 0 0 0 2px #11251f99;
+  inset-inline-end: 8%;
+  inset-block-start: 8%;
+  pointer-events: none;
+}
+
+.reversi-disc.flipped {
+  animation: reversi-flip 240ms cubic-bezier(.2, .72, .2, 1);
+}
+
+@keyframes reversi-flip {
+  0% { transform: scaleX(1); }
+  48% { transform: scaleX(.08); }
+  52% { transform: scaleX(.08); }
+  100% { transform: scaleX(1); }
+}
+
+@media (max-width: 520px) {
+  .reversi-game { gap: 7px; }
+  .reversi-score > span { padding: 6px 8px; gap: 6px; }
+  .reversi-score-disc { width: 21px; height: 21px; }
+  .reversi-score strong { font-size: .86rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reversi-disc.flipped {
+    animation: none;
+  }
+  .reversi-score > span,
+  .reversi-legal-dot {
+    transition: none;
+  }
+}

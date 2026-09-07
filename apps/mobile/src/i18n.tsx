@@ -10,6 +10,19 @@ const en: Record<string, string> = {
   nineMensMorrisDesc: 'Close a mill, take a piece, and leave your opponent with nowhere to go.',
   connectFourTag: 'FOUR MAKES THE DIFFERENCE',
   connectFourDesc: 'Drop a disc. Set a trap. Connect four in any direction.',
+  reversiTag: 'FLIP THE BOARD',
+  reversiDesc: 'Claim corners. Cut mobility. Turn every captured line in your favor.',
+  reversiRules:
+    'Standard Reversi on an 8×8 board. Black moves first from the four-disc center opening. Place a disc only on an empty square that traps one or more opposing discs between the new disc and another disc of your color in a straight horizontal, vertical or diagonal line. Every trapped disc in every valid direction flips. If the next player has no legal move, their turn passes automatically; passing is never voluntary. The game ends only when the board is full or neither player has a legal move. The player with more discs wins; equal counts are a draw.',
+  reversiHint: 'Tap a highlighted square to place a disc and flip every captured line.',
+  reversiBlack: 'Black',
+  reversiWhite: 'White',
+  reversiScore: 'Disc count',
+  reversiLegalMove: 'Legal move',
+  reversiPassed: 'has no legal move. The turn passed automatically.',
+  'illegal-reversi-move': 'Choose a highlighted square that captures at least one opposing disc.',
+  'reversi-win': 'The game ended with more discs of the winning color.',
+  'reversi-draw': 'Both players finished with the same number of discs.',
   checkersRules:
     'English / American Checkers: 8×8 board, 12 pieces each. Player one starts from the bottom and moves toward the top. Men move and capture diagonally forward; kings also move backward, one square or jump at a time. Captures are compulsory. Tap each landing square to complete every available jump with the same piece; you may choose any capture route. Reaching the far row crowns a king and ends the turn. Capture or block every opposing piece to win. Automatic draw at three repetitions or after 40 turns per player without a capture or an uncrowned man moving.',
   gomokuRules:
@@ -383,6 +396,19 @@ const ar: Record<string, string> = {
   nineMensMorrisDesc: 'أكمل صفًا ثلاثيًا، وخذ قطعة، وضيّق خيارات خصمك.',
   connectFourTag: 'أربع قطع للفوز',
   connectFourDesc: 'أسقط قطعة. جهّز فخك. وصِل أربع قطع في أي اتجاه.',
+  reversiTag: 'اقلب الصفوف. امتلك الزوايا.',
+  reversiDesc: 'سيطر على الزوايا، قلّل خيارات خصمك، واقلب كل خط محاصر لصالحك.',
+  reversiRules:
+    'ريفيرسي القياسية على لوحة 8×8. يبدأ الأسود من وضع البداية المكوّن من أربع قطع في الوسط. لا يجوز وضع قطعة إلا في خانة فارغة تحاصر قطعة واحدة أو أكثر للخصم بين القطعة الجديدة وقطعة أخرى من لونك على خط أفقي أو رأسي أو قطري مستقيم. تُقلب جميع قطع الخصم المحاصرة في كل الاتجاهات القانونية. إذا لم يملك اللاعب التالي أي حركة قانونية يمر دوره تلقائيًا، ولا يجوز التمرير اختياريًا. تنتهي المباراة فقط عند امتلاء اللوحة أو عندما لا يملك كلا اللاعبين أي حركة قانونية. يفوز صاحب العدد الأكبر من القطع، والتساوي يعني التعادل.',
+  reversiHint: 'اضغط خانة مضيئة لوضع قطعة وقلب جميع الخطوط المحاصرة.',
+  reversiBlack: 'الأسود',
+  reversiWhite: 'الأبيض',
+  reversiScore: 'عدد القطع',
+  reversiLegalMove: 'حركة قانونية',
+  reversiPassed: 'لا يملك حركة قانونية؛ انتقل الدور تلقائيًا.',
+  'illegal-reversi-move': 'اختر خانة مضيئة تحاصر قطعة واحدة على الأقل للخصم.',
+  'reversi-win': 'انتهت المباراة بعدد أكبر من القطع للون الفائز.',
+  'reversi-draw': 'أنهى اللاعبان المباراة بعدد متساوٍ من القطع.',
   checkersRules:
     'الداما الإنجليزية / الأمريكية: لوحة 8×8 و12 قطعة لكل لاعب. يبدأ اللاعب الأول من أسفل ويتحرك للأعلى. تتحرك القطع وتأخذ قطريًا للأمام، والملك يتحرك ويأخذ للخلف أيضًا، خانة أو قفزة في كل خطوة. الأخذ إجباري؛ اضغط كل خانة هبوط لإكمال سلسلة القفز بنفس القطعة، ولك اختيار أي مسار أخذ. الوصول للصف الأخير يتوّج القطعة وينهي الدور فورًا. تفوز بأخذ جميع قطع الخصم أو منع كل حركاته. تعادل تلقائي عند تكرار الوضع ثلاث مرات، أو بعد 40 دورًا لكل لاعب دون أخذ أو تحريك قطعة غير متوّجة.',
   gomokuRules:

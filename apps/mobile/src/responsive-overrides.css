@@ -32,8 +32,16 @@
   line-height: 1.25;
 }
 
-/* The responsive smoke suite requires every visible match-header control to
-   remain a real 40x40 touch target, including narrow phone layouts. */
+/* Keep desktop/tablet header controls safely above the 40px interaction floor.
+   Firefox can expose a nominal 40px CSS box as 39.999998px after subpixel
+   layout, so a 1px guard avoids falling below the real minimum. */
+.match-header .icon-button {
+  min-width: 41px;
+  min-height: 41px;
+}
+
+/* Narrow phone headers use a fixed footprint so both actions keep fitting
+   beside the title while remaining a real 40x40 touch target. */
 @media (max-width: 440px) {
   .match-header .icon-button {
     width: 40px;

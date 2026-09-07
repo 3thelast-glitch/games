@@ -5,6 +5,7 @@ import { checkersEngine } from './checkers/rules.ts';
 import { gomokuEngine } from './gomoku/rules.ts';
 import { connectFourEngine } from './connect-four/rules.ts';
 import { morrisEngine } from './nine-mens-morris/rules.ts';
+import { reversiEngine } from './reversi/rules.ts';
 import { classicDigitalGameEngine } from './digital-game/classic-engine.ts';
 export const games = new GameRegistry()
   .register(asPlugin(abaloneEngine))
@@ -13,4 +14,5 @@ export const games = new GameRegistry()
   .register(asPlugin(gomokuEngine))
   .register(asPlugin(morrisEngine))
   .register(asPlugin(connectFourEngine))
+  .register(asPlugin(reversiEngine))
   .register(asPlugin(classicDigitalGameEngine));

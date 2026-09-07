@@ -1,6 +1,6 @@
 # Board Arena
 
-A modular, bilingual strategy game platform for the web, Android and iOS. Version **0.1.0** is a functional initial implementation with six games: Abalone, Quoridor, Checkers, Gomoku, Nine Men’s Morris and Connect Four, plus local play, three AI levels, and a separate authoritative multiplayer server.
+A modular, bilingual strategy game platform for the web, Android and iOS. Version **0.1.0** is a functional implementation with eight registered games: Abalone, Quoridor, Checkers, Gomoku, Nine Men’s Morris, Connect Four, Digital Game and Reversi, plus local play, shared AI levels and an authoritative multiplayer server.
 
 [دليل التشغيل بالعربية](README.ar.md) · [Architecture](docs/ARCHITECTURE.md) · [Deployment](docs/DEPLOYMENT.md) · [Delivery status](docs/STATUS.md)
 
@@ -22,7 +22,7 @@ npm run build
 npm start
 ```
 
-The built server serves the app and API at `http://localhost:8787`. `GET /api/health` reports the registered games and protocol version. The current implementation passes **158 automated tests** covering rules, AI legality, authority, recovery, accounts, client networking and component interactions.
+The built server serves the app and API at `http://localhost:8787`. `GET /api/health` reports the registered games and protocol version. Validation CI runs dependency auditing, the complete Node/React test suite and production builds; Playwright separately exercises responsive, RTL/LTR, touch and cross-browser behavior.
 
 ## Included
 
@@ -33,7 +33,9 @@ The built server serves the app and API at `http://localhost:8787`. `GET /api/he
 - Gomoku (freestyle 15×15): preview/confirm placement, five-or-more in all four directions, unrestricted openings and full-board draws.
 - Nine Men’s Morris: nine-piece placement, adjacent movement, flying at three pieces, mills and protected captures, re-forming mills, blocked/two-piece losses and automatic threefold repetition.
 - Connect Four (7×6): gravity, full-column rejection, four-in-a-row in all directions, winning highlights and full-board draws.
-- Local two-player, AI, quick match and private rooms for all six games. Ranked quick matches require a registered account; guests can play casual online matches.
+- Digital Game: the project’s Classic numbered-tile rules engine, including hidden-rack projection, multiplayer turn handling and server-authoritative online state.
+- Reversi (8×8): standard four-disc opening with Black first, legal bracketing in all eight directions, multi-direction flips, automatic forced passes, terminal no-move detection and final disc-count scoring with draws.
+- Local play, shared AI, quick match and private-room flows are provided through the same game registry. Ranked quick matches require a registered account; guests can play casual online matches.
 - Easy random legal play, medium positional evaluation and hard bounded alpha-beta search, running outside the UI thread.
 - Optional guest/email accounts, provider adapters for Google and Apple, editable profiles, avatar choices, favorites, match history and friend codes.
 - Per-game Elo, six ranks, global/friends standings and UTC weekly/monthly net-rating-gain standings. Statistics come from actual matches.
@@ -48,16 +50,17 @@ The built server serves the app and API at `http://localhost:8787`. `GET /api/he
 | `packages/core/src`                                                     | Game interfaces, generic AI, offline controller, wire protocol and rating policy         |
 | `packages/games/abalone`                                                | Abalone state, pure rules, AI entry point and board UI                                   |
 | `packages/games/quoridor`                                               | Quoridor state, pure rules, AI entry point and board UI                                  |
-| `packages/games/checkers`, `gomoku`, `nine-mens-morris`, `connect-four` | New independent state/rules/AI/UI modules                                                |
+| `packages/games/checkers`, `gomoku`, `nine-mens-morris`, `connect-four` | Independent classic state/rules/AI/UI modules                                            |
+| `packages/games/digital-game`, `reversi`                                | Digital Game and Reversi state/rules/AI/UI modules                                      |
 | `packages/games/shared`                                                 | Line evaluation, win detection and shared board primitives                               |
 | `packages/games/registry.ts`                                            | Register available rules engines                                                         |
 | `apps/server/src`                                                       | Authentication, SQLite persistence, authoritative matches and matchmaking                |
 | `apps/mobile/src`                                                       | React application, localization, game view registry, worker, network and native adapters |
-| `tests`                                                                 | Headless rules, server, client-network and component tests                               |
+| `tests`                                                                 | Headless rules, server, client-network, component and browser tests                       |
 | `scripts`                                                               | Development runner, test discovery and repeatable native project setup                   |
-| `docs`                                                                  | Architecture, deployment and verification/remaining work                                 |
+| `docs`                                                                  | Architecture, deployment, game documentation and release verification                    |
 
-Game rules have no React, DOM, native SDK, network or database dependencies. Shared controllers and the multiplayer adapter operate on game interfaces rather than duplicate implementations inside each game folder.
+Game rules do not depend on React, DOM, native SDKs, network or the database. Shared controllers and the multiplayer adapter operate on game interfaces rather than duplicate implementations inside each game folder.
 
 ## Android and iOS
 
@@ -73,11 +76,13 @@ npx cap open ios
 
 The scripts create native projects if absent, build the web assets, synchronize plugins, and configure OAuth deep links. Native projects are generated and ignored by Git; keep durable customizations in `scripts/mobile.mjs` and `capacitor.config.ts`. Change that policy before maintaining native source manually.
 
-Set `VITE_SERVER_URL` to your deployed **HTTPS** server origin before building a native app for online play. Without it, the packaged app provides local and AI play. Native project synchronization has succeeded in this workspace; an APK/IPA has **not** been compiled. See [deployment instructions](docs/DEPLOYMENT.md) for SDKs and the supplied Android workflow.
+Set `VITE_SERVER_URL` to your deployed **HTTPS** server origin before building a native app for online play. Without it, the packaged app provides offline play. See [deployment instructions](docs/DEPLOYMENT.md) for SDKs and the supplied Android workflow.
 
 ## Delivery boundaries
 
-This is source code and a locally verified build, not a deployed production service. Google/Apple need your credentials and provider configuration. Public hosting, domain/TLS, native signing, device testing and store submission remain external setup steps. Email verification, password recovery, background push notifications, account deletion and multi-server scaling are not implemented. LAN, Chess, Reversi and Mancala are explicitly shown as planned.
+This is source code and an automatically verified build, not a deployed production service. Google/Apple need your credentials and provider configuration. Public hosting, domain/TLS, native signing, device testing and store submission remain external setup steps. Email verification, password recovery, background push notifications and account deletion remain separate product work.
+
+LAN, Chess and Mancala are still shown as planned additions; Reversi is now implemented and playable.
 
 Read [delivery status](docs/STATUS.md) for tested behavior and open release checks before public launch. Source repository: [3thelast-glitch/games](https://github.com/3thelast-glitch/games).
 
@@ -85,4 +90,4 @@ Read [delivery status](docs/STATUS.md) for tested behavior and open release chec
 
 Rules were checked against the [Abalone rulebook](https://www.gokids.com.tw/tsaiss/gokids/rules/AB02ENN_RULES_2019.pdf) and [Gigamic's Quoridor rules](https://en.gigamic.com/index.php?controller=attachment&id_attachment=467). Board art, interface elements and synthesized sounds are original project assets. See [Capacitor setup](https://capacitorjs.com/docs/getting-started) for the native wrapper.
 
-Additional rule references: [WCDF English Checkers rules](https://nccheckers.org/NCCA/WCDF%20Checker%20-%20Draughts%20-%20English%20Rules.htm), [Berkeley GamesCrafters Nine Men’s Morris](https://gamescrafters.berkeley.edu/games.php?game=ninemensmorris), [Gomoku variants](https://en.wikipedia.org/wiki/Gomoku), and [Hasbro Connect Four](https://instructions.hasbro.com/en-us/instruction/connect-4-game-folio-edition). Repetition and no-progress draws are adjudicated automatically in this app; the Checkers tournament procedure normally involves a claim. Morris uses the flying variant and automatic threefold repetition. Gomoku uses freestyle (overlines win), not Renju or tournament Swap2.
+Additional rule references include [WCDF English Checkers rules](https://nccheckers.org/NCCA/WCDF%20Checker%20-%20Draughts%20-%20English%20Rules.htm), [Berkeley GamesCrafters Nine Men’s Morris](https://gamescrafters.berkeley.edu/games.php?game=ninemensmorris), [Gomoku variants](https://en.wikipedia.org/wiki/Gomoku), and [Hasbro Connect Four](https://instructions.hasbro.com/en-us/instruction/connect-4-game-folio-edition). Repetition and no-progress draws are adjudicated automatically in this app; the Checkers tournament procedure normally involves a claim. Morris uses the flying variant and automatic threefold repetition. Gomoku uses freestyle (overlines win), not Renju or tournament Swap2. Reversi behavior and its automated verification are documented in [docs/reversi.md](docs/reversi.md).

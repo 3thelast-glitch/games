@@ -38,9 +38,11 @@ export function ClassicArt({ game }: { game: string }) {
             ? '#8c7658'
             : game === 'connectFour'
               ? '#294c73'
-              : game === 'digitalGame'
-                ? '#203633'
-                : '#282d39'
+              : game === 'reversi'
+                ? '#174d40'
+                : game === 'digitalGame'
+                  ? '#203633'
+                  : '#282d39'
         }
         stroke="#918878"
         strokeWidth="3"
@@ -126,6 +128,29 @@ export function ClassicArt({ game }: { game: string }) {
           ))}
           {[0, 1, 2, 5, 8, 10, 11, 13, 15, 16, 19, 22].map((at, i) =>
             disc(50 + MORRIS_POINTS[at][0] * 56.5, 50 + MORRIS_POINTS[at][1] * 56.5, i % 2, at),
+          )}
+        </>
+      )}
+      {game === 'reversi' && (
+        <>
+          {Array.from({ length: 64 }, (_, i) => (
+            <rect
+              key={i}
+              x={52 + (i % 8) * 42}
+              y={52 + Math.floor(i / 8) * 42}
+              width="42"
+              height="42"
+              fill={(Math.floor(i / 8) + (i % 8)) % 2 ? '#1c624f' : '#205d4d'}
+              stroke="#0d3a30"
+              strokeWidth="1"
+            />
+          ))}
+          {[
+            [18, 0], [19, 1], [20, 0], [26, 1], [27, 1], [28, 0], [29, 0],
+            [34, 0], [35, 0], [36, 1], [37, 1], [38, 0], [43, 1], [44, 0],
+            [45, 1], [46, 1],
+          ].map(([at, owner], i) =>
+            disc(73 + (at % 8) * 42, 73 + Math.floor(at / 8) * 42, owner, 300 + i),
           )}
         </>
       )}

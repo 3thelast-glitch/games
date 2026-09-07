@@ -310,7 +310,7 @@ test('Connect Four UI drops a disc and disables full columns and finished games'
   assert.ok(view.getAllByRole('button').every((b) => (b as HTMLButtonElement).disabled));
 });
 
-for (const id of ['checkers', 'gomoku', 'nineMensMorris', 'connectFour']) {
+for (const id of ['checkers', 'gomoku', 'nineMensMorris', 'connectFour', 'reversi']) {
   test(`${id}: available in the catalog, bilingual match resources and board controls lock online`, () => {
     assert.ok(gameInfo.some((g) => g.id === id));
     assert.ok(!upcoming.includes(id));
@@ -330,7 +330,9 @@ for (const id of ['checkers', 'gomoku', 'nineMensMorris', 'connectFour']) {
             ? 'كل قفزة تصنع الفارق'
             : id === 'nineMensMorris'
               ? 'ضع. حرّك. اقفز.'
-              : 'أربع قطع للفوز',
+              : id === 'reversi'
+                ? 'اقلب الصفوف. امتلك الزوايا.'
+                : 'أربع قطع للفوز',
       ),
     );
     const board = view.container.querySelector('.classic-game')!;
