@@ -30,7 +30,7 @@ jobs:
         run: npm ci
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Run all 21 viewports for 7 games in English and Arabic
+      - name: Run all 21 viewports in English and Arabic
         env:
           PW_MATRIX: full
         run: npx playwright test --project=chromium tests/e2e/layout/responsive-matrix.spec.ts
