@@ -56,6 +56,7 @@ export const gameIds = [
   'gomoku',
   'nineMensMorris',
   'connectFour',
+  'reversi',
   'digitalGame',
 ] as const;
 
