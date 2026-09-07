@@ -13,6 +13,7 @@ import {
   bankTimeControl,
   beginTurn,
   chargeClock,
+  CLASSIC_DIGITAL_TURN_MS,
   createClocks,
   isTurnTimerMs,
   timeoutAt,
@@ -42,9 +43,13 @@ export class MatchService {
         throw new RuleError('invalid-time-control');
       return control;
     }
-    if (gameId !== 'digitalGame' || !isTurnTimerMs(control.turnMs))
-      throw new RuleError('turn-timer-not-supported');
-    return control;
+    if (gameId === 'digitalGame') {
+      if (control.turnMs !== CLASSIC_DIGITAL_TURN_MS)
+        throw new RuleError('turn-timer-not-supported');
+      return control;
+    }
+    if (gameId === 'reversi' && isTurnTimerMs(control.turnMs)) return control;
+    throw new RuleError('turn-timer-not-supported');
   }
   private controlOf(match: Pick<StoredMatch, 'gameId' | 'timeControl'>): TimeControl {
     return this.control(match.gameId, match.timeControl);

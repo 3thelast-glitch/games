@@ -177,7 +177,7 @@ export function ModeDialog({
     difficulty: Difficulty,
     ranked: boolean,
     playerCount: PlayerCount,
-    turnSeconds: TurnTimerSeconds,
+    turnSeconds: TurnTimerSeconds | null,
     code?: string,
   ) => void;
   guest: boolean;
@@ -189,7 +189,9 @@ export function ModeDialog({
     [difficulty, setDifficulty] = useState<Difficulty>('medium'),
     [ranked, setRanked] = useState(false),
     [playerCount, setPlayerCount] = useState<PlayerCount>(2),
-    [turnSeconds, setTurnSeconds] = useState<TurnTimerSeconds>(60),
+    [turnSeconds, setTurnSeconds] = useState<TurnTimerSeconds | null>(
+      gameId === 'digitalGame' ? 60 : null,
+    ),
     [code, setCode] = useState('');
   return (
     <Modal title={t('chooseMode')} onClose={onClose}>
@@ -237,6 +239,25 @@ export function ModeDialog({
           <legend>{t('turn')} ⏱</legend>
           <div className="segmented">
             {([30, 45, 60, 90] as TurnTimerSeconds[]).map((seconds) => (
+              <button
+                key={seconds}
+                aria-pressed={turnSeconds === seconds}
+                onClick={() => setTurnSeconds(seconds)}
+              >
+                {seconds}s
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      )}
+      {gameId === 'reversi' && (
+        <fieldset>
+          <legend>{t('turn')} ⏱</legend>
+          <div className="segmented">
+            <button aria-pressed={turnSeconds === null} onClick={() => setTurnSeconds(null)}>
+              {t('off')}
+            </button>
+            {([15, 30, 45, 60, 90] as TurnTimerSeconds[]).map((seconds) => (
               <button
                 key={seconds}
                 aria-pressed={turnSeconds === seconds}
@@ -374,9 +395,9 @@ export function WaitingDialog({
         <p className="small-muted">
           {t('playerCountLabel')}: {room.type === 'room' ? `${room.joined}/${room.playerCount}` : room.playerCount}
         </p>
-        {room.turnSeconds !== null && (
+        {(room.turnSeconds !== null || room.gameId === 'reversi') && (
           <p className="small-muted">
-            {t('turn')}: {room.turnSeconds}s
+            {t('turn')}: {room.turnSeconds === null ? t('off') : `${room.turnSeconds}s`}
           </p>
         )}
         {room.type === 'room' && (

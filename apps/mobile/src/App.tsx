@@ -432,7 +432,7 @@ function ArenaApp({
     difficulty: Difficulty,
     ranked: boolean,
     playerCount: PlayerCount,
-    turnSeconds: TurnTimerSeconds,
+    turnSeconds: TurnTimerSeconds | null,
     code?: string,
   ) => {
     if (!choice) return;
@@ -445,8 +445,10 @@ function ArenaApp({
           difficulty,
           playerCount,
           choice.gameId === 'digitalGame'
-            ? turnTimeControl(turnSeconds)
-            : bankTimeControl(600000),
+            ? turnTimeControl(turnSeconds ?? 60)
+            : choice.gameId === 'reversi' && turnSeconds !== null
+              ? turnTimeControl(turnSeconds)
+              : bankTimeControl(600000),
         );
         return;
       }
@@ -461,7 +463,11 @@ function ArenaApp({
                 type: 'create-room',
                 gameId: choice.gameId,
                 playerCount,
-                ...(choice.gameId === 'digitalGame' ? { turnSeconds } : {}),
+                ...(choice.gameId === 'digitalGame'
+                  ? { turnSeconds: turnSeconds ?? 60 }
+                  : choice.gameId === 'reversi' && turnSeconds !== null
+                    ? { turnSeconds }
+                    : {}),
               },
         );
       else
@@ -470,7 +476,11 @@ function ArenaApp({
           gameId: choice.gameId,
           ranked,
           playerCount,
-          ...(choice.gameId === 'digitalGame' ? { turnSeconds } : {}),
+          ...(choice.gameId === 'digitalGame'
+            ? { turnSeconds: turnSeconds ?? 60 }
+            : choice.gameId === 'reversi' && turnSeconds !== null
+              ? { turnSeconds }
+              : {}),
         });
     } catch (e) {
       notify(e);
