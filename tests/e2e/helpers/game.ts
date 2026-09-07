@@ -8,6 +8,7 @@ export const boardSelectors: Record<GameId, string> = {
   gomoku: '.gomoku-board',
   nineMensMorris: '.morris-board',
   connectFour: '.connect-columns',
+  reversi: '.reversi-board',
   digitalGame: '.digital-game',
 };
 
@@ -18,6 +19,7 @@ export const gameRootSelectors: Record<GameId, string> = {
   gomoku: '.gomoku-game',
   nineMensMorris: '.morris-game',
   connectFour: '.connect-four-game',
+  reversi: '.reversi-game',
   digitalGame: '.digital-game',
 };
 
