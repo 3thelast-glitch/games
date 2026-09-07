@@ -473,7 +473,7 @@ test('real HTTP and WebSocket flow authenticates, joins private room, synchroniz
 import { createCheckers } from '../packages/games/checkers/state.ts';
 import { createMorris } from '../packages/games/nine-mens-morris/state.ts';
 
-for (const id of ['checkers', 'gomoku', 'nineMensMorris', 'connectFour']) {
+for (const id of ['checkers', 'gomoku', 'nineMensMorris', 'connectFour', 'reversi']) {
   test(`${id}: online rooms use authoritative rules, isolate matchmaking and settle per-game ratings`, () => {
     const { store, service, a, b, outsider } = setup();
     try {
