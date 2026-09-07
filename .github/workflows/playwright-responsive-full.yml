@@ -22,9 +22,8 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
-      - name: Install Playwright test runner without changing the lockfile
-        run: npm install --no-save --no-package-lock @playwright/test@1.55.0
+      - name: Install locked application and Playwright dependencies
+        run: npm ci
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Run all 21 viewports for 7 games in English and Arabic
@@ -57,9 +56,8 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
-      - name: Install Playwright test runner without changing the lockfile
-        run: npm install --no-save --no-package-lock @playwright/test@1.55.0
+      - name: Install locked application and Playwright dependencies
+        run: npm ci
       - name: Install ${{ matrix.browser }}
         run: npx playwright install --with-deps ${{ matrix.browser }}
       - name: Run representative RTL/LTR cross-browser matrix
