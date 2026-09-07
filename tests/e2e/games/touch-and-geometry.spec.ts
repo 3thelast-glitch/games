@@ -137,6 +137,27 @@ for (const locale of locales) {
     });
   });
 
+  test(`Reversi corners, legal moves and disc placement stay aligned (${locale.id})`, async ({ browser, browserName }) => {
+    await withMobileGame(browser, browserName, 'reversi', locale, async (page) => {
+      const board = page.locator('.reversi-board');
+      const cells = board.locator('.reversi-cell');
+      await expectSquare(board, 'Reversi board', 3);
+      await expect(cells).toHaveCount(64);
+      for (const index of [0, 7, 56, 63]) {
+        await expectSquare(cells.nth(index), `Reversi corner ${index}`, 2);
+        await expectCenterHitTarget(cells.nth(index), `Reversi corner ${index}`);
+      }
+      const legal = board.locator('.reversi-cell:not(:disabled)');
+      await expect(legal).toHaveCount(4);
+      await expectCenterHitTarget(legal.first(), 'Reversi legal move');
+      await activate(legal.first(), browserName);
+      await expect(board.locator('.reversi-disc')).toHaveCount(5);
+      await expect(board.locator('.reversi-disc.flipped')).toHaveCount(1);
+      await expect(board.locator('.reversi-cell:not(:disabled)')).not.toHaveCount(4);
+      await expectNoGlobalOverflow(page);
+    });
+  });
+
   test(`Digital Game rack and actions remain reachable (${locale.id})`, async ({ browser, browserName }) => {
     await withMobileGame(browser, browserName, 'digitalGame', locale, async (page) => {
       const rack = page.locator('.digital-rack');
