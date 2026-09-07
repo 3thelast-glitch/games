@@ -14,6 +14,19 @@ export interface NativeLanService extends LanAdvertisement {
   host: string;
 }
 
+interface NativeLanServiceEvent {
+  name: string;
+  host: string;
+  port: number | string;
+  id?: string;
+  room?: string;
+  game?: string;
+  pv?: number | string;
+  rv?: number | string;
+  occ?: number | string;
+  cap?: number | string;
+}
+
 interface NativeLanPlugin {
   startHost(options: { port: number; serviceType: string; serviceName: string; metadata: Record<string, string> }): Promise<{ host: string; port: number }>;
   updateHost(options: { metadata: Record<string, string> }): Promise<void>;
@@ -26,8 +39,8 @@ interface NativeLanPlugin {
   addListener(eventName: 'clientConnected', listener: (event: { connectionId: string; host?: string }) => void): Promise<PluginListenerHandle>;
   addListener(eventName: 'message', listener: (event: { connectionId: string; data: string }) => void): Promise<PluginListenerHandle>;
   addListener(eventName: 'disconnected', listener: (event: { connectionId: string; reason?: string }) => void): Promise<PluginListenerHandle>;
-  addListener(eventName: 'serviceFound', listener: (event: NativeLanService) => void): Promise<PluginListenerHandle>;
-  addListener(eventName: 'serviceLost', listener: (event: { roomId?: string; name?: string; host?: string; port?: number }) => void): Promise<PluginListenerHandle>;
+  addListener(eventName: 'serviceFound', listener: (event: NativeLanServiceEvent) => void): Promise<PluginListenerHandle>;
+  addListener(eventName: 'serviceLost', listener: (event: { name?: string; host?: string; port?: number }) => void): Promise<PluginListenerHandle>;
 }
 
 const plugin = registerPlugin<NativeLanPlugin>('BoardArenaLan');
@@ -39,23 +52,32 @@ export function requireLanNative() {
   return plugin;
 }
 
-export function normalizeNativeService(event: NativeLanService): NativeLanService {
+export function normalizeNativeService(event: NativeLanServiceEvent): NativeLanService {
   const advertisement = lanAdvertisementSchema.parse({
-    roomId: event.roomId,
-    roomName: event.roomName,
-    gameId: event.gameId,
-    protocolVersion: Number(event.protocolVersion),
-    rulesetVersion: Number(event.rulesetVersion),
-    occupancy: Number(event.occupancy),
-    capacity: Number(event.capacity),
+    roomId: event.id,
+    roomName: event.room,
+    gameId: event.game,
+    protocolVersion: Number(event.pv),
+    rulesetVersion: Number(event.rv),
+    occupancy: Number(event.occ),
+    capacity: Number(event.cap),
     port: Number(event.port),
   });
   if (!event.host || event.host.length > 253) throw new Error('invalid-lan-address');
   return { ...advertisement, name: event.name, host: event.host };
 }
 
+/** DNS-SD TXT keys stay <= 9 ASCII characters and never carry endpoint ports or secrets. */
 export function lanMetadata(advertisement: LanAdvertisement): Record<string, string> {
-  return Object.fromEntries(Object.entries(advertisement).map(([key, value]) => [key, String(value)]));
+  return {
+    id: advertisement.roomId,
+    room: advertisement.roomName,
+    game: advertisement.gameId,
+    pv: String(advertisement.protocolVersion),
+    rv: String(advertisement.rulesetVersion),
+    occ: String(advertisement.occupancy),
+    cap: String(advertisement.capacity),
+  };
 }
 
 export function manualLanTarget(value: string) {
