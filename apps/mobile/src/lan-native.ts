@@ -40,7 +40,7 @@ interface NativeLanPlugin {
   addListener(eventName: 'message', listener: (event: { connectionId: string; data: string }) => void): Promise<PluginListenerHandle>;
   addListener(eventName: 'disconnected', listener: (event: { connectionId: string; reason?: string }) => void): Promise<PluginListenerHandle>;
   addListener(eventName: 'serviceFound', listener: (event: NativeLanServiceEvent) => void): Promise<PluginListenerHandle>;
-  addListener(eventName: 'serviceLost', listener: (event: { name?: string; host?: string; port?: number }) => void): Promise<PluginListenerHandle>;
+  addListener(eventName: 'serviceLost', listener: (event: { roomId?: string; name?: string; host?: string; port?: number }) => void): Promise<PluginListenerHandle>;
 }
 
 const plugin = registerPlugin<NativeLanPlugin>('BoardArenaLan');
