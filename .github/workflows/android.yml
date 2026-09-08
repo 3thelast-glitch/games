@@ -3,9 +3,30 @@ on:
   workflow_dispatch:
     inputs:
       server_url:
-        description: HTTPS Board Arena server origin (leave empty for local/AI testing)
+        description: HTTPS Board Arena server origin (leave empty for local/AI/LAN testing)
         required: false
         type: string
+  pull_request:
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/**'
+      - 'native/**'
+      - 'scripts/mobile.mjs'
+      - 'capacitor.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/android.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/mobile/**'
+      - 'packages/**'
+      - 'native/**'
+      - 'scripts/mobile.mjs'
+      - 'capacitor.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/android.yml'
 permissions:
   contents: read
 jobs:
@@ -25,6 +46,7 @@ jobs:
           java-version: 21
       - uses: android-actions/setup-android@v3
       - run: npm ci
+      - run: npm audit --audit-level=moderate
       - run: npm test
       - run: npm run mobile:android
       - name: Assemble debug APK

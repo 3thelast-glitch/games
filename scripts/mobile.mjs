@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 try {
   process.loadEnvFile('.env');
@@ -23,6 +23,11 @@ for (const platform of platforms) {
     const path = 'android/app/src/main/AndroidManifest.xml';
     let manifest = readFileSync(path, 'utf8');
     manifest = manifest.replace('android:allowBackup="true"', 'android:allowBackup="false"');
+    if (!manifest.includes('android.permission.ACCESS_LOCAL_NETWORK'))
+      manifest = manifest.replace(
+        '<application',
+        '<uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />\n    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" android:usesPermissionFlags="neverForLocation" />\n    <application',
+      );
     if (!manifest.includes('android:usesCleartextTraffic'))
       manifest = manifest.replace(
         '<application',
@@ -40,6 +45,13 @@ for (const platform of platforms) {
     </activity>`,
       );
     writeFileSync(path, manifest);
+    const javaDir = 'android/app/src/main/java/com/boardarena/app';
+    mkdirSync(javaDir, { recursive: true });
+    copyFileSync('native/lan/android/BoardArenaLanPlugin.java', `${javaDir}/BoardArenaLanPlugin.java`);
+    writeFileSync(
+      `${javaDir}/MainActivity.java`,
+      `package com.boardarena.app;\n\nimport android.os.Bundle;\nimport com.getcapacitor.BridgeActivity;\n\npublic class MainActivity extends BridgeActivity {\n  @Override\n  public void onCreate(Bundle savedInstanceState) {\n    registerPlugin(BoardArenaLanPlugin.class);\n    super.onCreate(savedInstanceState);\n  }\n}\n`,
+    );
   } else {
     const path = 'ios/App/App/Info.plist';
     let plist = readFileSync(path, 'utf8');
@@ -51,13 +63,45 @@ for (const platform of platforms) {
       <key>CFBundleLocalizations</key><array><string>en</string><string>ar</string></array>
       <key>UIUserInterfaceStyle</key><string>Dark</string>`,
       );
+    if (!plist.includes('<key>NSLocalNetworkUsageDescription</key>'))
+      plist = plist.replace(
+        '<dict>',
+        `<dict>
+      <key>NSLocalNetworkUsageDescription</key>
+      <string>Board Arena uses your local network to host and discover nearby Reversi games.</string>
+      <key>NSBonjourServices</key>
+      <array><string>_boardarena._tcp</string></array>`,
+      );
     writeFileSync(path, plist);
+
     writeFileSync(
       'ios/App/App/PrivacyInfo.xcprivacy',
       `<?xml version="1.0" encoding="UTF-8"?>
       <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
       <plist version="1.0"><dict><key>NSPrivacyTracking</key><false/><key>NSPrivacyAccessedAPITypes</key><array><dict><key>NSPrivacyAccessedAPIType</key><string>NSPrivacyAccessedAPICategoryUserDefaults</string><key>NSPrivacyAccessedAPITypeReasons</key><array><string>CA92.1</string></array></dict></array></dict></plist>`,
     );
+
+    const appDelegatePath = 'ios/App/App/AppDelegate.swift';
+    let appDelegate = readFileSync(appDelegatePath, 'utf8');
+    if (!appDelegate.includes('@objc(BoardArenaLanPlugin)')) {
+      const lanSource = readFileSync('native/lan/ios/BoardArenaLanPlugin.swift', 'utf8');
+      appDelegate = `${appDelegate.trimEnd()}\n\n${lanSource.trim()}\n`;
+      writeFileSync(appDelegatePath, appDelegate);
+    }
+
+    const storyboardPath = 'ios/App/App/Base.lproj/Main.storyboard';
+    let storyboard = readFileSync(storyboardPath, 'utf8');
+    if (!storyboard.includes('customClass="BoardArenaViewController"')) {
+      const before = storyboard;
+      storyboard = storyboard.replace(
+        /customClass="CAPBridgeViewController"\s+customModule="Capacitor"(?:\s+customModuleProvider="target")?/,
+        'customClass="BoardArenaViewController" customModule="App" customModuleProvider="target"',
+      );
+      if (storyboard === before)
+        throw new Error('Capacitor storyboard template changed: review LAN plugin registration');
+      writeFileSync(storyboardPath, storyboard);
+    }
+
     const project = 'ios/App/App.xcodeproj/project.pbxproj';
     let pbx = readFileSync(project, 'utf8');
     if (!pbx.includes('PrivacyInfo.xcprivacy')) {
@@ -90,5 +134,5 @@ console.log(
 );
 if (!process.env.VITE_SERVER_URL)
   console.log(
-    'Local and AI modes are bundled. Set VITE_SERVER_URL to your deployed HTTPS server and rebuild to enable online play.',
+    'Local, AI, and Reversi LAN modes are bundled. Set VITE_SERVER_URL to your deployed HTTPS server and rebuild to enable online play.',
   );
