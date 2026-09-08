@@ -103,6 +103,7 @@ export function ReversiBoard({ state, disabled, onMove, t }: BoardProps<ReversiS
               role="switch"
               data-reversi-setting="show-legal-moves"
               checked={visual.showLegalMoves}
+              disabled={disabled}
               onChange={(event) => updateVisual({ showLegalMoves: event.target.checked })}
             />
           </label>
@@ -113,6 +114,7 @@ export function ReversiBoard({ state, disabled, onMove, t }: BoardProps<ReversiS
               role="switch"
               data-reversi-setting="move-preview"
               checked={visual.movePreview}
+              disabled={disabled}
               onChange={(event) => updateVisual({ movePreview: event.target.checked })}
             />
           </label>
@@ -123,6 +125,7 @@ export function ReversiBoard({ state, disabled, onMove, t }: BoardProps<ReversiS
               role="switch"
               data-reversi-setting="board-coordinates"
               checked={visual.boardCoordinates}
+              disabled={disabled}
               onChange={(event) => updateVisual({ boardCoordinates: event.target.checked })}
             />
           </label>
@@ -135,6 +138,7 @@ export function ReversiBoard({ state, disabled, onMove, t }: BoardProps<ReversiS
                   key={speed}
                   data-reversi-speed={speed}
                   aria-pressed={visual.animationSpeed === speed}
+                  disabled={disabled}
                   onClick={() => updateVisual({ animationSpeed: speed })}
                 >
                   {labels[speed]}
@@ -180,7 +184,7 @@ export function ReversiBoard({ state, disabled, onMove, t }: BoardProps<ReversiS
               key={at}
               className={`reversi-cell ${state.lastMove === at ? 'last-cell' : ''}`}
               disabled={locked || !isLegal}
-              aria-label={`${label} ${String.fromCharCode(65 + col)}${row + 1}`}
+              aria-label={`${label} ${row + 1},${col + 1}`}
               data-row={row}
               data-col={col}
               data-legal={String(isLegal)}
