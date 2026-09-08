@@ -323,7 +323,17 @@
   .reversi-speed-buttons button { flex: 1; }
 }
 
-[data-reduce-motion='true'] .reversi-disc.flipped,
+[data-reduce-motion='true'] .reversi-disc.flipped {
+  animation: none;
+}
+
+[data-reduce-motion='true'] .reversi-score > span,
+[data-reduce-motion='true'] .reversi-legal-dot,
+[data-reduce-motion='true'] .reversi-preview-disc,
+[data-reduce-motion='true'] .reversi-preferences > summary::after {
+  transition: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reversi-disc.flipped {
     animation: none;
