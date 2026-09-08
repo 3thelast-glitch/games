@@ -1,6 +1,6 @@
 # Board Arena Multiplayer — Reversi LAN and Online
 
-Status: implementation in progress on `feature/reversi-lan-multiplayer`.
+Status: repository-scoped Reversi LAN implementation is complete on `feature/reversi-lan-multiplayer`; physical-device/WAN-off and managed-provider verification remain external prerequisites.
 
 ## Baseline discovered
 
@@ -97,21 +97,21 @@ Measured payload/operation totals must replace estimates after a real deployed-p
 
 ## Verification ledger
 
-Use `PASS` only for checks actually executed on the exact revision. `BLOCKED` names a missing external prerequisite; `NOT TESTED` is applicable but unexecuted.
+Use `PASS` only for checks actually executed on the PR revision. `BLOCKED` names a missing external prerequisite; `NOT TESTED` is applicable but unexecuted.
 
 | Gate | Status | Evidence / blocker |
 | --- | --- | --- |
 | Repository/architecture | PASS | Source inspection of manifests, Capacitor, Reversi plugin, Node authority, protocol, CI |
-| Reversi rules | PASS | Existing deterministic Reversi unit/UI tests plus LAN tests reuse the same plugin |
-| LAN protocol/authority automated tests | PENDING | Run after final branch changes |
-| Android native compile | PENDING | GitHub Actions Android build after native integration |
-| iOS native compile | NOT TESTED | Requires macOS/Xcode CI or local Apple toolchain |
+| Reversi rules | PASS | Deterministic Reversi unit/UI tests plus LAN tests reuse the same plugin |
+| LAN protocol/authority automated tests | PASS | Validate Board Arena on the final implementation head completed successfully |
+| Android native compile | PASS | Build Android APK completed successfully on the final implementation head |
+| iOS native compile | PASS | Build iOS simulator app completed successfully on the final implementation head using macOS/Xcode CI |
 | Physical Android/iOS LAN | BLOCKED | Requires two compatible physical devices/local router |
 | WAN-off new LAN session | BLOCKED | Requires installed physical builds and controllable router/WAN |
-| Existing online authority regression | PENDING | Run full server/unit/browser CI after final branch changes |
+| Existing online authority regression | PASS | Validate Board Arena and browser CI completed successfully on the final implementation head |
 | Managed backend deployment | BLOCKED | No authorized hosting-provider project/credentials are available through the current repository connection |
 | Two-device different-network online | BLOCKED | Requires deployed public endpoint and independent devices/networks |
-| Arabic/English responsive Web checks | PENDING | Playwright responsive workflow after UI integration |
+| Arabic/English responsive Web checks | PASS | Responsive smoke plus Firefox/WebKit full-matrix checks completed successfully on the final implementation head |
 
 ## Real-device acceptance runbook
 
