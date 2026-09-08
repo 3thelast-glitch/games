@@ -51,7 +51,100 @@
   box-shadow: inset 0 2px 5px #ffffff1f, 0 2px 5px #0008;
 }
 
+.reversi-preferences {
+  width: min(100%, 620px);
+  border: 1px solid color-mix(in srgb, var(--line, #343a46) 78%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel, #161b22) 90%, transparent);
+  overflow: hidden;
+}
+
+.reversi-preferences > summary {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text, #f4f7f6);
+  list-style: none;
+  user-select: none;
+}
+
+.reversi-preferences > summary::-webkit-details-marker {
+  display: none;
+}
+
+.reversi-preferences > summary::after {
+  content: '⌄';
+  font-size: 1rem;
+  transition: transform 160ms ease;
+}
+
+.reversi-preferences[open] > summary::after {
+  transform: rotate(180deg);
+}
+
+.reversi-preferences-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0 10px 10px;
+}
+
+.reversi-preferences-grid > label,
+.reversi-speed-setting {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 9px;
+  border: 1px solid color-mix(in srgb, var(--line, #343a46) 72%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel, #161b22) 78%, #174d40 22%);
+  font-size: .86rem;
+}
+
+.reversi-preferences-grid input[type='checkbox'] {
+  width: 36px;
+  height: 20px;
+  flex: 0 0 auto;
+  accent-color: #6fbca3;
+  cursor: pointer;
+}
+
+.reversi-speed-setting {
+  grid-column: 1 / -1;
+}
+
+.reversi-speed-buttons {
+  display: inline-flex;
+  gap: 4px;
+  direction: ltr;
+}
+
+.reversi-speed-buttons button {
+  min-height: 30px;
+  padding: 4px 9px;
+  border: 1px solid var(--line, #343a46);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted, #aeb8b5);
+  cursor: pointer;
+}
+
+.reversi-speed-buttons button[aria-pressed='true'] {
+  border-color: #6fbca3;
+  background: #6fbca31d;
+  color: var(--text, #f4f7f6);
+  box-shadow: inset 0 0 0 1px #6fbca333;
+}
+
 .reversi-board {
+  --reversi-flip-duration: 240ms;
   width: min(100%, 620px, 80vh);
   aspect-ratio: 1;
   display: grid;
@@ -64,6 +157,14 @@
   box-shadow: 0 18px 38px #0008, inset 0 0 0 1px #91c4af33;
   touch-action: manipulation;
   user-select: none;
+}
+
+.reversi-board.animation-fast {
+  --reversi-flip-duration: 140ms;
+}
+
+.reversi-board.animation-slow {
+  --reversi-flip-duration: 420ms;
 }
 
 .reversi-cell,
@@ -100,7 +201,8 @@
   z-index: 2;
 }
 
-.reversi-disc {
+.reversi-disc,
+.reversi-preview-disc {
   width: 76%;
   height: 76%;
   border-radius: 50%;
@@ -111,15 +213,33 @@
 }
 
 .reversi-disc.disc-0,
+.reversi-preview-disc.disc-0,
 .reversi-score-disc.disc-0 {
   background: radial-gradient(circle at 32% 24%, #59616d 0 7%, #252b33 38%, #0d1117 88%);
   border-color: #778391;
 }
 
 .reversi-disc.disc-1,
+.reversi-preview-disc.disc-1,
 .reversi-score-disc.disc-1 {
   background: radial-gradient(circle at 32% 24%, #fffef7 0 8%, #ece7d9 42%, #bdb6a7 100%);
   border-color: #fff9eb;
+}
+
+.reversi-preview-disc {
+  position: absolute;
+  inset: 12%;
+  opacity: 0;
+  transform: scale(.88);
+  pointer-events: none;
+  filter: saturate(.75);
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.reversi-board.show-preview .reversi-cell:not(:disabled):hover .reversi-preview-disc,
+.reversi-board.show-preview .reversi-cell:not(:disabled):focus-visible .reversi-preview-disc {
+  opacity: .52;
+  transform: scale(1);
 }
 
 .reversi-legal-dot {
@@ -131,12 +251,39 @@
   background: #d8fff0a8;
   box-shadow: 0 0 0 2px #0c322a55, 0 0 12px #b9f5dc66;
   transition: transform 120ms ease, opacity 120ms ease;
+  z-index: 1;
 }
 
 .reversi-cell:not(:disabled):hover .reversi-legal-dot,
 .reversi-cell:not(:disabled):focus-visible .reversi-legal-dot {
   transform: scale(1.25);
   opacity: 1;
+}
+
+.reversi-board.show-preview .reversi-cell:not(:disabled):hover .reversi-legal-dot,
+.reversi-board.show-preview .reversi-cell:not(:disabled):focus-visible .reversi-legal-dot {
+  opacity: .18;
+}
+
+.reversi-coordinate {
+  position: absolute;
+  z-index: 3;
+  color: #d7f2e7cc;
+  font-size: clamp(.48rem, 1.2vw, .68rem);
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: 0 1px 2px #05231d;
+  pointer-events: none;
+}
+
+.reversi-file {
+  inset-block-start: 5%;
+  inset-inline-end: 7%;
+}
+
+.reversi-rank {
+  inset-block-end: 5%;
+  inset-inline-start: 7%;
 }
 
 .reversi-cell.last-cell::after {
@@ -155,7 +302,7 @@
 }
 
 .reversi-disc.flipped {
-  animation: reversi-flip 240ms cubic-bezier(.2, .72, .2, 1);
+  animation: reversi-flip var(--reversi-flip-duration) cubic-bezier(.2, .72, .2, 1);
 }
 
 @keyframes reversi-flip {
@@ -170,14 +317,21 @@
   .reversi-score > span { padding: 6px 8px; gap: 6px; }
   .reversi-score-disc { width: 21px; height: 21px; }
   .reversi-score strong { font-size: .86rem; }
+  .reversi-preferences-grid { grid-template-columns: 1fr; }
+  .reversi-speed-setting { grid-column: auto; align-items: flex-start; flex-direction: column; }
+  .reversi-speed-buttons { width: 100%; }
+  .reversi-speed-buttons button { flex: 1; }
 }
 
+[data-reduce-motion='true'] .reversi-disc.flipped,
 @media (prefers-reduced-motion: reduce) {
   .reversi-disc.flipped {
     animation: none;
   }
   .reversi-score > span,
-  .reversi-legal-dot {
+  .reversi-legal-dot,
+  .reversi-preview-disc,
+  .reversi-preferences > summary::after {
     transition: none;
   }
 }
