@@ -395,7 +395,7 @@ public class BoardArenaLanPlugin: CAPPlugin, CAPBridgedPlugin {
 }
 
 final class BoardArenaViewController: CAPBridgeViewController {
-    override open func capacitorDidLoad() {
+    override public func capacitorDidLoad() {
         bridge?.registerPluginInstance(BoardArenaLanPlugin())
     }
 }
