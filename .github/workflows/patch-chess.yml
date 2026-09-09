@@ -52,6 +52,11 @@ jobs:
           text = main.read_text()
           text = replace_once(text, "import './reversi.css';\n", "import './reversi.css';\nimport './chess.css';\n", 'main css')
           main.write_text(text)
+
+          regression = Path('tests/classic-games.test.ts')
+          text = regression.read_text()
+          text = replace_once(text, "assert.equal(games.ids().length, 8);", "assert.equal(games.ids().length, 9);", 'registered game count')
+          regression.write_text(text)
           PY
       - run: npm ci
       - run: npm audit --audit-level=moderate
@@ -63,6 +68,6 @@ jobs:
           rm .github/workflows/patch-chess.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add packages/games/registry.ts apps/mobile/src/gameViews.tsx apps/mobile/src/i18n.tsx apps/mobile/src/main.tsx .github/workflows/patch-chess.yml
+          git add packages/games/registry.ts apps/mobile/src/gameViews.tsx apps/mobile/src/i18n.tsx apps/mobile/src/main.tsx tests/classic-games.test.ts .github/workflows/patch-chess.yml
           git commit -m "Integrate Chess into Board Arena"
           git push origin HEAD:feature/chess
