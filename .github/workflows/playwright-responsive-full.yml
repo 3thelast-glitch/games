@@ -28,6 +28,8 @@ jobs:
           cache: npm
       - name: Install locked application and Playwright dependencies
         run: npm ci
+      - name: Remove unrelated Chrome apt source
+        run: sudo rm -f /etc/apt/sources.list.d/google-chrome.list
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Run all 21 viewports in English and Arabic
@@ -62,6 +64,8 @@ jobs:
           cache: npm
       - name: Install locked application and Playwright dependencies
         run: npm ci
+      - name: Remove unrelated Chrome apt source
+        run: sudo rm -f /etc/apt/sources.list.d/google-chrome.list
       - name: Install ${{ matrix.browser }}
         run: npx playwright install --with-deps ${{ matrix.browser }}
       - name: Run representative RTL/LTR cross-browser matrix
