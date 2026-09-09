@@ -75,6 +75,7 @@ const en: Record<string, string> = {
   settingsEyebrow: 'YOUR EXPERIENCE',
   editProfile: 'Edit profile',
   navMotto: 'PLAY · COMPETE · CONNECT',
+  brandName: 'NAQLA',
   brandMotto: 'STRATEGY, TOGETHER.',
   settings: 'Settings',
   home: 'Home',
@@ -284,7 +285,7 @@ const en: Record<string, string> = {
   account: 'Account',
   preferences: 'Make it yours',
   preferencesDesc: 'Set the tone for your next match.',
-  about: 'Board Arena · 0.1.0',
+  about: 'NAQLA · 0.1.0',
   privacyNote:
     'Local matches stay on this device. Online profiles and match history are saved with your account.',
   'invalid-move': 'That move is not allowed.',
@@ -462,6 +463,7 @@ const ar: Record<string, string> = {
   settingsEyebrow: 'تجربتك',
   editProfile: 'تعديل الملف',
   navMotto: 'العب · نافس · تواصل',
+  brandName: 'نقلة',
   brandMotto: 'نفكّر ونلعب معًا.',
   settings: 'الإعدادات',
   home: 'الرئيسية',
@@ -670,7 +672,7 @@ const ar: Record<string, string> = {
   account: 'الحساب',
   preferences: 'اضبطها على ذوقك',
   preferencesDesc: 'اختر أجواء مباراتك القادمة.',
-  about: 'Board Arena · 0.1.0',
+  about: 'نقلة · 0.1.0',
   privacyNote:
     'تبقى المباريات المحلية على هذا الجهاز. تُحفظ بيانات ملفك ومباريات الإنترنت مع حسابك.',
   'invalid-move': 'هذه الحركة غير مسموحة.',

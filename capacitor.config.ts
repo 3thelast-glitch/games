@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.boardarena.app',
-  appName: 'Board Arena',
+  appName: 'NAQLA',
   webDir: 'dist/mobile',
   backgroundColor: '#0c1018',
   server: { androidScheme: 'https' },

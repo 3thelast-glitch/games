@@ -1,4 +1,4 @@
-name: Validate Board Arena
+name: Validate NAQLA
 on:
   push:
   pull_request:
@@ -19,6 +19,6 @@ jobs:
       - run: npm run build
       - uses: actions/upload-artifact@v7
         with:
-          name: board-arena-web-server
+          name: naqla-web-server
           path: dist
           retention-days: 14

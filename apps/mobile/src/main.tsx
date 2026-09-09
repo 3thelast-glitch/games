@@ -14,7 +14,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { fai
   render() {
     return this.state.failed ? (
       <main className="error-screen">
-        <h1>Board Arena</h1>
+        <h1>NAQLA | نقلة</h1>
         <p>
           Something went wrong. Reload to recover your match.
           <br />

@@ -1,5 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import { applyBranding } from './branding.mjs';
 try {
   process.loadEnvFile('.env');
 } catch {}
@@ -68,7 +69,7 @@ for (const platform of platforms) {
         '<dict>',
         `<dict>
       <key>NSLocalNetworkUsageDescription</key>
-      <string>Board Arena uses your local network to host and discover nearby Reversi games.</string>
+      <string>NAQLA uses your local network to host and discover nearby Reversi games.</string>
       <key>NSBonjourServices</key>
       <array><string>_boardarena._tcp</string></array>`,
       );
@@ -128,6 +129,7 @@ for (const platform of platforms) {
       writeFileSync(project, pbx);
     }
   }
+  applyBranding(platform);
 }
 console.log(
   'Native projects synchronized. Build Android in Android Studio / Gradle and iOS in Xcode.',

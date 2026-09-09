@@ -126,7 +126,7 @@ export class ReversiLanController {
     await this.joinTarget({ host: room.host, port: room.port, roomId: room.roomId, roomName: room.roomName }, name);
   }
 
-  async joinManual(target: { host: string; port: number }, roomId: string, name: string, roomName = 'Board Arena LAN') {
+  async joinManual(target: { host: string; port: number }, roomId: string, name: string, roomName = 'NAQLA LAN') {
     await this.joinTarget({ ...target, roomId, roomName }, name);
   }
 

@@ -1,4 +1,6 @@
-# Board Arena
+# NAQLA | نقلة
+
+<p align="center"><img src="docs/brand/naqla-lockup.png" alt="NAQLA | نقلة" width="480" /></p>
 
 A modular, bilingual strategy game platform for the web, Android and iOS. Version **0.1.0** is a functional implementation with eight registered games: Abalone, Quoridor, Checkers, Gomoku, Nine Men’s Morris, Connect Four, Digital Game and Reversi, plus local play, shared AI levels and an authoritative multiplayer server.
 
