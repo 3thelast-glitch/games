@@ -18,8 +18,9 @@ Digital Game implements the Board Arena Rummikub Classic ruleset for 2–4 playe
 
 ## Initial meld
 
-- A player who has not yet opened must place at least 30 points using tiles from that player's own rack.
-- Existing table tiles cannot be manipulated or counted toward that initial 30-point requirement.
+- A player who has not yet opened must make the first new meld worth at least 30 points using only tiles from that player's own rack.
+- Additional second, third, or later valid melds in that same opening turn do not need to reach 30 points individually.
+- Existing table tiles cannot be manipulated or counted toward the opening meld requirement.
 
 ## Table manipulation and Jokers
 

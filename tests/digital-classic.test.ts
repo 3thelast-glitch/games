@@ -107,6 +107,23 @@ test('Classic solver requires 30 or more from the rack for an unopened player', 
   twentySeven.drawPool = [];
   twentySeven.hasCompletedInitialMeld = [false, true];
   assert.equal(hasClassicLegalPlay(twentySeven, 0), false);
+
+  const combinedThirtyThree = createDigitalGame(107, 2);
+  combinedThirtyThree.racks = [
+    [
+      tile(combinedThirtyThree, 'blue', 8),
+      tile(combinedThirtyThree, 'blue', 9),
+      tile(combinedThirtyThree, 'blue', 10),
+      tile(combinedThirtyThree, 'red', 1),
+      tile(combinedThirtyThree, 'red', 2),
+      tile(combinedThirtyThree, 'red', 3),
+    ],
+    [],
+  ];
+  combinedThirtyThree.rackCounts = [6, 0];
+  combinedThirtyThree.drawPool = [];
+  combinedThirtyThree.hasCompletedInitialMeld = [false, true];
+  assert.equal(hasClassicLegalPlay(combinedThirtyThree, 0), false);
 });
 
 test('blocked finish uses Classic relative scoring after a full no-play pass cycle', () => {
