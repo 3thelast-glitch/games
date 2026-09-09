@@ -292,25 +292,9 @@ function rackOnlySolverCandidates(state: DigitalGameState, player: Seat): Solver
   return [...found.values()];
 }
 function hasInitialThirty(state: DigitalGameState, player: Seat): boolean {
-  const candidates = rackOnlySolverCandidates(state, player).sort((a, b) => b.score - a.score);
-  const used = new Set<string>();
-  const memo = new Set<string>();
-  const search = (index: number, score: number): boolean => {
-    if (score >= INITIAL_MELD_POINTS) return true;
-    if (index >= candidates.length) return false;
-    const key = `${index}:${score}:${[...used].sort().join(',')}`;
-    if (memo.has(key)) return false;
-    memo.add(key);
-    for (let i = index; i < candidates.length; i++) {
-      const candidate = candidates[i];
-      if (candidate.ids.some((id) => used.has(id))) continue;
-      for (const id of candidate.ids) used.add(id);
-      if (search(i + 1, score + candidate.score)) return true;
-      for (const id of candidate.ids) used.delete(id);
-    }
-    return false;
-  };
-  return search(0, 0);
+  return rackOnlySolverCandidates(state, player).some(
+    (candidate) => candidate.score >= INITIAL_MELD_POINTS,
+  );
 }
 
 /** Exhaustive Classic rules oracle for blocked-game adjudication; not an AI move list. */
@@ -404,15 +388,18 @@ export function parseDigitalMove(input: unknown): DigitalGameMove {
 }
 
 const signature = (tiles: string[]) => [...tiles].sort().join('|');
-function initialMeldScore(state: DigitalGameState, table: CommitMeldIntent[], oldTableIds: Set<string>): number {
-  let score = 0;
+function initialOpeningMeldScore(
+  state: DigitalGameState,
+  table: CommitMeldIntent[],
+  oldTableIds: Set<string>,
+): number {
   for (const meld of table) {
     if (meld.tiles.some((id) => oldTableIds.has(id))) continue;
     const result = validateMeld(assertTileIds(state, meld.tiles));
     if (!result.ok) throw new RuleError(result.code);
-    score += result.score;
+    return result.score;
   }
-  return score;
+  return 0;
 }
 function commitPlan(state: DigitalGameState, move: Extract<DigitalGameMove, { type: 'commit' }>) {
   if (state.winner !== null || state.drawReason) throw new RuleError('game-over');
@@ -446,7 +433,7 @@ function commitPlan(state: DigitalGameState, move: Extract<DigitalGameMove, { ty
     }
     for (const [key, count] of oldSignatures)
       if ((newSignatures.get(key) ?? 0) < count) throw new RuleError('initial-table-locked');
-    if (initialMeldScore(state, move.table, oldTableIds) < INITIAL_MELD_POINTS) throw new RuleError('initial-meld-30');
+    if (initialOpeningMeldScore(state, move.table, oldTableIds) < INITIAL_MELD_POINTS) throw new RuleError('initial-meld-30');
   }
   const playedSet = new Set(played);
   const nextRack = (state.racks[player] ?? []).filter((id) => !playedSet.has(id));

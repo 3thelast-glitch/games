@@ -67,14 +67,13 @@ export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoar
 
   const initialScore = useMemo(() => {
     if (state.hasCompletedInitialMeld[visibleSeat]) return null;
-    let score = 0;
     for (const meld of workingTable) {
       if (meld.tiles.some((id) => oldTableIds.has(id))) continue;
       const tiles = meld.tiles.map((id) => state.tiles[id]).filter(Boolean);
       const result = validateMeld(tiles);
-      if (result.ok) score += result.score;
+      return result.ok ? result.score : 0;
     }
-    return score;
+    return 0;
   }, [workingTable, visibleSeat, state.hasCompletedInitialMeld, state.tiles, oldTableIds]);
 
   const markManipulation = () => {

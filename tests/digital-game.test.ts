@@ -130,39 +130,34 @@ test('jokers resolve inside runs and groups', () => {
   assert.equal(validateMeld(tiles(s, [j, joker(s, 1), tile(s, 'blue', 5)])).ok, true);
 });
 
-test('initial meld rejects 29, accepts 30 and 31+ points', () => {
+test('only the first opening meld must be 30+; later melds may be below 30', () => {
   const base = createDigitalGame(5);
-  const group29 = [
-    tile(base, 'red', 5),
-    tile(base, 'blue', 5),
-    tile(base, 'orange', 5),
-    tile(base, 'black', 5),
-  ];
-  const run29 = [tile(base, 'red', 2), tile(base, 'red', 3), tile(base, 'red', 4)];
-  const s29 = fixture([...group29, ...run29]);
-  s29.tiles = base.tiles;
-  assert.deepEqual(validateDigital(s29, { type: 'commit', table: [{ tiles: group29 }, { tiles: run29 }] }), {
-    ok: false,
-    code: 'initial-meld-30',
-  });
 
-  const run30 = [tile(base, 'blue', 9), tile(base, 'blue', 10), tile(base, 'blue', 11)];
-  const s30 = fixture(run30);
-  s30.tiles = base.tiles;
-  assert.equal(validateDigital(s30, { type: 'commit', table: [{ tiles: run30 }] }).ok, true);
-  const after30 = applyDigital(s30, { type: 'commit', table: [{ tiles: run30 }] });
-  assert.equal(after30.hasCompletedInitialMeld[0], true);
+  const first27 = [tile(base, 'blue', 8), tile(base, 'blue', 9), tile(base, 'blue', 10)];
+  const second6 = [tile(base, 'red', 1), tile(base, 'red', 2), tile(base, 'red', 3)];
+  const aggregate33 = fixture([...first27, ...second6]);
+  aggregate33.tiles = base.tiles;
+  assert.deepEqual(
+    validateDigital(aggregate33, { type: 'commit', table: [{ tiles: first27 }, { tiles: second6 }] }),
+    { ok: false, code: 'initial-meld-30' },
+  );
 
-  const group31 = [
-    tile(base, 'red', 4, 1),
-    tile(base, 'blue', 4),
-    tile(base, 'orange', 4),
-    tile(base, 'black', 4),
-  ];
-  const run31 = [tile(base, 'red', 4), tile(base, 'red', 5), tile(base, 'red', 6)];
-  const s31 = fixture([...group31, ...run31]);
-  s31.tiles = base.tiles;
-  assert.equal(validateDigital(s31, { type: 'commit', table: [{ tiles: group31 }, { tiles: run31 }] }).ok, true);
+  const first30 = [tile(base, 'blue', 9), tile(base, 'blue', 10), tile(base, 'blue', 11)];
+  const third6 = [tile(base, 'blue', 2), tile(base, 'orange', 2), tile(base, 'black', 2)];
+  const opening = fixture([...first30, ...second6, ...third6]);
+  opening.tiles = base.tiles;
+  const move = {
+    type: 'commit' as const,
+    table: [{ tiles: first30 }, { tiles: second6 }, { tiles: third6 }],
+  };
+  assert.equal(validateDigital(opening, move).ok, true);
+  const afterOpening = applyDigital(opening, move);
+  assert.equal(afterOpening.hasCompletedInitialMeld[0], true);
+
+  const lowAfterOpening = fixture(second6);
+  lowAfterOpening.tiles = base.tiles;
+  lowAfterOpening.hasCompletedInitialMeld = [true, false];
+  assert.equal(validateDigital(lowAfterOpening, { type: 'commit', table: [{ tiles: second6 }] }).ok, true);
 });
 
 test('initial meld cannot manipulate or count existing table tiles', () => {

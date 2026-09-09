@@ -340,7 +340,7 @@ const en: Record<string, string> = {
   digitalGameTag: 'BUILD. BREAK. REBUILD.',
   digitalGameDesc: 'Create runs and groups, then reshape the whole table to empty your rack first.',
   digitalGameRules:
-    'Each player starts with 14 tiles from a 106-tile set: two copies of numbers 1–13 in four colors plus two Jokers. A group is 3–4 equal numbers in different colors. A run is 3 or more consecutive numbers of one color; 1 is low only, so 12-13-1 is invalid. Your first successful play must use only tiles from your rack and total at least 30 points. After that you may split, extend and completely reorganize table melds, but every tile on the table must belong to a legal group or run when you commit. A Joker represents the missing tile required by its meld; if retrieved, it must be reused on the table in the same turn. If you do not play, draw one tile and end your turn. Empty your rack to win. A Joker left in a rack is worth 30 penalty points.',
+    'Each player starts with 14 tiles from a 106-tile set: two copies of numbers 1–13 in four colors plus two Jokers. A group is 3–4 equal numbers in different colors. A run is 3 or more consecutive numbers of one color; 1 is low only, so 12-13-1 is invalid. Your first new meld must use only tiles from your rack and total at least 30 points; any second or third meld you add in that same opening turn may be below 30. After that you may split, extend and completely reorganize table melds, but every tile on the table must belong to a legal group or run when you commit. A Joker represents the missing tile required by its meld; if retrieved, it must be reused on the table in the same turn. If you do not play, draw one tile and end your turn. Empty your rack to win. A Joker left in a rack is worth 30 penalty points.',
   digitalTilesLeft: 'tiles left',
   digitalPool: 'Draw pool',
   digitalRack: 'Rack',
@@ -382,7 +382,7 @@ const en: Record<string, string> = {
   'tile-not-owned': 'You can only add tiles from your own rack.',
   'play-rack-tile': 'Play at least one tile from your rack before committing.',
   'initial-table-locked': 'Complete your 30-point initial meld before reorganizing the table.',
-  'initial-meld-30': 'Your initial meld must total at least 30 points from your rack.',
+  'initial-meld-30': 'Your first opening meld must total at least 30 points from your rack; later melds do not need 30.',
   'blocked-round': 'The draw pool is empty and no player could continue.',
   'digital-win': 'Rack emptied with a legal committed table.',
 };
@@ -725,7 +725,7 @@ const ar: Record<string, string> = {
   digitalGameTag: 'ابنِ. فكّك. أعد الترتيب.',
   digitalGameDesc: 'كوّن سلاسل ومجموعات، ثم أعد تشكيل الطاولة كاملة حتى تفرغ حاملك أولًا.',
   digitalGameRules:
-    'يبدأ كل لاعب بـ14 بلاطة من مجموعة مكوّنة من 106 بلاطات: نسختان من الأرقام 1–13 بأربعة ألوان، إضافة إلى جوكرين. المجموعة تتكوّن من 3 أو 4 بلاطات تحمل الرقم نفسه بألوان مختلفة. السلسلة تتكوّن من 3 بلاطات أو أكثر بأرقام متتالية ولون واحد؛ الرقم 1 منخفض فقط، لذلك 12-13-1 غير صالح. أول نزول ناجح لك يجب أن يستخدم بلاطات من حاملك فقط وبمجموع 30 نقطة على الأقل. بعد ذلك يمكنك تقسيم التشكيلات وتمديدها وإعادة ترتيب بلاطات الطاولة بالكامل، لكن يجب أن تكون كل بلاطة على الطاولة ضمن مجموعة أو سلسلة قانونية عند تأكيد الدور. الجوكر يمثّل البلاطة الناقصة التي يحتاجها التشكيل، وإذا استرجعته من الطاولة فيجب استخدامه مجددًا على الطاولة في الدور نفسه. إذا لم تلعب، اسحب بلاطة واحدة وينتهي دورك. تفوز عند إفراغ حاملك. الجوكر المتبقي في الحامل يساوي 30 نقطة جزائية.',
+    'يبدأ كل لاعب بـ14 بلاطة من مجموعة مكوّنة من 106 بلاطات: نسختان من الأرقام 1–13 بأربعة ألوان، إضافة إلى جوكرين. المجموعة تتكوّن من 3 أو 4 بلاطات تحمل الرقم نفسه بألوان مختلفة. السلسلة تتكوّن من 3 بلاطات أو أكثر بأرقام متتالية ولون واحد؛ الرقم 1 منخفض فقط، لذلك 12-13-1 غير صالح. أول تشكيلة جديدة في نزولك يجب أن تكون من بلاطات حاملك فقط ومجموعها 30 نقطة على الأقل، أما التشكيلة الثانية والثالثة في الدور نفسه فلا يشترط أن تصل إلى 30. بعد ذلك يمكنك تقسيم التشكيلات وتمديدها وإعادة ترتيب بلاطات الطاولة بالكامل، لكن يجب أن تكون كل بلاطة على الطاولة ضمن مجموعة أو سلسلة قانونية عند تأكيد الدور. الجوكر يمثّل البلاطة الناقصة التي يحتاجها التشكيل، وإذا استرجعته من الطاولة فيجب استخدامه مجددًا على الطاولة في الدور نفسه. إذا لم تلعب، اسحب بلاطة واحدة وينتهي دورك. تفوز عند إفراغ حاملك. الجوكر المتبقي في الحامل يساوي 30 نقطة جزائية.',
   digitalTilesLeft: 'بلاطات متبقية',
   digitalPool: 'كومة السحب',
   digitalRack: 'الحامل',
@@ -767,7 +767,7 @@ const ar: Record<string, string> = {
   'tile-not-owned': 'يمكنك إضافة بلاطات من حاملك فقط.',
   'play-rack-tile': 'العب بلاطة واحدة على الأقل من حاملك قبل تأكيد الدور.',
   'initial-table-locked': 'أكمل نزولك الأول بـ30 نقطة قبل إعادة ترتيب الطاولة.',
-  'initial-meld-30': 'يجب أن يساوي نزولك الأول 30 نقطة على الأقل من بلاطات حاملك.',
+  'initial-meld-30': 'يجب أن يكون مجموع أول تشكيلة في نزولك 30 نقطة على الأقل من حاملك؛ التشكيلات التالية لا تحتاج 30.',
   'blocked-round': 'نفدت بلاطات السحب ولم يستطع أي لاعب الاستمرار.',
   'digital-win': 'تم إفراغ الحامل بعد تأكيد طاولة قانونية.',
 };
