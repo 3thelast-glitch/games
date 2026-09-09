@@ -10,6 +10,7 @@ export const boardSelectors: Record<GameId, string> = {
   connectFour: '.connect-columns',
   reversi: '.reversi-board',
   digitalGame: '.digital-game',
+  chess: '.chess-board',
 };
 
 export const gameRootSelectors: Record<GameId, string> = {
@@ -21,6 +22,7 @@ export const gameRootSelectors: Record<GameId, string> = {
   connectFour: '.connect-four-game',
   reversi: '.reversi-game',
   digitalGame: '.digital-game',
+  chess: '.chess-game',
 };
 
 export async function openLocalGame(page: Page, gameId: GameId, locale: LocaleCase) {
