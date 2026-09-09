@@ -4,6 +4,11 @@
   --chess-accent: #8fd8b8;
   align-items: center;
 }
+/* Chess has one fixed AI strength: the dedicated expert engine. */
+dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child(2).selected)
+  .mode-grid ~ fieldset {
+  display: none;
+}
 .chess-board-wrap {
   position: relative;
   width: min(100%, 680px);
