@@ -52,41 +52,6 @@ jobs:
           text = main.read_text()
           text = replace_once(text, "import './reversi.css';\n", "import './reversi.css';\nimport './chess.css';\n", 'main css')
           main.write_text(text)
-
-          components = Path('apps/mobile/src/components.tsx')
-          text = components.read_text()
-          text = replace_once(text, "['checkers', 'gomoku', 'nineMensMorris', 'connectFour', 'reversi', 'digitalGame'].includes(game)", "['checkers', 'gomoku', 'nineMensMorris', 'connectFour', 'reversi', 'digitalGame', 'chess'].includes(game)", 'game art switch')
-          components.write_text(text)
-
-          art = Path('apps/mobile/src/ClassicArt.tsx')
-          text = art.read_text()
-          anchor = "      {game === 'checkers' && (\n"
-          chess_art = """      {game === 'chess' && (
-        <>
-          {Array.from({ length: 64 }, (_, i) => (
-            <rect
-              key={i}
-              x={36 + (i % 8) * 46}
-              y={36 + Math.floor(i / 8) * 46}
-              width=\"46\"
-              height=\"46\"
-              fill={(Math.floor(i / 8) + (i % 8)) % 2 ? '#536258' : '#d8cbb5'}
-            />
-          ))}
-          <text x=\"82\" y=\"119\" textAnchor=\"middle\" fontSize=\"54\" fill=\"#17211e\">♞</text>
-          <text x=\"174\" y=\"119\" textAnchor=\"middle\" fontSize=\"54\" fill=\"#17211e\">♛</text>
-          <text x=\"266\" y=\"119\" textAnchor=\"middle\" fontSize=\"54\" fill=\"#17211e\">♚</text>
-          <text x=\"358\" y=\"119\" textAnchor=\"middle\" fontSize=\"54\" fill=\"#17211e\">♜</text>
-          <text x=\"128\" y=\"349\" textAnchor=\"middle\" fontSize=\"54\" fill=\"#fff8e9\">♖</text>
-          <text x=\"220\" y=\"349\" textAnchor=\"middle\" fontSize=\"54\" fill=\"#fff8e9\">♔</text>
-          <text x=\"312\" y=\"349\" textAnchor=\"middle\" fontSize=\"54\" fill=\"#fff8e9\">♕</text>
-          <text x=\"220\" y=\"257\" textAnchor=\"middle\" fontSize=\"52\" fill=\"#fff8e9\">♙</text>
-          <text x=\"266\" y=\"211\" textAnchor=\"middle\" fontSize=\"52\" fill=\"#17211e\">♟</text>
-        </>
-      )}
-"""
-          text = replace_once(text, anchor, chess_art + anchor, 'classic chess art')
-          art.write_text(text)
           PY
       - run: npm ci
       - run: npm audit --audit-level=moderate
@@ -98,6 +63,6 @@ jobs:
           rm .github/workflows/patch-chess.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add packages/games/registry.ts apps/mobile/src/gameViews.tsx apps/mobile/src/i18n.tsx apps/mobile/src/main.tsx apps/mobile/src/components.tsx apps/mobile/src/ClassicArt.tsx .github/workflows/patch-chess.yml
+          git add packages/games/registry.ts apps/mobile/src/gameViews.tsx apps/mobile/src/i18n.tsx apps/mobile/src/main.tsx .github/workflows/patch-chess.yml
           git commit -m "Integrate Chess into Board Arena"
           git push origin HEAD:feature/chess
