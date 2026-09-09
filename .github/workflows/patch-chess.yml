@@ -1,0 +1,103 @@
+name: Build Chess implementation
+on:
+  push:
+    branches: [feature/chess]
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feature/chess
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Integrate Chess into Board Arena
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected 1 match, found {count}')
+              return text.replace(old, new, 1)
+
+          registry = Path('packages/games/registry.ts')
+          text = registry.read_text()
+          text = replace_once(text, "import { classicDigitalGameEngine } from './digital-game/classic-engine.ts';\n", "import { classicDigitalGameEngine } from './digital-game/classic-engine.ts';\nimport { chessEngine } from './chess/rules.ts';\n", 'registry import')
+          text = replace_once(text, "  .register(asPlugin(classicDigitalGameEngine));\n", "  .register(asPlugin(classicDigitalGameEngine))\n  .register(asPlugin(chessEngine));\n", 'registry register')
+          registry.write_text(text)
+
+          views = Path('apps/mobile/src/gameViews.tsx')
+          text = views.read_text()
+          text = replace_once(text, "import type { QuoridorState } from '../../../packages/games/quoridor/state.ts';\n", "import type { QuoridorState } from '../../../packages/games/quoridor/state.ts';\nimport { ChessBoard } from '../../../packages/games/chess/ui.tsx';\nimport type { ChessState } from '../../../packages/games/chess/state.ts';\n", 'views imports')
+          text = replace_once(text, "  quoridor: (props) => <QuoridorBoard {...props} state={props.state as QuoridorState} />,\n};", "  quoridor: (props) => <QuoridorBoard {...props} state={props.state as QuoridorState} />,\n  chess: (props) => <ChessBoard {...props} state={props.state as ChessState} />,\n};", 'views map')
+          text = replace_once(text, "  {\n    id: 'quoridor',\n    duration: '10–20',\n    tag: 'quoridorTag',\n    description: 'quoridorDesc',\n    icon: '▦',\n  },\n];\nexport const upcoming = ['chess', 'mancala'];", "  {\n    id: 'quoridor',\n    duration: '10–20',\n    tag: 'quoridorTag',\n    description: 'quoridorDesc',\n    icon: '▦',\n  },\n  {\n    id: 'chess',\n    duration: '10–45',\n    tag: 'chessTag',\n    description: 'chessDesc',\n    icon: '♞',\n  },\n];\nexport const upcoming = ['mancala'];", 'views game info')
+          text = replace_once(text, "  const board = (state as CheckersState | GomokuState | MorrisState | ConnectFourState | ReversiState).board;", "  const board = (state as CheckersState | GomokuState | MorrisState | ConnectFourState | ReversiState | ChessState).board;", 'resource board union')
+          views.write_text(text)
+
+          i18n = Path('apps/mobile/src/i18n.tsx')
+          text = i18n.read_text()
+          text = replace_once(text, "import { createContext, useContext, type ReactNode } from 'react';\n", "import { createContext, useContext, type ReactNode } from 'react';\nimport { chessEn, chessAr } from './chess-i18n.ts';\n", 'i18n import')
+          text = replace_once(text, "const en: Record<string, string> = {\n", "const en: Record<string, string> = {\n  ...chessEn,\n", 'i18n en')
+          text = replace_once(text, "const ar: Record<string, string> = {\n", "const ar: Record<string, string> = {\n  ...chessAr,\n", 'i18n ar')
+          i18n.write_text(text)
+
+          main = Path('apps/mobile/src/main.tsx')
+          text = main.read_text()
+          text = replace_once(text, "import './reversi.css';\n", "import './reversi.css';\nimport './chess.css';\n", 'main css')
+          main.write_text(text)
+
+          components = Path('apps/mobile/src/components.tsx')
+          text = components.read_text()
+          text = replace_once(text, "['checkers', 'gomoku', 'nineMensMorris', 'connectFour', 'reversi', 'digitalGame'].includes(game)", "['checkers', 'gomoku', 'nineMensMorris', 'connectFour', 'reversi', 'digitalGame', 'chess'].includes(game)", 'game art switch')
+          components.write_text(text)
+
+          art = Path('apps/mobile/src/ClassicArt.tsx')
+          text = art.read_text()
+          anchor = "      {game === 'checkers' && (\n"
+          chess_art = """      {game === 'chess' && (
+        <>
+          {Array.from({ length: 64 }, (_, i) => (
+            <rect
+              key={i}
+              x={36 + (i % 8) * 46}
+              y={36 + Math.floor(i / 8) * 46}
+              width=\"46\"
+              height=\"46\"
+              fill={(Math.floor(i / 8) + (i % 8)) % 2 ? '#536258' : '#d8cbb5'}
+            />
+          ))}
+          <text x=\"82\" y=\"119\" textAnchor=\"middle\" fontSize=\"54\" fill=\"#17211e\">♞</text>
+          <text x=\"174\" y=\"119\" textAnchor=\"middle\" fontSize=\"54\" fill=\"#17211e\">♛</text>
+          <text x=\"266\" y=\"119\" textAnchor=\"middle\" fontSize=\"54\" fill=\"#17211e\">♚</text>
+          <text x=\"358\" y=\"119\" textAnchor=\"middle\" fontSize=\"54\" fill=\"#17211e\">♜</text>
+          <text x=\"128\" y=\"349\" textAnchor=\"middle\" fontSize=\"54\" fill=\"#fff8e9\">♖</text>
+          <text x=\"220\" y=\"349\" textAnchor=\"middle\" fontSize=\"54\" fill=\"#fff8e9\">♔</text>
+          <text x=\"312\" y=\"349\" textAnchor=\"middle\" fontSize=\"54\" fill=\"#fff8e9\">♕</text>
+          <text x=\"220\" y=\"257\" textAnchor=\"middle\" fontSize=\"52\" fill=\"#fff8e9\">♙</text>
+          <text x=\"266\" y=\"211\" textAnchor=\"middle\" fontSize=\"52\" fill=\"#17211e\">♟</text>
+        </>
+      )}
+"""
+          text = replace_once(text, anchor, chess_art + anchor, 'classic chess art')
+          art.write_text(text)
+          PY
+      - run: npm ci
+      - run: npm audit --audit-level=moderate
+      - run: npm test
+      - run: npm run build
+      - name: Commit verified Chess integration
+        shell: bash
+        run: |
+          rm .github/workflows/patch-chess.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packages/games/registry.ts apps/mobile/src/gameViews.tsx apps/mobile/src/i18n.tsx apps/mobile/src/main.tsx apps/mobile/src/components.tsx apps/mobile/src/ClassicArt.tsx .github/workflows/patch-chess.yml
+          git commit -m "Integrate Chess into Board Arena"
+          git push origin HEAD:feature/chess
