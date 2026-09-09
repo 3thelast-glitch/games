@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { chooseMove } from '../packages/core/src/ai.ts';
+import { asPlugin } from '../packages/core/src/game.ts';
 import {
   applyChess,
+  chessEngine,
   chessLegalMoves,
   isChessInCheck,
   isInsufficientChessMaterial,
@@ -172,4 +175,16 @@ test('Chess enforces automatic threefold repetition', () => {
   }
   assert.equal(state.drawReason, 'threefold-repetition');
   assert.equal(state.winner, null);
+});
+
+
+test('Chess is compatible with every shared AI difficulty', () => {
+  const state = createChess();
+  const plugin = asPlugin(chessEngine);
+  const legal = chessLegalMoves(state);
+  for (const difficulty of ['easy', 'medium', 'hard'] as const) {
+    const move = chooseMove(plugin, state, difficulty, { random: () => 0, budgetMs: 40 });
+    assert.ok(move);
+    assert.ok(legal.some((candidate) => JSON.stringify(candidate) === JSON.stringify(move)));
+  }
 });
