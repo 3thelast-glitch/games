@@ -158,19 +158,24 @@ input[type='checkbox'] {
   letter-spacing: -0.9px;
 }
 .brand img {
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 11px;
 }
-.brand-light {
-  font-weight: 400;
-  color: #bec1d0;
+.brand-name {
+  display: block;
+  letter-spacing: 2px;
+  line-height: 1.2;
 }
 .brand small {
   display: block;
-  font-size: 6.9px;
-  color: #666f82;
+  white-space: nowrap;
+  line-height: 1.2;
+  font-size: 9px;
+  color: var(--muted);
   font-weight: 600;
-  letter-spacing: 2.1px;
+  letter-spacing: 1px;
   margin-top: 7px;
 }
 .nav-label {
@@ -2260,7 +2265,11 @@ td:first-child {
   letter-spacing: 0.7px;
 }
 [dir='rtl'] .brand {
-  direction: ltr;
+  direction: rtl;
+}
+[dir='rtl'] .brand-name,
+[dir='rtl'] .brand small {
+  letter-spacing: 0;
 }
 [dir='rtl'] .sidebar .brand {
   justify-content: flex-start;
@@ -2498,12 +2507,12 @@ td:first-child {
     gap: 8px;
   }
   .brand img {
-    width: 31px;
-    height: 31px;
+    width: 36px;
+    height: 36px;
   }
   .brand small {
-    font-size: 5.6px;
-    letter-spacing: 1.55px;
+    font-size: 8px;
+    letter-spacing: 0.5px;
   }
   .language-button {
     font-size: 10px;
@@ -3311,7 +3320,7 @@ td:first-child {
     font-size: 17px;
   }
   .brand small {
-    font-size: 5px;
+    font-size: 7px;
   }
   .brand img {
     width: 30px;

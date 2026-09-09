@@ -61,6 +61,7 @@ export default function App() {
   useEffect(() => {
     document.documentElement.lang = settings.lang;
     document.documentElement.dir = settings.lang === 'ar' ? 'rtl' : 'ltr';
+    document.title = settings.lang === 'ar' ? 'نقلة | NAQLA' : 'NAQLA | نقلة';
     document.documentElement.dataset.reduceMotion = String(settings.reduceMotion);
   }, [settings]);
   return (

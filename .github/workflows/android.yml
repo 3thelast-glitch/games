@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       server_url:
-        description: HTTPS Board Arena server origin (leave empty for local/AI/LAN testing)
+        description: HTTPS NAQLA server origin (leave empty for local/AI/LAN testing)
         required: false
         type: string
   pull_request:
@@ -12,6 +12,7 @@ on:
       - 'packages/**'
       - 'native/**'
       - 'scripts/mobile.mjs'
+      - 'scripts/branding.mjs'
       - 'capacitor.config.ts'
       - 'package.json'
       - 'package-lock.json'
@@ -23,6 +24,7 @@ on:
       - 'packages/**'
       - 'native/**'
       - 'scripts/mobile.mjs'
+      - 'scripts/branding.mjs'
       - 'capacitor.config.ts'
       - 'package.json'
       - 'package-lock.json'
@@ -54,7 +56,7 @@ jobs:
         run: ./gradlew assembleDebug --no-daemon
       - uses: actions/upload-artifact@v7
         with:
-          name: Board-Arena-debug-APK
+          name: NAQLA-debug-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14

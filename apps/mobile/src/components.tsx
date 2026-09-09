@@ -133,9 +133,9 @@ export function Logo() {
   const { t } = useI18n();
   return (
     <span className="brand">
-      <img src="/icon.svg" alt="" />
+      <img src="/brand/icon-192.png" alt="" width="44" height="44" />
       <span>
-        board<span className="brand-light">arena</span>
+        <span className="brand-name">{t('brandName')}</span>
         <small>{t('brandMotto')}</small>
       </span>
     </span>
