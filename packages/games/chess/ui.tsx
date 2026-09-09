@@ -49,7 +49,7 @@ export function ChessBoard({ state, disabled, onMove, t }: BoardProps<ChessState
         {state.inCheck ? t('chessCheckHint') : t('chessHint')}
       </p>
       <div className="chess-board-wrap">
-        <div className="classic-board chess-board" dir="ltr" aria-label={t('chess')}>
+        <div className="classic-board chess-board" dir="ltr" role="grid" aria-label={t('chess')}>
           {state.board.map((piece, index) => {
             const row = Math.floor(index / 8), col = index % 8;
             const light = (row + col) % 2 === 0;
@@ -60,6 +60,7 @@ export function ChessBoard({ state, disabled, onMove, t }: BoardProps<ChessState
             return (
               <button
                 key={index}
+                role="gridcell"
                 className={`chess-cell ${light ? 'chess-light' : 'chess-dark'} ${selection === index ? 'selected-cell' : ''} ${target ? 'legal-cell' : ''} ${last ? 'last-cell' : ''} ${checkedKing === index ? 'chess-check-cell' : ''}`}
                 aria-label={label}
                 aria-pressed={selection === index}
