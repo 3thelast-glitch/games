@@ -7,6 +7,7 @@ import { connectFourEngine } from './connect-four/rules.ts';
 import { morrisEngine } from './nine-mens-morris/rules.ts';
 import { reversiEngine } from './reversi/rules.ts';
 import { classicDigitalGameEngine } from './digital-game/classic-engine.ts';
+import { chessEngine } from './chess/rules.ts';
 export const games = new GameRegistry()
   .register(asPlugin(abaloneEngine))
   .register(asPlugin(quoridorEngine))
@@ -15,4 +16,5 @@ export const games = new GameRegistry()
   .register(asPlugin(morrisEngine))
   .register(asPlugin(connectFourEngine))
   .register(asPlugin(reversiEngine))
-  .register(asPlugin(classicDigitalGameEngine));
+  .register(asPlugin(classicDigitalGameEngine))
+  .register(asPlugin(chessEngine));
