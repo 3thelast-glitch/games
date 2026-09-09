@@ -26,6 +26,8 @@ jobs:
           cache: npm
       - name: Install locked application and Playwright dependencies
         run: npm ci
+      - name: Remove unrelated Chrome apt source
+        run: sudo rm -f /etc/apt/sources.list.d/google-chrome.list
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Run RTL/LTR responsive smoke matrix
@@ -54,6 +56,8 @@ jobs:
           cache: npm
       - name: Install locked application and Playwright dependencies
         run: npm ci
+      - name: Remove unrelated Chrome apt source
+        run: sudo rm -f /etc/apt/sources.list.d/google-chrome.list
       - name: Install Firefox
         run: npx playwright install --with-deps firefox
       - name: Run Firefox touch and geometry regression suite
