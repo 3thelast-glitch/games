@@ -28,14 +28,14 @@ test('Chess UI renders 64 fixed-coordinate squares and emits a legal e2-e4 move'
     <ChessBoard state={createChess()} disabled={false} onMove={(next) => (move = next)} t={t} />,
   );
 
-  const board = view.getByRole('group', { name: 'chess' });
+  const board = view.getByRole('grid', { name: 'chess' });
   assert.equal(board.getAttribute('dir'), 'ltr');
   assert.equal(view.container.querySelectorAll('.chess-cell').length, 64);
   assert.equal(view.container.querySelectorAll('.chess-piece').length, 32);
 
-  fireEvent.click(view.getByRole('button', { name: /e2: chessWhite chessPawn/ }));
+  fireEvent.click(view.getByRole('gridcell', { name: /e2: chessWhite chessPawn/ }));
   assert.equal(view.container.querySelectorAll('.chess-cell.legal-cell').length, 2);
-  fireEvent.click(view.getByRole('button', { name: /e4: emptyCell/ }));
+  fireEvent.click(view.getByRole('gridcell', { name: /e4: emptyCell/ }));
   assert.deepEqual(move, { from: 52, to: 36 });
 });
 
