@@ -1,6 +1,8 @@
 import { createContext, useContext, type ReactNode } from 'react';
+import { chessEn, chessAr } from './chess-i18n.ts';
 export type Language = 'en' | 'ar';
 const en: Record<string, string> = {
+  ...chessEn,
   moveNumber: 'Move',
   checkersTag: 'EVERY JUMP COUNTS',
   checkersDesc: 'Force a capture. Chain your jumps. Crown your way to victory.',
@@ -387,6 +389,7 @@ const en: Record<string, string> = {
   'digital-win': 'Rack emptied with a legal committed table.',
 };
 const ar: Record<string, string> = {
+  ...chessAr,
   moveNumber: 'الحركة',
   checkersTag: 'كل قفزة تصنع الفارق',
   checkersDesc: 'افرض الأخذ. واصل القفز. وتوّج قطعك لتحسم المباراة.',

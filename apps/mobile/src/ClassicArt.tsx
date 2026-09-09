@@ -47,6 +47,22 @@ export function ClassicArt({ game }: { game: string }) {
         stroke="#918878"
         strokeWidth="3"
       />
+      {game === 'chess' && (
+        <>
+          {Array.from({ length: 64 }, (_, i) => (
+            <rect key={i} x={36 + (i % 8) * 46} y={36 + Math.floor(i / 8) * 46} width="46" height="46" fill={(Math.floor(i / 8) + (i % 8)) % 2 ? '#536258' : '#d8cbb5'} />
+          ))}
+          <text x="82" y="119" textAnchor="middle" fontSize="54" fill="#17211e">♞</text>
+          <text x="174" y="119" textAnchor="middle" fontSize="54" fill="#17211e">♛</text>
+          <text x="266" y="119" textAnchor="middle" fontSize="54" fill="#17211e">♚</text>
+          <text x="358" y="119" textAnchor="middle" fontSize="54" fill="#17211e">♜</text>
+          <text x="128" y="349" textAnchor="middle" fontSize="54" fill="#fff8e9">♖</text>
+          <text x="220" y="349" textAnchor="middle" fontSize="54" fill="#fff8e9">♔</text>
+          <text x="312" y="349" textAnchor="middle" fontSize="54" fill="#fff8e9">♕</text>
+          <text x="220" y="257" textAnchor="middle" fontSize="52" fill="#fff8e9">♙</text>
+          <text x="266" y="211" textAnchor="middle" fontSize="52" fill="#17211e">♟</text>
+        </>
+      )}
       {game === 'checkers' && (
         <>
           {Array.from({ length: 64 }, (_, i) => (

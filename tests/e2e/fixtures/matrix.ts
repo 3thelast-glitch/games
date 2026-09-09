@@ -58,6 +58,7 @@ export const gameIds = [
   'connectFour',
   'reversi',
   'digitalGame',
+  'chess',
 ] as const;
 
 export type GameId = (typeof gameIds)[number];

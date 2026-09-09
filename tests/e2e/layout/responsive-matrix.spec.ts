@@ -54,7 +54,7 @@ for (const locale of locales) {
           if (gameId === 'digitalGame')
             await expectIntentionalScroller(page.locator('.digital-rack'), 'digital rack');
 
-          if (['checkers', 'quoridor', 'nineMensMorris', 'reversi'].includes(gameId))
+          if (['checkers', 'quoridor', 'nineMensMorris', 'reversi', 'chess'].includes(gameId))
             await expectSquare(board, `${gameId} board`, 3);
 
           if (gameId === 'connectFour') {
@@ -76,6 +76,14 @@ for (const locale of locales) {
             await expect(cells).toHaveCount(64);
             for (const index of [0, 7, 27, 36, 56, 63])
               await expectSquare(cells.nth(index), `reversi cell ${index}`, 2);
+          }
+
+          if (gameId === 'chess') {
+            const cells = page.locator('.chess-cell');
+            await expect(cells).toHaveCount(64);
+            for (const index of [0, 7, 27, 36, 56, 63])
+              await expectSquare(cells.nth(index), `chess cell ${index}`, 2);
+            await expect(board).toHaveAttribute('dir', 'ltr');
           }
 
           if (gameId === 'abalone') {

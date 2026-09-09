@@ -15,6 +15,8 @@ import { AbaloneBoard } from '../../../packages/games/abalone/ui.tsx';
 import type { AbaloneState } from '../../../packages/games/abalone/state.ts';
 import { QuoridorBoard } from '../../../packages/games/quoridor/ui.tsx';
 import type { QuoridorState } from '../../../packages/games/quoridor/state.ts';
+import { ChessBoard } from '../../../packages/games/chess/ui.tsx';
+import type { ChessState } from '../../../packages/games/chess/state.ts';
 interface Props {
   state: BaseState;
   disabled: boolean;
@@ -30,6 +32,7 @@ export const gameViews: Record<string, (props: Props) => React.ReactNode> = {
   digitalGame: (props) => <DigitalGameBoard {...props} state={props.state as DigitalGameState} />,
   abalone: (props) => <AbaloneBoard {...props} state={props.state as AbaloneState} />,
   quoridor: (props) => <QuoridorBoard {...props} state={props.state as QuoridorState} />,
+  chess: (props) => <ChessBoard {...props} state={props.state as ChessState} />,
 };
 export const gameInfo = [
   ...[
@@ -60,8 +63,15 @@ export const gameInfo = [
     description: 'quoridorDesc',
     icon: '▦',
   },
+  {
+    id: 'chess',
+    duration: '10–45',
+    tag: 'chessTag',
+    description: 'chessDesc',
+    icon: '♞',
+  },
 ];
-export const upcoming = ['chess', 'mancala'];
+export const upcoming = ['mancala'];
 const resources: Record<
   string,
   (state: BaseState, player: Seat) => { value: string; label: string }
@@ -81,7 +91,7 @@ const resources: Record<
 };
 export function gameResource(state: BaseState, player: Seat): { value: string; label: string } {
   if (resources[state.gameId]) return resources[state.gameId](state, player);
-  const board = (state as CheckersState | GomokuState | MorrisState | ConnectFourState | ReversiState).board;
+  const board = (state as CheckersState | GomokuState | MorrisState | ConnectFourState | ReversiState | ChessState).board;
   const count = board.filter((piece) =>
     typeof piece === 'object' && piece !== null ? piece.owner === player : piece === player,
   ).length;
