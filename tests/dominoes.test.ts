@@ -79,7 +79,6 @@ test('highest double in hands determines starter and boneyard does not participa
     ['1|6', '5|5', '3|4'],
   ]);
   assert.deepEqual(opening, { starter: 1, tileId: '5|5' });
-  // A hypothetical 6|6 in the boneyard is deliberately not an argument to the selector.
   assert.notEqual(opening.tileId, '6|6');
 });
 
@@ -184,28 +183,28 @@ test('domino-out wins immediately with the specific result reason', () => {
 test('blocked game resolves immediately by pip total and supports a tie', () => {
   const win = position({
     chain: [{ tileId: '2|3', leftValue: 2, rightValue: 3 }],
-    hands: [['0|0', '4|4'], ['5|5']],
-    handCounts: [2, 1],
-    boneyard: ['1|3'],
+    hands: [['0|0'], ['5|5']],
+    handCounts: [1, 1],
+    boneyard: ['1|6'],
     boneyardCount: 1,
   });
   const blocked = applyDominoMove(win, { type: 'draw' });
   assert.equal(blocked.boneyardCount, 0);
   assert.equal(blocked.winner, 0);
   assert.equal(blocked.resultReason, 'domino-blocked');
-  assert.deepEqual(blocked.blockedPips, [8, 10]);
+  assert.deepEqual(blocked.blockedPips, [7, 10]);
 
   const tie = position({
     chain: [{ tileId: '2|3', leftValue: 2, rightValue: 3 }],
-    hands: [['0|6'], ['1|5']],
-    handCounts: [1, 1],
-    boneyard: ['4|4'],
+    hands: [['0|4'], ['6|6', '1|1']],
+    handCounts: [1, 2],
+    boneyard: ['5|5'],
     boneyardCount: 1,
   });
   const tied = applyDominoMove(tie, { type: 'draw' });
   assert.equal(tied.winner, null);
   assert.equal(tied.drawReason, 'domino-blocked-tie');
-  assert.deepEqual(tied.blockedPips, [14, 6]);
+  assert.deepEqual(tied.blockedPips, [14, 14]);
 });
 
 test('pip counting includes blanks and doubles correctly', () => {
@@ -250,16 +249,16 @@ test('projection and AI are noninterfering for different hidden truths', () => {
 test('OfflineMatch preserves draw chains and dynamic terminal reasons', () => {
   const match = new OfflineMatch(games.get('dominoes'), 'local');
   match.current.state = position({
-    hands: [['0|6'], ['1|5']],
-    handCounts: [1, 1],
+    hands: [[], ['1|5']],
+    handCounts: [0, 1],
     boneyard: ['2|6'],
     boneyardCount: 1,
   });
   const drawn = match.move({ type: 'draw' });
   assert.equal(drawn.state.turn, 0);
   const final = match.move({ type: 'play', tileId: '2|6', side: 'left' });
-  assert.equal(final.result?.winner, null);
-  assert.equal(final.result?.reason, 'domino-blocked-tie');
+  assert.equal(final.result?.winner, 0);
+  assert.equal(final.result?.reason, 'domino-out');
 });
 
 test('authoritative online view hides secrets and server rejects a forged tile', () => {
