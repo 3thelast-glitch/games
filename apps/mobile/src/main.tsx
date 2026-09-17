@@ -6,6 +6,7 @@ import '../../../packages/games/digital-game/ui.css';
 import './responsive-overrides.css';
 import './reversi.css';
 import './chess.css';
+import './dots-and-boxes.css';
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
