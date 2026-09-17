@@ -1,6 +1,11 @@
+import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { MatchService } from '../apps/server/src/matches.ts';
+import { Store } from '../apps/server/src/store.ts';
 import { chooseMove } from '../packages/core/src/ai.ts';
+import { OfflineMatch } from '../packages/core/src/offline.ts';
+import type { MatchCommand, MatchSnapshot } from '../packages/core/src/protocol.ts';
 import { games } from '../packages/games/registry.ts';
 import {
   applyDotsAndBoxes,
@@ -12,7 +17,17 @@ import {
   createDotsAndBoxes,
   horizontalEdgeIndex,
   verticalEdgeIndex,
+  type DotsAndBoxesState,
 } from '../packages/games/dots-and-boxes/state.ts';
+
+const onlineMove = (match: MatchSnapshot, move: unknown): MatchCommand =>
+  ({
+    type: 'move',
+    matchId: match.id,
+    commandId: randomUUID(),
+    expectedRevision: match.revision,
+    move,
+  }) as MatchCommand;
 
 test('Dots and Boxes starts with a 5x5 field and 60 legal edges', () => {
   const state = createDotsAndBoxes();
@@ -124,6 +139,42 @@ test('all AI levels return a legal move and stop after the match ends', () => {
   }
   const finished = applyDotsAndBoxes(state, { orientation: 'v', row: 0, col: 1 });
   assert.equal(chooseMove(game, finished, 'easy'), null);
+});
+
+test('local match uses the shared controller and preserves extra turns', () => {
+  const match = new OfflineMatch(games.get('dotsAndBoxes'), 'local');
+  match.current.state = createDotsAndBoxes(1, 1);
+  match.move({ orientation: 'h', row: 0, col: 0 });
+  match.move({ orientation: 'h', row: 1, col: 0 });
+  match.move({ orientation: 'v', row: 0, col: 0 });
+  const completed = match.move({ orientation: 'v', row: 0, col: 1 });
+  assert.equal(completed.state.turn, 1);
+  assert.equal((completed.state as DotsAndBoxesState).scores[1], 1);
+  assert.equal(completed.result?.winner, 1);
+});
+
+test('authoritative online match validates turns and preserves an extra turn after a box', () => {
+  const store = new Store();
+  const alice = store.createUser('Alice');
+  const bob = store.createUser('Bob');
+  const service = new MatchService(store, games, { clockMs: 60000 });
+  try {
+    let match = service.create('dotsAndBoxes', [alice.id, bob.id]);
+    match = service.command(alice.id, onlineMove(match, { orientation: 'h', row: 0, col: 0 }));
+    match = service.command(bob.id, onlineMove(match, { orientation: 'h', row: 1, col: 0 }));
+    match = service.command(alice.id, onlineMove(match, { orientation: 'v', row: 0, col: 0 }));
+    match = service.command(bob.id, onlineMove(match, { orientation: 'v', row: 0, col: 1 }));
+    const state = match.state as DotsAndBoxesState;
+    assert.equal(state.scores[1], 1);
+    assert.equal(state.turn, 1);
+    assert.equal(match.revision, 4);
+    assert.throws(
+      () => service.command(alice.id, onlineMove(match, { orientation: 'h', row: 0, col: 1 })),
+      /not-your-turn/,
+    );
+  } finally {
+    store.close();
+  }
 });
 
 test('Dots and Boxes state remains JSON serializable for local and online controllers', () => {
