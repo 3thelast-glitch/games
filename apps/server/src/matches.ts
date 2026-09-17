@@ -151,7 +151,7 @@ export class MatchService {
     m.revision++;
     m.drawOffer = null;
     m.drawAccepts = [];
-    if (next.winner !== null) return this.finish(m, next.winner, game.winReason, at);
+    if (next.winner !== null) return this.finish(m, next.winner, next.resultReason ?? game.winReason, at);
     if (next.drawReason) return this.finish(m, null, next.drawReason, at);
     m.clockMs = beginTurn(this.controlOf(m), m.clockMs, previousTurn, next.turn);
     if (!compareAndSwapMatch(this.store, m, expectedRevision)) return this.store.loadMatch(m.id);
@@ -223,7 +223,7 @@ export class MatchService {
       m.drawAccepts = [];
       m.commands[key] = { fingerprint, revision: m.revision };
       if (next.winner !== null)
-        return this.snapshot(this.finish(m, next.winner, game.winReason, now));
+        return this.snapshot(this.finish(m, next.winner, next.resultReason ?? game.winReason, now));
       if (next.drawReason) return this.snapshot(this.finish(m, null, next.drawReason, now));
       m.clockMs = beginTurn(this.controlOf(m), m.clockMs, previousTurn, next.turn);
     } else if (command.type === 'resign') {
