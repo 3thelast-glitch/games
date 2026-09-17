@@ -1,7 +1,9 @@
 import { dotsAndBoxesAr, dotsAndBoxesEn } from './dots-and-boxes-i18n.ts';
+import { dominoesAr, dominoesEn } from './dominoes-i18n.ts';
 
 export const chessEn: Record<string, string> = {
   ...dotsAndBoxesEn,
+  ...dominoesEn,
   chessTag: 'THINK AHEAD',
   chessDesc: 'Develop your pieces, control the board, and hunt the king.',
   chessRules:
@@ -28,6 +30,7 @@ export const chessEn: Record<string, string> = {
 
 export const chessAr: Record<string, string> = {
   ...dotsAndBoxesAr,
+  ...dominoesAr,
   chessTag: 'فكّر قبل أن تتحرك',
   chessDesc: 'طوّر قطعك، سيطر على الرقعة، وحاصر الملك.',
   chessRules:
