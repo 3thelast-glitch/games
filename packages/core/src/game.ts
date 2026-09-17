@@ -16,6 +16,8 @@ export interface BaseState {
   playerCount?: PlayerCount;
   /** Automatic board draw, absent for legacy snapshots and ongoing games. */
   drawReason?: string | null;
+  /** Optional game-supplied terminal win reason; falls back to the plugin's static winReason. */
+  resultReason?: string;
 }
 export interface TwoPlayerState extends BaseState {
   turn: Player;
