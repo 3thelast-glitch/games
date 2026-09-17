@@ -1,0 +1,166 @@
+.dots-boxes-game {
+  width: 100%;
+}
+
+.dots-scoreline {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 0.5rem 0 0.75rem;
+  font-size: 0.92rem;
+}
+
+.dots-scoreline span {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.dots-board-shell {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 1.1rem;
+  box-sizing: border-box;
+}
+
+.dots-board {
+  position: relative;
+  width: min(100%, 420px);
+  aspect-ratio: 1;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.dots-box {
+  position: absolute;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  transform: scale(0.86);
+  border-radius: 0.65rem;
+  transition: background-color 140ms ease, transform 140ms ease;
+  pointer-events: none;
+}
+
+.dots-box span {
+  font-weight: 800;
+  font-size: clamp(0.85rem, 3vw, 1.25rem);
+  opacity: 0.85;
+}
+
+.dots-box.box-owner-0 {
+  background: color-mix(in srgb, #6c88c7 34%, transparent);
+}
+
+.dots-box.box-owner-1 {
+  background: color-mix(in srgb, #d9b97c 34%, transparent);
+}
+
+.dots-edge {
+  position: absolute;
+  z-index: 3;
+  appearance: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.3);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dots-edge::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  background: currentColor;
+  transition: background-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+
+.dots-edge.horizontal {
+  height: 24px;
+  transform: translateY(-50%);
+}
+
+.dots-edge.horizontal::after {
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 5px;
+  transform: translateY(-50%);
+}
+
+.dots-edge.vertical {
+  width: 24px;
+  transform: translateX(-50%);
+}
+
+.dots-edge.vertical::after {
+  top: 8px;
+  bottom: 8px;
+  left: 50%;
+  width: 5px;
+  transform: translateX(-50%);
+}
+
+.dots-edge:not(:disabled):hover,
+.dots-edge:not(:disabled):focus-visible {
+  color: rgba(255, 255, 255, 0.62);
+  outline: none;
+}
+
+.dots-edge:not(:disabled):focus-visible::after {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.22);
+}
+
+.dots-edge.edge-owner-0 {
+  color: #7695d8;
+  cursor: default;
+}
+
+.dots-edge.edge-owner-1 {
+  color: #d9b97c;
+  cursor: default;
+}
+
+.dots-edge.last-edge::after {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+}
+
+.dots-dot {
+  position: absolute;
+  z-index: 5;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #eee7dc;
+  border: 2px solid rgba(20, 24, 31, 0.85);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-sizing: border-box;
+}
+
+@media (max-width: 380px) {
+  .dots-board-shell {
+    padding: 0.9rem 0.65rem;
+  }
+
+  .dots-edge.horizontal::after {
+    left: 6px;
+    right: 6px;
+  }
+
+  .dots-edge.vertical::after {
+    top: 6px;
+    bottom: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dots-box,
+  .dots-edge::after {
+    transition: none;
+  }
+}

@@ -17,6 +17,8 @@ import { QuoridorBoard } from '../../../packages/games/quoridor/ui.tsx';
 import type { QuoridorState } from '../../../packages/games/quoridor/state.ts';
 import { ChessBoard } from '../../../packages/games/chess/ui.tsx';
 import type { ChessState } from '../../../packages/games/chess/state.ts';
+import { DotsAndBoxesBoard } from '../../../packages/games/dots-and-boxes/ui.tsx';
+import type { DotsAndBoxesState } from '../../../packages/games/dots-and-boxes/state.ts';
 interface Props {
   state: BaseState;
   disabled: boolean;
@@ -33,6 +35,7 @@ export const gameViews: Record<string, (props: Props) => React.ReactNode> = {
   abalone: (props) => <AbaloneBoard {...props} state={props.state as AbaloneState} />,
   quoridor: (props) => <QuoridorBoard {...props} state={props.state as QuoridorState} />,
   chess: (props) => <ChessBoard {...props} state={props.state as ChessState} />,
+  dotsAndBoxes: (props) => <DotsAndBoxesBoard {...props} state={props.state as DotsAndBoxesState} />,
 };
 export const gameInfo = [
   ...[
@@ -41,6 +44,7 @@ export const gameInfo = [
     { id: 'nineMensMorris', duration: '10–20', icon: '▣' },
     { id: 'connectFour', duration: '5–10', icon: '⠿' },
     { id: 'reversi', duration: '5–20', icon: '◐' },
+    { id: 'dotsAndBoxes', duration: '5–15', icon: '□' },
   ].map((game) => ({ ...game, tag: `${game.id}Tag`, description: `${game.id}Desc` })),
   {
     id: 'digitalGame',
@@ -87,6 +91,10 @@ const resources: Record<
   digitalGame: (state, player) => ({
     value: String((state as DigitalGameState).rackCounts[player]),
     label: 'digitalTilesLeft',
+  }),
+  dotsAndBoxes: (state, player) => ({
+    value: String((state as DotsAndBoxesState).scores[player as 0 | 1]),
+    label: 'boxesClaimed',
   }),
 };
 export function gameResource(state: BaseState, player: Seat): { value: string; label: string } {
