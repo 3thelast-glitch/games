@@ -163,7 +163,7 @@ export function MatchPage(p: MatchPageProps) {
             <span className="live-dot" />
             {turnText}
           </div>
-          {view({ state: p.state, disabled: p.disabled, onMove: p.onMove, t })}
+          {view({ state: p.state, disabled: p.disabled, onMove: p.onMove, t, mode: p.mode })}
           {panel(p.self)}
         </div>
         <aside className="match-side">
