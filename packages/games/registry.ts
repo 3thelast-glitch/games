@@ -9,6 +9,7 @@ import { reversiEngine } from './reversi/rules.ts';
 import { classicDigitalGameEngine } from './digital-game/classic-engine.ts';
 import { chessEngine } from './chess/rules.ts';
 import { dotsAndBoxesEngine } from './dots-and-boxes/rules.ts';
+import { dominoesEngine } from './dominoes/rules.ts';
 export const games = new GameRegistry()
   .register(asPlugin(abaloneEngine))
   .register(asPlugin(quoridorEngine))
@@ -19,4 +20,5 @@ export const games = new GameRegistry()
   .register(asPlugin(reversiEngine))
   .register(asPlugin(classicDigitalGameEngine))
   .register(asPlugin(chessEngine))
-  .register(asPlugin(dotsAndBoxesEngine));
+  .register(asPlugin(dotsAndBoxesEngine))
+  .register(asPlugin(dominoesEngine));
