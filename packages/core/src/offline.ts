@@ -78,7 +78,7 @@ export class OfflineMatch {
     this.history.push(structuredClone(this.current));
     this.charge();
     this.current = { ...this.current, state: next };
-    if (next.winner !== null) this.finish(next.winner, this.game.winReason);
+    if (next.winner !== null) this.finish(next.winner, next.resultReason ?? this.game.winReason);
     else if (next.drawReason) this.finish(null, next.drawReason);
     else this.current.clocks = beginTurn(this.control(), this.current.clocks, previousTurn, next.turn);
     return this.current;
@@ -91,7 +91,7 @@ export class OfflineMatch {
     this.charge(at);
     const next = this.game.apply(this.current.state, automatic);
     this.current = { ...this.current, state: next };
-    if (next.winner !== null) this.finish(next.winner, this.game.winReason, at);
+    if (next.winner !== null) this.finish(next.winner, next.resultReason ?? this.game.winReason, at);
     else if (next.drawReason) this.finish(null, next.drawReason, at);
     else this.current.clocks = beginTurn(this.control(), this.current.clocks, previousTurn, next.turn);
     return true;
