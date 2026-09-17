@@ -117,15 +117,17 @@ function compareRank(left: DominoTileId, right: DominoTileId): number {
 export function chooseDominoOpening(
   hands: [DominoTileId[], DominoTileId[]],
 ): { starter: Player; tileId: DominoTileId } {
-  const doubles: Array<{ player: Player; tileId: DominoTileId }> = [];
+  const doubles: Array<{ starter: Player; tileId: DominoTileId }> = [];
   for (const player of [0, 1] as const)
     for (const tileId of hands[player]) {
       const tile = dominoTile(tileId);
-      if (tile.a === tile.b) doubles.push({ player, tileId });
+      if (tile.a === tile.b) doubles.push({ starter: player, tileId });
     }
   const candidates = doubles.length
     ? doubles
-    : ([0, 1] as const).flatMap((player) => hands[player].map((tileId) => ({ player, tileId })));
+    : ([0, 1] as const).flatMap((player) =>
+        hands[player].map((tileId) => ({ starter: player, tileId })),
+      );
   candidates.sort((left, right) => compareRank(right.tileId, left.tileId));
   return candidates[0];
 }
