@@ -174,4 +174,52 @@ for (const locale of locales) {
       await expectNoGlobalOverflow(page);
     });
   });
+
+  test(`Dots and Boxes edge targets stay separated at intersections (${locale.id})`, async ({ browser, browserName }) => {
+    await withMobileGame(browser, browserName, 'dotsAndBoxes', locale, async (page) => {
+      const board = page.locator('.dots-board');
+      await expectSquare(board, 'Dots and Boxes board', 3);
+      await expect(board).toHaveAttribute('dir', 'ltr');
+      const horizontal = page.locator('.dots-edge.horizontal:not(:disabled)').first();
+      const vertical = page.locator('.dots-edge.vertical:not(:disabled)').first();
+      await expectCenterHitTarget(horizontal, 'Dots horizontal edge');
+      await expectCenterHitTarget(vertical, 'Dots vertical edge');
+
+      const [hBox, vBox] = await Promise.all([horizontal.boundingBox(), vertical.boundingBox()]);
+      expect(hBox).not.toBeNull();
+      expect(vBox).not.toBeNull();
+      if (hBox && vBox) {
+        const overlapX = Math.max(0, Math.min(hBox.x + hBox.width, vBox.x + vBox.width) - Math.max(hBox.x, vBox.x));
+        const overlapY = Math.max(0, Math.min(hBox.y + hBox.height, vBox.y + vBox.height) - Math.max(hBox.y, vBox.y));
+        expect(overlapX * overlapY, 'Dots adjacent edge hit boxes must not overlap').toBe(0);
+      }
+
+      await activate(horizontal, browserName);
+      await expect(page.locator('.dots-edge.last-edge')).toHaveCount(1);
+      await expect(page.locator('.dots-edge.last-edge')).toHaveAttribute('aria-current', 'true');
+      await expectNoGlobalOverflow(page);
+    });
+  });
+
+  test(`Dominoes hand and chain controls remain reachable (${locale.id})`, async ({ browser, browserName }) => {
+    await withMobileGame(browser, browserName, 'dominoes', locale, async (page) => {
+      const chain = page.locator('.domino-chain-shell');
+      const hand = page.locator('.domino-hand');
+      await expect(chain).toBeVisible();
+      await expect(hand).toBeVisible();
+      await expect(page.locator('.domino-hand-tile')).toHaveCount(7);
+
+      const playable = page.locator('.domino-hand-tile:not(:disabled)').first();
+      await expectCenterHitTarget(playable, 'Domino playable tile');
+      await activate(playable, browserName);
+      await expect(page.locator('.domino-chain-item')).toHaveCount(1);
+
+      const nav = page.locator('.domino-chain-nav button');
+      await expect(nav).toHaveCount(2);
+      await expectCenterHitTarget(nav.first(), 'Domino left chain navigation');
+      await expectCenterHitTarget(nav.last(), 'Domino right chain navigation');
+      await expectNoGlobalOverflow(page);
+    });
+  });
+
 }
