@@ -1562,6 +1562,11 @@ input[type='checkbox'] {
   white-space: nowrap;
 }
 
+.arena-game-selector > button:focus-visible,
+.period-tabs > button:focus-visible {
+  outline-offset: -2px;
+}
+
 .arena-game-selector > button[aria-pressed='true']::after {
   content: '';
   position: absolute;
