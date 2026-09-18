@@ -943,7 +943,7 @@ export function LeaderboardPage({
                 <Icon name="trophy" size={25} />
               </span>
               <strong>{t(rank)}</strong>
-              <small>
+              <small className="rank-range" dir="ltr">
                 {['< 1000', '1000–1199', '1200–1399', '1400–1599', '1600–1799', '1800+'][i]}
               </small>
             </article>
