@@ -83,9 +83,9 @@ export function DotsAndBoxesBoard({
                 type="button"
                 className={`dots-edge horizontal ${owner === null ? 'available' : `edge-owner-${owner}`} ${last ? 'last-edge' : ''}`}
                 style={{
-                  left: `calc(${col * xStep}% + 10px)`,
+                  left: `calc(${col * xStep}% + 16px)`,
                   top: `${row * yStep}%`,
-                  width: `calc(${xStep}% - 20px)`,
+                  width: `calc(${xStep}% - 32px)`,
                 }}
                 disabled={locked || owner !== null}
                 tabIndex={locked || owner !== null ? -1 : 0}
@@ -115,8 +115,8 @@ export function DotsAndBoxesBoard({
                 className={`dots-edge vertical ${owner === null ? 'available' : `edge-owner-${owner}`} ${last ? 'last-edge' : ''}`}
                 style={{
                   left: `${col * xStep}%`,
-                  top: `calc(${row * yStep}% + 10px)`,
-                  height: `calc(${yStep}% - 20px)`,
+                  top: `calc(${row * yStep}% + 16px)`,
+                  height: `calc(${yStep}% - 32px)`,
                 }}
                 disabled={locked || owner !== null}
                 tabIndex={locked || owner !== null ? -1 : 0}
