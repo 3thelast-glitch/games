@@ -85,6 +85,7 @@ async function openArena(
   });
   const page = await context.newPage();
   const requests: string[] = [];
+  const runtimeErrors = captureRuntimeErrors(page);
   await mockLeaderboard(page, entries, requests);
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('dir', locale.dir);
@@ -98,7 +99,7 @@ async function openArena(
   await expect(page.locator('.leaderboard-panel')).toBeVisible();
   await expect(page.locator('.loading-state')).toHaveCount(0);
   await disableMotion(page);
-  return { context, page, requests };
+  return { context, page, requests, runtimeErrors };
 }
 
 for (const locale of locales) {
@@ -107,8 +108,7 @@ for (const locale of locales) {
       browser,
       browserName,
     }) => {
-      const { context, page } = await openArena(browser, browserName, locale, viewport);
-      const runtimeErrors = captureRuntimeErrors(page);
+      const { context, page, runtimeErrors } = await openArena(browser, browserName, locale, viewport);
       try {
         await expectNoGlobalOverflow(page);
         const strictDimensions = await page.evaluate(() => ({
