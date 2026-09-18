@@ -67,3 +67,34 @@ test('Dots and Boxes UI locks all available edges when match input is disabled',
   assert.equal(edges.length, 60);
   assert.ok(edges.every((edge) => edge.disabled));
 });
+
+
+test('Dots and Boxes marks the last edge and newly completed box without relying on color alone', () => {
+  const state = createDotsAndBoxes(1, 1);
+  state.horizontalEdges = [0, 0];
+  state.verticalEdges = [0, 0];
+  state.boxes = [0];
+  state.scores = [1, 0];
+  state.lastMove = { orientation: 'h', row: 1, col: 0 };
+  state.ply = 4;
+  const view = render(
+    <DotsAndBoxesBoard state={state} disabled={false} onMove={() => {}} t={t} />,
+  );
+  assert.equal(view.container.querySelectorAll('.recent-box').length, 1);
+  const last = view.container.querySelector<HTMLButtonElement>('.dots-edge.last-edge');
+  assert.ok(last);
+  assert.equal(last?.getAttribute('aria-current'), 'true');
+  assert.equal(last?.tabIndex, -1);
+});
+
+test('Dots and Boxes edge hit boxes are inset from shared dot intersections', () => {
+  const view = render(
+    <DotsAndBoxesBoard state={createDotsAndBoxes()} disabled={false} onMove={() => {}} t={t} />,
+  );
+  const horizontal = view.container.querySelector<HTMLElement>('.dots-edge.horizontal');
+  const vertical = view.container.querySelector<HTMLElement>('.dots-edge.vertical');
+  assert.ok(horizontal?.getAttribute('style')?.includes('+ 16px'));
+  assert.ok(horizontal?.getAttribute('style')?.includes('- 32px'));
+  assert.ok(vertical?.getAttribute('style')?.includes('+ 16px'));
+  assert.ok(vertical?.getAttribute('style')?.includes('- 32px'));
+});
