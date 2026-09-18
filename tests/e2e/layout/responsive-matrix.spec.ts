@@ -54,7 +54,12 @@ for (const locale of locales) {
           if (gameId === 'digitalGame')
             await expectIntentionalScroller(page.locator('.digital-rack'), 'digital rack');
 
-          if (['checkers', 'quoridor', 'nineMensMorris', 'reversi', 'chess'].includes(gameId))
+          if (gameId === 'dominoes') {
+            await expectIntentionalScroller(page.locator('.domino-chain-shell'), 'domino chain');
+            await expectIntentionalScroller(page.locator('.domino-hand'), 'domino hand');
+          }
+
+          if (['checkers', 'quoridor', 'nineMensMorris', 'reversi', 'chess', 'dotsAndBoxes'].includes(gameId))
             await expectSquare(board, `${gameId} board`, 3);
 
           if (gameId === 'connectFour') {
@@ -84,6 +89,24 @@ for (const locale of locales) {
             for (const index of [0, 7, 27, 36, 56, 63])
               await expectSquare(cells.nth(index), `chess cell ${index}`, 2);
             await expect(board).toHaveAttribute('dir', 'ltr');
+          }
+
+          if (gameId === 'dotsAndBoxes') {
+            await expect(page.locator('.dots-edge')).toHaveCount(60);
+            await expect(page.locator('.dots-dot')).toHaveCount(36);
+            await expect(board).toHaveAttribute('dir', 'ltr');
+            const horizontal = page.locator('.dots-edge.horizontal:not(:disabled)').first();
+            const vertical = page.locator('.dots-edge.vertical:not(:disabled)').first();
+            await expectCenterHitTarget(horizontal, 'Dots horizontal edge');
+            await expectCenterHitTarget(vertical, 'Dots vertical edge');
+          }
+
+          if (gameId === 'dominoes') {
+            const handTiles = page.locator('.domino-hand-tile');
+            await expect(handTiles).toHaveCount(7);
+            const opening = page.locator('.domino-hand-tile:not(:disabled)').first();
+            await expectCenterHitTarget(opening, 'Domino playable tile');
+            await expectMinimumControlSize(opening, 'Domino playable tile', 48);
           }
 
           if (gameId === 'abalone') {
