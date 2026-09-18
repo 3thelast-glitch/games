@@ -1,36 +1,77 @@
 .dots-boxes-game {
   width: 100%;
+  --dots-p0: var(--player-one, #63d7f4);
+  --dots-p1: var(--player-two, #b39af4);
 }
 
 .dots-scoreline {
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  gap: 0.7rem;
   flex-wrap: wrap;
-  margin: 0.5rem 0 0.75rem;
-  font-size: 0.92rem;
+  margin: 0.55rem 0 0.8rem;
+  font-size: 0.9rem;
 }
 
 .dots-scoreline span {
   display: inline-flex;
-  gap: 0.35rem;
+  gap: 0.4rem;
   align-items: center;
+  min-height: 36px;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.028);
+  color: var(--muted, #aab0bc);
+  transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
+}
+
+.dots-scoreline span.active {
+  color: var(--text, #f5f4ef);
+  border-color: rgba(134, 223, 192, 0.4);
+  background: rgba(134, 223, 192, 0.08);
+  transform: translateY(-1px);
+}
+
+.dots-player-mark {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+}
+
+.dots-player-mark.player-0 {
+  background: var(--dots-p0);
+}
+
+.dots-player-mark.player-1 {
+  background:
+    linear-gradient(135deg, transparent 0 34%, #fff 34% 46%, transparent 46% 100%),
+    var(--dots-p1);
 }
 
 .dots-board-shell {
   width: 100%;
   display: flex;
   justify-content: center;
-  padding: 1.1rem;
+  padding: 1.25rem;
   box-sizing: border-box;
+  border: 1px solid rgba(105, 137, 181, 0.14);
+  border-radius: 1.35rem;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(75, 138, 178, 0.11), transparent 44%),
+    linear-gradient(180deg, rgba(19, 29, 46, 0.58), rgba(11, 17, 29, 0.36));
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.025);
 }
 
 .dots-board {
   position: relative;
-  width: min(100%, 420px);
+  width: min(100%, 430px);
   aspect-ratio: 1;
   touch-action: manipulation;
   user-select: none;
+  border-radius: 1rem;
 }
 
 .dots-box {
@@ -38,24 +79,44 @@
   z-index: 1;
   display: grid;
   place-items: center;
-  transform: scale(0.86);
-  border-radius: 0.65rem;
-  transition: background-color 140ms ease, transform 140ms ease;
+  transform: scale(0.88);
+  border: 1px solid transparent;
+  border-radius: 0.7rem;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
   pointer-events: none;
 }
 
 .dots-box span {
+  display: grid;
+  place-items: center;
+  width: clamp(20px, 4.8vw, 28px);
+  aspect-ratio: 1;
+  border-radius: 50%;
   font-weight: 800;
-  font-size: clamp(0.85rem, 3vw, 1.25rem);
-  opacity: 0.85;
+  font-size: clamp(0.72rem, 2.7vw, 1rem);
+  color: #f8fbff;
+  background: rgba(7, 12, 22, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  text-shadow: 0 1px 3px #000a;
 }
 
 .dots-box.box-owner-0 {
-  background: color-mix(in srgb, #6c88c7 34%, transparent);
+  background:
+    linear-gradient(90deg, rgba(99, 215, 244, 0.08) 0 22%, transparent 22% 38%, rgba(99, 215, 244, 0.08) 38% 60%, transparent 60% 76%, rgba(99, 215, 244, 0.08) 76%),
+    color-mix(in srgb, var(--dots-p0) 19%, transparent);
+  border-color: color-mix(in srgb, var(--dots-p0) 35%, transparent);
 }
 
 .dots-box.box-owner-1 {
-  background: color-mix(in srgb, #d9b97c 34%, transparent);
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0 3px, transparent 3px 9px),
+    color-mix(in srgb, var(--dots-p1) 20%, transparent);
+  border-color: color-mix(in srgb, var(--dots-p1) 35%, transparent);
+}
+
+.dots-box.recent-box {
+  transform: scale(0.92);
+  animation: dots-box-claim 260ms ease-out;
 }
 
 .dots-edge {
@@ -67,7 +128,7 @@
   margin: 0;
   background: transparent;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(181, 199, 222, 0.34);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -76,91 +137,142 @@
   position: absolute;
   border-radius: 999px;
   background: currentColor;
-  transition: background-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+  transition: background-color 120ms ease, box-shadow 120ms ease, transform 120ms ease, opacity 120ms ease;
 }
 
 .dots-edge.horizontal {
-  height: 24px;
+  height: 28px;
   transform: translateY(-50%);
 }
 
 .dots-edge.horizontal::after {
-  left: 8px;
-  right: 8px;
+  left: -16px;
+  right: -16px;
   top: 50%;
   height: 5px;
   transform: translateY(-50%);
 }
 
 .dots-edge.vertical {
-  width: 24px;
+  width: 28px;
   transform: translateX(-50%);
 }
 
 .dots-edge.vertical::after {
-  top: 8px;
-  bottom: 8px;
+  top: -16px;
+  bottom: -16px;
   left: 50%;
   width: 5px;
   transform: translateX(-50%);
 }
 
-.dots-edge:not(:disabled):hover,
-.dots-edge:not(:disabled):focus-visible {
-  color: rgba(255, 255, 255, 0.62);
+.dots-edge.available:not(:disabled):hover,
+.dots-edge.available:not(:disabled):focus-visible {
+  color: rgba(134, 223, 192, 0.78);
   outline: none;
 }
 
+.dots-edge.available:not(:disabled):hover::after {
+  transform: translateY(-50%) scaleY(1.22);
+}
+
+.dots-edge.vertical.available:not(:disabled):hover::after {
+  transform: translateX(-50%) scaleX(1.22);
+}
+
 .dots-edge:not(:disabled):focus-visible::after {
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.22);
+  box-shadow: 0 0 0 3px rgba(199, 248, 232, 0.24), 0 0 14px rgba(134, 223, 192, 0.24);
 }
 
 .dots-edge.edge-owner-0 {
-  color: #7695d8;
+  color: var(--dots-p0);
   cursor: default;
 }
 
 .dots-edge.edge-owner-1 {
-  color: #d9b97c;
+  color: var(--dots-p1);
   cursor: default;
 }
 
+.dots-edge.edge-owner-1.horizontal::after {
+  background: repeating-linear-gradient(90deg, var(--dots-p1) 0 9px, #6f5aa4 9px 12px);
+}
+
+.dots-edge.edge-owner-1.vertical::after {
+  background: repeating-linear-gradient(0deg, var(--dots-p1) 0 9px, #6f5aa4 9px 12px);
+}
+
 .dots-edge.last-edge::after {
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.22), 0 0 15px currentColor;
+  animation: dots-edge-place 230ms ease-out;
 }
 
 .dots-dot {
   position: absolute;
   z-index: 5;
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  background: #eee7dc;
-  border: 2px solid rgba(20, 24, 31, 0.85);
+  background: radial-gradient(circle at 35% 30%, #ffffff, #d5e1f0 55%, #8193ad);
+  border: 2px solid rgba(10, 16, 26, 0.92);
+  box-shadow: 0 2px 5px #0009;
   transform: translate(-50%, -50%);
   pointer-events: none;
   box-sizing: border-box;
 }
 
+@keyframes dots-edge-place {
+  from {
+    opacity: 0.35;
+    filter: brightness(1.7);
+  }
+  to {
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
+@keyframes dots-box-claim {
+  0% {
+    transform: scale(0.74);
+    opacity: 0.35;
+  }
+  75% {
+    transform: scale(0.96);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.92);
+  }
+}
+
 @media (max-width: 380px) {
   .dots-board-shell {
-    padding: 0.9rem 0.65rem;
+    padding: 1rem 0.8rem;
   }
 
-  .dots-edge.horizontal::after {
-    left: 6px;
-    right: 6px;
+  .dots-scoreline {
+    gap: 0.45rem;
   }
 
-  .dots-edge.vertical::after {
-    top: 6px;
-    bottom: 6px;
+  .dots-scoreline span {
+    padding-inline: 0.5rem;
+    font-size: 0.82rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .dots-box,
-  .dots-edge::after {
+  .dots-edge::after,
+  .dots-scoreline span {
     transition: none;
+    animation: none;
   }
+}
+
+html[data-reduce-motion='true'] .dots-box,
+html[data-reduce-motion='true'] .dots-edge::after,
+html[data-reduce-motion='true'] .dots-scoreline span {
+  transition: none;
+  animation: none;
 }

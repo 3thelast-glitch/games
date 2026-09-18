@@ -11,6 +11,8 @@ export const boardSelectors: Record<GameId, string> = {
   reversi: '.reversi-board',
   digitalGame: '.digital-game',
   chess: '.chess-board',
+  dotsAndBoxes: '.dots-board',
+  dominoes: '.domino-chain-shell',
 };
 
 export const gameRootSelectors: Record<GameId, string> = {
@@ -23,6 +25,8 @@ export const gameRootSelectors: Record<GameId, string> = {
   reversi: '.reversi-game',
   digitalGame: '.digital-game',
   chess: '.chess-game',
+  dotsAndBoxes: '.dots-boxes-game',
+  dominoes: '.dominoes-game',
 };
 
 export async function openLocalGame(page: Page, gameId: GameId, locale: LocaleCase) {
@@ -42,6 +46,11 @@ export async function openLocalGame(page: Page, gameId: GameId, locale: LocaleCa
   await expect(page.locator('.match-page')).toBeVisible();
   await expect(page.locator(gameRootSelectors[gameId])).toBeVisible();
   await expect(page.locator(boardSelectors[gameId])).toBeVisible();
+
+  if (gameId === 'dominoes') {
+    const reveal = page.locator('.domino-handoff .button');
+    if (await reveal.count()) await reveal.click();
+  }
 }
 
 export function captureRuntimeErrors(page: Page) {

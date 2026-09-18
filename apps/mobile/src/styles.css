@@ -14,6 +14,14 @@
   --purple: #a28aff;
   --mint: #85ddbf;
   --amber: #eabc7c;
+  --game-surface: #111827;
+  --game-surface-raised: #172132;
+  --game-grid: #34445e;
+  --player-one: #63d7f4;
+  --player-two: #b39af4;
+  --valid-action: #86dfc0;
+  --invalid-action: #e2828e;
+  --game-focus: #c7f8e8;
   color-scheme: dark;
 }
 * {
@@ -492,6 +500,18 @@ input[type='checkbox'] {
 .game-card.quoridor:hover {
   border-color: #536e60;
 }
+.game-card.dotsAndBoxes {
+  border-color: #293952;
+}
+.game-card.dotsAndBoxes:hover {
+  border-color: #4776a6;
+}
+.game-card.dominoes {
+  border-color: #29403f;
+}
+.game-card.dominoes:hover {
+  border-color: #4c756c;
+}
 .card-art-wrap {
   height: 259px;
   position: relative;
@@ -502,6 +522,18 @@ input[type='checkbox'] {
 .quoridor .card-art-wrap {
   background: linear-gradient(140deg, #1b3030, #151f25);
   border-bottom-color: #2c3a38;
+}
+.dotsAndBoxes .card-art-wrap {
+  background:
+    radial-gradient(circle at 28% 24%, #2e7ca43c, transparent 42%),
+    linear-gradient(145deg, #111d31, #0c121e);
+  border-bottom-color: #273a55;
+}
+.dominoes .card-art-wrap {
+  background:
+    radial-gradient(circle at 67% 30%, #3f8b7130, transparent 42%),
+    linear-gradient(145deg, #102325, #0d1520);
+  border-bottom-color: #28403e;
 }
 .game-art {
   width: 100%;
@@ -524,6 +556,17 @@ input[type='checkbox'] {
   width: 62%;
   transform: perspective(680px) rotateX(33deg) rotateZ(-21deg) translateY(10px);
 }
+.game-art.dotsAndBoxes > svg,
+.game-art.dominoes > svg {
+  width: 96%;
+  max-height: 105%;
+  transform: perspective(760px) rotateX(8deg) rotateZ(-2deg) translateY(2px);
+  filter: drop-shadow(0 24px 22px #0009);
+}
+.game-art.dominoes > svg {
+  width: 98%;
+  transform: perspective(760px) rotateX(7deg) rotateZ(-1deg) translateY(3px);
+}
 .art-halo {
   position: absolute;
   width: 280px;
@@ -537,6 +580,12 @@ input[type='checkbox'] {
 .quoridor .art-halo {
   background: #45b99027;
 }
+.dotsAndBoxes .art-halo {
+  background: #4ebfe02b;
+}
+.dominoes .art-halo {
+  background: #62c7a725;
+}
 .art-orbit {
   position: absolute;
   border: 1px solid #8f6aa519;
@@ -548,6 +597,12 @@ input[type='checkbox'] {
 }
 .quoridor .art-orbit {
   border-color: #7dba9d15;
+}
+.dotsAndBoxes .art-orbit {
+  border-color: #71c8e51c;
+}
+.dominoes .art-orbit {
+  border-color: #7fd5bb1a;
 }
 .art-orbit.two {
   width: 370px;
@@ -617,6 +672,12 @@ input[type='checkbox'] {
 }
 .quoridor .game-tag {
   color: #8bbfa6;
+}
+.dotsAndBoxes .game-tag {
+  color: #83cde6;
+}
+.dominoes .game-tag {
+  color: #87cbb7;
 }
 .game-title {
   display: flex;
@@ -715,11 +776,25 @@ input[type='checkbox'] {
   background: #88c9ac;
   color: #11251e;
 }
+.dotsAndBoxes .play-button {
+  background: #72cce8;
+  color: #0c1c27;
+}
+.dominoes .play-button {
+  background: #8bd3ba;
+  color: #10231d;
+}
 .play-button:hover {
   background: #bda6f2;
 }
 .quoridor .play-button:hover {
   background: #a4dfc4;
+}
+.dotsAndBoxes .play-button:hover {
+  background: #94dcf1;
+}
+.dominoes .play-button:hover {
+  background: #a8e2cf;
 }
 .text-button {
   background: none;

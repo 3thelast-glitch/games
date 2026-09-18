@@ -2,6 +2,9 @@
   width: 100%;
   display: grid;
   gap: 0.85rem;
+  --domino-ivory: #f2efe7;
+  --domino-ink: #1f2630;
+  --domino-accent: var(--valid-action, #86dfc0);
 }
 
 .dominoes-summary,
@@ -11,14 +14,21 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 0.7rem;
   flex-wrap: wrap;
 }
 
-.dominoes-summary span,
-.domino-hand-heading {
+.dominoes-summary span {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0.38rem 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.028);
   color: var(--muted, #aab0bc);
-  font-size: 0.9rem;
+  font-size: 0.86rem;
 }
 
 .dominoes-summary strong,
@@ -26,24 +36,79 @@
   color: var(--text, #f5f4ef);
 }
 
+.domino-summary-icon {
+  width: 10px;
+  height: 14px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  opacity: 0.8;
+}
+
+.domino-summary-icon.boneyard {
+  box-shadow: 3px -3px 0 -1px var(--panel, #141923), 3px -3px 0 0 currentColor;
+}
+
+.domino-summary-icon.opponent {
+  border-radius: 50% 50% 4px 4px;
+  height: 10px;
+  margin-inline-end: 1px;
+}
+
+.domino-chain-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--muted, #aab0bc);
+  font-size: 0.82rem;
+}
+
+.domino-chain-nav {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.domino-chain-nav button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text, #f5f4ef);
+}
+
+.domino-chain-nav button:hover {
+  border-color: rgba(134, 223, 192, 0.34);
+  background: rgba(134, 223, 192, 0.07);
+}
+
 .domino-chain-shell {
   width: 100%;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(134, 223, 192, 0.28) transparent;
   padding: 0.8rem;
   box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(95, 145, 138, 0.18);
+  border-radius: 1.1rem;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(78, 139, 121, 0.11), transparent 52%),
+    linear-gradient(180deg, rgba(16, 31, 34, 0.62), rgba(12, 20, 29, 0.55));
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.025);
 }
 
 .domino-chain {
   min-width: max-content;
-  min-height: 82px;
+  min-height: 104px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.3rem;
+  gap: 0.22rem;
+  padding-inline: 0.2rem;
 }
 
 .domino-chain-empty {
@@ -51,58 +116,149 @@
   display: grid;
   place-items: center;
   color: var(--muted, #aab0bc);
+  font-size: 0.88rem;
 }
 
 .domino-chain-item {
+  position: relative;
   flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  min-width: 70px;
+  min-height: 42px;
+  border-radius: 0.75rem;
+}
+
+.domino-chain-item.double {
+  min-width: 44px;
+  width: 44px;
+  min-height: 76px;
+}
+
+.domino-chain-item.double .domino-tile {
+  transform: rotate(90deg);
+}
+
+.domino-chain-item.last-placed .domino-tile {
+  box-shadow:
+    0 7px 16px rgba(0, 0, 0, 0.28),
+    0 0 0 2px rgba(134, 223, 192, 0.52),
+    0 0 18px rgba(134, 223, 192, 0.18);
+  animation: domino-place 220ms ease-out;
 }
 
 .domino-tile {
-  width: 62px;
-  height: 34px;
+  width: 70px;
+  height: 40px;
   display: grid;
   grid-template-columns: 1fr 1px 1fr;
   align-items: center;
   justify-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 0.55rem;
-  background: linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.06));
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
+  border: 1px solid #c8c2b6;
+  border-radius: 0.58rem;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.82), transparent 32%),
+    linear-gradient(180deg, #f5f2ea, #ddd8cd);
+  box-shadow:
+    inset 0 1px #fff,
+    0 5px 12px rgba(0, 0, 0, 0.24);
+  color: var(--domino-ink);
+  overflow: hidden;
+  transform-origin: center;
+  transition: box-shadow 120ms ease, transform 120ms ease;
 }
 
-.domino-tile i {
+.domino-divider {
   width: 1px;
-  height: 70%;
-  background: rgba(255, 255, 255, 0.2);
+  height: 76%;
+  background: #787268;
+  box-shadow: 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.domino-half {
+  width: 29px;
+  height: 31px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  align-items: center;
+  justify-items: center;
+}
+
+.domino-pip {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #444b55, #151a22 68%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.18);
+}
+
+.domino-end-target {
+  min-width: 54px;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+  border: 1px solid rgba(134, 223, 192, 0.46);
+  border-radius: 0.8rem;
+  background: rgba(134, 223, 192, 0.1);
+  color: #d7fff1;
+  box-shadow: 0 0 0 1px rgba(134, 223, 192, 0.07) inset;
+}
+
+.domino-end-target:hover,
+.domino-end-target:focus-visible {
+  background: rgba(134, 223, 192, 0.17);
+  border-color: rgba(134, 223, 192, 0.72);
 }
 
 .domino-hand-wrap {
   min-width: 0;
+  padding: 0.75rem 0.8rem 0.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.065);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.018);
 }
 
 .domino-hand-heading {
   justify-content: space-between;
   margin-block-end: 0.45rem;
+  color: var(--muted, #aab0bc);
+  font-size: 0.86rem;
 }
 
 .domino-hand {
   display: flex;
-  gap: 0.55rem;
+  gap: 0.5rem;
   overflow-x: auto;
-  padding: 0.35rem 0.2rem 0.65rem;
+  padding: 0.4rem 0.2rem 0.7rem;
   overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
+}
+
+.domino-hand-item {
+  flex: 0 0 auto;
 }
 
 .domino-hand-tile {
-  flex: 0 0 auto;
-  border: 0;
+  position: relative;
+  min-width: 48px;
+  min-height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
   background: transparent;
-  padding: 0.25rem;
-  border-radius: 0.75rem;
-  opacity: 0.54;
-  transition: transform 120ms ease, opacity 120ms ease, box-shadow 120ms ease;
+  padding: 0.32rem;
+  border-radius: 0.82rem;
+  opacity: 0.68;
+  transition: transform 120ms ease, opacity 120ms ease, border-color 120ms ease, background-color 120ms ease;
+}
+
+.domino-hand-tile:disabled {
+  opacity: 0.64;
 }
 
 .domino-hand-tile.legal {
@@ -110,23 +266,57 @@
   cursor: pointer;
 }
 
+.domino-hand-tile.legal:not(:disabled) {
+  border-color: rgba(134, 223, 192, 0.18);
+  background: rgba(134, 223, 192, 0.035);
+}
+
 .domino-hand-tile.legal:hover,
 .domino-hand-tile.legal:focus-visible,
 .domino-hand-tile.selected {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
   outline: none;
-  box-shadow: 0 0 0 2px rgba(118, 149, 216, 0.55);
+  border-color: rgba(134, 223, 192, 0.52);
+  background: rgba(134, 223, 192, 0.08);
+}
+
+.domino-hand-tile.selected {
+  box-shadow: 0 0 0 2px rgba(199, 248, 232, 0.22);
+}
+
+.domino-legal-mark {
+  position: absolute;
+  top: 1px;
+  inset-inline-end: 1px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(10, 35, 28, 0.45);
+  background: var(--domino-accent);
+  color: #0c251d;
+  font-size: 11px;
+  font-weight: 900;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
 }
 
 .domino-side-choice {
-  padding: 0.65rem;
-  border-radius: 0.85rem;
-  background: rgba(118, 149, 216, 0.12);
+  min-height: 58px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(134, 223, 192, 0.2);
+  border-radius: 0.9rem;
+  background: rgba(134, 223, 192, 0.07);
+  color: var(--text, #f5f4ef);
 }
 
-.domino-side-choice button {
-  min-height: 42px;
-  padding-inline: 0.9rem;
+.domino-side-choice > .domino-tile {
+  transform: scale(0.84);
+}
+
+.domino-side-choice .button {
+  min-height: 40px;
+  padding-block: 0.55rem;
 }
 
 .domino-actions .button {
@@ -137,33 +327,105 @@
   margin: 0;
   text-align: center;
   color: var(--muted, #aab0bc);
-  font-size: 0.88rem;
+  font-size: 0.84rem;
+  line-height: 1.55;
 }
 
 .domino-handoff {
   display: grid;
   place-items: center;
-  gap: 0.7rem;
-  min-height: 180px;
-  padding: 1rem;
+  gap: 0.75rem;
+  min-height: 190px;
+  padding: 1.1rem;
   text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(134, 223, 192, 0.16);
   border-radius: 1rem;
-  background: rgba(10, 13, 20, 0.82);
+  background:
+    radial-gradient(circle at 50% 25%, rgba(134, 223, 192, 0.08), transparent 48%),
+    rgba(10, 16, 24, 0.88);
+}
+
+.domino-handoff-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(134, 223, 192, 0.24);
+  color: #bfeeda;
+  background: rgba(134, 223, 192, 0.06);
+  font-size: 1.35rem;
+}
+
+@keyframes domino-place {
+  from {
+    opacity: 0.45;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @media (max-width: 420px) {
   .domino-tile {
-    width: 56px;
-    height: 32px;
+    width: 64px;
+    height: 37px;
   }
+
+  .domino-half {
+    width: 26px;
+    height: 29px;
+  }
+
+  .domino-pip {
+    width: 4.5px;
+    height: 4.5px;
+  }
+
+  .domino-chain-item {
+    min-width: 64px;
+  }
+
+  .domino-chain-item.double {
+    min-width: 41px;
+    width: 41px;
+    min-height: 70px;
+  }
+
   .domino-chain-shell {
+    padding-inline: 0.55rem;
+  }
+
+  .dominoes-summary {
+    gap: 0.42rem;
+  }
+
+  .dominoes-summary span {
+    font-size: 0.78rem;
     padding-inline: 0.5rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .domino-hand-tile {
+  .domino-hand-tile,
+  .domino-tile {
     transition: none;
+    animation: none;
   }
+
+  .domino-chain-shell {
+    scroll-behavior: auto;
+  }
+}
+
+html[data-reduce-motion='true'] .domino-hand-tile,
+html[data-reduce-motion='true'] .domino-tile {
+  transition: none;
+  animation: none;
+}
+
+html[data-reduce-motion='true'] .domino-chain-shell {
+  scroll-behavior: auto;
 }

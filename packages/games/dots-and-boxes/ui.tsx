@@ -7,6 +7,16 @@ import {
   type DotsAndBoxesState,
 } from './state.ts';
 
+function isRecentBox(state: DotsAndBoxesState, index: number) {
+  if (!state.lastMove || state.boxes[index] === null) return false;
+  const row = Math.floor(index / state.boxCols);
+  const col = index % state.boxCols;
+  const move = state.lastMove;
+  if (move.orientation === 'h')
+    return move.col === col && (move.row === row || move.row === row + 1);
+  return move.row === row && (move.col === col || move.col === col + 1);
+}
+
 export function DotsAndBoxesBoard({
   state,
   disabled,
@@ -19,24 +29,33 @@ export function DotsAndBoxesBoard({
 
   return (
     <div className="classic-game dots-boxes-game">
-      <p className="board-hint">{t('dotsAndBoxesHint')}</p>
+      <p className="board-hint" id="dots-board-hint">{t('dotsAndBoxesHint')}</p>
       <div className="dots-scoreline" aria-label={t('dotsAndBoxesScore')}>
-        <span>
+        <span className={state.turn === 0 && !isGameOver(state) ? 'active' : ''}>
+          <i className="dots-player-mark player-0" aria-hidden="true" />
           {t('player1')}: <strong>{state.scores[0]}</strong>
         </span>
-        <span>
+        <span className={state.turn === 1 && !isGameOver(state) ? 'active' : ''}>
+          <i className="dots-player-mark player-1" aria-hidden="true" />
           {t('player2')}: <strong>{state.scores[1]}</strong>
         </span>
       </div>
       <div className="dots-board-shell">
-        <div className="dots-board" dir="ltr" role="grid" aria-label={t('dotsAndBoxes')}>
+        <div
+          className="dots-board"
+          dir="ltr"
+          role="grid"
+          aria-label={t('dotsAndBoxes')}
+          aria-describedby="dots-board-hint"
+        >
           {state.boxes.map((owner, index) => {
             const row = Math.floor(index / state.boxCols);
             const col = index % state.boxCols;
+            const recent = isRecentBox(state, index);
             return (
               <span
                 key={`box-${index}`}
-                className={`dots-box ${owner === null ? '' : `box-owner-${owner}`}`}
+                className={`dots-box ${owner === null ? '' : `box-owner-${owner}`} ${recent ? 'recent-box' : ''}`}
                 style={{
                   left: `${col * xStep}%`,
                   top: `${row * yStep}%`,
@@ -62,14 +81,20 @@ export function DotsAndBoxesBoard({
               <button
                 key={`h-${row}-${col}`}
                 type="button"
-                className={`dots-edge horizontal ${owner === null ? '' : `edge-owner-${owner}`} ${last ? 'last-edge' : ''}`}
+                className={`dots-edge horizontal ${owner === null ? 'available' : `edge-owner-${owner}`} ${last ? 'last-edge' : ''}`}
                 style={{
-                  left: `${col * xStep}%`,
+                  left: `calc(${col * xStep}% + 16px)`,
                   top: `${row * yStep}%`,
-                  width: `${xStep}%`,
+                  width: `calc(${xStep}% - 32px)`,
                 }}
                 disabled={locked || owner !== null}
-                aria-label={`${t('drawHorizontalEdge')} ${row + 1},${col + 1}`}
+                tabIndex={locked || owner !== null ? -1 : 0}
+                aria-current={last ? 'true' : undefined}
+                aria-label={
+                  owner === null
+                    ? `${t('drawHorizontalEdge')} ${row + 1},${col + 1}`
+                    : `${t(owner === 0 ? 'player1' : 'player2')} · ${row + 1},${col + 1}`
+                }
                 onClick={() => onMove({ orientation: 'h', row, col })}
               />
             );
@@ -87,14 +112,20 @@ export function DotsAndBoxesBoard({
               <button
                 key={`v-${row}-${col}`}
                 type="button"
-                className={`dots-edge vertical ${owner === null ? '' : `edge-owner-${owner}`} ${last ? 'last-edge' : ''}`}
+                className={`dots-edge vertical ${owner === null ? 'available' : `edge-owner-${owner}`} ${last ? 'last-edge' : ''}`}
                 style={{
                   left: `${col * xStep}%`,
-                  top: `${row * yStep}%`,
-                  height: `${yStep}%`,
+                  top: `calc(${row * yStep}% + 16px)`,
+                  height: `calc(${yStep}% - 32px)`,
                 }}
                 disabled={locked || owner !== null}
-                aria-label={`${t('drawVerticalEdge')} ${row + 1},${col + 1}`}
+                tabIndex={locked || owner !== null ? -1 : 0}
+                aria-current={last ? 'true' : undefined}
+                aria-label={
+                  owner === null
+                    ? `${t('drawVerticalEdge')} ${row + 1},${col + 1}`
+                    : `${t(owner === 0 ? 'player1' : 'player2')} · ${row + 1},${col + 1}`
+                }
                 onClick={() => onMove({ orientation: 'v', row, col })}
               />
             );
