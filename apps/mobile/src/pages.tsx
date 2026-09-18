@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { Profile, PublicPlayer } from '../../../packages/core/src/protocol.ts';
 import type { Difficulty, PlayerCount, Seat } from '../../../packages/core/src/game.ts';
 import type { TurnTimerSeconds } from '../../../packages/core/src/timing.ts';
@@ -772,6 +772,7 @@ export function LeaderboardPage({
   onError: (e: unknown) => void;
 }) {
   const { t } = useI18n();
+  const selectedGameRef = useRef<HTMLButtonElement>(null);
   const [game, setGame] = useState('abalone'),
     [period, setPeriod] = useState('global'),
     [entries, setEntries] = useState<
@@ -807,6 +808,14 @@ export function LeaderboardPage({
     };
   }, [ensureToken, game, onError, period, reload]);
 
+  useEffect(() => {
+    selectedGameRef.current?.scrollIntoView({
+      block: 'nearest',
+      inline: 'nearest',
+      behavior: 'auto',
+    });
+  }, [game]);
+
   const scoreLabel = t(period === 'weekly' || period === 'monthly' ? 'gain' : 'rating');
 
   return (
@@ -829,6 +838,7 @@ export function LeaderboardPage({
               {gameInfo.map((g) => (
                 <button
                   key={g.id}
+                  ref={game === g.id ? selectedGameRef : undefined}
                   type="button"
                   onClick={() => setGame(g.id)}
                   aria-pressed={game === g.id}
