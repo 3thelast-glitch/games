@@ -777,10 +777,14 @@ export function LeaderboardPage({
     [entries, setEntries] = useState<
       (PublicPlayer & { position: number; score: number; played: number })[]
     >([]),
-    [loading, setLoading] = useState(true);
+    [loading, setLoading] = useState(true),
+    [error, setError] = useState<string | null>(null),
+    [reload, setReload] = useState(0);
+
   useEffect(() => {
     let active = true;
     setLoading(true);
+    setError(null);
     void ensureToken()
       .then((token) =>
         api<{ entries: typeof entries }>(`/api/leaderboard?gameId=${game}&period=${period}`, token),
@@ -788,10 +792,11 @@ export function LeaderboardPage({
       .then((result) => {
         if (active) setEntries(result.entries);
       })
-      .catch((error) => {
+      .catch((requestError) => {
         if (active) {
           setEntries([]);
-          onError(error);
+          setError(requestError instanceof Error ? requestError.message : 'server-error');
+          onError(requestError);
         }
       })
       .finally(() => {
@@ -800,65 +805,110 @@ export function LeaderboardPage({
     return () => {
       active = false;
     };
-  }, [game, period]);
+  }, [ensureToken, game, onError, period, reload]);
+
+  const scoreLabel = t(period === 'weekly' || period === 'monthly' ? 'gain' : 'rating');
+
   return (
-    <div className="page-enter">
-      <div className="page-heading">
+    <div className="page-enter arena-page">
+      <div className="page-heading arena-heading">
         <span className="eyebrow">{t('rankingsEyebrow')}</span>
         <h1>{t('leaderboards')}</h1>
         <p>{t('leaderboardDesc')}</p>
       </div>
+
       <div className="leaderboard-controls">
-        <div className="segmented">
-          {gameInfo.map((g) => (
-            <button key={g.id} onClick={() => setGame(g.id)} aria-pressed={game === g.id}>
-              {t(g.id)}
-            </button>
-          ))}
+        <div className="arena-filter-block arena-game-filter">
+          <span className="arena-filter-label">{t('leaderboardGameFilter')}</span>
+          <div className="arena-game-scroll">
+            <div
+              className="segmented arena-game-selector"
+              role="group"
+              aria-label={t('leaderboardGameFilter')}
+            >
+              {gameInfo.map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => setGame(g.id)}
+                  aria-pressed={game === g.id}
+                >
+                  {t(g.id)}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        <div className="period-tabs">
-          {['global', 'weekly', 'monthly', 'friends'].map((p) => (
-            <button aria-pressed={p === period} key={p} onClick={() => setPeriod(p)}>
-              {t(p === 'friends' ? 'friendsBoard' : p)}
-            </button>
-          ))}
+
+        <div className="arena-filter-block arena-period-filter">
+          <span className="arena-filter-label">{t('leaderboardPeriodFilter')}</span>
+          <div className="period-tabs" role="group" aria-label={t('leaderboardPeriodFilter')}>
+            {['global', 'weekly', 'monthly', 'friends'].map((p) => (
+              <button
+                type="button"
+                aria-pressed={p === period}
+                key={p}
+                onClick={() => setPeriod(p)}
+              >
+                {t(p === 'friends' ? 'friendsBoard' : p)}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-      <section className="panel leaderboard-panel">
+
+      <section className="panel leaderboard-panel" aria-busy={loading}>
         {loading ? (
-          <div className="loading-state">
+          <div className="loading-state leaderboard-state" role="status">
             <span className="spinner" />
             {t('connecting')}
           </div>
+        ) : error ? (
+          <div className="leaderboard-state leaderboard-error-state">
+            <Icon name="info" size={28} />
+            <strong>{t('leaderboardError')}</strong>
+            <p>{t(error)}</p>
+            <button type="button" className="button secondary" onClick={() => setReload((n) => n + 1)}>
+              {t('retry')}
+            </button>
+          </div>
         ) : entries.length ? (
-          <div className="table-wrap">
-            <table>
+          <div className="table-wrap leaderboard-table-wrap">
+            <table className="leaderboard-table">
+              <colgroup>
+                <col className="leaderboard-position-col" />
+                <col className="leaderboard-player-col" />
+                <col className="leaderboard-rank-col" />
+                <col className="leaderboard-score-col" />
+              </colgroup>
               <thead>
                 <tr>
-                  <th>#</th>
-                  <th>{t('name')}</th>
-                  <th>{t('ranking')}</th>
-                  <th>{t(period === 'weekly' || period === 'monthly' ? 'gain' : 'rating')}</th>
+                  <th scope="col">#</th>
+                  <th scope="col">{t('name')}</th>
+                  <th scope="col">{t('ranking')}</th>
+                  <th scope="col">{scoreLabel}</th>
                 </tr>
               </thead>
               <tbody>
                 {entries.map((player) => (
                   <tr key={player.id}>
-                    <td>{String(player.position).padStart(2, '0')}</td>
-                    <td>
+                    <td data-label={t('position')}>{String(player.position).padStart(2, '0')}</td>
+                    <td data-label={t('name')}>
                       <span className="table-player">
                         <Avatar name={player.name} avatar={player.avatar} />
-                        {player.name}
+                        <bdi className="leaderboard-name">{player.name}</bdi>
                       </span>
                     </td>
-                    <td>
+                    <td data-label={t('ranking')}>
                       <span className={`rank-badge ${player.rank.toLowerCase()}`}>
                         {t(player.rank)}
                       </span>
                     </td>
-                    <td>
-                      {player.score > 0 && (period === 'weekly' || period === 'monthly') ? '+' : ''}
-                      {player.score}
+                    <td data-label={scoreLabel}>
+                      <span className="leaderboard-score">
+                        {player.score > 0 && (period === 'weekly' || period === 'monthly') ? '+' : ''}
+                        {player.score}
+                      </span>
                     </td>
                   </tr>
                 ))}
@@ -866,10 +916,14 @@ export function LeaderboardPage({
             </table>
           </div>
         ) : (
-          <Empty icon="trophy">{t('emptyBoard')}</Empty>
+          <div className="leaderboard-empty">
+            <Empty icon="trophy">{t('emptyBoard')}</Empty>
+          </div>
         )}
       </section>
-      <p className="small-muted">{t('weeklyNote')}</p>
+
+      <p className="small-muted leaderboard-note">{t('weeklyNote')}</p>
+
       <section className="rank-ladder">
         <h2>{t('rankLadder')}</h2>
         <div>
