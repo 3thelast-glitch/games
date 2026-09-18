@@ -123,6 +123,33 @@ for (const locale of locales) {
           strictDimensions.viewport + 1,
         );
 
+        if (browserName === 'chromium' && locale.id === 'ar' && viewport.id === 'm320') {
+          const fixedMetrics = await page.evaluate(() => {
+            const measure = (selector: string) => {
+              const element = document.querySelector(selector) as HTMLElement | null;
+              if (!element) return null;
+              const rect = element.getBoundingClientRect();
+              return {
+                left: Math.round(rect.left * 100) / 100,
+                right: Math.round(rect.right * 100) / 100,
+                width: Math.round(rect.width * 100) / 100,
+                scrollWidth: element.scrollWidth,
+                clientWidth: element.clientWidth,
+              };
+            };
+            return {
+              viewport: document.documentElement.clientWidth,
+              documentScrollWidth: document.documentElement.scrollWidth,
+              bodyScrollWidth: document.body.scrollWidth,
+              scrollX: window.scrollX,
+              controls: measure('.leaderboard-controls'),
+              gameScroller: measure('.arena-game-scroll'),
+              gameSelector: measure('.arena-game-selector'),
+            };
+          });
+          console.log('ARENA_FIXED_METRICS=' + JSON.stringify(fixedMetrics));
+        }
+
         const contained = [
           ['topbar', page.locator('.topbar')],
           ['Arena heading', page.locator('.arena-heading')],
@@ -145,7 +172,22 @@ for (const locale of locales) {
         expect(await gameButtons.count()).toBeGreaterThan(6);
         const firstGame = gameButtons.first();
         const lastGame = gameButtons.last();
+        const selectedGame = page.locator('.arena-game-selector > button[aria-pressed="true"]');
+        await expect(selectedGame).toHaveCount(1);
         await expectMinimumControlSize(firstGame, 'first game filter', 40);
+        const [initialScrollBox, selectedBox] = await Promise.all([
+          gameScroller.boundingBox(),
+          selectedGame.boundingBox(),
+        ]);
+        expect(initialScrollBox).not.toBeNull();
+        expect(selectedBox).not.toBeNull();
+        if (initialScrollBox && selectedBox) {
+          expect(selectedBox.x).toBeGreaterThanOrEqual(initialScrollBox.x - 1);
+          expect(selectedBox.x + selectedBox.width).toBeLessThanOrEqual(
+            initialScrollBox.x + initialScrollBox.width + 1,
+          );
+        }
+
         await lastGame.scrollIntoViewIfNeeded();
         const [scrollBox, lastBox] = await Promise.all([
           gameScroller.boundingBox(),
@@ -204,11 +246,12 @@ test('Arena preserves filter request semantics and supports an inline retry', as
     group: 'mobile',
   };
   const locale = locales.find((item) => item.id === 'ar')!;
+  const canTouch = test.info().project.name !== 'firefox';
   const context = await browser.newContext({
     viewport: { width: viewport.width, height: viewport.height },
     locale: locale.locale,
-    hasTouch: true,
-    isMobile: true,
+    hasTouch: canTouch,
+    isMobile: canTouch,
     deviceScaleFactor: 2,
   });
   const page = await context.newPage();
