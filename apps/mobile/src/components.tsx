@@ -212,13 +212,203 @@ export function Modal({
     </dialog>
   );
 }
+function DotsAndBoxesArt({ id }: { id: string }) {
+  const claimed = [
+    { row: 1, col: 1, owner: 0 },
+    { row: 2, col: 2, owner: 1 },
+    { row: 3, col: 1, owner: 0 },
+  ] as const;
+  const horizontal = [
+    [0, 1, 0],
+    [1, 1, 0],
+    [1, 2, 1],
+    [2, 1, 0],
+    [2, 2, 1],
+    [3, 1, 0],
+    [3, 2, 1],
+    [4, 1, 0],
+    [4, 3, 1],
+  ] as const;
+  const vertical = [
+    [1, 1, 0],
+    [1, 2, 0],
+    [1, 3, 1],
+    [2, 1, 0],
+    [2, 2, 1],
+    [2, 3, 1],
+    [3, 1, 0],
+    [3, 2, 0],
+    [3, 3, 1],
+  ] as const;
+  const x = (col: number) => 100 + col * 88;
+  const y = (row: number) => 58 + row * 55;
+  return (
+    <svg viewBox="0 0 640 400" role="presentation">
+      <defs>
+        <linearGradient id={`${id}dotsSurface`} x1="0" y1="0" x2="1" y2="1">
+          <stop stopColor="#151f35" />
+          <stop offset="1" stopColor="#0c1322" />
+        </linearGradient>
+        <linearGradient id={`${id}p0`} x1="0" y1="0" x2="1" y2="1">
+          <stop stopColor="#65ddff" />
+          <stop offset="1" stopColor="#4993ff" />
+        </linearGradient>
+        <linearGradient id={`${id}p1`} x1="0" y1="0" x2="1" y2="1">
+          <stop stopColor="#b89cff" />
+          <stop offset="1" stopColor="#7d63d8" />
+        </linearGradient>
+        <filter id={`${id}dotsShadow`} x="-20%" y="-20%" width="140%" height="160%">
+          <feDropShadow dx="0" dy="14" stdDeviation="12" floodColor="#02050c" floodOpacity=".62" />
+        </filter>
+      </defs>
+      <ellipse cx="320" cy="338" rx="230" ry="34" fill="#030710" opacity=".7" />
+      <g filter={`url(#${id}dotsShadow)`}>
+        <rect x="64" y="30" width="512" height="320" rx="28" fill={`url(#${id}dotsSurface)`} stroke="#314263" strokeWidth="2" />
+        <rect x="76" y="42" width="488" height="296" rx="22" fill="none" stroke="#ffffff" strokeOpacity=".035" />
+        {claimed.map(({ row, col, owner }) => (
+          <g key={`c-${row}-${col}`}>
+            <rect
+              x={x(col) + 8}
+              y={y(row) + 8}
+              width="72"
+              height="39"
+              rx="10"
+              fill={owner === 0 ? "#3dbce6" : "#8d73dd"}
+              opacity=".18"
+            />
+            <path
+              d={owner === 0 ? `M ${x(col) + 31} ${y(row) + 29} l 10 10 20 -22` : `M ${x(col) + 31} ${y(row) + 19} l 28 20 M ${x(col) + 59} ${y(row) + 19} l -28 20`}
+              fill="none"
+              stroke={owner === 0 ? "#82e9ff" : "#c6b4ff"}
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity=".85"
+            />
+          </g>
+        ))}
+        <g strokeLinecap="round" strokeWidth="8">
+          {horizontal.map(([row, col, owner], index) => (
+            <line
+              key={`h-${index}`}
+              x1={x(col)}
+              y1={y(row)}
+              x2={x(col + 1)}
+              y2={y(row)}
+              stroke={owner === 0 ? `url(#${id}p0)` : `url(#${id}p1)`}
+            />
+          ))}
+          {vertical.map(([row, col, owner], index) => (
+            <line
+              key={`v-${index}`}
+              x1={x(col)}
+              y1={y(row)}
+              x2={x(col)}
+              y2={y(row + 1)}
+              stroke={owner === 0 ? `url(#${id}p0)` : `url(#${id}p1)`}
+            />
+          ))}
+        </g>
+        {Array.from({ length: 36 }, (_, index) => {
+          const row = Math.floor(index / 6);
+          const col = index % 6;
+          return (
+            <g key={index}>
+              <circle cx={x(col)} cy={y(row)} r="8" fill="#060b13" opacity=".7" />
+              <circle cx={x(col)} cy={y(row) - 1} r="6" fill="#e7f0ff" stroke="#9fb4d5" strokeWidth="1.5" />
+            </g>
+          );
+        })}
+      </g>
+    </svg>
+  );
+}
+
+const artPipPositions: Record<number, Array<[number, number]>> = {
+  0: [],
+  1: [[0.5, 0.5]],
+  2: [[0.28, 0.28], [0.72, 0.72]],
+  3: [[0.28, 0.28], [0.5, 0.5], [0.72, 0.72]],
+  4: [[0.28, 0.28], [0.72, 0.28], [0.28, 0.72], [0.72, 0.72]],
+  5: [[0.28, 0.28], [0.72, 0.28], [0.5, 0.5], [0.28, 0.72], [0.72, 0.72]],
+  6: [[0.28, 0.22], [0.72, 0.22], [0.28, 0.5], [0.72, 0.5], [0.28, 0.78], [0.72, 0.78]],
+};
+
+function ArtDomino({
+  x,
+  y,
+  a,
+  b,
+  filter,
+}: {
+  x: number;
+  y: number;
+  a: number;
+  b: number;
+  filter: string;
+}) {
+  return (
+    <g transform={`translate(${x} ${y})`} filter={filter}>
+      <rect width="116" height="64" rx="12" fill="#f1eee6" stroke="#c9c4b8" strokeWidth="2" />
+      <rect x="3" y="3" width="110" height="58" rx="9" fill="none" stroke="#ffffff" strokeOpacity=".7" />
+      <line x1="58" y1="8" x2="58" y2="56" stroke="#777267" strokeWidth="2" />
+      {[a, b].map((value, half) =>
+        artPipPositions[value].map(([px, py], index) => (
+          <circle
+            key={`${half}-${index}`}
+            cx={half * 58 + 8 + px * 42}
+            cy={8 + py * 48}
+            r="4.7"
+            fill="#202632"
+          />
+        )),
+      )}
+    </g>
+  );
+}
+
+function DominoesArt({ id }: { id: string }) {
+  return (
+    <svg viewBox="0 0 640 400" role="presentation">
+      <defs>
+        <linearGradient id={`${id}dominoSurface`} x1="0" y1="0" x2="1" y2="1">
+          <stop stopColor="#102b2d" />
+          <stop offset=".58" stopColor="#11222d" />
+          <stop offset="1" stopColor="#0a1421" />
+        </linearGradient>
+        <radialGradient id={`${id}dominoGlow`} cx="45%" cy="45%">
+          <stop stopColor="#73e2c1" stopOpacity=".18" />
+          <stop offset="1" stopColor="#73e2c1" stopOpacity="0" />
+        </radialGradient>
+        <filter id={`${id}dominoShadow`} x="-20%" y="-30%" width="140%" height="180%">
+          <feDropShadow dx="0" dy="13" stdDeviation="9" floodColor="#02060a" floodOpacity=".7" />
+        </filter>
+      </defs>
+      <rect x="42" y="48" width="556" height="288" rx="28" fill={`url(#${id}dominoSurface)`} stroke="#2b5150" strokeWidth="2" />
+      <ellipse cx="318" cy="188" rx="250" ry="145" fill={`url(#${id}dominoGlow)`} />
+      <path d="M78 293 C 196 252, 405 336, 564 278" fill="none" stroke="#7ddfc1" strokeOpacity=".08" strokeWidth="2" />
+      <path d="M88 104 C 220 151, 426 66, 555 121" fill="none" stroke="#d4ae72" strokeOpacity=".08" strokeWidth="2" />
+      <ArtDomino x={82} y={171} a={2} b={6} filter={`url(#${id}dominoShadow)`} />
+      <ArtDomino x={199} y={171} a={6} b={6} filter={`url(#${id}dominoShadow)`} />
+      <ArtDomino x={316} y={171} a={6} b={4} filter={`url(#${id}dominoShadow)`} />
+      <ArtDomino x={433} y={171} a={4} b={1} filter={`url(#${id}dominoShadow)`} />
+      <circle cx="113" cy="133" r="4" fill="#79e2c1" opacity=".65" />
+      <circle cx="542" cy="265" r="4" fill="#d9b97c" opacity=".55" />
+    </svg>
+  );
+}
+
 export function GameArt({ game, compact = false }: { game: string; compact?: boolean }) {
   const id = useId().replace(/:/g, ''),
     s = createAbalone();
   return (
     <div className={`game-art ${game} ${compact ? 'compact' : ''}`} aria-hidden="true">
       <div className="art-halo" />
-      {['checkers', 'gomoku', 'nineMensMorris', 'connectFour', 'reversi', 'digitalGame', 'chess'].includes(game) ? (
+      {game === 'dotsAndBoxes' ? (
+        <DotsAndBoxesArt id={id} />
+      ) : game === 'dominoes' ? (
+        <DominoesArt id={id} />
+      ) : ['checkers', 'gomoku', 'nineMensMorris', 'connectFour', 'reversi', 'digitalGame', 'chess'].includes(game) ? (
         <ClassicArt game={game} />
       ) : game === 'abalone' ? (
         <svg viewBox="0 0 480 444">
