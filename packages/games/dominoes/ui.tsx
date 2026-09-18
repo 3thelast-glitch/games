@@ -69,7 +69,7 @@ export function DominoesBoard({ state, disabled, onMove, t, mode = 'online' }: P
     mode === 'local' &&
     state.viewerSeat === undefined &&
     revealedSeat !== state.turn &&
-    !state.winner &&
+    state.winner === null &&
     !state.drawReason;
   const moves = useMemo(() => legalDominoMoves(displayState), [displayState]);
   const playMoves = moves.filter(
@@ -205,7 +205,7 @@ export function DominoesBoard({ state, disabled, onMove, t, mode = 'online' }: P
               <strong>{t('dominoYourHand')}</strong>
               <span>{hand.length}</span>
             </div>
-            <div className="domino-hand" role="list" aria-label={t('dominoYourHand')}>
+            <div className="domino-hand" dir="ltr" role="list" aria-label={t('dominoYourHand')}>
               {hand.map((tileId) => {
                 const legal = byTile.has(tileId),
                   isSelected = selected === tileId;
