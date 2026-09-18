@@ -353,3 +353,94 @@ test('Arena remains contained with enlarged text', async ({ browser, browserName
     await context.close();
   }
 });
+
+
+test('Arena remains contained across intermediate portrait and landscape resizing', async ({
+  browser,
+  browserName,
+}) => {
+  const locale = locales.find((item) => item.id === 'ar')!;
+  const viewport: ViewportCase = {
+    id: 'arena-resize',
+    width: 390,
+    height: 844,
+    touch: true,
+    group: 'mobile',
+  };
+  const { context, page } = await openArena(browser, browserName, locale, viewport);
+  try {
+    for (const size of [
+      { width: 533, height: 720 },
+      { width: 800, height: 360 },
+      { width: 713, height: 881 },
+      { width: 390, height: 844 },
+    ]) {
+      await page.setViewportSize(size);
+      await expectNoGlobalOverflow(page);
+      await expectHorizontallyContained(page.locator('.topbar'), page, `resized topbar ${size.width}x${size.height}`);
+      await expectHorizontallyContained(
+        page.locator('.arena-game-scroll'),
+        page,
+        `resized game selector ${size.width}x${size.height}`,
+      );
+      await expectHorizontallyContained(
+        page.locator('.leaderboard-panel'),
+        page,
+        `resized leaderboard ${size.width}x${size.height}`,
+      );
+    }
+  } finally {
+    await context.close();
+  }
+});
+
+test('Arena filters keep visible keyboard focus inside their bounded controls', async ({
+  browser,
+  browserName,
+}) => {
+  const locale = locales.find((item) => item.id === 'en')!;
+  const viewport: ViewportCase = {
+    id: 'arena-keyboard',
+    width: 1024,
+    height: 768,
+    touch: false,
+    group: 'desktop',
+  };
+  const { context, page } = await openArena(browser, browserName, locale, viewport);
+  try {
+    const scroller = page.locator('.arena-game-scroll');
+    const selected = page.locator('.arena-game-selector > button[aria-pressed="true"]');
+    await selected.focus();
+    await expect(selected).toBeFocused();
+
+    const focusStyle = await selected.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { style: style.outlineStyle, width: parseFloat(style.outlineWidth) || 0 };
+    });
+    expect(focusStyle.style).not.toBe('none');
+    expect(focusStyle.width).toBeGreaterThan(0);
+
+    await page.keyboard.press('Tab');
+    const focusedGame = page.locator('.arena-game-selector > button:focus');
+    await expect(focusedGame).toHaveCount(1);
+    const [scrollBox, focusBox] = await Promise.all([scroller.boundingBox(), focusedGame.boundingBox()]);
+    expect(scrollBox).not.toBeNull();
+    expect(focusBox).not.toBeNull();
+    if (scrollBox && focusBox) {
+      expect(focusBox.x).toBeGreaterThanOrEqual(scrollBox.x - 1);
+      expect(focusBox.x + focusBox.width).toBeLessThanOrEqual(scrollBox.x + scrollBox.width + 1);
+    }
+
+    const period = page.locator('.period-tabs > button').first();
+    await period.focus();
+    await expect(period).toBeFocused();
+    const periodStyle = await period.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { style: style.outlineStyle, width: parseFloat(style.outlineWidth) || 0 };
+    });
+    expect(periodStyle.style).not.toBe('none');
+    expect(periodStyle.width).toBeGreaterThan(0);
+  } finally {
+    await context.close();
+  }
+});
