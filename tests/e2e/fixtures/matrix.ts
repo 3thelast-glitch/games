@@ -20,6 +20,7 @@ export const locales: LocaleCase[] = [
 export const fullViewports: ViewportCase[] = [
   { id: 'm320', width: 320, height: 568, touch: true, group: 'mobile' },
   { id: 'm360', width: 360, height: 640, touch: true, group: 'mobile' },
+  { id: 'm360tall', width: 360, height: 800, touch: true, group: 'mobile' },
   { id: 'm375', width: 375, height: 667, touch: true, group: 'mobile' },
   { id: 'm390', width: 390, height: 844, touch: true, group: 'mobile' },
   { id: 'm412', width: 412, height: 915, touch: true, group: 'mobile' },
@@ -27,6 +28,7 @@ export const fullViewports: ViewportCase[] = [
   { id: 'm480', width: 480, height: 854, touch: true, group: 'mobile' },
   { id: 'ml568', width: 568, height: 320, touch: true, group: 'landscape' },
   { id: 'ml667', width: 667, height: 375, touch: true, group: 'landscape' },
+  { id: 'ml800', width: 800, height: 360, touch: true, group: 'landscape' },
   { id: 'ml844', width: 844, height: 390, touch: true, group: 'landscape' },
   { id: 'ml932', width: 932, height: 430, touch: true, group: 'landscape' },
   { id: 't600', width: 600, height: 960, touch: true, group: 'tablet' },
