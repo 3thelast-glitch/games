@@ -391,8 +391,12 @@ function ArenaApp({
       notify('ai-error');
       worker.terminate();
     };
+    const aiState =
+      localState.gameId === 'dominoes' && offline.controller.game.view
+        ? offline.controller.game.view(localState, 1)
+        : localState;
     worker.postMessage({
-      state: localState,
+      state: aiState,
       difficulty: offline.difficulty,
       requestId,
     });

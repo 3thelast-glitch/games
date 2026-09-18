@@ -3,6 +3,8 @@ import { chooseMove } from '../../../packages/core/src/ai.ts';
 import type { BaseState, Difficulty } from '../../../packages/core/src/game.ts';
 import { chooseChessExpertMove } from '../../../packages/games/chess/expert.ts';
 import type { ChessState } from '../../../packages/games/chess/state.ts';
+import { chooseDominoMove } from '../../../packages/games/dominoes/ai.ts';
+import type { DominoesState } from '../../../packages/games/dominoes/state.ts';
 
 self.onmessage = (
   event: MessageEvent<{
@@ -18,7 +20,9 @@ self.onmessage = (
       move:
         state.gameId === 'chess'
           ? chooseChessExpertMove(state as ChessState)
-          : chooseMove(games.get(state.gameId), state, difficulty),
+          : state.gameId === 'dominoes'
+            ? chooseDominoMove(state as DominoesState, difficulty)
+            : chooseMove(games.get(state.gameId), state, difficulty),
     });
   } catch {
     self.postMessage({ requestId: event.data.requestId, error: 'ai-error' });

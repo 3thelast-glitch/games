@@ -7,6 +7,7 @@ import './responsive-overrides.css';
 import './reversi.css';
 import './chess.css';
 import './dots-and-boxes.css';
+import './dominoes.css';
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {

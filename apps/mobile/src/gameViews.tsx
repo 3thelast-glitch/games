@@ -19,11 +19,14 @@ import { ChessBoard } from '../../../packages/games/chess/ui.tsx';
 import type { ChessState } from '../../../packages/games/chess/state.ts';
 import { DotsAndBoxesBoard } from '../../../packages/games/dots-and-boxes/ui.tsx';
 import type { DotsAndBoxesState } from '../../../packages/games/dots-and-boxes/state.ts';
+import { DominoesBoard } from '../../../packages/games/dominoes/ui.tsx';
+import type { DominoesState } from '../../../packages/games/dominoes/state.ts';
 interface Props {
   state: BaseState;
   disabled: boolean;
   onMove: (move: unknown) => void;
   t: (key: string) => string;
+  mode?: 'local' | 'ai' | 'online';
 }
 export const gameViews: Record<string, (props: Props) => React.ReactNode> = {
   nineMensMorris: (props) => <MorrisBoard {...props} state={props.state as MorrisState} />,
@@ -36,6 +39,15 @@ export const gameViews: Record<string, (props: Props) => React.ReactNode> = {
   quoridor: (props) => <QuoridorBoard {...props} state={props.state as QuoridorState} />,
   chess: (props) => <ChessBoard {...props} state={props.state as ChessState} />,
   dotsAndBoxes: (props) => <DotsAndBoxesBoard {...props} state={props.state as DotsAndBoxesState} />,
+  dominoes: (props) => (
+    <DominoesBoard
+      state={props.state as DominoesState}
+      disabled={props.disabled}
+      onMove={props.onMove}
+      t={props.t}
+      mode={props.mode}
+    />
+  ),
 };
 export const gameInfo = [
   ...[
@@ -45,6 +57,7 @@ export const gameInfo = [
     { id: 'connectFour', duration: '5–10', icon: '⠿' },
     { id: 'reversi', duration: '5–20', icon: '◐' },
     { id: 'dotsAndBoxes', duration: '5–15', icon: '□' },
+    { id: 'dominoes', duration: '5–15', icon: '▤' },
   ].map((game) => ({ ...game, tag: `${game.id}Tag`, description: `${game.id}Desc` })),
   {
     id: 'digitalGame',
@@ -95,6 +108,10 @@ const resources: Record<
   dotsAndBoxes: (state, player) => ({
     value: String((state as DotsAndBoxesState).scores[player as 0 | 1]),
     label: 'boxesClaimed',
+  }),
+  dominoes: (state, player) => ({
+    value: String((state as DominoesState).handCounts[player as 0 | 1]),
+    label: 'dominoTiles',
   }),
 };
 export function gameResource(state: BaseState, player: Seat): { value: string; label: string } {
