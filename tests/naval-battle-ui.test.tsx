@@ -48,7 +48,7 @@ const fleet1: NavalPlacement[] = [
 function chooseLoadouts(state = createNavalBattle()) {
   let next = applyNavalMove(state, {
     type: 'selectAbilities',
-    abilities: ['sonarPulse', 'twinSalvo', 'hunterProtocol'],
+    abilities: ['sonarPulse', 'twinSalvo', 'emergencyRepair'],
   });
   next = applyNavalMove(next, {
     type: 'selectAbilities',
@@ -94,7 +94,7 @@ test('loadout requires exactly three selections and emits only those abilities',
   fireEvent.click(confirm);
   assert.deepEqual(emitted, {
     type: 'selectAbilities',
-    abilities: ['sonarPulse', 'twinSalvo', 'hunterProtocol'],
+    abilities: ['sonarPulse', 'twinSalvo', 'emergencyRepair'],
   });
 });
 
