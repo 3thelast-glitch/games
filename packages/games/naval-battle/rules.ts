@@ -236,7 +236,7 @@ function canRepositionShip(state: NavalBattleState, player: Player, shipId: Nava
   );
 }
 
-function validReposition(
+export function isSilentRepositionValid(
   state: NavalBattleState,
   player: Player,
   placement: NavalPlacement,
@@ -341,7 +341,7 @@ export function validateNavalMove(state: NavalBattleState, input: NavalBattleMov
         col: move.col,
         orientation: move.orientation,
       };
-      if (!validReposition(state, player, placement)) throw new RuleError('naval-reposition-invalid');
+      if (!isSilentRepositionValid(state, player, placement)) throw new RuleError('naval-reposition-invalid');
       return { ok: true };
     }
     throw new RuleError('naval-battle-phase');
@@ -690,7 +690,7 @@ export function legalNavalMoves(state: NavalBattleState): NavalBattleMove[] {
         for (let row = 0; row < NAVAL_BOARD_SIZE; row++)
           for (let col = 0; col < NAVAL_BOARD_SIZE; col++) {
             const placement: NavalPlacement = { shipId: ship.shipId, row, col, orientation };
-            if (validReposition(state, player, placement)) moves.push({ type: 'silentReposition', ...placement });
+            if (isSilentRepositionValid(state, player, placement)) moves.push({ type: 'silentReposition', ...placement });
           }
 
   return moves;
