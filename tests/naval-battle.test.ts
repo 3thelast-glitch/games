@@ -496,7 +496,7 @@ test('Emergency Repair clears one hit on an unsunk ship and makes that coordinat
 test('Silent Reposition moves an unhit ship only into legal never-targeted cells', () => {
   let state = battleStateWith(
     ['silentReposition', 'sonarPulse', 'twinSalvo'],
-    ['signalJammer', 'emergencyRepair', 'hunterProtocol'],
+    ['signalJammer', 'emergencyRepair', 'sonarPulse'],
   );
   const moved = applyNavalMove(state, {
     type: 'useAbility',
@@ -514,7 +514,7 @@ test('Silent Reposition moves an unhit ship only into legal never-targeted cells
 
   state = battleStateWith(
     ['silentReposition', 'sonarPulse', 'twinSalvo'],
-    ['signalJammer', 'emergencyRepair', 'hunterProtocol'],
+    ['signalJammer', 'emergencyRepair', 'sonarPulse'],
   );
   state.turn = 1;
   state = applyNavalMove(state, { type: 'fire', row: 8, col: 0 });
