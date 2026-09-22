@@ -409,20 +409,25 @@ test('Arena filters keep visible keyboard focus inside their bounded controls', 
   const { context, page } = await openArena(browser, browserName, locale, viewport);
   try {
     const scroller = page.locator('.arena-game-scroll');
-    const selected = page.locator('.arena-game-selector > button[aria-pressed="true"]');
-    await selected.focus();
-    await expect(selected).toBeFocused();
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
 
-    const focusStyle = await selected.evaluate((element) => {
+    for (let index = 0; index < 24; index++) {
+      await page.keyboard.press('Tab');
+      const onGameFilter = await page.evaluate(() =>
+        document.activeElement?.matches('.arena-game-selector > button'),
+      );
+      if (onGameFilter) break;
+    }
+
+    const focusedGame = page.locator('.arena-game-selector > button:focus');
+    await expect(focusedGame).toHaveCount(1);
+    const focusStyle = await focusedGame.evaluate((element) => {
       const style = getComputedStyle(element);
       return { style: style.outlineStyle, width: parseFloat(style.outlineWidth) || 0 };
     });
     expect(focusStyle.style).not.toBe('none');
     expect(focusStyle.width).toBeGreaterThan(0);
 
-    await page.keyboard.press('Tab');
-    const focusedGame = page.locator('.arena-game-selector > button:focus');
-    await expect(focusedGame).toHaveCount(1);
     const [scrollBox, focusBox] = await Promise.all([scroller.boundingBox(), focusedGame.boundingBox()]);
     expect(scrollBox).not.toBeNull();
     expect(focusBox).not.toBeNull();
@@ -431,10 +436,17 @@ test('Arena filters keep visible keyboard focus inside their bounded controls', 
       expect(focusBox.x + focusBox.width).toBeLessThanOrEqual(scrollBox.x + scrollBox.width + 1);
     }
 
-    const period = page.locator('.period-tabs > button').first();
-    await period.focus();
-    await expect(period).toBeFocused();
-    const periodStyle = await period.evaluate((element) => {
+    for (let index = 0; index < 24; index++) {
+      await page.keyboard.press('Tab');
+      const onPeriodFilter = await page.evaluate(() =>
+        document.activeElement?.matches('.period-tabs > button'),
+      );
+      if (onPeriodFilter) break;
+    }
+
+    const focusedPeriod = page.locator('.period-tabs > button:focus');
+    await expect(focusedPeriod).toHaveCount(1);
+    const periodStyle = await focusedPeriod.evaluate((element) => {
       const style = getComputedStyle(element);
       return { style: style.outlineStyle, width: parseFloat(style.outlineWidth) || 0 };
     });
