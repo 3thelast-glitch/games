@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import type { Player } from '../../core/src/game.ts';
 import {
+  NAVAL_ABILITIES,
+  NAVAL_LOADOUT_SIZE,
+  type NavalAbilityId,
+} from './abilities.ts';
+import {
   NAVAL_BOARD_SIZE,
   NAVAL_SHIPS,
   navalShip,
@@ -15,6 +20,7 @@ import {
 import {
   isCompleteNavalFleet,
   isNavalPlacementValid,
+  isSilentRepositionValid,
   navalCellKey,
   navalPlacementCells,
   navalPlacementInBounds,
@@ -34,6 +40,7 @@ const letters = Array.from({ length: NAVAL_BOARD_SIZE }, (_, index) =>
 );
 
 const coordinateLabel = ({ row, col }: NavalCoordinate) => `${letters[col]}${row + 1}`;
+const sameCell = (a: NavalCoordinate, b: NavalCoordinate) => a.row === b.row && a.col === b.col;
 
 function ShipGlyph({ shipId }: { shipId: NavalShipId }) {
   const paths: Record<NavalShipId, string> = {
@@ -56,8 +63,24 @@ function ShipGlyph({ shipId }: { shipId: NavalShipId }) {
   );
 }
 
-function shotForCell(shots: readonly NavalShot[], row: number, col: number) {
-  return shots.find((shot) => shot.row === row && shot.col === col);
+function AbilityGlyph({ abilityId }: { abilityId: NavalAbilityId }) {
+  const symbol: Record<NavalAbilityId, string> = {
+    sonarPulse: '◉',
+    twinSalvo: 'Ⅱ',
+    hunterProtocol: '⌖',
+    emergencyRepair: '+',
+    signalJammer: '≋',
+    silentReposition: '↝',
+  };
+  return <span className={`naval-ability-glyph ability-${abilityId}`} aria-hidden="true">{symbol[abilityId]}</span>;
+}
+
+function latestActiveShot(shots: readonly NavalShot[], row: number, col: number) {
+  for (let index = shots.length - 1; index >= 0; index--) {
+    const shot = shots[index];
+    if (shot.row === row && shot.col === col && !shot.repaired) return shot;
+  }
+  return undefined;
 }
 
 function cellsSet(cells: readonly NavalCoordinate[] | undefined) {
@@ -95,7 +118,7 @@ interface BoardProps {
   shots: NavalShot[];
   type: 'own' | 'target' | 'placement';
   interactive: boolean;
-  selected?: NavalCoordinate | null;
+  selected?: NavalCoordinate[];
   preview?: NavalPlacement | null;
   previewValid?: boolean;
   lastShot?: { player: Player; row: number; col: number } | null;
@@ -110,7 +133,7 @@ function NavalBoard({
   shots,
   type,
   interactive,
-  selected,
+  selected = [],
   preview,
   previewValid,
   lastShot,
@@ -152,23 +175,19 @@ function NavalBoard({
   return (
     <div className={`naval-board-frame ${type}`} dir="ltr">
       <div className="naval-column-labels" aria-hidden="true">
-        {letters.map((letter) => (
-          <span key={letter}>{letter}</span>
-        ))}
+        {letters.map((letter) => <span key={letter}>{letter}</span>)}
       </div>
       <div className="naval-row-labels" aria-hidden="true">
-        {Array.from({ length: NAVAL_BOARD_SIZE }, (_, index) => (
-          <span key={index}>{index + 1}</span>
-        ))}
+        {Array.from({ length: NAVAL_BOARD_SIZE }, (_, index) => <span key={index}>{index + 1}</span>)}
       </div>
       <div className="naval-grid" role="grid" aria-label={label}>
         {Array.from({ length: NAVAL_BOARD_SIZE * NAVAL_BOARD_SIZE }, (_, index) => {
           const row = Math.floor(index / NAVAL_BOARD_SIZE);
           const col = index % NAVAL_BOARD_SIZE;
           const key = navalCellKey({ row, col });
-          const shot = shotForCell(relevantShots, row, col);
+          const shot = latestActiveShot(relevantShots, row, col);
           const sunkShip = sunk.get(key);
-          const isSelected = selected?.row === row && selected?.col === col;
+          const isSelected = selected.some((cell) => cell.row === row && cell.col === col);
           const isPreview = previewKeys.has(key);
           const ownShip = ownShipByCell.get(key);
           const isLast =
@@ -184,16 +203,13 @@ function NavalBoard({
             isLast ? 'last-shot' : '',
             isPreview ? (previewValid ? 'preview-valid' : 'preview-invalid') : '',
             type !== 'target' && ownShip ? 'occupied' : '',
-          ]
-            .filter(Boolean)
-            .join(' ');
+          ].filter(Boolean).join(' ');
 
           let status = t('navalUnknown');
           if (shot?.outcome === 'miss') status = t('navalMiss');
           if (shot?.outcome === 'hit') status = t('navalHit');
           if (sunkShip) status = `${t('navalSunk')}: ${t(`navalShip.${sunkShip}`)}`;
-          if (type !== 'target' && ownShip)
-            status = `${status}; ${t(`navalShip.${ownShip}`)}`;
+          if (type !== 'target' && ownShip) status = `${status}; ${t(`navalShip.${ownShip}`)}`;
           if (isSelected) status = `${status}; ${t('navalSelectedTarget')}`;
           if (isLast) status = `${status}; ${t('navalLastShot')}`;
 
@@ -214,23 +230,17 @@ function NavalBoard({
             >
               {shot?.outcome === 'miss' && <span className="naval-miss-mark" aria-hidden="true" />}
               {(shot?.outcome === 'hit' || shot?.outcome === 'sunk') && (
-                <span className="naval-hit-mark" aria-hidden="true">
-                  ×
-                </span>
+                <span className="naval-hit-mark" aria-hidden="true">×</span>
               )}
               {isLast && <span className="naval-last-reticle" aria-hidden="true" />}
             </button>
           );
         })}
-        {type !== 'target' &&
-          ownFleet.map((placement) => (
-            <ShipOverlay key={placement.shipId} placement={placement} />
-          ))}
-        {type === 'placement' && preview && (
-          <ShipOverlay
-            placement={preview}
-            preview={previewValid ? 'valid' : 'invalid'}
-          />
+        {type !== 'target' && ownFleet.map((placement) => (
+          <ShipOverlay key={placement.shipId} placement={placement} />
+        ))}
+        {preview && (
+          <ShipOverlay placement={preview} preview={previewValid ? 'valid' : 'invalid'} />
         )}
       </div>
     </div>
@@ -242,14 +252,16 @@ function FleetTray({
   selected,
   onSelect,
   t,
+  compact = false,
 }: {
   fleet: NavalPlacement[];
   selected: NavalShipId;
   onSelect: (shipId: NavalShipId) => void;
   t: (key: string) => string;
+  compact?: boolean;
 }) {
   return (
-    <div className="naval-fleet-tray" role="list" aria-label={t('navalFleet')}>
+    <div className={`naval-fleet-tray ${compact ? 'compact' : ''}`} role="list" aria-label={t('navalFleet')}>
       {NAVAL_SHIPS.map((ship) => {
         const placed = fleet.some((placement) => placement.shipId === ship.id);
         return (
@@ -260,14 +272,10 @@ function FleetTray({
               aria-pressed={selected === ship.id}
               onClick={() => onSelect(ship.id)}
             >
-              <span className="naval-fleet-glyph">
-                <ShipGlyph shipId={ship.id} />
-              </span>
+              <span className="naval-fleet-glyph"><ShipGlyph shipId={ship.id} /></span>
               <span>
                 <strong>{t(`navalShip.${ship.id}`)}</strong>
-                <small>
-                  {t('navalLength')} {ship.length}
-                </small>
+                <small>{t('navalLength')} {ship.length}</small>
               </span>
               <span className={`naval-placement-check ${placed ? 'placed' : ''}`}>
                 {placed ? '✓' : '○'}
@@ -280,17 +288,135 @@ function FleetTray({
   );
 }
 
+function AbilityCards({
+  abilities,
+  used,
+  active,
+  hunterActive,
+  disabled,
+  onSelect,
+  t,
+}: {
+  abilities: NavalAbilityId[];
+  used: NavalAbilityId[];
+  active: NavalAbilityId | null;
+  hunterActive: boolean;
+  disabled: boolean;
+  onSelect: (abilityId: NavalAbilityId) => void;
+  t: (key: string) => string;
+}) {
+  return (
+    <div className="naval-ability-tray" role="list" aria-label={t('navalTacticalAbilities')}>
+      {abilities.map((abilityId) => {
+        const isUsed = used.includes(abilityId);
+        const isHunterLocked = abilityId === 'hunterProtocol' && !hunterActive;
+        return (
+          <div className="naval-ability-item" role="listitem" key={abilityId}>
+            <button
+              type="button"
+              className={`${active === abilityId ? 'active' : ''} ${isUsed ? 'used' : ''}`}
+              aria-pressed={active === abilityId}
+              disabled={disabled || isUsed || isHunterLocked}
+              onClick={() => onSelect(abilityId)}
+            >
+              <AbilityGlyph abilityId={abilityId} />
+              <span className="naval-ability-copy">
+                <strong>{t(`navalAbility.${abilityId}`)}</strong>
+                <small>
+                  {isUsed
+                    ? t('navalAbilityUsed')
+                    : abilityId === 'hunterProtocol' && !hunterActive
+                      ? t('navalHunterWaiting')
+                      : t(`navalAbilityShort.${abilityId}`)}
+                </small>
+              </span>
+              <span className="naval-ability-state">{isUsed ? '✓' : '1×'}</span>
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function LoadoutPicker({
+  selected,
+  locked,
+  disabled,
+  onToggle,
+  onConfirm,
+  t,
+}: {
+  selected: NavalAbilityId[];
+  locked: boolean;
+  disabled: boolean;
+  onToggle: (abilityId: NavalAbilityId) => void;
+  onConfirm: () => void;
+  t: (key: string) => string;
+}) {
+  return (
+    <div className="naval-loadout-screen">
+      <div className="naval-loadout-heading">
+        <span className="eyebrow">{t('navalLoadoutPhase')}</span>
+        <h2>{locked ? t('navalLoadoutLocked') : t('navalChooseAbilities')}</h2>
+        <p>{t('navalLoadoutHint')}</p>
+        <strong>{selected.length}/{NAVAL_LOADOUT_SIZE}</strong>
+      </div>
+      <div className="naval-loadout-grid" role="group" aria-label={t('navalChooseAbilities')}>
+        {NAVAL_ABILITIES.map(({ id, kind }) => {
+          const chosen = selected.includes(id);
+          const atLimit = selected.length >= NAVAL_LOADOUT_SIZE && !chosen;
+          return (
+            <button
+              key={id}
+              type="button"
+              className={`naval-loadout-card ${chosen ? 'selected' : ''}`}
+              aria-pressed={chosen}
+              disabled={disabled || locked || atLimit}
+              onClick={() => onToggle(id)}
+            >
+              <AbilityGlyph abilityId={id} />
+              <span className="naval-loadout-card-copy">
+                <small>{t(`navalAbilityKind.${kind}`)}</small>
+                <strong>{t(`navalAbility.${id}`)}</strong>
+                <p>{t(`navalAbilityDesc.${id}`)}</p>
+              </span>
+              <span className="naval-loadout-check" aria-hidden="true">{chosen ? '✓' : '+'}</span>
+            </button>
+          );
+        })}
+      </div>
+      <div className="naval-loadout-footer">
+        <span>{locked ? t('navalWaitingLoadout') : t('navalAbilitiesHidden')}</span>
+        {!locked && (
+          <button
+            type="button"
+            className="button primary"
+            disabled={disabled || selected.length !== NAVAL_LOADOUT_SIZE}
+            onClick={onConfirm}
+          >
+            {t('navalConfirmLoadout')}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function NavalBattleBoard({ state, disabled, onMove, t, mode = 'online' }: Props) {
   const [revealedSeat, setRevealedSeat] = useState<Player | null>(null);
   const [selectedShip, setSelectedShip] = useState<NavalShipId>('carrier');
   const [orientation, setOrientation] = useState<NavalOrientation>('horizontal');
   const [previewCell, setPreviewCell] = useState<NavalCoordinate | null>(null);
-  const [target, setTarget] = useState<NavalCoordinate | null>(null);
+  const [targets, setTargets] = useState<NavalCoordinate[]>([]);
+  const [abilityMode, setAbilityMode] = useState<NavalAbilityId | null>(null);
+  const [loadoutSelection, setLoadoutSelection] = useState<NavalAbilityId[]>([]);
 
   useEffect(() => {
     if (mode === 'local') setRevealedSeat(null);
-    setTarget(null);
+    setTargets([]);
     setPreviewCell(null);
+    setAbilityMode(null);
   }, [mode, state.turn, state.phase]);
 
   const displayState = useMemo(() => {
@@ -310,6 +436,15 @@ export function NavalBattleBoard({ state, disabled, onMove, t, mode = 'online' }
   const ownFleet = displayState.fleets[viewer];
   const complete = isCompleteNavalFleet(ownFleet);
   const selectedPlacement = ownFleet.find((placement) => placement.shipId === selectedShip);
+  const canAct = !disabled && displayState.turn === viewer;
+  const ownLoadout = displayState.loadouts[viewer];
+  const usedAbilities = displayState.usedAbilities[viewer];
+
+  useEffect(() => {
+    if (displayState.phase !== 'loadout') return;
+    if (displayState.loadoutLocked[viewer]) setLoadoutSelection([...ownLoadout]);
+    else setLoadoutSelection([]);
+  }, [displayState.phase, displayState.loadoutLocked, viewer, ownLoadout.join('|')]);
 
   useEffect(() => {
     if (displayState.phase !== 'placement') return;
@@ -325,46 +460,140 @@ export function NavalBattleBoard({ state, disabled, onMove, t, mode = 'online' }
     if (placement) setOrientation(placement.orientation);
   }, [selectedShip, ownFleet]);
 
-  const preview: NavalPlacement | null = previewCell
+  useEffect(() => {
+    if (displayState.hunterWindow?.player === viewer) {
+      setAbilityMode('hunterProtocol');
+      setTargets([]);
+    }
+  }, [displayState.hunterWindow?.player, displayState.hunterWindow?.origin.row, displayState.hunterWindow?.origin.col, viewer]);
+
+  const placementPreview: NavalPlacement | null = previewCell
     ? { shipId: selectedShip, row: previewCell.row, col: previewCell.col, orientation }
     : selectedPlacement
       ? { ...selectedPlacement, orientation }
       : null;
-  const previewInBounds = preview ? navalPlacementInBounds(preview) : false;
-  const previewValid = preview ? isNavalPlacementValid(ownFleet, preview) : false;
+  const placementInBounds = placementPreview ? navalPlacementInBounds(placementPreview) : false;
+  const placementValid = placementPreview ? isNavalPlacementValid(ownFleet, placementPreview) : false;
 
-  const lastFire =
-    displayState.lastAction?.type === 'fire'
-      ? {
-          player: displayState.lastAction.player,
-          row: displayState.lastAction.row,
-          col: displayState.lastAction.col,
-        }
+  const repositionPreview: NavalPlacement | null =
+    abilityMode === 'silentReposition' && targets[0]
+      ? { shipId: selectedShip, row: targets[0].row, col: targets[0].col, orientation }
       : null;
+  const repositionValid = repositionPreview
+    ? isSilentRepositionValid(displayState, viewer, repositionPreview)
+    : false;
+
+  const lastShot = displayState.shots.length
+    ? {
+        player: displayState.shots[displayState.shots.length - 1].shooter,
+        row: displayState.shots[displayState.shots.length - 1].row,
+        col: displayState.shots[displayState.shots.length - 1].col,
+      }
+    : null;
 
   if (mode === 'local' && revealedSeat !== state.turn) {
     return (
       <section className="naval-game naval-handoff">
-        <div className="naval-sonar-mark" aria-hidden="true">
-          <span />
-        </div>
+        <div className="naval-sonar-mark" aria-hidden="true"><span /></div>
         <span className="eyebrow">{t('navalPrivacyHandoff')}</span>
         <h2>{t(state.turn === 0 ? 'player1' : 'player2')}</h2>
         <p>{t('navalHandoffDesc')}</p>
-        <button
-          type="button"
-          className="button primary"
-          onClick={() => setRevealedSeat(state.turn as Player)}
-        >
+        <button type="button" className="button primary" onClick={() => setRevealedSeat(state.turn as Player)}>
           {t('navalRevealBoard')}
         </button>
       </section>
     );
   }
 
-  const canAct = !disabled && displayState.turn === viewer;
+  if (displayState.phase === 'loadout') {
+    const locked = displayState.loadoutLocked[viewer];
+    return (
+      <section className="naval-game phase-loadout">
+        <LoadoutPicker
+          selected={locked ? ownLoadout : loadoutSelection}
+          locked={locked}
+          disabled={!canAct}
+          onToggle={(abilityId) =>
+            setLoadoutSelection((current) =>
+              current.includes(abilityId)
+                ? current.filter((item) => item !== abilityId)
+                : current.length < NAVAL_LOADOUT_SIZE
+                  ? [...current, abilityId]
+                  : current,
+            )
+          }
+          onConfirm={() => onMove({ type: 'selectAbilities', abilities: loadoutSelection })}
+          t={t}
+        />
+      </section>
+    );
+  }
+
   const waitingPlacement =
     displayState.phase === 'placement' && (displayState.ready[viewer] || displayState.turn !== viewer);
+
+  const hunterOrigin = displayState.hunterWindow?.player === viewer ? displayState.hunterWindow.origin : null;
+  const selectTarget = (cell: NavalCoordinate) => {
+    if (abilityMode === 'twinSalvo') {
+      setTargets((current) => {
+        if (current.some((item) => sameCell(item, cell))) return current.filter((item) => !sameCell(item, cell));
+        return current.length < 2 ? [...current, cell] : [current[1], cell];
+      });
+      return;
+    }
+    if (abilityMode === 'hunterProtocol' && hunterOrigin) {
+      const distance = Math.abs(cell.row - hunterOrigin.row) + Math.abs(cell.col - hunterOrigin.col);
+      if (distance !== 1) return;
+    }
+    setTargets([cell]);
+  };
+
+  const opponentSeat: Player = viewer === 0 ? 1 : 0;
+  const latestSonar = [...displayState.privateIntel[viewer]]
+    .reverse()
+    .find((intel) => intel.type === 'sonar');
+
+  const repairTargetValid =
+    abilityMode === 'emergencyRepair' &&
+    !!targets[0] &&
+    (() => {
+      const enemyShots = displayState.shots.filter((shot) => shot.shooter === opponentSeat && !shot.repaired);
+      const shot = latestActiveShot(enemyShots, targets[0].row, targets[0].col);
+      return shot?.outcome === 'hit';
+    })();
+
+  const abilityActionReady =
+    abilityMode === 'sonarPulse'
+      ? targets.length === 1
+      : abilityMode === 'twinSalvo'
+        ? targets.length === 2
+        : abilityMode === 'emergencyRepair'
+          ? repairTargetValid
+          : abilityMode === 'signalJammer'
+            ? targets.length === 1
+            : abilityMode === 'silentReposition'
+              ? !!repositionPreview && repositionValid
+              : abilityMode === 'hunterProtocol'
+                ? targets.length === 1
+                : false;
+
+  const activateAbility = () => {
+    const target = targets[0];
+    if (!abilityMode || !abilityActionReady) return;
+    if (abilityMode === 'sonarPulse' && target) onMove({ type: 'sonarPulse', row: target.row, col: target.col });
+    if (abilityMode === 'twinSalvo' && targets.length === 2)
+      onMove({ type: 'twinSalvo', targets: [targets[0], targets[1]] });
+    if (abilityMode === 'emergencyRepair' && target)
+      onMove({ type: 'emergencyRepair', row: target.row, col: target.col });
+    if (abilityMode === 'signalJammer' && target)
+      onMove({ type: 'signalJammer', row: target.row, col: target.col });
+    if (abilityMode === 'silentReposition' && repositionPreview)
+      onMove({ type: 'silentReposition', ...repositionPreview });
+    if (abilityMode === 'hunterProtocol' && target)
+      onMove({ type: 'hunterFire', row: target.row, col: target.col });
+    setAbilityMode(null);
+    setTargets([]);
+  };
 
   return (
     <section className={`naval-game phase-${displayState.phase}`}>
@@ -379,11 +608,13 @@ export function NavalBattleBoard({ state, disabled, onMove, t, mode = 'online' }
                 ? waitingPlacement
                   ? 'navalFleetReady'
                   : 'navalDeployFleet'
-                : canAct
-                  ? 'yourTurn'
-                  : mode === 'ai' && displayState.turn === 1
-                    ? 'thinking'
-                    : 'theirTurn',
+                : hunterOrigin
+                  ? 'navalHunterDecision'
+                  : canAct
+                    ? 'yourTurn'
+                    : mode === 'ai' && displayState.turn === 1
+                      ? 'thinking'
+                      : 'theirTurn',
             )}
           </h2>
           <p>
@@ -392,17 +623,15 @@ export function NavalBattleBoard({ state, disabled, onMove, t, mode = 'online' }
                 ? waitingPlacement
                   ? 'navalWaitingPlacement'
                   : 'navalPlacementHint'
-                : 'navalBattleHint',
+                : hunterOrigin
+                  ? 'navalHunterDecisionHint'
+                  : 'navalBattleHint',
             )}
           </p>
         </div>
         <div className="naval-fleet-status" aria-label={t('navalShipsRemaining')}>
-          <span>
-            {t('you')} <strong>{displayState.remainingShips[viewer]}</strong>
-          </span>
-          <span>
-            {t('navalOpponent')} <strong>{displayState.remainingShips[viewer === 0 ? 1 : 0]}</strong>
-          </span>
+          <span>{t('you')} <strong>{displayState.remainingShips[viewer]}</strong></span>
+          <span>{t('navalOpponent')} <strong>{displayState.remainingShips[opponentSeat]}</strong></span>
         </div>
       </header>
 
@@ -424,22 +653,17 @@ export function NavalBattleBoard({ state, disabled, onMove, t, mode = 'online' }
                 <button
                   type="button"
                   className="button secondary naval-rotate"
-                  onClick={() =>
-                    setOrientation((value) => (value === 'horizontal' ? 'vertical' : 'horizontal'))
-                  }
+                  onClick={() => setOrientation((value) => (value === 'horizontal' ? 'vertical' : 'horizontal'))}
                   disabled={!canAct}
                 >
                   <span aria-hidden="true">↻</span>
                   {t('navalRotate')} · {t(`navalOrientation.${orientation}`)}
                 </button>
-                <div
-                  className={`naval-preview-status ${preview ? (previewValid ? 'valid' : 'invalid') : ''}`}
-                  role="status"
-                >
-                  {preview
+                <div className={`naval-preview-status ${placementPreview ? (placementValid ? 'valid' : 'invalid') : ''}`} role="status">
+                  {placementPreview
                     ? t(
-                        previewInBounds
-                          ? previewValid
+                        placementInBounds
+                          ? placementValid
                             ? 'navalPlacementValid'
                             : 'navalPlacementOverlap'
                           : 'navalPlacementOutOfBounds',
@@ -449,10 +673,10 @@ export function NavalBattleBoard({ state, disabled, onMove, t, mode = 'online' }
                 <button
                   type="button"
                   className="button primary"
-                  disabled={!canAct || !preview || !previewValid}
+                  disabled={!canAct || !placementPreview || !placementValid}
                   onClick={() => {
-                    if (!preview || !previewValid) return;
-                    onMove({ type: 'place', ...preview });
+                    if (!placementPreview || !placementValid) return;
+                    onMove({ type: 'place', ...placementPreview });
                     setPreviewCell(null);
                   }}
                 >
@@ -473,9 +697,7 @@ export function NavalBattleBoard({ state, disabled, onMove, t, mode = 'online' }
           <div className="naval-board-card primary">
             <div className="naval-board-title">
               <span>{t('navalOwnFleet')}</span>
-              <strong>
-                {ownFleet.length}/{NAVAL_SHIPS.length}
-              </strong>
+              <strong>{ownFleet.length}/{NAVAL_SHIPS.length}</strong>
             </div>
             <NavalBoard
               label={t('navalPlacementBoard')}
@@ -484,79 +706,192 @@ export function NavalBattleBoard({ state, disabled, onMove, t, mode = 'online' }
               shots={displayState.shots}
               type="placement"
               interactive={canAct && !waitingPlacement}
-              preview={previewCell ? preview : null}
-              previewValid={previewValid}
-              lastShot={lastFire}
+              preview={previewCell ? placementPreview : null}
+              previewValid={placementValid}
+              lastShot={lastShot}
               onSelect={(cell) => setPreviewCell(cell)}
               t={t}
             />
           </div>
         </div>
       ) : (
-        <div className="naval-battle-layout">
-          <div className="naval-board-card target-board-card">
-            <div className="naval-board-title">
-              <span>{t('navalTargetGrid')}</span>
-              <strong>{target ? coordinateLabel(target) : t('navalSelectTarget')}</strong>
-            </div>
-            <NavalBoard
-              label={t('navalTargetGrid')}
-              viewer={viewer}
-              ownFleet={ownFleet}
-              shots={displayState.shots}
-              type="target"
-              interactive={canAct}
-              selected={target}
-              lastShot={lastFire}
-              onSelect={setTarget}
-              t={t}
-            />
-            <div className="naval-fire-controls">
-              <span className="naval-target-readout" aria-live="polite">
-                {target
-                  ? `${t('navalTarget')}: ${coordinateLabel(target)}`
-                  : t('navalSelectTarget')}
-              </span>
-              <button
-                type="button"
-                className="button primary naval-fire-button"
-                disabled={!canAct || !target}
-                onClick={() => {
-                  if (!target) return;
-                  onMove({ type: 'fire', row: target.row, col: target.col });
-                  setTarget(null);
-                }}
-              >
-                <span className="naval-reticle-icon" aria-hidden="true" />
-                {t('navalFire')}
-              </button>
-            </div>
-          </div>
+        <>
+          <AbilityCards
+            abilities={ownLoadout}
+            used={usedAbilities}
+            active={abilityMode}
+            hunterActive={!!hunterOrigin}
+            disabled={!canAct}
+            onSelect={(abilityId) => {
+              setAbilityMode((current) => current === abilityId ? null : abilityId);
+              setTargets([]);
+            }}
+            t={t}
+          />
 
-          <aside className="naval-own-board-card">
-            <div className="naval-board-title">
-              <span>{t('navalOwnFleet')}</span>
-              <strong>
-                {displayState.remainingShips[viewer]}/{NAVAL_SHIPS.length}
-              </strong>
+          {latestSonar && (
+            <div className={`naval-intel-card ${latestSonar.jammed ? 'jammed' : ''}`} role="status">
+              <AbilityGlyph abilityId="sonarPulse" />
+              <span>
+                <strong>{t('navalSonarIntel')}</strong>
+                <small>
+                  {coordinateLabel(latestSonar.center)} · {latestSonar.jammed
+                    ? t('navalSonarJammed')
+                    : `${latestSonar.count ?? 0} ${t('navalSonarSignatures')}`}
+                </small>
+              </span>
             </div>
-            <NavalBoard
-              label={t('navalOwnFleet')}
-              viewer={viewer}
-              ownFleet={ownFleet}
-              shots={displayState.shots}
-              type="own"
-              interactive={false}
-              lastShot={lastFire}
-              t={t}
-            />
-            <div className="naval-legend" aria-label={t('navalLegend')}>
-              <span><i className="legend-miss" />{t('navalMiss')}</span>
-              <span><i className="legend-hit" />{t('navalHit')}</span>
-              <span><i className="legend-sunk" />{t('navalSunk')}</span>
+          )}
+
+          {abilityMode && (
+            <div className="naval-ability-command">
+              <div>
+                <AbilityGlyph abilityId={abilityMode} />
+                <span>
+                  <strong>{t(`navalAbility.${abilityMode}`)}</strong>
+                  <small>{t(`navalAbilityUse.${abilityMode}`)}</small>
+                </span>
+              </div>
+              {abilityMode === 'silentReposition' && (
+                <div className="naval-reposition-controls">
+                  <FleetTray
+                    fleet={ownFleet}
+                    selected={selectedShip}
+                    onSelect={(shipId) => {
+                      setSelectedShip(shipId);
+                      setTargets([]);
+                    }}
+                    t={t}
+                    compact
+                  />
+                  <button
+                    type="button"
+                    className="button secondary"
+                    onClick={() => setOrientation((value) => (value === 'horizontal' ? 'vertical' : 'horizontal'))}
+                  >
+                    ↻ {t(`navalOrientation.${orientation}`)}
+                  </button>
+                </div>
+              )}
+              <div className="naval-ability-command-actions">
+                {abilityMode === 'hunterProtocol' && (
+                  <button
+                    type="button"
+                    className="button ghost"
+                    onClick={() => {
+                      onMove({ type: 'declineHunter' });
+                      setAbilityMode(null);
+                      setTargets([]);
+                    }}
+                  >
+                    {t('navalDeclineHunter')}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="button primary"
+                  disabled={!abilityActionReady}
+                  onClick={activateAbility}
+                >
+                  {t('navalActivateAbility')}
+                </button>
+              </div>
             </div>
-          </aside>
-        </div>
+          )}
+
+          <div className="naval-battle-layout">
+            <div className="naval-board-card target-board-card">
+              <div className="naval-board-title">
+                <span>{t('navalTargetGrid')}</span>
+                <strong>
+                  {targets.length
+                    ? targets.map(coordinateLabel).join(' + ')
+                    : t('navalSelectTarget')}
+                </strong>
+              </div>
+              <NavalBoard
+                label={t('navalTargetGrid')}
+                viewer={viewer}
+                ownFleet={ownFleet}
+                shots={displayState.shots}
+                type="target"
+                interactive={
+                  canAct &&
+                  (!abilityMode ||
+                    abilityMode === 'sonarPulse' ||
+                    abilityMode === 'twinSalvo' ||
+                    abilityMode === 'hunterProtocol')
+                }
+                selected={targets}
+                lastShot={lastShot}
+                onSelect={selectTarget}
+                t={t}
+              />
+              <div className="naval-fire-controls">
+                <span className="naval-target-readout" aria-live="polite">
+                  {targets.length
+                    ? `${t('navalTarget')}: ${targets.map(coordinateLabel).join(' + ')}`
+                    : t('navalSelectTarget')}
+                </span>
+                <button
+                  type="button"
+                  className="button primary naval-fire-button"
+                  disabled={!canAct || !!abilityMode || targets.length !== 1 || !!hunterOrigin}
+                  onClick={() => {
+                    const target = targets[0];
+                    if (!target) return;
+                    onMove({ type: 'fire', row: target.row, col: target.col });
+                    setTargets([]);
+                  }}
+                >
+                  <span className="naval-reticle-icon" aria-hidden="true" />
+                  {t('navalFire')}
+                </button>
+              </div>
+            </div>
+
+            <aside className="naval-own-board-card">
+              <div className="naval-board-title">
+                <span>{t('navalOwnFleet')}</span>
+                <strong>{displayState.remainingShips[viewer]}/{NAVAL_SHIPS.length}</strong>
+              </div>
+              <NavalBoard
+                label={t('navalOwnFleet')}
+                viewer={viewer}
+                ownFleet={ownFleet}
+                shots={displayState.shots}
+                type="own"
+                interactive={
+                  canAct &&
+                  (abilityMode === 'emergencyRepair' ||
+                    abilityMode === 'signalJammer' ||
+                    abilityMode === 'silentReposition')
+                }
+                selected={targets}
+                preview={repositionPreview}
+                previewValid={repositionValid}
+                lastShot={lastShot}
+                onSelect={selectTarget}
+                t={t}
+              />
+              <div className="naval-legend" aria-label={t('navalLegend')}>
+                <span><i className="legend-miss" />{t('navalMiss')}</span>
+                <span><i className="legend-hit" />{t('navalHit')}</span>
+                <span><i className="legend-sunk" />{t('navalSunk')}</span>
+              </div>
+              {!!displayState.usedAbilities[opponentSeat].length && (
+                <div className="naval-known-abilities">
+                  <span>{t('navalKnownEnemyAbilities')}</span>
+                  <div>
+                    {displayState.usedAbilities[opponentSeat].map((abilityId) => (
+                      <span key={abilityId}><AbilityGlyph abilityId={abilityId} />{t(`navalAbility.${abilityId}`)}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </aside>
+          </div>
+        </>
       )}
     </section>
   );
