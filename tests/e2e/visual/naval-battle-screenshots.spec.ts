@@ -19,6 +19,14 @@ async function reveal(page: Page) {
   await page.locator('.naval-handoff .button').click();
 }
 
+async function chooseCurrentLoadout(page: Page, indices: number[]) {
+  await expect(page.locator('.naval-loadout-card')).toHaveCount(6);
+  for (const index of indices) await page.locator('.naval-loadout-card').nth(index).click();
+  const confirm = page.locator('.naval-loadout-footer .button.primary');
+  await expect(confirm).toBeEnabled();
+  await confirm.click();
+}
+
 async function reachBattle(page: Page) {
   await deployCurrentFleet(page);
   await reveal(page);
@@ -98,6 +106,10 @@ test('Naval library artwork and sunk-state evidence', async ({ browser, browserN
 
     await card.locator('.play-button').click();
     await page.locator('.button.primary.full').last().click();
+    await reveal(page);
+    await chooseCurrentLoadout(page, [0, 1, 3]);
+    await reveal(page);
+    await chooseCurrentLoadout(page, [3, 4, 5]);
     await reveal(page);
     await deployCurrentFleet(page);
     await reveal(page);

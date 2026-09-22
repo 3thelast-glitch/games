@@ -55,6 +55,21 @@ export async function openLocalGame(page: Page, gameId: GameId, locale: LocaleCa
   if (gameId === 'navalBattle') {
     const reveal = page.locator('.naval-handoff .button');
     if (await reveal.count()) await reveal.click();
+
+    if (await page.locator('.naval-loadout-screen').count()) {
+      for (const index of [0, 1, 3])
+        await page.locator('.naval-loadout-card').nth(index).click();
+      await page.locator('.naval-loadout-footer .button.primary').click();
+
+      await expect(page.locator('.naval-handoff')).toBeVisible();
+      await page.locator('.naval-handoff .button').click();
+      for (const index of [3, 4, 5])
+        await page.locator('.naval-loadout-card').nth(index).click();
+      await page.locator('.naval-loadout-footer .button.primary').click();
+
+      await expect(page.locator('.naval-handoff')).toBeVisible();
+      await page.locator('.naval-handoff .button').click();
+    }
   }
 
   await expect(page.locator(boardSelectors[gameId])).toBeVisible();
