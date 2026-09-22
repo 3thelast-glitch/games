@@ -121,6 +121,7 @@ interface BoardProps {
   selected?: NavalCoordinate[];
   preview?: NavalPlacement | null;
   previewValid?: boolean;
+  allowTargetedSelection?: boolean;
   lastShot?: { player: Player; row: number; col: number } | null;
   onSelect?: (cell: NavalCoordinate) => void;
   t: (key: string) => string;
@@ -136,6 +137,7 @@ function NavalBoard({
   selected = [],
   preview,
   previewValid,
+  allowTargetedSelection = false,
   lastShot,
   onSelect,
   t,
@@ -221,7 +223,7 @@ function NavalBoard({
               data-cell-index={index}
               className={classes}
               tabIndex={focusIndex === index ? 0 : -1}
-              disabled={!interactive || (type === 'target' && !!shot)}
+              disabled={!interactive || (type === 'target' && !!shot && !allowTargetedSelection)}
               aria-label={`${coordinateLabel({ row, col })}: ${status}`}
               aria-pressed={isSelected || undefined}
               onFocus={() => setFocusIndex(index)}
@@ -823,6 +825,7 @@ export function NavalBattleBoard({ state, disabled, onMove, t, mode = 'online' }
                     abilityMode === 'hunterProtocol')
                 }
                 selected={targets}
+                allowTargetedSelection={abilityMode === 'sonarPulse'}
                 lastShot={lastShot}
                 onSelect={selectTarget}
                 t={t}
