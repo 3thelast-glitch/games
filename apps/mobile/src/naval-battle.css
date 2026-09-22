@@ -911,3 +911,502 @@
 html[data-reduce-motion='true'] .naval-cell.selected::before {
   animation: none;
 }
+
+
+/* Tactical ability loadout and battle controls */
+.naval-loadout-screen {
+  min-width: 0;
+  display: grid;
+  gap: 1rem;
+  padding: clamp(0.8rem, 2.4vw, 1.25rem);
+  border: 1px solid rgba(98, 215, 230, 0.15);
+  border-radius: 1.15rem;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(98, 215, 230, 0.09), transparent 38%),
+    linear-gradient(155deg, rgba(10, 31, 47, 0.94), rgba(6, 15, 27, 0.98));
+}
+
+.naval-loadout-heading {
+  min-width: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.naval-loadout-heading h2 {
+  margin: 0;
+  color: #edf5f7;
+  font-size: clamp(1.35rem, 4vw, 2rem);
+}
+
+.naval-loadout-heading p {
+  max-width: 760px;
+  margin: 0;
+  color: #91a8b6;
+  line-height: 1.7;
+}
+
+.naval-loadout-heading > strong {
+  justify-self: start;
+  min-width: 58px;
+  padding: 0.32rem 0.55rem;
+  border: 1px solid rgba(98, 215, 230, 0.2);
+  border-radius: 999px;
+  color: #aeeef2;
+  background: rgba(98, 215, 230, 0.055);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.naval-loadout-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.72rem;
+  min-width: 0;
+}
+
+.naval-loadout-card {
+  min-width: 0;
+  min-height: 154px;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) 28px;
+  gap: 0.72rem;
+  align-items: start;
+  padding: 0.9rem;
+  border: 1px solid rgba(122, 170, 194, 0.15);
+  border-radius: 0.95rem;
+  background:
+    linear-gradient(155deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.012));
+  color: #a9bdc8;
+  text-align: start;
+}
+
+.naval-loadout-card:not(:disabled):hover,
+.naval-loadout-card:not(:disabled):focus-visible {
+  border-color: rgba(98, 215, 230, 0.42);
+  background: rgba(98, 215, 230, 0.055);
+}
+
+.naval-loadout-card.selected {
+  border-color: rgba(98, 215, 230, 0.65);
+  background:
+    radial-gradient(circle at 12% 15%, rgba(98, 215, 230, 0.12), transparent 46%),
+    rgba(98, 215, 230, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(98, 215, 230, 0.12);
+}
+
+.naval-loadout-card:disabled:not(.selected) {
+  opacity: 0.52;
+}
+
+.naval-loadout-card-copy {
+  min-width: 0;
+}
+
+.naval-loadout-card-copy > small {
+  display: block;
+  color: #6f8998;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+
+[dir='rtl'] .naval-loadout-card-copy > small {
+  letter-spacing: 0;
+}
+
+.naval-loadout-card-copy > strong {
+  display: block;
+  margin-top: 0.22rem;
+  color: #e7f2f4;
+  font-size: 0.9rem;
+}
+
+.naval-loadout-card-copy > p {
+  margin: 0.42rem 0 0;
+  color: #8fa6b3;
+  font-size: 0.72rem;
+  line-height: 1.6;
+}
+
+.naval-loadout-check {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  aspect-ratio: 1;
+  border: 1px solid rgba(126, 165, 181, 0.22);
+  border-radius: 50%;
+  color: #7591a0;
+  font-weight: 800;
+}
+
+.naval-loadout-card.selected .naval-loadout-check {
+  border-color: rgba(98, 215, 230, 0.54);
+  background: rgba(98, 215, 230, 0.12);
+  color: #9ef1f2;
+}
+
+.naval-loadout-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+  padding-top: 0.15rem;
+}
+
+.naval-loadout-footer > span {
+  min-width: 0;
+  color: #708998;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.naval-loadout-footer .button {
+  flex: 0 0 auto;
+  min-height: 44px;
+}
+
+.naval-ability-glyph {
+  width: 42px;
+  aspect-ratio: 1;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid rgba(98, 215, 230, 0.25);
+  border-radius: 0.78rem;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(98, 215, 230, 0.13), transparent 62%),
+    rgba(8, 27, 42, 0.84);
+  color: #9debf0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.ability-twinSalvo,
+.ability-hunterProtocol {
+  color: #f0b08e;
+  border-color: rgba(237, 121, 87, 0.28);
+  background:
+    radial-gradient(circle at 50% 35%, rgba(237, 121, 87, 0.13), transparent 62%),
+    rgba(35, 25, 28, 0.84);
+}
+
+.ability-emergencyRepair,
+.ability-signalJammer {
+  color: #86dfc9;
+  border-color: rgba(71, 184, 175, 0.3);
+}
+
+.ability-silentReposition {
+  color: #d0b8f1;
+  border-color: rgba(173, 140, 224, 0.32);
+}
+
+.naval-ability-tray {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.naval-ability-item {
+  min-width: 0;
+}
+
+.naval-ability-item > button {
+  width: 100%;
+  min-width: 0;
+  min-height: 66px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(122, 170, 194, 0.14);
+  border-radius: 0.85rem;
+  background:
+    linear-gradient(145deg, rgba(14, 35, 51, 0.84), rgba(8, 20, 33, 0.9));
+  color: #9fb3be;
+  text-align: start;
+}
+
+.naval-ability-item > button:not(:disabled):hover,
+.naval-ability-item > button:not(:disabled):focus-visible,
+.naval-ability-item > button.active {
+  border-color: rgba(98, 215, 230, 0.48);
+  background:
+    radial-gradient(circle at 12% 50%, rgba(98, 215, 230, 0.1), transparent 46%),
+    rgba(10, 31, 47, 0.94);
+}
+
+.naval-ability-item > button.used {
+  opacity: 0.52;
+  filter: saturate(0.5);
+}
+
+.naval-ability-item .naval-ability-glyph {
+  width: 38px;
+  border-radius: 0.7rem;
+}
+
+.naval-ability-copy {
+  min-width: 0;
+}
+
+.naval-ability-copy strong,
+.naval-ability-copy small {
+  display: block;
+  min-width: 0;
+}
+
+.naval-ability-copy strong {
+  color: #e5eff2;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.naval-ability-copy small {
+  margin-top: 0.15rem;
+  color: #708a99;
+  font-size: 0.63rem;
+  line-height: 1.35;
+}
+
+.naval-ability-state {
+  align-self: start;
+  padding: 0.16rem 0.34rem;
+  border: 1px solid rgba(122, 170, 194, 0.18);
+  border-radius: 999px;
+  color: #7fa0af;
+  font-size: 0.58rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.naval-ability-command {
+  min-width: 0;
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.72rem;
+  border: 1px solid rgba(98, 215, 230, 0.24);
+  border-radius: 0.9rem;
+  background:
+    radial-gradient(circle at 8% 50%, rgba(98, 215, 230, 0.08), transparent 35%),
+    rgba(9, 25, 39, 0.92);
+}
+
+.naval-ability-command > div:first-child {
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.naval-ability-command > div:first-child > span:last-child {
+  min-width: 0;
+}
+
+.naval-ability-command strong,
+.naval-ability-command small {
+  display: block;
+}
+
+.naval-ability-command strong {
+  color: #e7f2f4;
+  font-size: 0.82rem;
+}
+
+.naval-ability-command small {
+  margin-top: 0.12rem;
+  color: #8299a7;
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.naval-ability-command-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.naval-ability-command-actions .button {
+  min-height: 42px;
+}
+
+.naval-reposition-controls {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.naval-fleet-tray.compact {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding-bottom: 0.25rem;
+}
+
+.naval-fleet-tray.compact .naval-fleet-item {
+  flex: 0 0 168px;
+}
+
+.naval-fleet-tray.compact .naval-fleet-item button {
+  min-height: 48px;
+  grid-template-columns: 48px minmax(0, 1fr) 20px;
+}
+
+.naval-intel-card {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 0.72rem;
+  border: 1px solid rgba(98, 215, 230, 0.22);
+  border-radius: 0.78rem;
+  background: rgba(98, 215, 230, 0.045);
+}
+
+.naval-intel-card.jammed {
+  border-color: rgba(213, 174, 106, 0.34);
+  background: rgba(213, 174, 106, 0.045);
+}
+
+.naval-intel-card .naval-ability-glyph {
+  width: 36px;
+  flex: 0 0 auto;
+}
+
+.naval-intel-card span:last-child {
+  min-width: 0;
+}
+
+.naval-intel-card strong,
+.naval-intel-card small {
+  display: block;
+}
+
+.naval-intel-card strong {
+  color: #dfeef1;
+  font-size: 0.74rem;
+}
+
+.naval-intel-card small {
+  margin-top: 0.1rem;
+  color: #7893a2;
+  font-size: 0.66rem;
+}
+
+.naval-known-abilities {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(122, 170, 194, 0.12);
+}
+
+.naval-known-abilities > span {
+  color: #718a98;
+  font-size: 0.62rem;
+}
+
+.naval-known-abilities > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.naval-known-abilities > div > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.38rem;
+  border: 1px solid rgba(122, 170, 194, 0.13);
+  border-radius: 999px;
+  color: #8fa6b2;
+  font-size: 0.58rem;
+}
+
+.naval-known-abilities .naval-ability-glyph {
+  width: 18px;
+  border-radius: 50%;
+  font-size: 0.55rem;
+}
+
+@media (max-width: 820px) {
+  .naval-loadout-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .naval-ability-tray {
+    display: flex;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding-bottom: 0.25rem;
+    scrollbar-width: thin;
+  }
+
+  .naval-ability-item {
+    flex: 0 0 min(238px, 75vw);
+  }
+}
+
+@media (max-width: 520px) {
+  .naval-loadout-screen {
+    padding: 0.7rem;
+  }
+
+  .naval-loadout-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.55rem;
+  }
+
+  .naval-loadout-card {
+    min-height: 0;
+    grid-template-columns: 40px minmax(0, 1fr) 26px;
+    padding: 0.72rem;
+  }
+
+  .naval-loadout-card-copy > p {
+    font-size: 0.68rem;
+  }
+
+  .naval-loadout-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .naval-loadout-footer .button {
+    width: 100%;
+  }
+
+  .naval-ability-item {
+    flex-basis: min(215px, 82vw);
+  }
+
+  .naval-ability-command-actions {
+    flex-direction: column-reverse;
+  }
+
+  .naval-ability-command-actions .button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 932px) and (max-height: 430px) {
+  .naval-loadout-screen {
+    gap: 0.65rem;
+  }
+
+  .naval-loadout-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .naval-loadout-card {
+    min-height: 112px;
+    padding: 0.55rem;
+  }
+
+  .naval-loadout-card-copy > p {
+    font-size: 0.62rem;
+    line-height: 1.4;
+  }
+}
