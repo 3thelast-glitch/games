@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   chromium-full:
-    if: github.event_name != 'pull_request' || github.head_ref == 'feat/target-games-visual-overhaul'
+    if: github.event_name != 'pull_request' || github.head_ref == 'fix/arena-responsive-overhaul'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -35,7 +35,7 @@ jobs:
       - name: Run all 21 viewports in English and Arabic
         env:
           PW_MATRIX: full
-        run: npx playwright test --project=chromium tests/e2e/layout/responsive-matrix.spec.ts
+        run: npx playwright test --project=chromium tests/e2e/layout/responsive-matrix.spec.ts tests/e2e/layout/arena-responsive.spec.ts
       - name: Run Chromium touch and geometry regression suite
         run: npx playwright test --project=chromium tests/e2e/games/touch-and-geometry.spec.ts
       - name: Upload Chromium report
@@ -71,7 +71,7 @@ jobs:
       - name: Run representative RTL/LTR cross-browser matrix
         env:
           PW_MATRIX: cross-browser
-        run: npx playwright test --project=${{ matrix.browser }} tests/e2e/layout/responsive-matrix.spec.ts
+        run: npx playwright test --project=${{ matrix.browser }} tests/e2e/layout/responsive-matrix.spec.ts tests/e2e/layout/arena-responsive.spec.ts
       - name: Run browser-specific touch/geometry suite
         run: npx playwright test --project=${{ matrix.browser }} tests/e2e/games/touch-and-geometry.spec.ts
       - name: Upload ${{ matrix.browser }} report

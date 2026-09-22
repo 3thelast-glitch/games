@@ -75,3 +75,41 @@ export async function expectIntentionalScroller(locator: Locator, label: string)
   expect(['auto', 'scroll'], `${label}: must own its horizontal overflow`).toContain(info.overflowX);
   expect(info.scrollWidth, `${label}: invalid scroll metrics`).toBeGreaterThanOrEqual(info.clientWidth);
 }
+
+
+export async function expectHorizontallyContained(
+  locator: Locator,
+  page: Page,
+  label: string,
+  allowedDelta = 1,
+) {
+  await expect(locator, `${label}: not visible`).toBeVisible();
+  const [box, viewportWidth] = await Promise.all([
+    locator.boundingBox(),
+    page.evaluate(() => document.documentElement.clientWidth),
+  ]);
+  expect(box, `${label}: box missing`).not.toBeNull();
+  if (!box) return;
+  expect(box.x, `${label}: escapes viewport start; ${JSON.stringify(box)}`).toBeGreaterThanOrEqual(
+    -allowedDelta,
+  );
+  expect(
+    box.x + box.width,
+    `${label}: escapes viewport end; viewport=${viewportWidth}; ${JSON.stringify(box)}`,
+  ).toBeLessThanOrEqual(viewportWidth + allowedDelta);
+}
+
+export async function expectNotCoveredBy(
+  target: Locator,
+  cover: Locator,
+  label: string,
+) {
+  await target.scrollIntoViewIfNeeded();
+  const [targetBox, coverBox] = await Promise.all([target.boundingBox(), cover.boundingBox()]);
+  expect(targetBox, `${label}: target box missing`).not.toBeNull();
+  if (!targetBox || !coverBox) return;
+  expect(
+    targetBox.y + targetBox.height,
+    `${label}: target is covered by fixed navigation`,
+  ).toBeLessThanOrEqual(coverBox.y + 1);
+}
