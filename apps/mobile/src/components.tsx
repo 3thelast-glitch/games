@@ -398,6 +398,89 @@ function DominoesArt({ id }: { id: string }) {
   );
 }
 
+
+function NavalBattleArt({ id }: { id: string }) {
+  const ship = (
+    x: number,
+    y: number,
+    scale: number,
+    rotate: number,
+    variant: 'carrier' | 'battleship' | 'submarine' | 'destroyer',
+  ) => {
+    const paths = {
+      carrier: 'M5 18 L24 7 L103 6 L124 12 L145 18 L124 25 L103 30 L24 29 Z M43 9 L84 9 L99 15 L47 15 Z',
+      battleship: 'M6 18 L26 8 L105 9 L138 18 L105 27 L26 28 Z M56 10 L91 10 L105 18 L91 25 L56 25 Z',
+      submarine: 'M8 18 C27 7 113 7 140 18 C113 29 27 29 8 18 Z M65 10 L87 10 L98 18 L87 26 L65 26 Z',
+      destroyer: 'M8 18 L33 10 L106 11 L137 18 L106 25 L33 26 Z M70 11 L93 12 L103 18 L93 24 L70 25 Z',
+    } as const;
+    return (
+      <g transform={`translate(${x} ${y}) rotate(${rotate}) scale(${scale})`}>
+        <path d={paths[variant]} fill="#637b89" stroke="#9ebbc5" strokeWidth="1.6" />
+        <path d="M28 18 H118" stroke="#d4edf2" strokeOpacity=".24" strokeWidth="1.1" />
+        <path d="M43 24 H94" stroke="#1e3948" strokeOpacity=".5" strokeWidth="2" />
+      </g>
+    );
+  };
+  return (
+    <svg viewBox="0 0 640 400" role="presentation">
+      <defs>
+        <linearGradient id={`${id}navalSea`} x1="0" y1="0" x2="1" y2="1">
+          <stop stopColor="#0d3147" />
+          <stop offset=".52" stopColor="#0a2235" />
+          <stop offset="1" stopColor="#07131f" />
+        </linearGradient>
+        <radialGradient id={`${id}navalGlow`} cx="58%" cy="36%">
+          <stop stopColor="#53c8d9" stopOpacity=".22" />
+          <stop offset=".48" stopColor="#257a95" stopOpacity=".08" />
+          <stop offset="1" stopColor="#0a1a27" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id={`${id}navalHit`} x1="0" y1="0" x2="1" y2="1">
+          <stop stopColor="#ffd09b" />
+          <stop offset=".5" stopColor="#ef825d" />
+          <stop offset="1" stopColor="#b8473d" />
+        </linearGradient>
+        <filter id={`${id}navalShadow`} x="-30%" y="-40%" width="160%" height="190%">
+          <feDropShadow dx="0" dy="12" stdDeviation="10" floodColor="#02070c" floodOpacity=".72" />
+        </filter>
+        <filter id={`${id}navalGlowFx`} x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="4" />
+        </filter>
+      </defs>
+      <rect x="36" y="38" width="568" height="302" rx="28" fill={`url(#${id}navalSea)`} stroke="#27516a" strokeWidth="2" />
+      <rect x="48" y="50" width="544" height="278" rx="22" fill="none" stroke="#d9f5f8" strokeOpacity=".035" />
+      <ellipse cx="365" cy="176" rx="238" ry="150" fill={`url(#${id}navalGlow)`} />
+      <g stroke="#7ab8ca" strokeOpacity=".12" strokeWidth="1">
+        {Array.from({ length: 12 }, (_, i) => <line key={`v${i}`} x1={67 + i * 46} y1="67" x2={67 + i * 46} y2="310" />)}
+        {Array.from({ length: 7 }, (_, i) => <line key={`h${i}`} x1="67" y1={67 + i * 40.5} x2="573" y2={67 + i * 40.5} />)}
+      </g>
+      <g opacity=".42" fill="none" stroke="#6fd5de" strokeWidth="1.5">
+        <circle cx="455" cy="132" r="44" />
+        <circle cx="455" cy="132" r="76" opacity=".55" />
+        <path d="M455 132 L513 87" />
+        <path d="M455 132 A76 76 0 0 1 520 171" opacity=".55" />
+      </g>
+      <g filter={`url(#${id}navalShadow)`}>
+        {ship(116, 112, 1.28, -8, 'carrier')}
+        {ship(346, 218, .92, 5, 'battleship')}
+        {ship(206, 260, .72, -4, 'submarine')}
+        {ship(414, 104, .64, 11, 'destroyer')}
+      </g>
+      <g transform="translate(470 228)">
+        <circle r="24" fill="none" stroke="#72dce4" strokeOpacity=".46" strokeWidth="2" />
+        <circle r="12" fill="none" stroke="#72dce4" strokeOpacity=".72" strokeWidth="2" />
+        <path d="M-34 0H34M0-34V34" stroke="#72dce4" strokeOpacity=".55" strokeWidth="1.5" />
+      </g>
+      <g transform="translate(344 146)">
+        <circle r="18" fill="#ef7857" opacity=".12" filter={`url(#${id}navalGlowFx)`} />
+        <circle r="7" fill={`url(#${id}navalHit)`} />
+        <path d="M-14 -14L14 14M14 -14L-14 14" stroke="#f6a283" strokeWidth="2.2" strokeLinecap="round" />
+      </g>
+      <path d="M79 298 C164 275 241 318 322 297 S487 277 562 300" fill="none" stroke="#b9edf1" strokeOpacity=".06" strokeWidth="2" />
+      <path d="M79 89 C174 110 243 73 329 95 S489 118 559 93" fill="none" stroke="#b9edf1" strokeOpacity=".05" strokeWidth="2" />
+    </svg>
+  );
+}
+
 export function GameArt({ game, compact = false }: { game: string; compact?: boolean }) {
   const id = useId().replace(/:/g, ''),
     s = createAbalone();
@@ -408,6 +491,8 @@ export function GameArt({ game, compact = false }: { game: string; compact?: boo
         <DotsAndBoxesArt id={id} />
       ) : game === 'dominoes' ? (
         <DominoesArt id={id} />
+      ) : game === 'navalBattle' ? (
+        <NavalBattleArt id={id} />
       ) : ['checkers', 'gomoku', 'nineMensMorris', 'connectFour', 'reversi', 'digitalGame', 'chess'].includes(game) ? (
         <ClassicArt game={game} />
       ) : game === 'abalone' ? (
