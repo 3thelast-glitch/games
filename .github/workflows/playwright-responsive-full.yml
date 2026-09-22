@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   chromium-full:
-    if: github.event_name != 'pull_request' || github.head_ref == 'feat/target-games-visual-overhaul'
+    if: github.event_name != 'pull_request' || github.head_ref == 'feat/target-games-visual-overhaul' || github.head_ref == 'feat/naval-battle'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -32,10 +32,14 @@ jobs:
         run: grep -rl 'dl.google.com/linux/chrome' /etc/apt/sources.list.d 2>/dev/null | xargs -r sudo rm -f
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Run all 21 viewports in English and Arabic
+      - name: Run full responsive matrix in English and Arabic
         env:
           PW_MATRIX: full
         run: npx playwright test --project=chromium tests/e2e/layout/responsive-matrix.spec.ts
+      - name: Run Naval Battle placement and battle matrix
+        run: npx playwright test --project=chromium tests/e2e/games/naval-battle-matrix.spec.ts
+      - name: Capture Naval Battle visual evidence
+        run: npx playwright test --project=chromium tests/e2e/visual/naval-battle-screenshots.spec.ts
       - name: Run Chromium touch and geometry regression suite
         run: npx playwright test --project=chromium tests/e2e/games/touch-and-geometry.spec.ts
       - name: Upload Chromium report
