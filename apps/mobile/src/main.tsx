@@ -8,6 +8,7 @@ import './reversi.css';
 import './chess.css';
 import './dots-and-boxes.css';
 import './dominoes.css';
+import './naval-battle.css';
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
