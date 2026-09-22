@@ -1,4 +1,5 @@
 import type { Difficulty, Player } from '../../core/src/game.ts';
+import type { NavalAbilityId } from './abilities.ts';
 import {
   NAVAL_BOARD_SIZE,
   NAVAL_SHIPS,
@@ -11,6 +12,7 @@ import {
 import {
   isNavalPlacementValid,
   legalNavalMoves,
+  navalAbilityAvailable,
   navalCellKey,
   navalPlacementCells,
 } from './rules.ts';
@@ -23,14 +25,12 @@ const choose = <T>(values: readonly T[], random: () => number): T =>
   values[Math.min(values.length - 1, Math.floor(random() * values.length))];
 
 function ownShots(state: NavalBattleState, player: Player) {
-  return state.shots.filter((shot) => shot.shooter === player);
+  return state.shots.filter((shot) => shot.shooter === player && !shot.repaired);
 }
 
 function unresolvedHits(state: NavalBattleState, player: Player): NavalCoordinate[] {
   const shots = ownShots(state, player);
-  const sunk = new Set(
-    shots.flatMap((shot) => shot.sunkCells ?? []).map((cell) => navalCellKey(cell)),
-  );
+  const sunk = new Set(shots.flatMap((shot) => shot.sunkCells ?? []).map(navalCellKey));
   return shots
     .filter((shot) => shot.outcome === 'hit' && !sunk.has(navalCellKey(shot)))
     .map(({ row, col }) => ({ row, col }));
@@ -134,9 +134,14 @@ function hardTarget(state: NavalBattleState, player: Player, random: () => numbe
 }
 
 function placementScore(state: NavalBattleState, player: Player, move: NavalBattleMove): number {
-  if (move.type !== 'place') return 0;
+  if (move.type !== 'place' && move.type !== 'silentReposition') return 0;
   const fleet = state.fleets[player].filter((placement) => placement.shipId !== move.shipId);
-  const candidate: NavalPlacement = { ...move };
+  const candidate: NavalPlacement = {
+    shipId: move.shipId,
+    row: move.row,
+    col: move.col,
+    orientation: move.orientation,
+  };
   if (!isNavalPlacementValid(fleet, candidate)) return -Infinity;
   const cells = navalPlacementCells(candidate);
   let minimum = 20;
@@ -152,6 +157,40 @@ function placementScore(state: NavalBattleState, player: Player, move: NavalBatt
   return minimum * 4 + edgeDistance;
 }
 
+function defaultLoadout(difficulty: Difficulty, random: () => number): NavalAbilityId[] {
+  if (difficulty === 'hard') return ['sonarPulse', 'twinSalvo', 'emergencyRepair'];
+  if (difficulty === 'medium') return ['sonarPulse', 'hunterProtocol', 'signalJammer'];
+  const pools: NavalAbilityId[][] = [
+    ['sonarPulse', 'twinSalvo', 'silentReposition'],
+    ['hunterProtocol', 'emergencyRepair', 'signalJammer'],
+    ['twinSalvo', 'hunterProtocol', 'sonarPulse'],
+  ];
+  return [...choose(pools, random)];
+}
+
+function legalOfType<T extends NavalBattleMove['type']>(
+  moves: NavalBattleMove[],
+  type: T,
+): Extract<NavalBattleMove, { type: T }>[] {
+  return moves.filter((move): move is Extract<NavalBattleMove, { type: T }> => move.type === type);
+}
+
+function secondTarget(
+  state: NavalBattleState,
+  player: Player,
+  first: NavalCoordinate,
+  difficulty: Difficulty,
+  random: () => number,
+) {
+  const clone: NavalBattleState = {
+    ...state,
+    shots: [...state.shots, { shooter: player, ...first, outcome: 'miss' as const }],
+  };
+  return difficulty === 'hard'
+    ? hardTarget(clone, player, random)
+    : mediumTarget(clone, player, random);
+}
+
 export function chooseNavalMove(
   state: NavalBattleState,
   difficulty: Difficulty,
@@ -160,6 +199,17 @@ export function chooseNavalMove(
   const random = options.random ?? Math.random;
   const moves = legalNavalMoves(state);
   if (!moves.length) throw new Error('no-legal-moves');
+  const player = state.turn;
+
+  if (state.phase === 'loadout') {
+    const preferred = defaultLoadout(difficulty, random);
+    const exact = legalOfType(moves, 'selectAbilities').find(
+      (move) =>
+        move.abilities.length === preferred.length &&
+        preferred.every((ability) => move.abilities.includes(ability)),
+    );
+    return exact ?? choose(legalOfType(moves, 'selectAbilities'), random);
+  }
 
   if (state.phase === 'placement') {
     const ready = moves.find((move) => move.type === 'ready');
@@ -168,7 +218,7 @@ export function chooseNavalMove(
     let best = -Infinity;
     let candidates: NavalBattleMove[] = [];
     for (const move of moves) {
-      const value = placementScore(state, state.turn, move);
+      const value = placementScore(state, player, move);
       if (value > best) {
         best = value;
         candidates = [move];
@@ -177,10 +227,98 @@ export function chooseNavalMove(
     return choose(candidates, random);
   }
 
-  if (difficulty === 'easy') return choose(moves, random);
+  if (state.hunterWindow) {
+    const hunter = legalOfType(moves, 'hunterFire');
+    if (!hunter.length) return { type: 'declineHunter' };
+    if (difficulty === 'easy' && random() < 0.45) return { type: 'declineHunter' };
+    return choose(hunter, random);
+  }
+
+  const repairs = legalOfType(moves, 'emergencyRepair');
+  if (
+    repairs.length &&
+    navalAbilityAvailable(state, player, 'emergencyRepair') &&
+    (difficulty === 'hard' || (difficulty === 'medium' && random() < 0.7))
+  )
+    return choose(repairs, random);
+
+  const unresolved = unresolvedHits(state, player);
+  const twin = legalOfType(moves, 'twinSalvo');
+  if (
+    twin.length &&
+    navalAbilityAvailable(state, player, 'twinSalvo') &&
+    (unresolved.length > 0 || state.remainingShips[opponentSeat(player)] <= 2) &&
+    difficulty !== 'easy'
+  ) {
+    const first =
+      difficulty === 'hard' ? hardTarget(state, player, random) : mediumTarget(state, player, random);
+    const second = secondTarget(state, player, first, difficulty, random);
+    const exact = twin.find(
+      (move) =>
+        (navalCellKey(move.targets[0]) === navalCellKey(first) &&
+          navalCellKey(move.targets[1]) === navalCellKey(second)) ||
+        (navalCellKey(move.targets[1]) === navalCellKey(first) &&
+          navalCellKey(move.targets[0]) === navalCellKey(second)),
+    );
+    if (exact) return exact;
+  }
+
+  const sonar = legalOfType(moves, 'sonarPulse');
+  if (
+    sonar.length &&
+    navalAbilityAvailable(state, player, 'sonarPulse') &&
+    unresolved.length === 0 &&
+    ownShots(state, player).length < 8 &&
+    (difficulty === 'hard' || random() < 0.4)
+  ) {
+    const centers = sonar.filter((move) => move.row >= 2 && move.row <= 7 && move.col >= 2 && move.col <= 7);
+    return choose(centers.length ? centers : sonar, random);
+  }
+
+  const jammer = legalOfType(moves, 'signalJammer');
+  if (
+    jammer.length &&
+    navalAbilityAvailable(state, player, 'signalJammer') &&
+    state.usedAbilities[opponentSeat(player)].includes('sonarPulse') === false &&
+    ownShots(state, opponentSeat(player)).length < 10 &&
+    difficulty !== 'easy' &&
+    random() < 0.28
+  ) {
+    const carrier = state.fleets[player].find((ship) => ship.shipId === 'carrier');
+    const center = carrier ? navalPlacementCells(carrier)[Math.floor(navalPlacementCells(carrier).length / 2)] : null;
+    const exact = center ? jammer.find((move) => move.row === center.row && move.col === center.col) : undefined;
+    return exact ?? choose(jammer, random);
+  }
+
+  const reposition = legalOfType(moves, 'silentReposition');
+  if (
+    reposition.length &&
+    navalAbilityAvailable(state, player, 'silentReposition') &&
+    ownShots(state, opponentSeat(player)).length >= 12 &&
+    difficulty === 'hard' &&
+    random() < 0.22
+  ) {
+    let best = -Infinity;
+    let candidates: typeof reposition = [];
+    for (const move of reposition) {
+      const score = placementScore(state, player, move);
+      if (score > best) {
+        best = score;
+        candidates = [move];
+      } else if (score === best) candidates.push(move);
+    }
+    return choose(candidates, random);
+  }
+
+  if (difficulty === 'easy') {
+    const normal = legalOfType(moves, 'fire');
+    return choose(normal.length ? normal : moves, random);
+  }
   const target =
     difficulty === 'hard'
-      ? hardTarget(state, state.turn, random)
-      : mediumTarget(state, state.turn, random);
+      ? hardTarget(state, player, random)
+      : mediumTarget(state, player, random);
   return { type: 'fire', row: target.row, col: target.col };
 }
+
+const opponentSeat = (player: Player): Player => (player === 0 ? 1 : 0);
