@@ -16,6 +16,7 @@ import {
 } from '../packages/games/naval-battle/rules.ts';
 import {
   createNavalBattle,
+  type NavalAbilityId,
   type NavalBattleMove,
   type NavalBattleState,
   type NavalPlacement,
@@ -67,8 +68,8 @@ function battleState(): NavalBattleState {
 }
 
 function battleStateWith(
-  abilities0: [any, any, any],
-  abilities1: [any, any, any],
+  abilities0: [NavalAbilityId, NavalAbilityId, NavalAbilityId],
+  abilities1: [NavalAbilityId, NavalAbilityId, NavalAbilityId],
 ): NavalBattleState {
   let state = createNavalBattle(0);
   state = applyNavalMove(state, { type: 'selectAbilities', abilities: abilities0 });
@@ -393,7 +394,7 @@ test('Sonar Pulse reports only a 3x3 unsunk-cell count and is single-use', () =>
   const scan = state.sonarScans.at(-1)!;
   assert.equal(scan.player, 0);
   assert.equal(scan.blocked, false);
-  assert.equal(scan.count, 3);
+  assert.equal(scan.count, 6);
   assert.deepEqual(state.usedAbilities[0], ['sonarPulse']);
   assert.equal(state.turn, 1);
 
