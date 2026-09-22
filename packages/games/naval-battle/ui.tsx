@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import type { Player } from '../../core/src/game.ts';
 import {
+  NAVAL_ABILITIES,
   NAVAL_BOARD_SIZE,
   NAVAL_SHIPS,
   navalShip,
+  type NavalAbilityId,
   type NavalBattleMove,
   type NavalBattleState,
   type NavalCoordinate,
@@ -57,7 +59,7 @@ function ShipGlyph({ shipId }: { shipId: NavalShipId }) {
 }
 
 function shotForCell(shots: readonly NavalShot[], row: number, col: number) {
-  return shots.find((shot) => shot.row === row && shot.col === col);
+  return [...shots].reverse().find((shot) => shot.row === row && shot.col === col && !shot.repaired);
 }
 
 function cellsSet(cells: readonly NavalCoordinate[] | undefined) {
