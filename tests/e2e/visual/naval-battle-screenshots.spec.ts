@@ -59,8 +59,35 @@ for (const shot of shots) {
     });
     const page = await context.newPage();
     try {
-      await openLocalGame(page, 'navalBattle', locale);
+      await page.goto('/');
+      await expect(page.locator('html')).toHaveAttribute('dir', locale.dir);
+      const card = page.locator('.game-card.navalBattle');
+      await card.scrollIntoViewIfNeeded();
+      await card.locator('.play-button').click();
+      await page.locator('.button.primary.full').last().click();
+      await expect(page.locator('.naval-handoff')).toBeVisible();
+      await page.locator('.naval-handoff .button').click();
       await disableMotion(page);
+      await page.screenshot({
+        path: testInfo.outputPath(`${shot.id}-loadout.png`),
+        fullPage: false,
+      });
+
+      for (let seat = 0; seat < 2; seat++) {
+        for (const ability of ['sonarPulse', 'twinSalvo', 'emergencyRepair']) {
+          const abilityCard = page.locator(`.naval-loadout-panel .naval-ability-card[data-ability="${ability}"]`);
+          await abilityCard.click();
+          await expect(abilityCard).toHaveAttribute('aria-pressed', 'true');
+        }
+        await page.locator('.naval-confirm-loadout').click();
+        if (seat === 0) {
+          await expect(page.locator('.naval-handoff')).toBeVisible();
+          await page.locator('.naval-handoff .button').click();
+        }
+      }
+      await expect(page.locator('.naval-handoff')).toBeVisible();
+      await page.locator('.naval-handoff .button').click();
+
       await page.screenshot({
         path: testInfo.outputPath(`${shot.id}-placement.png`),
         fullPage: false,
