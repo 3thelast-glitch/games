@@ -94,7 +94,7 @@ test('loadout requires exactly three selections and emits only those abilities',
   fireEvent.click(confirm);
   assert.deepEqual(emitted, {
     type: 'selectAbilities',
-    abilities: ['sonarPulse', 'twinSalvo', 'emergencyRepair'],
+    abilities: ['sonarPulse', 'twinSalvo', 'hunterProtocol'],
   });
 });
 
