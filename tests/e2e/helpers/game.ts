@@ -55,6 +55,23 @@ export async function openLocalGame(page: Page, gameId: GameId, locale: LocaleCa
   if (gameId === 'navalBattle') {
     const reveal = page.locator('.naval-handoff .button');
     if (await reveal.count()) await reveal.click();
+
+    // Naval Battle now starts with a private 3-of-6 tactical loadout for each player.
+    for (let seat = 0; seat < 2; seat++) {
+      const cards = page.locator('.naval-loadout-panel .naval-ability-card:not(:disabled)');
+      await expect(cards).toHaveCount(6);
+      for (let index = 0; index < 3; index++) await cards.nth(index).click();
+      const confirm = page.locator('.naval-confirm-loadout');
+      await expect(confirm).toBeEnabled();
+      await confirm.click();
+      if (seat === 0) {
+        await expect(page.locator('.naval-handoff')).toBeVisible();
+        await page.locator('.naval-handoff .button').click();
+      }
+    }
+
+    await expect(page.locator('.naval-handoff')).toBeVisible();
+    await page.locator('.naval-handoff .button').click();
   }
 
   await expect(page.locator(boardSelectors[gameId])).toBeVisible();
