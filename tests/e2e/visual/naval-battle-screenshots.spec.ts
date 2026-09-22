@@ -111,6 +111,8 @@ test('Naval library artwork and sunk-state evidence', async ({ browser, browserN
     await reveal(page);
     await fireAt(page, 81);
     await reveal(page);
+    await fireAt(page, 98);
+    await reveal(page);
 
     await expect(page.locator('.naval-board-frame.target .naval-cell.sunk')).toHaveCount(2);
     await page.screenshot({
