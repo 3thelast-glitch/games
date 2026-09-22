@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import type { BaseState, Seat } from '../../../packages/core/src/game.ts';
 import type { MatchResult, PublicPlayer } from '../../../packages/core/src/protocol.ts';
 import {
@@ -51,6 +51,10 @@ export function MatchPage(p: MatchPageProps) {
     [emotesOpen, setEmotesOpen] = useState(false),
     [resultOpen, setResultOpen] = useState(true),
     [rulesOpen, setRulesOpen] = useState(false);
+  useLayoutEffect(() => {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [p.id]);
   useEffect(() => {
     setResultOpen(true);
     setConfirmation(null);
