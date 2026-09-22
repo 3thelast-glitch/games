@@ -321,6 +321,7 @@ function AbilityCards({
             <button
               type="button"
               className={`naval-ability-card ${isSelected ? 'selected' : ''} ${isUsed ? 'used' : ''}`}
+              data-ability={ability}
               aria-pressed={interactive ? isSelected : undefined}
               disabled={!interactive || isUsed}
               onClick={() => onToggle?.(ability)}
