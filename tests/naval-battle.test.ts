@@ -66,6 +66,18 @@ function battleState(): NavalBattleState {
   return state;
 }
 
+function battleStateWith(
+  abilities0: [any, any, any],
+  abilities1: [any, any, any],
+): NavalBattleState {
+  let state = createNavalBattle(0);
+  state = applyNavalMove(state, { type: 'selectAbilities', abilities: abilities0 });
+  state = applyNavalMove(state, { type: 'selectAbilities', abilities: abilities1 });
+  state = deploy(state, fleet0);
+  state = deploy(state, fleet1);
+  return state;
+}
+
 function onlineMove(match: MatchSnapshot, move: NavalBattleMove): MatchCommand {
   return {
     type: 'move',
@@ -355,4 +367,166 @@ test('Naval Battle state survives JSON round-trip with the same next legal trans
   const restored = JSON.parse(serialized) as NavalBattleState;
   assert.deepEqual(restored, JSON.parse(serialized));
   assert.deepEqual(legalNavalMoves(restored), legalNavalMoves(state));
+});
+
+
+test('ability loadouts stay hidden from the opponent until an ability is used', () => {
+  const state = battleStateWith(
+    ['sonarPulse', 'twinSalvo', 'emergencyRepair'],
+    ['signalJammer', 'silentReposition', 'hunterProtocol'],
+  );
+  const before = projectNavalState(state, 1);
+  assert.deepEqual(before.loadouts[0], []);
+
+  const used = applyNavalMove(state, { type: 'useAbility', ability: 'sonarPulse', row: 4, col: 4 });
+  const after = projectNavalState(used, 1);
+  assert.deepEqual(after.loadouts[0], ['sonarPulse']);
+  assert.deepEqual(after.sonarScans, []);
+});
+
+test('Sonar Pulse reports only a 3x3 unsunk-cell count and is single-use', () => {
+  let state = battleStateWith(
+    ['sonarPulse', 'twinSalvo', 'emergencyRepair'],
+    ['signalJammer', 'silentReposition', 'hunterProtocol'],
+  );
+  state = applyNavalMove(state, { type: 'useAbility', ability: 'sonarPulse', row: 1, col: 8 });
+  const scan = state.sonarScans.at(-1)!;
+  assert.equal(scan.player, 0);
+  assert.equal(scan.blocked, false);
+  assert.equal(scan.count, 3);
+  assert.deepEqual(state.usedAbilities[0], ['sonarPulse']);
+  assert.equal(state.turn, 1);
+
+  state.turn = 0;
+  assert.deepEqual(
+    validateNavalMove(state, { type: 'useAbility', ability: 'sonarPulse', row: 4, col: 4 }),
+    { ok: false, code: 'naval-ability-used' },
+  );
+});
+
+test('Signal Jammer blocks overlapping sonar for two opponent turns without revealing its center', () => {
+  let state = battleStateWith(
+    ['sonarPulse', 'twinSalvo', 'emergencyRepair'],
+    ['signalJammer', 'silentReposition', 'hunterProtocol'],
+  );
+  state.turn = 1;
+  state = applyNavalMove(state, { type: 'useAbility', ability: 'signalJammer', row: 4, col: 4 });
+  assert.equal(state.jammers[0].remainingOpponentTurns, 2);
+  const projected = projectNavalState(state, 0);
+  assert.deepEqual(projected.jammers, []);
+  assert.deepEqual(projected.loadouts[1], ['signalJammer']);
+
+  state = applyNavalMove(state, { type: 'useAbility', ability: 'sonarPulse', row: 4, col: 4 });
+  assert.equal(state.sonarScans.at(-1)?.blocked, true);
+  assert.equal(state.jammers[0].remainingOpponentTurns, 1);
+
+  state = applyNavalMove(state, { type: 'fire', row: 9, col: 9 });
+  state.turn = 0;
+  state = applyNavalMove(state, { type: 'fire', row: 9, col: 8 });
+  assert.equal(state.jammers.length, 0);
+});
+
+test('Twin Salvo resolves two distinct shots in one turn and then passes the turn', () => {
+  const state = battleStateWith(
+    ['sonarPulse', 'twinSalvo', 'emergencyRepair'],
+    ['signalJammer', 'silentReposition', 'hunterProtocol'],
+  );
+  const next = applyNavalMove(state, {
+    type: 'useAbility',
+    ability: 'twinSalvo',
+    targets: [
+      { row: 0, col: 9 },
+      { row: 9, col: 9 },
+    ],
+  });
+  assert.equal(next.shots.length, 2);
+  assert.deepEqual(next.shots.map((shot) => shot.outcome), ['hit', 'miss']);
+  assert.equal(next.turn, 1);
+  assert.deepEqual(next.usedAbilities[0], ['twinSalvo']);
+});
+
+test('Hunter Protocol opens only after a normal hit and can fire once at an adjacent cell', () => {
+  let state = battleStateWith(
+    ['hunterProtocol', 'sonarPulse', 'emergencyRepair'],
+    ['signalJammer', 'silentReposition', 'twinSalvo'],
+  );
+  state = applyNavalMove(state, { type: 'fire', row: 0, col: 9 });
+  assert.equal(state.turn, 0);
+  assert.deepEqual(state.hunterWindow, { player: 0, origin: { row: 0, col: 9 } });
+  assert.deepEqual(
+    validateNavalMove(state, { type: 'useAbility', ability: 'hunterProtocol', row: 2, col: 9 }),
+    { ok: false, code: 'naval-hunter-adjacent' },
+  );
+
+  state = applyNavalMove(state, { type: 'useAbility', ability: 'hunterProtocol', row: 1, col: 9 });
+  assert.equal(state.turn, 1);
+  assert.equal(state.hunterWindow, null);
+  assert.deepEqual(state.usedAbilities[0], ['hunterProtocol']);
+  assert.equal(state.shots.length, 2);
+});
+
+test('Hunter Protocol may be skipped without consuming the ability', () => {
+  let state = battleStateWith(
+    ['hunterProtocol', 'sonarPulse', 'emergencyRepair'],
+    ['signalJammer', 'silentReposition', 'twinSalvo'],
+  );
+  state = applyNavalMove(state, { type: 'fire', row: 0, col: 9 });
+  state = applyNavalMove(state, { type: 'skipHunter' });
+  assert.equal(state.turn, 1);
+  assert.deepEqual(state.usedAbilities[0], []);
+});
+
+test('Emergency Repair clears one hit on an unsunk ship and makes that coordinate targetable again', () => {
+  let state = battleStateWith(
+    ['emergencyRepair', 'sonarPulse', 'twinSalvo'],
+    ['signalJammer', 'silentReposition', 'hunterProtocol'],
+  );
+  state.turn = 1;
+  state = applyNavalMove(state, { type: 'fire', row: 0, col: 0 });
+  state.turn = 0;
+  assert.equal(state.shots.at(-1)?.outcome, 'hit');
+
+  state = applyNavalMove(state, { type: 'useAbility', ability: 'emergencyRepair', row: 0, col: 0 });
+  assert.equal(state.shots.at(-1)?.repaired, true);
+  state.turn = 1;
+  assert.deepEqual(validateNavalMove(state, { type: 'fire', row: 0, col: 0 }), { ok: true });
+});
+
+test('Silent Reposition moves an unhit ship only into legal never-targeted cells', () => {
+  let state = battleStateWith(
+    ['silentReposition', 'sonarPulse', 'twinSalvo'],
+    ['signalJammer', 'emergencyRepair', 'hunterProtocol'],
+  );
+  const moved = applyNavalMove(state, {
+    type: 'useAbility',
+    ability: 'silentReposition',
+    shipId: 'destroyer',
+    row: 8,
+    col: 6,
+    orientation: 'horizontal',
+  });
+  assert.deepEqual(
+    moved.fleets[0].find((ship) => ship.shipId === 'destroyer'),
+    { shipId: 'destroyer', row: 8, col: 6, orientation: 'horizontal' },
+  );
+  assert.equal(moved.turn, 1);
+
+  state = battleStateWith(
+    ['silentReposition', 'sonarPulse', 'twinSalvo'],
+    ['signalJammer', 'emergencyRepair', 'hunterProtocol'],
+  );
+  state.turn = 1;
+  state = applyNavalMove(state, { type: 'fire', row: 8, col: 0 });
+  state.turn = 0;
+  assert.deepEqual(
+    validateNavalMove(state, {
+      type: 'useAbility',
+      ability: 'silentReposition',
+      shipId: 'destroyer',
+      row: 8,
+      col: 6,
+      orientation: 'horizontal',
+    }),
+    { ok: false, code: 'naval-reposition-invalid' },
+  );
 });
