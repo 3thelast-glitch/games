@@ -38,6 +38,18 @@ const fleet1: NavalPlacement[] = [
   { shipId: 'destroyer', row: 0, col: 1, orientation: 'vertical' },
 ];
 
+function chooseLoadouts(state = createNavalBattle(0)): NavalBattleState {
+  let next = applyNavalMove(state, {
+    type: 'selectAbilities',
+    abilities: ['sonarPulse', 'twinSalvo', 'hunterProtocol'],
+  });
+  next = applyNavalMove(next, {
+    type: 'selectAbilities',
+    abilities: ['sonarPulse', 'emergencyRepair', 'signalJammer'],
+  });
+  return next;
+}
+
 function deploy(state: NavalBattleState, fleet: NavalPlacement[]): NavalBattleState {
   let next = state;
   for (const placement of fleet)
@@ -46,7 +58,7 @@ function deploy(state: NavalBattleState, fleet: NavalPlacement[]): NavalBattleSt
 }
 
 function battleState(): NavalBattleState {
-  let state = createNavalBattle(0);
+  let state = chooseLoadouts(createNavalBattle(0));
   state = deploy(state, fleet0);
   state = deploy(state, fleet1);
   assert.equal(state.phase, 'battle');
@@ -71,6 +83,33 @@ test('Naval Battle is registered as a two-player game', () => {
   assert.equal(game.maxPlayers, 2);
 });
 
+test('each player must lock exactly three distinct abilities before placement', () => {
+  const state = createNavalBattle();
+  assert.equal(state.phase, 'loadout');
+  assert.deepEqual(
+    validateNavalMove(state, {
+      type: 'selectAbilities',
+      abilities: ['sonarPulse', 'sonarPulse', 'twinSalvo'],
+    } as NavalBattleMove),
+    { ok: false, code: 'naval-invalid-loadout' },
+  );
+
+  let next = applyNavalMove(state, {
+    type: 'selectAbilities',
+    abilities: ['sonarPulse', 'twinSalvo', 'hunterProtocol'],
+  });
+  assert.equal(next.phase, 'loadout');
+  assert.equal(next.turn, 1);
+  assert.deepEqual(next.loadouts[0], ['sonarPulse', 'twinSalvo', 'hunterProtocol']);
+
+  next = applyNavalMove(next, {
+    type: 'selectAbilities',
+    abilities: ['emergencyRepair', 'signalJammer', 'silentReposition'],
+  });
+  assert.equal(next.phase, 'placement');
+  assert.equal(next.turn, 0);
+});
+
 test('fleet geometry uses the exact 5/4/3/3/2 lengths and allows adjacency', () => {
   assert.deepEqual(fleet0.map((placement) => navalPlacementCells(placement).length), [5, 4, 3, 3, 2]);
   assert.equal(isCompleteNavalFleet(fleet0), true);
@@ -83,7 +122,7 @@ test('fleet geometry uses the exact 5/4/3/3/2 lengths and allows adjacency', () 
 });
 
 test('placement validation rejects overlap and out-of-bounds without mutating state', () => {
-  let state = createNavalBattle();
+  let state = chooseLoadouts();
   state = applyNavalMove(state, {
     type: 'place',
     shipId: 'carrier',
@@ -117,7 +156,7 @@ test('placement validation rejects overlap and out-of-bounds without mutating st
 });
 
 test('ready requires all five ships and locks the confirmed fleet', () => {
-  let state = createNavalBattle();
+  let state = chooseLoadouts();
   assert.deepEqual(validateNavalMove(state, { type: 'ready' }), {
     ok: false,
     code: 'naval-fleet-incomplete',
@@ -140,7 +179,7 @@ test('ready requires all five ships and locks the confirmed fleet', () => {
 });
 
 test('battle begins only after both fleets confirm and starter keeps the first shot', () => {
-  let state = createNavalBattle(0);
+  let state = chooseLoadouts(createNavalBattle(0));
   state = deploy(state, fleet0);
   assert.equal(state.phase, 'placement');
   assert.equal(state.turn, 1);
