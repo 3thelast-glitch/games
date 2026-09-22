@@ -40,6 +40,13 @@ jobs:
         run: npx playwright test --project=chromium tests/e2e/games/naval-battle-matrix.spec.ts
       - name: Capture Naval Battle visual evidence
         run: npx playwright test --project=chromium tests/e2e/visual/naval-battle-screenshots.spec.ts
+      - name: Preserve Naval Battle visual evidence
+        run: |
+          mkdir -p artifacts/naval-battle
+          find test-results/playwright -type f -name '*.png' -exec cp {} artifacts/naval-battle/ \;
+          count="$(find artifacts/naval-battle -type f -name '*.png' | wc -l)"
+          echo "Preserved $count Naval Battle screenshots"
+          test "$count" -ge 18
       - name: Run Chromium touch and geometry regression suite
         run: npx playwright test --project=chromium tests/e2e/games/touch-and-geometry.spec.ts
       - name: Upload Chromium report
@@ -50,6 +57,7 @@ jobs:
           path: |
             playwright-report
             test-results/playwright
+            artifacts/naval-battle
           if-no-files-found: ignore
           retention-days: 14
 
