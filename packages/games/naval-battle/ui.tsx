@@ -183,7 +183,7 @@ function NavalBoard({
             isSelected ? 'selected' : '',
             isLast ? 'last-shot' : '',
             isPreview ? (previewValid ? 'preview-valid' : 'preview-invalid') : '',
-            ownShip ? 'occupied' : '',
+            type !== 'target' && ownShip ? 'occupied' : '',
           ]
             .filter(Boolean)
             .join(' ');
