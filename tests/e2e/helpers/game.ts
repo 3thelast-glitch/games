@@ -57,7 +57,7 @@ export async function openLocalGame(page: Page, gameId: GameId, locale: LocaleCa
     if (await reveal.count()) await reveal.click();
 
     if (await page.locator('.naval-loadout-screen').count()) {
-      for (const index of [0, 1, 2])
+      for (const index of [0, 1, 3])
         await page.locator('.naval-loadout-card').nth(index).click();
       await page.locator('.naval-loadout-footer .button.primary').click();
 
