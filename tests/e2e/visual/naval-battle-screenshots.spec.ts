@@ -61,12 +61,15 @@ for (const shot of shots) {
     try {
       await openLocalGame(page, 'navalBattle', locale);
       await disableMotion(page);
+      await page.evaluate(() => window.scrollTo(0, 0));
       await page.screenshot({
         path: testInfo.outputPath(`${shot.id}-placement.png`),
         fullPage: false,
       });
 
       await reachBattle(page);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await expect(page.locator('.naval-legend i').nth(1)).toHaveCSS('position', 'relative');
       await page.screenshot({
         path: testInfo.outputPath(`${shot.id}-battle.png`),
         fullPage: false,
