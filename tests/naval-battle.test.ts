@@ -41,7 +41,7 @@ const fleet1: NavalPlacement[] = [
 function chooseLoadouts(state = createNavalBattle(0)): NavalBattleState {
   let next = applyNavalMove(state, {
     type: 'selectAbilities',
-    abilities: ['sonarPulse', 'twinSalvo', 'hunterProtocol'],
+    abilities: ['sonarPulse', 'twinSalvo', 'emergencyRepair'],
   });
   next = applyNavalMove(next, {
     type: 'selectAbilities',
@@ -96,7 +96,7 @@ test('each player must lock exactly three distinct abilities before placement', 
 
   let next = applyNavalMove(state, {
     type: 'selectAbilities',
-    abilities: ['sonarPulse', 'twinSalvo', 'hunterProtocol'],
+    abilities: ['sonarPulse', 'twinSalvo', 'emergencyRepair'],
   });
   assert.equal(next.phase, 'loadout');
   assert.equal(next.turn, 1);
