@@ -392,7 +392,8 @@ function ArenaApp({
       worker.terminate();
     };
     const aiState =
-      localState.gameId === 'dominoes' && offline.controller.game.view
+      (localState.gameId === 'dominoes' || localState.gameId === 'navalBattle') &&
+      offline.controller.game.view
         ? offline.controller.game.view(localState, 1)
         : localState;
     worker.postMessage({

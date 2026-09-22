@@ -10,6 +10,7 @@ import { classicDigitalGameEngine } from './digital-game/classic-engine.ts';
 import { chessEngine } from './chess/rules.ts';
 import { dotsAndBoxesEngine } from './dots-and-boxes/rules.ts';
 import { dominoesEngine } from './dominoes/rules.ts';
+import { navalBattleEngine } from './naval-battle/rules.ts';
 export const games = new GameRegistry()
   .register(asPlugin(abaloneEngine))
   .register(asPlugin(quoridorEngine))
@@ -21,4 +22,5 @@ export const games = new GameRegistry()
   .register(asPlugin(classicDigitalGameEngine))
   .register(asPlugin(chessEngine))
   .register(asPlugin(dotsAndBoxesEngine))
-  .register(asPlugin(dominoesEngine));
+  .register(asPlugin(dominoesEngine))
+  .register(asPlugin(navalBattleEngine));

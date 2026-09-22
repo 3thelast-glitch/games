@@ -59,7 +59,7 @@ for (const locale of locales) {
             await expectIntentionalScroller(page.locator('.domino-hand'), 'domino hand');
           }
 
-          if (['checkers', 'quoridor', 'nineMensMorris', 'reversi', 'chess', 'dotsAndBoxes'].includes(gameId))
+          if (['checkers', 'quoridor', 'nineMensMorris', 'reversi', 'chess', 'dotsAndBoxes', 'navalBattle'].includes(gameId))
             await expectSquare(board, `${gameId} board`, 3);
 
           if (gameId === 'connectFour') {
@@ -107,6 +107,18 @@ for (const locale of locales) {
             const opening = page.locator('.domino-hand-tile:not(:disabled)').first();
             await expectCenterHitTarget(opening, 'Domino playable tile');
             await expectMinimumControlSize(opening, 'Domino playable tile', 48);
+          }
+
+          if (gameId === 'navalBattle') {
+            const cells = page.locator('.naval-board-frame.placement .naval-cell');
+            await expect(cells).toHaveCount(100);
+            await expect(board).toHaveAttribute('role', 'grid');
+            await expect(board.locator('xpath=..')).toHaveAttribute('dir', 'ltr');
+            for (const index of [0, 9, 44, 90, 99]) {
+              await expectSquare(cells.nth(index), `naval cell ${index}`, 2);
+              await expectCenterHitTarget(cells.nth(index), `naval cell ${index}`);
+            }
+            await expect(page.locator('.naval-fleet-item')).toHaveCount(5);
           }
 
           if (gameId === 'abalone') {

@@ -5,6 +5,8 @@ import { chooseChessExpertMove } from '../../../packages/games/chess/expert.ts';
 import type { ChessState } from '../../../packages/games/chess/state.ts';
 import { chooseDominoMove } from '../../../packages/games/dominoes/ai.ts';
 import type { DominoesState } from '../../../packages/games/dominoes/state.ts';
+import { chooseNavalMove } from '../../../packages/games/naval-battle/ai.ts';
+import type { NavalBattleState } from '../../../packages/games/naval-battle/state.ts';
 
 self.onmessage = (
   event: MessageEvent<{
@@ -22,7 +24,9 @@ self.onmessage = (
           ? chooseChessExpertMove(state as ChessState)
           : state.gameId === 'dominoes'
             ? chooseDominoMove(state as DominoesState, difficulty)
-            : chooseMove(games.get(state.gameId), state, difficulty),
+            : state.gameId === 'navalBattle'
+              ? chooseNavalMove(state as NavalBattleState, difficulty)
+              : chooseMove(games.get(state.gameId), state, difficulty),
     });
   } catch {
     self.postMessage({ requestId: event.data.requestId, error: 'ai-error' });
