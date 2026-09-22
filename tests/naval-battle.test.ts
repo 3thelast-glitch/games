@@ -82,14 +82,6 @@ test('fleet geometry uses the exact 5/4/3/3/2 lengths and allows adjacency', () 
   assert.equal(isNavalPlacementValid(touching, touching[1]), true);
 });
 
-test('placement rejects overlap and out-of-bounds geometry', () => {
-  let state = createNavalBattle();
-  state = applyNavalMove(state, {
-    type: 'carrier',
-  } as unknown as NavalBattleMove);
-  assert.fail('unreachable');
-}).todo('parser rejection is covered separately below');
-
 test('placement validation rejects overlap and out-of-bounds without mutating state', () => {
   let state = createNavalBattle();
   state = applyNavalMove(state, {
