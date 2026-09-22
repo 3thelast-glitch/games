@@ -113,7 +113,7 @@ test('each player must lock exactly three distinct abilities before placement', 
   });
   assert.equal(next.phase, 'loadout');
   assert.equal(next.turn, 1);
-  assert.deepEqual(next.loadouts[0], ['sonarPulse', 'twinSalvo', 'hunterProtocol']);
+  assert.deepEqual(next.loadouts[0], ['sonarPulse', 'twinSalvo', 'emergencyRepair']);
 
   next = applyNavalMove(next, {
     type: 'selectAbilities',
@@ -374,7 +374,7 @@ test('Naval Battle state survives JSON round-trip with the same next legal trans
 test('ability loadouts stay hidden from the opponent until an ability is used', () => {
   const state = battleStateWith(
     ['sonarPulse', 'twinSalvo', 'emergencyRepair'],
-    ['signalJammer', 'silentReposition', 'hunterProtocol'],
+    ['signalJammer', 'silentReposition', 'sonarPulse'],
   );
   const before = projectNavalState(state, 1);
   assert.deepEqual(before.loadouts[0], []);
@@ -388,7 +388,7 @@ test('ability loadouts stay hidden from the opponent until an ability is used', 
 test('Sonar Pulse reports only a 3x3 unsunk-cell count and is single-use', () => {
   let state = battleStateWith(
     ['sonarPulse', 'twinSalvo', 'emergencyRepair'],
-    ['signalJammer', 'silentReposition', 'hunterProtocol'],
+    ['signalJammer', 'silentReposition', 'sonarPulse'],
   );
   state = applyNavalMove(state, { type: 'useAbility', ability: 'sonarPulse', row: 1, col: 8 });
   const scan = state.sonarScans.at(-1)!;
@@ -408,7 +408,7 @@ test('Sonar Pulse reports only a 3x3 unsunk-cell count and is single-use', () =>
 test('Signal Jammer blocks overlapping sonar for two opponent turns without revealing its center', () => {
   let state = battleStateWith(
     ['sonarPulse', 'twinSalvo', 'emergencyRepair'],
-    ['signalJammer', 'silentReposition', 'hunterProtocol'],
+    ['signalJammer', 'silentReposition', 'sonarPulse'],
   );
   state.turn = 1;
   state = applyNavalMove(state, { type: 'useAbility', ability: 'signalJammer', row: 4, col: 4 });
@@ -430,7 +430,7 @@ test('Signal Jammer blocks overlapping sonar for two opponent turns without reve
 test('Twin Salvo resolves two distinct shots in one turn and then passes the turn', () => {
   const state = battleStateWith(
     ['sonarPulse', 'twinSalvo', 'emergencyRepair'],
-    ['signalJammer', 'silentReposition', 'hunterProtocol'],
+    ['signalJammer', 'silentReposition', 'sonarPulse'],
   );
   const next = applyNavalMove(state, {
     type: 'useAbility',
@@ -480,7 +480,7 @@ test('Hunter Protocol may be skipped without consuming the ability', () => {
 test('Emergency Repair clears one hit on an unsunk ship and makes that coordinate targetable again', () => {
   let state = battleStateWith(
     ['emergencyRepair', 'sonarPulse', 'twinSalvo'],
-    ['signalJammer', 'silentReposition', 'hunterProtocol'],
+    ['signalJammer', 'silentReposition', 'sonarPulse'],
   );
   state.turn = 1;
   state = applyNavalMove(state, { type: 'fire', row: 0, col: 0 });
