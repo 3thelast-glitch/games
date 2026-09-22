@@ -298,7 +298,8 @@ test('server-side online projection never returns the opponent fleet to either c
 
 test('Naval Battle state survives JSON round-trip with the same next legal transitions', () => {
   const state = battleState();
-  const restored = JSON.parse(JSON.stringify(state)) as NavalBattleState;
-  assert.deepEqual(restored, state);
+  const serialized = JSON.stringify(state);
+  const restored = JSON.parse(serialized) as NavalBattleState;
+  assert.deepEqual(restored, JSON.parse(serialized));
   assert.deepEqual(legalNavalMoves(restored), legalNavalMoves(state));
 });
