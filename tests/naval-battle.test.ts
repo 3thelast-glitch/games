@@ -309,6 +309,20 @@ test('server-side online projection never returns the opponent fleet to either c
   const service = new MatchService(store, games, { clockMs: 600000 });
   try {
     let match = service.create('navalBattle', [alice.id, bob.id]);
+    match = service.command(
+      alice.id,
+      onlineMove(match, {
+        type: 'selectAbilities',
+        abilities: ['sonarPulse', 'twinSalvo', 'emergencyRepair'],
+      }),
+    );
+    match = service.command(
+      bob.id,
+      onlineMove(match, {
+        type: 'selectAbilities',
+        abilities: ['sonarPulse', 'signalJammer', 'silentReposition'],
+      }),
+    );
     for (const placement of fleet0)
       match = service.command(alice.id, onlineMove(match, { type: 'place', ...placement }));
     match = service.command(alice.id, onlineMove(match, { type: 'ready' }));
