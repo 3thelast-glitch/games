@@ -21,6 +21,8 @@ import { DotsAndBoxesBoard } from '../../../packages/games/dots-and-boxes/ui.tsx
 import type { DotsAndBoxesState } from '../../../packages/games/dots-and-boxes/state.ts';
 import { DominoesBoard } from '../../../packages/games/dominoes/ui.tsx';
 import type { DominoesState } from '../../../packages/games/dominoes/state.ts';
+import { NavalBattleBoard } from '../../../packages/games/naval-battle/ui.tsx';
+import type { NavalBattleState } from '../../../packages/games/naval-battle/state.ts';
 interface Props {
   state: BaseState;
   disabled: boolean;
@@ -48,6 +50,15 @@ export const gameViews: Record<string, (props: Props) => React.ReactNode> = {
       mode={props.mode}
     />
   ),
+  navalBattle: (props) => (
+    <NavalBattleBoard
+      state={props.state as NavalBattleState}
+      disabled={props.disabled}
+      onMove={props.onMove}
+      t={props.t}
+      mode={props.mode}
+    />
+  ),
 };
 export const gameInfo = [
   ...[
@@ -58,6 +69,7 @@ export const gameInfo = [
     { id: 'reversi', duration: '5–20', icon: '◐' },
     { id: 'dotsAndBoxes', duration: '5–15', icon: '□' },
     { id: 'dominoes', duration: '5–15', icon: '▤' },
+    { id: 'navalBattle', duration: '15–30', icon: '⌖' },
   ].map((game) => ({ ...game, tag: `${game.id}Tag`, description: `${game.id}Desc` })),
   {
     id: 'digitalGame',
@@ -112,6 +124,10 @@ const resources: Record<
   dominoes: (state, player) => ({
     value: String((state as DominoesState).handCounts[player as 0 | 1]),
     label: 'dominoTiles',
+  }),
+  navalBattle: (state, player) => ({
+    value: String((state as NavalBattleState).remainingShips[player as 0 | 1]),
+    label: 'navalShipsRemaining',
   }),
 };
 export function gameResource(state: BaseState, player: Seat): { value: string; label: string } {
