@@ -60,7 +60,7 @@ export async function openLocalGame(page: Page, gameId: GameId, locale: LocaleCa
     for (let seat = 0; seat < 2; seat++) {
       const cards = page.locator('.naval-loadout-panel .naval-ability-card:not(:disabled)');
       await expect(cards).toHaveCount(6);
-      for (let index = 0; index < 3; index++) await cards.nth(index).click();
+      for (const index of [0, 1, 3]) await cards.nth(index).click();
       const confirm = page.locator('.naval-confirm-loadout');
       await expect(confirm).toBeEnabled();
       await confirm.click();
