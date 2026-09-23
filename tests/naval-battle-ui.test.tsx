@@ -6,6 +6,7 @@ import { NavalBattleBoard } from '../packages/games/naval-battle/ui.tsx';
 import { applyNavalMove, projectNavalState } from '../packages/games/naval-battle/rules.ts';
 import {
   createNavalBattle,
+  type NavalBattleMove,
   type NavalBattleState,
   type NavalPlacement,
 } from '../packages/games/naval-battle/state.ts';
@@ -45,6 +46,18 @@ const fleet1: NavalPlacement[] = [
   { shipId: 'destroyer', row: 0, col: 1, orientation: 'vertical' },
 ];
 
+function chooseLoadouts(state = createNavalBattle()) {
+  let next = applyNavalMove(state, {
+    type: 'selectAbilities',
+    abilities: ['sonarPulse', 'twinSalvo', 'emergencyRepair'],
+  });
+  next = applyNavalMove(next, {
+    type: 'selectAbilities',
+    abilities: ['emergencyRepair', 'signalJammer', 'silentReposition'],
+  });
+  return next;
+}
+
 function deploy(state: NavalBattleState, fleet: NavalPlacement[]) {
   let next = state;
   for (const placement of fleet) next = applyNavalMove(next, { type: 'place', ...placement });
@@ -52,14 +65,42 @@ function deploy(state: NavalBattleState, fleet: NavalPlacement[]) {
 }
 
 function battleState() {
-  let state = createNavalBattle();
+  let state = chooseLoadouts(createNavalBattle());
   state = deploy(state, fleet0);
   state = deploy(state, fleet1);
   return state;
 }
 
-test('online placement exposes 100 stable coordinate controls and emits a valid placement', () => {
+test('loadout requires exactly three selections and emits only those abilities', () => {
   const state = projectNavalState(createNavalBattle(), 0);
+  let emitted: unknown;
+  const view = render(
+    <NavalBattleBoard
+      state={state}
+      disabled={false}
+      onMove={(move) => (emitted = move)}
+      t={t}
+      mode="online"
+    />,
+  );
+
+  const cards = view.container.querySelectorAll<HTMLButtonElement>('.naval-ability-card');
+  assert.equal(cards.length, 6);
+  fireEvent.click(cards[0]);
+  fireEvent.click(cards[1]);
+  assert.equal(view.getByRole('button', { name: 'navalConfirmLoadout' }).hasAttribute('disabled'), true);
+  fireEvent.click(cards[2]);
+  const confirm = view.getByRole('button', { name: 'navalConfirmLoadout' });
+  assert.equal(confirm.hasAttribute('disabled'), false);
+  fireEvent.click(confirm);
+  assert.deepEqual(emitted, {
+    type: 'selectAbilities',
+    abilities: ['sonarPulse', 'twinSalvo', 'hunterProtocol'],
+  });
+});
+
+test('online placement exposes 100 stable coordinate controls and emits a valid placement', () => {
+  const state = projectNavalState(chooseLoadouts(createNavalBattle()), 0);
   let emitted: unknown;
   const view = render(
     <NavalBattleBoard
@@ -86,7 +127,7 @@ test('online placement exposes 100 stable coordinate controls and emits a valid 
 });
 
 test('placement rotation changes preview geometry without dispatching a move', () => {
-  const state = projectNavalState(createNavalBattle(), 0);
+  const state = projectNavalState(chooseLoadouts(createNavalBattle()), 0);
   const emitted: unknown[] = [];
   const view = render(
     <NavalBattleBoard
@@ -161,12 +202,54 @@ test('local Naval Battle starts behind a privacy handoff and reveals only the ac
   assert.equal(view.container.querySelectorAll('.naval-grid').length, 0);
   assert.ok(view.getByText('navalPrivacyHandoff'));
   fireEvent.click(view.getByRole('button', { name: 'navalRevealBoard' }));
-  assert.equal(view.container.querySelectorAll('.naval-grid').length, 1);
+  assert.ok(view.getByText('navalChooseAbilities'));
+  assert.equal(view.getAllByRole('button').filter((button) => button.className.includes('naval-ability-card')).length, 6);
+});
+
+test('local handoff clears private loadout selections before the next player reveals', () => {
+  let state = createNavalBattle();
+  let emitted: NavalBattleMove | undefined;
+
+  const renderBoard = () => (
+    <NavalBattleBoard
+      state={state}
+      disabled={false}
+      onMove={(move) => {
+        emitted = move;
+      }}
+      t={t}
+      mode="local"
+    />
+  );
+
+  const view = render(renderBoard());
+  fireEvent.click(view.getByRole('button', { name: 'navalRevealBoard' }));
+
+  const firstPlayerCards = view.container.querySelectorAll<HTMLButtonElement>('.naval-ability-card');
+  fireEvent.click(firstPlayerCards[0]);
+  fireEvent.click(firstPlayerCards[1]);
+  fireEvent.click(firstPlayerCards[2]);
+  assert.equal(firstPlayerCards[0].getAttribute('aria-pressed'), 'true');
+
+  fireEvent.click(view.getByRole('button', { name: 'navalConfirmLoadout' }));
+  assert.ok(emitted);
+  state = applyNavalMove(state, emitted);
+  emitted = undefined;
+  view.rerender(renderBoard());
+
+  assert.ok(view.getByText('navalPrivacyHandoff'));
+  fireEvent.click(view.getByRole('button', { name: 'navalRevealBoard' }));
+
+  const secondPlayerCards = view.container.querySelectorAll<HTMLButtonElement>('.naval-ability-card');
+  assert.equal(secondPlayerCards.length, 6);
+  for (const card of secondPlayerCards) {
+    assert.equal(card.getAttribute('aria-pressed'), 'false');
+  }
 });
 
 test('grid keyboard navigation uses one roving tab stop and preserves logical coordinates in RTL', () => {
   document.documentElement.dir = 'rtl';
-  const state = projectNavalState(createNavalBattle(), 0);
+  const state = projectNavalState(chooseLoadouts(createNavalBattle()), 0);
   const view = render(
     <NavalBattleBoard state={state} disabled={false} onMove={() => {}} t={t} mode="online" />,
   );

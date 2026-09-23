@@ -2,6 +2,24 @@ import { test, expect, type Page } from '@playwright/test';
 import { locales, type LocaleCase } from '../fixtures/matrix.ts';
 import { disableMotion, openLocalGame } from '../helpers/game.ts';
 
+async function selectCurrentLoadout(page: Page) {
+  for (const ability of ['sonarPulse', 'twinSalvo', 'emergencyRepair']) {
+    const card = page.locator(`.naval-loadout-panel .naval-ability-card[data-ability="${ability}"]`);
+    await card.click();
+    await expect(card).toHaveAttribute('aria-pressed', 'true');
+  }
+  const confirm = page.locator('.naval-confirm-loadout');
+  await expect(confirm).toBeEnabled();
+  await confirm.click();
+}
+
+async function selectBothLoadouts(page: Page) {
+  await selectCurrentLoadout(page);
+  await reveal(page);
+  await selectCurrentLoadout(page);
+  await reveal(page);
+}
+
 async function deployCurrentFleet(page: Page) {
   const anchors = [0, 20, 40, 60, 80];
   for (let index = 0; index < anchors.length; index++) {
@@ -59,8 +77,22 @@ for (const shot of shots) {
     });
     const page = await context.newPage();
     try {
-      await openLocalGame(page, 'navalBattle', locale);
+      await page.goto('/');
+      await expect(page.locator('html')).toHaveAttribute('dir', locale.dir);
+      const card = page.locator('.game-card.navalBattle');
+      await card.scrollIntoViewIfNeeded();
+      await card.locator('.play-button').click();
+      await page.locator('.button.primary.full').last().click();
+      await expect(page.locator('.naval-handoff')).toBeVisible();
+      await page.locator('.naval-handoff .button').click();
       await disableMotion(page);
+      await page.screenshot({
+        path: testInfo.outputPath(`${shot.id}-loadout.png`),
+        fullPage: false,
+      });
+
+      await selectBothLoadouts(page);
+
       await page.screenshot({
         path: testInfo.outputPath(`${shot.id}-placement.png`),
         fullPage: false,
@@ -99,6 +131,7 @@ test('Naval library artwork and sunk-state evidence', async ({ browser, browserN
     await card.locator('.play-button').click();
     await page.locator('.button.primary.full').last().click();
     await reveal(page);
+    await selectBothLoadouts(page);
     await deployCurrentFleet(page);
     await reveal(page);
     await deployCurrentFleet(page);

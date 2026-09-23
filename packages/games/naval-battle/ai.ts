@@ -2,6 +2,7 @@ import type { Difficulty, Player } from '../../core/src/game.ts';
 import {
   NAVAL_BOARD_SIZE,
   NAVAL_SHIPS,
+  type NavalAbilityId,
   type NavalBattleMove,
   type NavalBattleState,
   type NavalCoordinate,
@@ -23,7 +24,7 @@ const choose = <T>(values: readonly T[], random: () => number): T =>
   values[Math.min(values.length - 1, Math.floor(random() * values.length))];
 
 function ownShots(state: NavalBattleState, player: Player) {
-  return state.shots.filter((shot) => shot.shooter === player);
+  return state.shots.filter((shot) => shot.shooter === player && !shot.repaired);
 }
 
 function unresolvedHits(state: NavalBattleState, player: Player): NavalCoordinate[] {
@@ -161,6 +162,15 @@ export function chooseNavalMove(
   const moves = legalNavalMoves(state);
   if (!moves.length) throw new Error('no-legal-moves');
 
+  if (state.phase === 'loadout') {
+    if (difficulty === 'easy') return choose(moves, random);
+    const preferred: [NavalAbilityId, NavalAbilityId, NavalAbilityId] =
+      difficulty === 'hard'
+        ? ['sonarPulse', 'emergencyRepair', 'twinSalvo']
+        : ['sonarPulse', 'hunterProtocol', 'twinSalvo'];
+    return { type: 'selectAbilities', abilities: preferred };
+  }
+
   if (state.phase === 'placement') {
     const ready = moves.find((move) => move.type === 'ready');
     if (ready) return ready;
@@ -177,7 +187,34 @@ export function chooseNavalMove(
     return choose(candidates, random);
   }
 
+  if (state.hunterWindow) {
+    const hunterMoves = moves.filter(
+      (move) => move.type === 'useAbility' && move.ability === 'hunterProtocol',
+    );
+    if (hunterMoves.length && difficulty !== 'easy') return choose(hunterMoves, random);
+    return choose(moves, random);
+  }
+
   if (difficulty === 'easy') return choose(moves, random);
+
+  const repair = moves.find(
+    (move) => move.type === 'useAbility' && move.ability === 'emergencyRepair',
+  );
+  if (repair) return repair;
+
+  const ownFireCount = state.shots.filter((shot) => shot.shooter === state.turn).length;
+  const sonarMoves = moves.filter(
+    (move) => move.type === 'useAbility' && move.ability === 'sonarPulse',
+  );
+  if (sonarMoves.length && ownFireCount <= (difficulty === 'hard' ? 4 : 2))
+    return choose(sonarMoves, random);
+
+  const twinMoves = moves.filter(
+    (move) => move.type === 'useAbility' && move.ability === 'twinSalvo',
+  );
+  if (twinMoves.length && unresolvedHits(state, state.turn).length)
+    return choose(twinMoves, random);
+
   const target =
     difficulty === 'hard'
       ? hardTarget(state, state.turn, random)

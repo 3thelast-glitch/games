@@ -911,3 +911,378 @@
 html[data-reduce-motion='true'] .naval-cell.selected::before {
   animation: none;
 }
+
+
+/* Tactical loadout and one-use ability system */
+.naval-loadout-panel,
+.naval-tactical-strip {
+  min-width: 0;
+  border: 1px solid rgba(122, 170, 194, 0.14);
+  border-radius: 1.05rem;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(98, 215, 230, 0.08), transparent 34%),
+    linear-gradient(145deg, rgba(12, 30, 45, 0.9), rgba(8, 18, 31, 0.92));
+  padding: clamp(0.75rem, 2vw, 1rem);
+}
+
+.naval-loadout-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.naval-loadout-counter {
+  min-width: 88px;
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(98, 215, 230, 0.2);
+  border-radius: 0.85rem;
+  background: rgba(98, 215, 230, 0.055);
+  color: #8ba3b2;
+}
+
+.naval-loadout-counter strong {
+  color: #daf7fa;
+  font-size: 1.35rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.naval-ability-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.naval-ability-card-wrap {
+  min-width: 0;
+}
+
+.naval-ability-card {
+  width: 100%;
+  min-height: 108px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(122, 170, 194, 0.14);
+  border-radius: 0.9rem;
+  background:
+    linear-gradient(160deg, rgba(19, 47, 64, 0.72), rgba(9, 22, 36, 0.82));
+  color: #9fb5c1;
+  text-align: start;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.naval-ability-card:not(:disabled):hover {
+  border-color: rgba(98, 215, 230, 0.42);
+  background:
+    linear-gradient(160deg, rgba(24, 59, 76, 0.82), rgba(10, 27, 42, 0.9));
+}
+
+.naval-ability-card:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.naval-ability-card.selected {
+  border-color: rgba(98, 215, 230, 0.6);
+  background:
+    radial-gradient(circle at 12% 18%, rgba(98, 215, 230, 0.11), transparent 32%),
+    linear-gradient(160deg, rgba(20, 57, 74, 0.9), rgba(9, 28, 43, 0.92));
+  box-shadow: inset 3px 0 0 var(--naval-cyan);
+}
+
+[dir='rtl'] .naval-ability-card.selected {
+  box-shadow: inset -3px 0 0 var(--naval-cyan);
+}
+
+.naval-ability-card.used {
+  opacity: 0.54;
+  border-style: dashed;
+  filter: saturate(0.55);
+}
+
+.naval-ability-symbol {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  aspect-ratio: 1;
+  border: 1px solid rgba(98, 215, 230, 0.3);
+  border-radius: 50%;
+  background: rgba(98, 215, 230, 0.07);
+  color: #93e5ec;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.naval-ability-copy {
+  min-width: 0;
+}
+
+.naval-ability-copy strong,
+.naval-ability-copy small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.naval-ability-copy strong {
+  color: #e2f0f4;
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.naval-ability-copy small {
+  margin-top: 0.3rem;
+  color: #78909e;
+  font-size: 0.66rem;
+  line-height: 1.45;
+}
+
+.naval-ability-state {
+  min-width: 18px;
+  color: #7de2d8;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-align: end;
+}
+
+.naval-confirm-loadout {
+  justify-self: end;
+  min-width: 190px;
+  min-height: 46px;
+}
+
+.naval-selected-loadout.compact {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.naval-selected-loadout.compact .naval-ability-grid,
+.naval-tactical-strip .naval-ability-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.naval-selected-loadout.compact .naval-ability-card {
+  min-height: 74px;
+  padding: 0.55rem;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+}
+
+.naval-selected-loadout.compact .naval-ability-symbol {
+  width: 28px;
+  font-size: 0.82rem;
+}
+
+.naval-selected-loadout.compact .naval-ability-copy small {
+  display: none;
+}
+
+.naval-section-label {
+  color: #8ca3b1;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+[dir='rtl'] .naval-section-label {
+  letter-spacing: 0;
+}
+
+.naval-tactical-strip {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.naval-tactical-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.naval-tactical-heading > div:first-child {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.naval-tactical-heading small {
+  color: #6f8795;
+  font-size: 0.63rem;
+}
+
+.naval-enemy-reveals {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  color: #6f8795;
+  font-size: 0.62rem;
+}
+
+.naval-enemy-reveals b {
+  display: inline-flex;
+  gap: 0.28rem;
+  align-items: center;
+  padding: 0.28rem 0.45rem;
+  border: 1px solid rgba(237, 121, 87, 0.2);
+  border-radius: 99px;
+  color: #d9aaa0;
+  background: rgba(237, 121, 87, 0.045);
+  font-weight: 600;
+}
+
+.naval-sonar-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+  min-height: 42px;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid rgba(98, 215, 230, 0.24);
+  border-radius: 0.7rem;
+  background: rgba(98, 215, 230, 0.055);
+  color: #9eb8c5;
+  font-size: 0.7rem;
+}
+
+.naval-sonar-result strong {
+  color: #9fe8ed;
+}
+
+.naval-sonar-result.blocked {
+  border-color: rgba(213, 174, 106, 0.32);
+  background:
+    repeating-linear-gradient(135deg, rgba(213, 174, 106, 0.05) 0 5px, transparent 5px 10px);
+}
+
+.naval-sonar-result.blocked strong {
+  color: #e0bf84;
+}
+
+.naval-hunter-actions,
+.naval-reposition-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.naval-reposition-controls {
+  margin-bottom: 0.55rem;
+}
+
+.naval-reposition-controls select {
+  min-height: 40px;
+  flex: 1 1 150px;
+  min-width: 0;
+  border: 1px solid rgba(122, 170, 194, 0.22);
+  border-radius: 0.65rem;
+  background: #0c1b2a;
+  color: #dcebf0;
+  padding-inline: 0.65rem;
+}
+
+.naval-own-ability-button {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 0.65rem;
+}
+
+.phase-loadout .naval-phase-header {
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .naval-ability-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .naval-selected-loadout.compact .naval-ability-grid,
+  .naval-tactical-strip .naval-ability-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .naval-loadout-panel,
+  .naval-tactical-strip {
+    padding: 0.7rem;
+  }
+
+  .naval-ability-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .naval-ability-card {
+    min-height: 84px;
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    padding: 0.62rem;
+  }
+
+  .naval-ability-symbol {
+    width: 32px;
+  }
+
+  .naval-selected-loadout.compact .naval-ability-grid,
+  .naval-tactical-strip .naval-ability-grid {
+    display: flex;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+    padding-bottom: 0.2rem;
+  }
+
+  .naval-selected-loadout.compact .naval-ability-card-wrap,
+  .naval-tactical-strip .naval-ability-card-wrap {
+    flex: 0 0 min(220px, 76vw);
+  }
+
+  .naval-tactical-strip .naval-ability-card {
+    min-height: 82px;
+  }
+
+  .naval-tactical-strip .naval-ability-copy small {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .naval-tactical-heading,
+  .naval-sonar-result {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .naval-enemy-reveals {
+    justify-content: flex-start;
+  }
+
+  .naval-confirm-loadout {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .naval-hunter-actions {
+    width: 100%;
+  }
+
+  .naval-hunter-actions .button {
+    flex: 1 1 120px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .naval-ability-card {
+    transition: none;
+  }
+}
+
+html[data-reduce-motion='true'] .naval-ability-card {
+  transition: none;
+}
