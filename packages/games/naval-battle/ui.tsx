@@ -360,6 +360,10 @@ export function NavalBattleBoard({ state, disabled, onMove, t, mode = 'online' }
 
   useEffect(() => {
     if (mode === 'local') setRevealedSeat(null);
+    // Tactical loadout selection is private, transient UI state. Clear it whenever
+    // the active seat or phase changes so a local opponent never inherits or sees
+    // the previous player's uncommitted selections.
+    setSelectedAbilities([]);
     setTarget(null);
     setOwnTarget(null);
     setAbilityTargets([]);
