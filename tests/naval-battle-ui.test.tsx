@@ -6,6 +6,7 @@ import { NavalBattleBoard } from '../packages/games/naval-battle/ui.tsx';
 import { applyNavalMove, projectNavalState } from '../packages/games/naval-battle/rules.ts';
 import {
   createNavalBattle,
+  type NavalBattleMove,
   type NavalBattleState,
   type NavalPlacement,
 } from '../packages/games/naval-battle/state.ts';
@@ -203,6 +204,47 @@ test('local Naval Battle starts behind a privacy handoff and reveals only the ac
   fireEvent.click(view.getByRole('button', { name: 'navalRevealBoard' }));
   assert.ok(view.getByText('navalChooseAbilities'));
   assert.equal(view.getAllByRole('button').filter((button) => button.className.includes('naval-ability-card')).length, 6);
+});
+
+test('local handoff clears private loadout selections before the next player reveals', () => {
+  let state = createNavalBattle();
+  let emitted: NavalBattleMove | undefined;
+
+  const renderBoard = () => (
+    <NavalBattleBoard
+      state={state}
+      disabled={false}
+      onMove={(move) => {
+        emitted = move;
+      }}
+      t={t}
+      mode="local"
+    />
+  );
+
+  const view = render(renderBoard());
+  fireEvent.click(view.getByRole('button', { name: 'navalRevealBoard' }));
+
+  const firstPlayerCards = view.container.querySelectorAll<HTMLButtonElement>('.naval-ability-card');
+  fireEvent.click(firstPlayerCards[0]);
+  fireEvent.click(firstPlayerCards[1]);
+  fireEvent.click(firstPlayerCards[2]);
+  assert.equal(firstPlayerCards[0].getAttribute('aria-pressed'), 'true');
+
+  fireEvent.click(view.getByRole('button', { name: 'navalConfirmLoadout' }));
+  assert.ok(emitted);
+  state = applyNavalMove(state, emitted);
+  emitted = undefined;
+  view.rerender(renderBoard());
+
+  assert.ok(view.getByText('navalPrivacyHandoff'));
+  fireEvent.click(view.getByRole('button', { name: 'navalRevealBoard' }));
+
+  const secondPlayerCards = view.container.querySelectorAll<HTMLButtonElement>('.naval-ability-card');
+  assert.equal(secondPlayerCards.length, 6);
+  for (const card of secondPlayerCards) {
+    assert.equal(card.getAttribute('aria-pressed'), 'false');
+  }
 });
 
 test('grid keyboard navigation uses one roving tab stop and preserves logical coordinates in RTL', () => {
