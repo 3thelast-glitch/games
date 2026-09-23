@@ -86,6 +86,7 @@ for (const shot of shots) {
       await expect(page.locator('.naval-handoff')).toBeVisible();
       await page.locator('.naval-handoff .button').click();
       await disableMotion(page);
+      await page.evaluate(() => window.scrollTo(0, 0));
       await page.screenshot({
         path: testInfo.outputPath(`${shot.id}-loadout.png`),
         fullPage: false,
@@ -99,6 +100,8 @@ for (const shot of shots) {
       });
 
       await reachBattle(page);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await expect(page.locator('.naval-legend i').nth(1)).toHaveCSS('position', 'relative');
       await page.screenshot({
         path: testInfo.outputPath(`${shot.id}-battle.png`),
         fullPage: false,
