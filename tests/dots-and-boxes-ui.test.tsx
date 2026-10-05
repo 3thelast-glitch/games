@@ -34,8 +34,8 @@ test('Dots and Boxes UI renders all 60 edges and emits logical coordinates', () 
   assert.equal(view.container.querySelectorAll('.dots-edge.horizontal').length, 30);
   assert.equal(view.container.querySelectorAll('.dots-edge.vertical').length, 30);
   assert.equal(view.container.querySelectorAll('.dots-dot').length, 36);
-  assert.equal(view.container.querySelectorAll('.dots-scoreline .player-0').length, 1);
-  assert.equal(view.container.querySelectorAll('.dots-scoreline .player-1').length, 1);
+  assert.equal(view.container.querySelectorAll('.dots-scoreline > span.player-0').length, 1);
+  assert.equal(view.container.querySelectorAll('.dots-scoreline > span.player-1').length, 1);
   fireEvent.click(view.getByRole('button', { name: 'drawHorizontalEdge 1,1' }));
   assert.deepEqual(move, { orientation: 'h', row: 0, col: 0 });
 });
