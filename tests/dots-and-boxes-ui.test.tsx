@@ -29,6 +29,7 @@ test('Dots and Boxes UI renders all 60 edges and emits logical coordinates', () 
     <DotsAndBoxesBoard state={state} disabled={false} onMove={(next) => (move = next)} t={t} />,
   );
   const board = view.getByRole('grid', { name: 'dotsAndBoxes' });
+  assert.ok(view.container.querySelector('.dots-boxes-game.turn-0'));
   assert.equal(board.getAttribute('dir'), 'ltr');
   assert.equal(view.container.querySelectorAll('.dots-edge.horizontal').length, 30);
   assert.equal(view.container.querySelectorAll('.dots-edge.vertical').length, 30);
