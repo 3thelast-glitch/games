@@ -117,7 +117,7 @@ export function MatchPage(p: MatchPageProps) {
     .map((_, index) => index as Seat)
     .filter((seat) => seat !== p.self);
   return (
-    <div className="match-page page-enter">
+    <div className="match-page page-enter" data-game={p.state.gameId}>
       <header className="match-header">
         <button className="icon-button" aria-label={t('home')} onClick={p.onHome}>
           <Icon name="back" />
