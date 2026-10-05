@@ -31,11 +31,11 @@ export function DotsAndBoxesBoard({
     <div className="classic-game dots-boxes-game">
       <p className="board-hint" id="dots-board-hint">{t('dotsAndBoxesHint')}</p>
       <div className="dots-scoreline" aria-label={t('dotsAndBoxesScore')}>
-        <span className={state.turn === 0 && !isGameOver(state) ? 'active' : ''}>
+        <span className={`player-0 ${state.turn === 0 && !isGameOver(state) ? 'active' : ''}`}>
           <i className="dots-player-mark player-0" aria-hidden="true" />
           {t('player1')}: <strong>{state.scores[0]}</strong>
         </span>
-        <span className={state.turn === 1 && !isGameOver(state) ? 'active' : ''}>
+        <span className={`player-1 ${state.turn === 1 && !isGameOver(state) ? 'active' : ''}`}>
           <i className="dots-player-mark player-1" aria-hidden="true" />
           {t('player2')}: <strong>{state.scores[1]}</strong>
         </span>
