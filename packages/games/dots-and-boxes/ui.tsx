@@ -28,7 +28,7 @@ export function DotsAndBoxesBoard({
   const yStep = 100 / state.boxRows;
 
   return (
-    <div className="classic-game dots-boxes-game">
+    <div className={`classic-game dots-boxes-game turn-${state.turn}`}>
       <p className="board-hint" id="dots-board-hint">{t('dotsAndBoxesHint')}</p>
       <div className="dots-scoreline" aria-label={t('dotsAndBoxesScore')}>
         <span className={`player-0 ${state.turn === 0 && !isGameOver(state) ? 'active' : ''}`}>
