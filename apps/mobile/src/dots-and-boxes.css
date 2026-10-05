@@ -1,7 +1,105 @@
+.match-page[data-game='dotsAndBoxes'],
+.dots-boxes-game {
+  --dots-p0: #22d3ee;
+  --dots-p0-bright: #67e8f9;
+  --dots-p0-deep: #0891b2;
+  --dots-p1: #a855f7;
+  --dots-p1-bright: #d8b4fe;
+  --dots-p1-deep: #7e22ce;
+  --dots-neutral-line: rgba(148, 163, 184, 0.62);
+  --dots-neutral-line-strong: rgba(191, 219, 254, 0.74);
+  --dots-board-border: rgba(59, 130, 246, 0.32);
+}
+
 .dots-boxes-game {
   width: 100%;
-  --dots-p0: var(--player-one, #63d7f4);
-  --dots-p1: var(--player-two, #b39af4);
+}
+
+/* Keep the outer HUD visually tied to the same colors as the board. */
+.match-page[data-game='dotsAndBoxes'] .player-panel {
+  border-color: rgba(100, 116, 139, 0.34);
+  background: linear-gradient(105deg, rgba(16, 24, 39, 0.96), rgba(10, 17, 29, 0.98));
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.025);
+}
+
+.match-page[data-game='dotsAndBoxes'] .player-panel.player-0 {
+  border-color: rgba(34, 211, 238, 0.32);
+  background:
+    linear-gradient(100deg, rgba(8, 47, 58, 0.78), rgba(10, 21, 34, 0.97));
+}
+
+.match-page[data-game='dotsAndBoxes'] .player-panel.player-1 {
+  border-color: rgba(168, 85, 247, 0.34);
+  background:
+    linear-gradient(100deg, rgba(59, 24, 87, 0.74), rgba(18, 18, 34, 0.97));
+}
+
+.match-page[data-game='dotsAndBoxes'] .player-panel.active.player-0 {
+  border-color: rgba(34, 211, 238, 0.78);
+  background:
+    linear-gradient(100deg, rgba(8, 70, 83, 0.86), rgba(9, 26, 40, 0.98));
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(34, 211, 238, 0.1),
+    0 0 22px rgba(34, 211, 238, 0.1);
+}
+
+.match-page[data-game='dotsAndBoxes'] .player-panel.active.player-1 {
+  border-color: rgba(168, 85, 247, 0.8);
+  background:
+    linear-gradient(100deg, rgba(73, 31, 109, 0.88), rgba(28, 20, 43, 0.98));
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(168, 85, 247, 0.11),
+    0 0 22px rgba(168, 85, 247, 0.11);
+}
+
+.match-page[data-game='dotsAndBoxes'] .player-panel.player-0 .avatar {
+  background: rgba(8, 145, 178, 0.2);
+  color: var(--dots-p0-bright);
+  border-color: rgba(34, 211, 238, 0.64);
+}
+
+.match-page[data-game='dotsAndBoxes'] .player-panel.player-1 .avatar {
+  background: rgba(126, 34, 206, 0.2);
+  color: var(--dots-p1-bright);
+  border-color: rgba(168, 85, 247, 0.66);
+}
+
+.match-page[data-game='dotsAndBoxes'] .player-panel.player-0 .player-resource strong {
+  color: var(--dots-p0-bright);
+}
+
+.match-page[data-game='dotsAndBoxes'] .player-panel.player-1 .player-resource strong {
+  color: var(--dots-p1-bright);
+}
+
+.match-page[data-game='dotsAndBoxes'] .player-panel.player-0 .player-details > span,
+.match-page[data-game='dotsAndBoxes'] .player-panel.player-0 .player-resource small {
+  color: #8edff0;
+}
+
+.match-page[data-game='dotsAndBoxes'] .player-panel.player-1 .player-details > span,
+.match-page[data-game='dotsAndBoxes'] .player-panel.player-1 .player-resource small {
+  color: #c6a5ed;
+}
+
+.match-page[data-game='dotsAndBoxes'] .turn-banner.player-0 {
+  color: #a5f3fc;
+}
+
+.match-page[data-game='dotsAndBoxes'] .turn-banner.player-1 {
+  color: #e9d5ff;
+}
+
+.match-page[data-game='dotsAndBoxes'] .turn-banner.player-0 .live-dot {
+  background: var(--dots-p0);
+  box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.12), 0 0 14px rgba(34, 211, 238, 0.58);
+}
+
+.match-page[data-game='dotsAndBoxes'] .turn-banner.player-1 .live-dot {
+  background: var(--dots-p1);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.12), 0 0 14px rgba(168, 85, 247, 0.58);
 }
 
 .dots-scoreline {
@@ -9,46 +107,81 @@
   justify-content: center;
   gap: 0.7rem;
   flex-wrap: wrap;
-  margin: 0.55rem 0 0.8rem;
-  font-size: 0.9rem;
+  margin: 0.6rem 0 0.85rem;
+  font-size: 0.92rem;
 }
 
 .dots-scoreline span {
   display: inline-flex;
-  gap: 0.4rem;
+  gap: 0.45rem;
   align-items: center;
-  min-height: 36px;
-  padding: 0.35rem 0.65rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  min-height: 40px;
+  padding: 0.45rem 0.78rem;
+  border: 1px solid rgba(255, 255, 255, 0.11);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.028);
-  color: var(--muted, #aab0bc);
-  transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
+  background: rgba(12, 20, 34, 0.86);
+  color: #d8e1ee;
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
 }
 
-.dots-scoreline span.active {
-  color: var(--text, #f5f4ef);
-  border-color: rgba(134, 223, 192, 0.4);
-  background: rgba(134, 223, 192, 0.08);
+.dots-scoreline span.player-0 {
+  border-color: rgba(34, 211, 238, 0.34);
+  background: linear-gradient(105deg, rgba(8, 47, 58, 0.48), rgba(13, 22, 36, 0.9));
+  color: #cffafe;
+}
+
+.dots-scoreline span.player-1 {
+  border-color: rgba(168, 85, 247, 0.34);
+  background: linear-gradient(105deg, rgba(58, 24, 86, 0.48), rgba(18, 20, 35, 0.9));
+  color: #f3e8ff;
+}
+
+.dots-scoreline span.active.player-0 {
+  border-color: rgba(34, 211, 238, 0.86);
+  background: linear-gradient(105deg, rgba(8, 76, 89, 0.7), rgba(12, 28, 42, 0.94));
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.1), 0 0 18px rgba(34, 211, 238, 0.12);
   transform: translateY(-1px);
 }
 
+.dots-scoreline span.active.player-1 {
+  border-color: rgba(168, 85, 247, 0.88);
+  background: linear-gradient(105deg, rgba(77, 32, 112, 0.72), rgba(28, 21, 43, 0.94));
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.1), 0 0 18px rgba(168, 85, 247, 0.13);
+  transform: translateY(-1px);
+}
+
+.dots-scoreline strong {
+  color: #ffffff;
+  font-size: 1.08em;
+  font-weight: 800;
+}
+
 .dots-player-mark {
-  width: 9px;
-  height: 9px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   flex: 0 0 auto;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.09);
 }
 
 .dots-player-mark.player-0 {
   background: var(--dots-p0);
+  box-shadow:
+    0 0 0 2px rgba(34, 211, 238, 0.14),
+    0 0 10px rgba(34, 211, 238, 0.62);
 }
 
 .dots-player-mark.player-1 {
   background:
-    linear-gradient(135deg, transparent 0 34%, #fff 34% 46%, transparent 46% 100%),
+    linear-gradient(135deg, transparent 0 30%, #f5e9ff 30% 45%, transparent 45% 100%),
     var(--dots-p1);
+  box-shadow:
+    0 0 0 2px rgba(168, 85, 247, 0.14),
+    0 0 10px rgba(168, 85, 247, 0.62);
 }
 
 .dots-board-shell {
@@ -57,12 +190,15 @@
   justify-content: center;
   padding: 1.25rem;
   box-sizing: border-box;
-  border: 1px solid rgba(105, 137, 181, 0.14);
+  border: 1px solid var(--dots-board-border);
   border-radius: 1.35rem;
   background:
-    radial-gradient(circle at 50% 12%, rgba(75, 138, 178, 0.11), transparent 44%),
-    linear-gradient(180deg, rgba(19, 29, 46, 0.58), rgba(11, 17, 29, 0.36));
-  box-shadow: inset 0 1px rgba(255, 255, 255, 0.025);
+    radial-gradient(circle at 50% 9%, rgba(37, 99, 235, 0.13), transparent 42%),
+    radial-gradient(circle at 18% 82%, rgba(34, 211, 238, 0.055), transparent 36%),
+    linear-gradient(180deg, rgba(10, 24, 42, 0.9), rgba(7, 14, 26, 0.88));
+  box-shadow:
+    inset 0 1px rgba(255, 255, 255, 0.035),
+    0 14px 32px rgba(0, 0, 0, 0.18);
 }
 
 .dots-board {
@@ -82,36 +218,51 @@
   transform: scale(0.88);
   border: 1px solid transparent;
   border-radius: 0.7rem;
-  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease;
   pointer-events: none;
 }
 
 .dots-box span {
   display: grid;
   place-items: center;
-  width: clamp(20px, 4.8vw, 28px);
+  width: clamp(21px, 5vw, 29px);
   aspect-ratio: 1;
   border-radius: 50%;
-  font-weight: 800;
+  font-weight: 850;
   font-size: clamp(0.72rem, 2.7vw, 1rem);
-  color: #f8fbff;
-  background: rgba(7, 12, 22, 0.42);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  text-shadow: 0 1px 3px #000a;
+  color: #ffffff;
+  background: rgba(4, 10, 20, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  text-shadow: 0 1px 4px #000c;
 }
 
 .dots-box.box-owner-0 {
   background:
-    linear-gradient(90deg, rgba(99, 215, 244, 0.08) 0 22%, transparent 22% 38%, rgba(99, 215, 244, 0.08) 38% 60%, transparent 60% 76%, rgba(99, 215, 244, 0.08) 76%),
-    color-mix(in srgb, var(--dots-p0) 19%, transparent);
-  border-color: color-mix(in srgb, var(--dots-p0) 35%, transparent);
+    linear-gradient(90deg, rgba(34, 211, 238, 0.13) 0 22%, transparent 22% 38%, rgba(34, 211, 238, 0.13) 38% 60%, transparent 60% 76%, rgba(34, 211, 238, 0.13) 76%),
+    rgba(8, 145, 178, 0.14);
+  border-color: rgba(34, 211, 238, 0.42);
+}
+
+.dots-box.box-owner-0 span {
+  border-color: rgba(103, 232, 249, 0.58);
+  color: #cffafe;
+  box-shadow: 0 0 13px rgba(34, 211, 238, 0.16);
 }
 
 .dots-box.box-owner-1 {
   background:
-    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0 3px, transparent 3px 9px),
-    color-mix(in srgb, var(--dots-p1) 20%, transparent);
-  border-color: color-mix(in srgb, var(--dots-p1) 35%, transparent);
+    repeating-linear-gradient(135deg, rgba(216, 180, 254, 0.11) 0 3px, transparent 3px 9px),
+    rgba(126, 34, 206, 0.16);
+  border-color: rgba(168, 85, 247, 0.44);
+}
+
+.dots-box.box-owner-1 span {
+  border-color: rgba(216, 180, 254, 0.58);
+  color: #f3e8ff;
+  box-shadow: 0 0 13px rgba(168, 85, 247, 0.17);
 }
 
 .dots-box.recent-box {
@@ -128,7 +279,7 @@
   margin: 0;
   background: transparent;
   cursor: pointer;
-  color: rgba(181, 199, 222, 0.34);
+  color: var(--dots-neutral-line);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -137,11 +288,16 @@
   position: absolute;
   border-radius: 999px;
   background: currentColor;
-  transition: background-color 120ms ease, box-shadow 120ms ease, transform 120ms ease, opacity 120ms ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.42);
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease,
+    opacity 120ms ease;
 }
 
 .dots-edge.horizontal {
-  height: 28px;
+  height: 30px;
   transform: translateY(-50%);
 }
 
@@ -149,12 +305,12 @@
   left: -16px;
   right: -16px;
   top: 50%;
-  height: 5px;
+  height: 6px;
   transform: translateY(-50%);
 }
 
 .dots-edge.vertical {
-  width: 28px;
+  width: 30px;
   transform: translateX(-50%);
 }
 
@@ -162,31 +318,52 @@
   top: -16px;
   bottom: -16px;
   left: 50%;
-  width: 5px;
+  width: 6px;
   transform: translateX(-50%);
 }
 
-.dots-edge.available:not(:disabled):hover,
-.dots-edge.available:not(:disabled):focus-visible {
-  color: rgba(134, 223, 192, 0.78);
+.dots-boxes-game.turn-0 .dots-edge.available:not(:disabled):hover,
+.dots-boxes-game.turn-0 .dots-edge.available:not(:disabled):focus-visible {
+  color: rgba(34, 211, 238, 0.9);
+  outline: none;
+}
+
+.dots-boxes-game.turn-1 .dots-edge.available:not(:disabled):hover,
+.dots-boxes-game.turn-1 .dots-edge.available:not(:disabled):focus-visible {
+  color: rgba(168, 85, 247, 0.92);
   outline: none;
 }
 
 .dots-edge.available:not(:disabled):hover::after {
-  transform: translateY(-50%) scaleY(1.22);
+  transform: translateY(-50%) scaleY(1.28);
 }
 
 .dots-edge.vertical.available:not(:disabled):hover::after {
-  transform: translateX(-50%) scaleX(1.22);
+  transform: translateX(-50%) scaleX(1.28);
 }
 
-.dots-edge:not(:disabled):focus-visible::after {
-  box-shadow: 0 0 0 3px rgba(199, 248, 232, 0.24), 0 0 14px rgba(134, 223, 192, 0.24);
+.dots-boxes-game.turn-0 .dots-edge:not(:disabled):focus-visible::after {
+  box-shadow:
+    0 0 0 3px rgba(34, 211, 238, 0.2),
+    0 0 16px rgba(34, 211, 238, 0.48);
+}
+
+.dots-boxes-game.turn-1 .dots-edge:not(:disabled):focus-visible::after {
+  box-shadow:
+    0 0 0 3px rgba(168, 85, 247, 0.2),
+    0 0 16px rgba(168, 85, 247, 0.5);
 }
 
 .dots-edge.edge-owner-0 {
   color: var(--dots-p0);
   cursor: default;
+}
+
+.dots-edge.edge-owner-0::after {
+  background: linear-gradient(90deg, var(--dots-p0-bright), var(--dots-p0), var(--dots-p0-deep));
+  box-shadow:
+    0 0 3px rgba(103, 232, 249, 0.72),
+    0 0 12px rgba(34, 211, 238, 0.42);
 }
 
 .dots-edge.edge-owner-1 {
@@ -195,27 +372,47 @@
 }
 
 .dots-edge.edge-owner-1.horizontal::after {
-  background: repeating-linear-gradient(90deg, var(--dots-p1) 0 9px, #6f5aa4 9px 12px);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--dots-p1) 0 10px,
+    var(--dots-p1-bright) 10px 12px
+  );
+  box-shadow:
+    0 0 3px rgba(216, 180, 254, 0.72),
+    0 0 12px rgba(168, 85, 247, 0.42);
 }
 
 .dots-edge.edge-owner-1.vertical::after {
-  background: repeating-linear-gradient(0deg, var(--dots-p1) 0 9px, #6f5aa4 9px 12px);
+  background: repeating-linear-gradient(
+    0deg,
+    var(--dots-p1) 0 10px,
+    var(--dots-p1-bright) 10px 12px
+  );
+  box-shadow:
+    0 0 3px rgba(216, 180, 254, 0.72),
+    0 0 12px rgba(168, 85, 247, 0.42);
 }
 
 .dots-edge.last-edge::after {
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.22), 0 0 15px currentColor;
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.52),
+    0 0 5px rgba(255, 255, 255, 0.5),
+    0 0 18px currentColor;
   animation: dots-edge-place 230ms ease-out;
 }
 
 .dots-dot {
   position: absolute;
   z-index: 5;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ffffff, #d5e1f0 55%, #8193ad);
-  border: 2px solid rgba(10, 16, 26, 0.92);
-  box-shadow: 0 2px 5px #0009;
+  background: radial-gradient(circle at 34% 28%, #ffffff 0 24%, #e5f2ff 40%, #aec8e8 68%, #6880a0 100%);
+  border: 2px solid rgba(6, 13, 24, 0.96);
+  box-shadow:
+    0 0 0 1px rgba(147, 197, 253, 0.3),
+    0 0 8px rgba(96, 165, 250, 0.24),
+    0 3px 7px #000b;
   transform: translate(-50%, -50%);
   pointer-events: none;
   box-sizing: border-box;
@@ -224,7 +421,7 @@
 @keyframes dots-edge-place {
   from {
     opacity: 0.35;
-    filter: brightness(1.7);
+    filter: brightness(1.9);
   }
   to {
     opacity: 1;
@@ -248,7 +445,7 @@
 
 @media (max-width: 380px) {
   .dots-board-shell {
-    padding: 1rem 0.8rem;
+    padding: 1rem 0.78rem;
   }
 
   .dots-scoreline {
@@ -256,8 +453,22 @@
   }
 
   .dots-scoreline span {
-    padding-inline: 0.5rem;
-    font-size: 0.82rem;
+    min-height: 38px;
+    padding-inline: 0.58rem;
+    font-size: 0.84rem;
+  }
+
+  .dots-dot {
+    width: 15px;
+    height: 15px;
+  }
+
+  .dots-edge.horizontal::after {
+    height: 5px;
+  }
+
+  .dots-edge.vertical::after {
+    width: 5px;
   }
 }
 

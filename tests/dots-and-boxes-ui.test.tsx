@@ -29,10 +29,13 @@ test('Dots and Boxes UI renders all 60 edges and emits logical coordinates', () 
     <DotsAndBoxesBoard state={state} disabled={false} onMove={(next) => (move = next)} t={t} />,
   );
   const board = view.getByRole('grid', { name: 'dotsAndBoxes' });
+  assert.ok(view.container.querySelector('.dots-boxes-game.turn-0'));
   assert.equal(board.getAttribute('dir'), 'ltr');
   assert.equal(view.container.querySelectorAll('.dots-edge.horizontal').length, 30);
   assert.equal(view.container.querySelectorAll('.dots-edge.vertical').length, 30);
   assert.equal(view.container.querySelectorAll('.dots-dot').length, 36);
+  assert.equal(view.container.querySelectorAll('.dots-scoreline > span.player-0').length, 1);
+  assert.equal(view.container.querySelectorAll('.dots-scoreline > span.player-1').length, 1);
   fireEvent.click(view.getByRole('button', { name: 'drawHorizontalEdge 1,1' }));
   assert.deepEqual(move, { orientation: 'h', row: 0, col: 0 });
 });
@@ -49,6 +52,8 @@ test('Dots and Boxes UI shows claimed boxes and locks occupied edges', () => {
     <DotsAndBoxesBoard state={state} disabled={false} onMove={() => assert.fail('move emitted')} t={t} />,
   );
   assert.equal(view.container.querySelectorAll('.box-owner-1').length, 1);
+  assert.ok(view.container.querySelector('.dots-edge.edge-owner-0'));
+  assert.ok(view.container.querySelector('.dots-edge.edge-owner-1'));
   const edges = Array.from(view.container.querySelectorAll<HTMLButtonElement>('.dots-edge'));
   assert.equal(edges.length, 4);
   assert.ok(edges.every((edge) => edge.disabled));
