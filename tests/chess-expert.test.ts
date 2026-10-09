@@ -27,7 +27,9 @@ test('Chess expert opening repertoire includes the requested first-move families
     BLACK_OPENING_REPERTOIRE.map((entry) => entry.whiteFirstMove),
     ['e4', 'd4', 'c4', 'Nf3'],
   );
-  const names = BLACK_OPENING_REPERTOIRE.flatMap((entry) => entry.replies.map((reply) => reply.name));
+  const names = new Set<string>(
+    BLACK_OPENING_REPERTOIRE.flatMap((entry) => entry.replies.map((reply) => reply.name)),
+  );
   for (const expected of [
     'Sicilian Defence',
     'Open Game',
@@ -46,7 +48,7 @@ test('Chess expert opening repertoire includes the requested first-move families
     'Réti: ...d5',
     'Symmetrical Réti',
   ]) {
-    assert.ok(names.includes(expected), expected);
+    assert.ok(names.has(expected), expected);
   }
 });
 
@@ -109,7 +111,7 @@ test('Chess expert recognizes the Benko ...b5 pawn-sacrifice motif', () => {
 });
 
 test('Chess expert exposes the requested deeper black opening plans', () => {
-  const names = BLACK_OPENING_FOLLOW_UPS.map((plan) => plan.name);
+  const names = new Set<string>(BLACK_OPENING_FOLLOW_UPS.map((plan) => plan.name));
   for (const expected of [
     'Nimzo-Indian Defense',
     "King's Indian Defense",
@@ -121,12 +123,12 @@ test('Chess expert exposes the requested deeper black opening plans', () => {
     'Open Game development',
     'Scandinavian recapture',
   ]) {
-    assert.ok(names.includes(expected), expected);
+    assert.ok(names.has(expected), expected);
   }
 });
 
 test('Chess expert advertises and evaluates the requested strategic motif set', () => {
-  const names = BLACK_STRATEGIC_IDEAS.map((idea) => idea.name);
+  const names = new Set<string>(BLACK_STRATEGIC_IDEAS.map((idea) => idea.name));
   for (const expected of [
     'Fianchetto',
     'Undermining the Center',
@@ -138,7 +140,7 @@ test('Chess expert advertises and evaluates the requested strategic motif set', 
     'Pawn Storm',
     'The Exchange Sacrifice',
   ]) {
-    assert.ok(names.includes(expected), expected);
+    assert.ok(names.has(expected), expected);
   }
 });
 
