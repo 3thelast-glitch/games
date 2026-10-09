@@ -74,6 +74,10 @@ export const BLACK_OPENING_REPERTOIRE: readonly BlackOpeningRepertoireEntry[] = 
       { move: { from: 11, to: 27 }, name: 'Scandinavian Defense', idea: 'challenge e4 immediately and force early clarification' },
       { move: { from: 11, to: 19 }, name: 'Pirc Defense', idea: 'allow a broad center, then undermine it from the flanks' },
       { move: { from: 6, to: 21 }, name: "Alekhine's Defense", idea: 'provoke white pawns forward and attack the extended center' },
+      { move: { from: 14, to: 22 }, name: 'Modern Defense', idea: 'fianchetto quickly and attack the white center without committing the king knight' },
+      { move: { from: 1, to: 18 }, name: 'Nimzowitsch Defense', idea: 'challenge the center with a piece before committing central pawns' },
+      { move: { from: 9, to: 17 }, name: "Owen's Defense", idea: 'prepare ...Bb7 to pressure e4 and the long diagonal' },
+      { move: { from: 8, to: 16 }, name: 'St. George Defense', idea: 'prepare ...b5 and immediate queenside expansion' },
     ],
   },
   {
@@ -84,6 +88,7 @@ export const BLACK_OPENING_REPERTOIRE: readonly BlackOpeningRepertoireEntry[] = 
       { move: { from: 11, to: 27 }, name: "Queen's Pawn Game", idea: 'classical central control and Queen’s Gambit structures' },
       { move: { from: 13, to: 29 }, name: 'Dutch Defense', idea: 'fight for e4 and create kingside imbalance' },
       { move: { from: 10, to: 26 }, name: 'Benoni Defense', idea: 'cede space for dynamic queenside and central counterplay' },
+      { move: { from: 12, to: 28 }, name: 'Englund Gambit', idea: 'offer a risky central pawn for rapid development and tactical chances' },
     ],
   },
   {
@@ -106,9 +111,23 @@ export const BLACK_OPENING_REPERTOIRE: readonly BlackOpeningRepertoireEntry[] = 
 ] as const;
 
 export const BLACK_OPENING_FOLLOW_UPS = [
-  { name: 'Nimzo-Indian Defense', trigger: '1.d4 Nf6 with ...e6', idea: 'control e4 and prepare ...Bb4 to pressure the c3 knight' },
-  { name: "King's Indian Defense", trigger: '1.d4 Nf6 with ...g6', idea: 'fianchetto the king bishop, concede space, then attack the center and kingside' },
+  { name: 'Petroff Defense', trigger: '1.e4 e5 2.Nf3', idea: 'counterattack e4 with ...Nf6 instead of defending passively' },
+  { name: 'Philidor Defense', trigger: '1.e4 e5 2.Nf3', idea: 'support the e5 center with ...d6 and keep a compact structure' },
+  { name: 'Modern Defense fianchetto', trigger: '1.e4 g6', idea: 'play ...Bg7 and attack the center from the long diagonal' },
+  { name: 'Nimzowitsch Defense center strike', trigger: '1.e4 Nc6', idea: 'follow with ...d5 or ...e5 according to White’s setup' },
+  { name: "Owen's Defense fianchetto", trigger: '1.e4 b6', idea: 'develop ...Bb7 and pressure e4 immediately' },
+  { name: 'St. George queenside expansion', trigger: '1.e4 a6', idea: 'follow with ...b5 and seize queenside space' },
+  { name: 'Nimzo-Indian Defense', trigger: '1.d4 Nf6 2.c4 e6 3.Nc3', idea: 'play ...Bb4 to pin the c3 knight and control e4' },
+  { name: "King's Indian Defense", trigger: '1.d4 Nf6 2.c4 g6', idea: 'fianchetto the king bishop, concede space, then attack the center and kingside' },
+  { name: 'Grünfeld Defense', trigger: '1.d4 Nf6 2.c4 g6 3.Nc3', idea: 'strike with ...d5 and attack White’s center with pieces and pawns' },
+  { name: "Queen's Indian Defense", trigger: '1.d4 Nf6 2.c4 e6 3.Nf3', idea: 'play ...b6 and ...Bb7 to control the light squares' },
+  { name: 'Budapest Gambit', trigger: '1.d4 Nf6 2.c4', idea: 'play ...e5 as a temporary pawn offer to disrupt White’s development' },
+  { name: 'Old Indian Defense', trigger: '1.d4 Nf6 2.c4 d6', idea: 'use ...Nbd7 and a compact center with the bishop usually developed to e7' },
   { name: 'Benko Gambit', trigger: 'Benoni structure with white pawn on d5', idea: 'offer ...b5 for long-term pressure on open queenside files' },
+  { name: 'Blumenfeld Gambit', trigger: '...Nf6/...e6/...c5 versus c4+d5', idea: 'offer ...b5 to build a powerful central pawn mass and queenside activity' },
+  { name: 'Slav Defense', trigger: '1.d4 d5 2.c4', idea: 'support d5 with ...c6 while keeping the c8 bishop free' },
+  { name: 'Semi-Slav Defense', trigger: 'Slav structure after ...c6', idea: 'add ...e6 for a resilient but tactically rich center' },
+  { name: 'Chigorin Defense', trigger: '1.d4 d5 2.c4', idea: 'develop ...Nc6 and use piece pressure against d4' },
   { name: 'French ...d5 break', trigger: '1.e4 e6', idea: 'strike the white center immediately with ...d5' },
   { name: 'Caro-Kann ...d5 break', trigger: '1.e4 c6', idea: 'build a solid central challenge while keeping the c8 bishop available' },
   { name: 'Pirc fianchetto setup', trigger: '1.e4 d6', idea: 'develop ...Nf6/...g6 and undermine the broad white center later' },
@@ -118,15 +137,31 @@ export const BLACK_OPENING_FOLLOW_UPS = [
 ] as const;
 
 export const BLACK_STRATEGIC_IDEAS = [
+  { name: 'Deflection', idea: 'force a defender away from a critical square, line, or piece' },
+  { name: 'Decoy', idea: 'lure an enemy piece onto a square where a tactical sequence becomes possible' },
+  { name: 'The Pin', idea: 'immobilize a piece because moving it exposes a more valuable target' },
+  { name: 'The Skewer', idea: 'attack a valuable piece first and capture the exposed piece behind it after it moves' },
+  { name: 'Discovered Attack', idea: 'move one piece to uncover an attack from a rook, bishop, or queen behind it' },
   { name: 'Fianchetto', idea: 'develop a bishop to b7/g7 and control a long diagonal from distance' },
   { name: 'Undermining the Center', idea: 'challenge an extended pawn center with timely ...c5 or ...f5 breaks' },
   { name: 'Pawn Chain Break', idea: 'attack the base of an enemy pawn chain instead of its protected head' },
+  { name: 'Isolated Queen Pawn', idea: 'accept an isolated d-pawn only when piece activity and central squares compensate for the weakness' },
   { name: 'Prophylaxis', idea: 'use restrained moves such as ...a6 or ...h6 when they prevent an enemy plan' },
   { name: 'The Blockade', idea: 'place a stable piece in front of an enemy passed pawn to stop and target it' },
   { name: 'Minority Attack', idea: 'advance a smaller queenside pawn group to create a fixed weakness in a larger chain' },
   { name: 'Outpost Creation', idea: 'occupy a protected central square that enemy pawns cannot easily challenge' },
+  { name: 'Good vs Bad Bishop', idea: 'prefer bishops whose pawn structure leaves useful diagonals open and improve restricted bishops' },
   { name: 'Pawn Storm', idea: 'push flank pawns toward the enemy king when the kings are castled on opposite wings' },
+  { name: 'Zugzwang', idea: 'in simplified positions, search for moves that leave every enemy reply strategically harmful' },
+  { name: 'Overloading', idea: 'increase pressure on a defender that must protect multiple important targets' },
   { name: 'The Exchange Sacrifice', idea: 'accept a rook-for-minor material deficit only when king attack or structure gives compensation' },
+  { name: 'Interference', idea: 'insert a piece or tactic that cuts the support line between enemy defenders' },
+  { name: 'X-Ray Attack', idea: 'exploit pressure through an intervening piece along a file, rank, or diagonal' },
+  { name: 'Battery', idea: 'align queen/rook or queen/bishop so multiple pieces pressure the same line or target' },
+  { name: 'Zwischenzug', idea: 'prefer a stronger forcing in-between move before an expected recapture when search proves it works' },
+  { name: 'Smothered Mate', idea: 'recognize knight mating patterns around a boxed-in king through forcing search' },
+  { name: 'The Windmill', idea: 'use repeated discovered checks and captures when the search finds a forcing cycle' },
+  { name: 'Underpromotion', idea: 'allow promotion to knight, rook, or bishop when it is tactically superior to a queen' },
 ] as const;
 
 function cloneBoard(board: (ChessPiece | null)[]) {
@@ -522,6 +557,122 @@ function prophylaxisBonus(state: ChessState, player: Player): number {
   return score;
 }
 
+function bishopQualityBonus(state: ChessState, player: Player): number {
+  let score = 0;
+  for (let index = 0; index < 64; index++) {
+    const bishop = state.board[index];
+    if (bishop?.owner !== player || bishop.type !== 'bishop') continue;
+    const bishopColor = (rowOf(index) + colOf(index)) % 2;
+    let ownPawnsOnColor = 0;
+    for (let pawnIndex = 0; pawnIndex < 64; pawnIndex++) {
+      const pawn = state.board[pawnIndex];
+      if (pawn?.owner === player && pawn.type === 'pawn' &&
+          (rowOf(pawnIndex) + colOf(pawnIndex)) % 2 === bishopColor) ownPawnsOnColor++;
+    }
+    score += Math.max(-18, 14 - ownPawnsOnColor * 5);
+  }
+  return score;
+}
+
+function isolatedQueenPawnActivity(state: ChessState, player: Player): number {
+  const dFile = 3;
+  const pawn = state.board.findIndex(
+    (piece, index) => piece?.owner === player && piece.type === 'pawn' && colOf(index) === dFile,
+  );
+  if (pawn < 0) return 0;
+  const hasAdjacentPawn = state.board.some(
+    (piece, index) =>
+      piece?.owner === player &&
+      piece.type === 'pawn' &&
+      Math.abs(colOf(index) - dFile) === 1,
+  );
+  if (hasAdjacentPawn) return 0;
+
+  const row = rowOf(pawn);
+  const advanced = player === 0 ? Math.max(0, 6 - row) : Math.max(0, row - 1);
+  let activity = advanced * 4 - 10;
+  for (let index = 0; index < 64; index++) {
+    const piece = state.board[index];
+    if (piece?.owner !== player || !['knight', 'bishop', 'rook', 'queen'].includes(piece.type)) continue;
+    if (Math.abs(rowOf(index) - row) <= 2 && Math.abs(colOf(index) - dFile) <= 2) activity += 2;
+  }
+  return Math.min(18, activity);
+}
+
+function batteryBonus(state: ChessState, player: Player): number {
+  const sliders: { index: number; type: ChessPieceType }[] = [];
+  for (let index = 0; index < 64; index++) {
+    const piece = state.board[index];
+    if (piece?.owner === player && ['queen', 'rook', 'bishop'].includes(piece.type))
+      sliders.push({ index, type: piece.type });
+  }
+
+  const clearLine = (a: number, b: number) => {
+    const ar = rowOf(a), ac = colOf(a), br = rowOf(b), bc = colOf(b);
+    const dr = Math.sign(br - ar), dc = Math.sign(bc - ac);
+    if (!(ar === br || ac === bc || Math.abs(br - ar) === Math.abs(bc - ac))) return false;
+    let r = ar + dr, col = ac + dc;
+    while (r !== br || col !== bc) {
+      if (state.board[r * 8 + col]) return false;
+      r += dr;
+      col += dc;
+    }
+    return true;
+  };
+
+  let score = 0;
+  for (let i = 0; i < sliders.length; i++) {
+    for (let j = i + 1; j < sliders.length; j++) {
+      const a = sliders[i], b = sliders[j];
+      if (!clearLine(a.index, b.index)) continue;
+      const alignedStraight = rowOf(a.index) === rowOf(b.index) || colOf(a.index) === colOf(b.index);
+      const alignedDiagonal =
+        Math.abs(rowOf(a.index) - rowOf(b.index)) === Math.abs(colOf(a.index) - colOf(b.index));
+      if (alignedStraight && (a.type === 'queen' || b.type === 'queen' || a.type === 'rook' || b.type === 'rook'))
+        score += 8;
+      if (alignedDiagonal && (a.type === 'queen' || b.type === 'queen') &&
+          (a.type === 'bishop' || b.type === 'bishop')) score += 10;
+    }
+  }
+  return Math.min(24, score);
+}
+
+function xRayPressureBonus(state: ChessState, player: Player): number {
+  const directions = [
+    [-1, -1], [-1, 0], [-1, 1], [0, -1],
+    [0, 1], [1, -1], [1, 0], [1, 1],
+  ] as const;
+  let score = 0;
+
+  for (let from = 0; from < 64; from++) {
+    const piece = state.board[from];
+    if (piece?.owner !== player || !['rook', 'bishop', 'queen'].includes(piece.type)) continue;
+    for (const [dr, dc] of directions) {
+      const diagonal = dr !== 0 && dc !== 0;
+      if (piece.type === 'rook' && diagonal) continue;
+      if (piece.type === 'bishop' && !diagonal) continue;
+      let r = rowOf(from) + dr;
+      let col = colOf(from) + dc;
+      let blockerSeen = false;
+      while (r >= 0 && r < 8 && col >= 0 && col < 8) {
+        const target = state.board[r * 8 + col];
+        if (target) {
+          if (!blockerSeen) {
+            if (target.owner === player) break;
+            blockerSeen = true;
+          } else {
+            if (target.owner !== player && PIECE_VALUE[target.type] >= 500) score += 7;
+            break;
+          }
+        }
+        r += dr;
+        col += dc;
+      }
+    }
+  }
+  return Math.min(28, score);
+}
+
 function evaluate(state: ChessState, root: Player): number {
   let nonPawnMaterial = 0;
   for (const piece of state.board) {
@@ -554,7 +705,11 @@ function evaluate(state: ChessState, root: Player): number {
       blockadeBonus(state, player) +
       pawnStormBonus(state, player) +
       exchangeSacrificeCompensation(state, player) +
-      prophylaxisBonus(state, player);
+      prophylaxisBonus(state, player) +
+      bishopQualityBonus(state, player) +
+      isolatedQueenPawnActivity(state, player) +
+      batteryBonus(state, player) +
+      xRayPressureBonus(state, player);
     if (bishops[player] >= 2) positional += 28;
     if (state.castling[player].kingSide || state.castling[player].queenSide) positional += 8;
     score += player === root ? positional : -positional;
@@ -603,19 +758,136 @@ function openingFollowUp(
 ): ChessMove | null {
   if (state.turn !== 1) return null;
 
-  // Indian family after 1.d4 Nf6: choose Nimzo/Queen's-Indian style ...e6,
-  // King's Indian ...g6, or Benoni ...c5 according to the current position.
-  if (state.ply === 3 && state.board[35]?.owner === 0 && state.board[35]?.type === 'pawn' &&
+  // 1.e4 e5 2.Nf3: vary between Petroff, Philidor, and classical ...Nc6.
+  if (state.ply === 3 &&
+      state.board[36]?.owner === 0 && state.board[36]?.type === 'pawn' &&
+      state.board[28]?.owner === 1 && state.board[28]?.type === 'pawn' &&
+      state.board[45]?.owner === 0 && state.board[45]?.type === 'knight') {
+    return pickBookMove(
+      legal,
+      [
+        { from: 6, to: 21 },  // ...Nf6 Petroff
+        { from: 11, to: 19 }, // ...d6 Philidor
+        { from: 1, to: 18 },  // ...Nc6 classical Open Game
+      ],
+      random,
+    );
+  }
+
+  // Modern Defense: after ...g6, complete the fianchetto with ...Bg7 when possible.
+  if (state.ply === 3 &&
+      state.board[36]?.owner === 0 && state.board[36]?.type === 'pawn' &&
+      state.board[22]?.owner === 1 && state.board[22]?.type === 'pawn') {
+    return pickBookMove(legal, [{ from: 5, to: 14 }, { from: 6, to: 21 }], random);
+  }
+
+  // Nimzowitsch Defense: hit the center with ...d5 or ...e5.
+  if (state.ply === 3 &&
+      state.board[36]?.owner === 0 && state.board[36]?.type === 'pawn' &&
+      state.board[18]?.owner === 1 && state.board[18]?.type === 'knight') {
+    return pickBookMove(legal, [{ from: 11, to: 27 }, { from: 12, to: 28 }], random);
+  }
+
+  // Owen's Defense: put the c8 bishop on b7.
+  if (state.ply === 3 &&
+      state.board[36]?.owner === 0 && state.board[36]?.type === 'pawn' &&
+      state.board[17]?.owner === 1 && state.board[17]?.type === 'pawn') {
+    return pickBookMove(legal, [{ from: 2, to: 9 }], random);
+  }
+
+  // St. George: follow ...a6 with ...b5.
+  if (state.ply === 3 &&
+      state.board[36]?.owner === 0 && state.board[36]?.type === 'pawn' &&
+      state.board[16]?.owner === 1 && state.board[16]?.type === 'pawn') {
+    return pickBookMove(legal, [{ from: 9, to: 25 }], random);
+  }
+
+  // Indian family after 1.d4 Nf6 2.c4: choose e6/g6/c5/d6/e5,
+  // covering Nimzo/Queen's Indian, King's Indian/Grünfeld, Benoni,
+  // Old Indian, and Budapest structures.
+  if (state.ply === 3 &&
+      state.board[35]?.owner === 0 && state.board[35]?.type === 'pawn' &&
+      state.board[34]?.owner === 0 && state.board[34]?.type === 'pawn' &&
       state.board[21]?.owner === 1 && state.board[21]?.type === 'knight') {
     return pickBookMove(
       legal,
       [
-        { from: 12, to: 20 }, // ...e6 — Nimzo/Queen's Indian structures
-        { from: 14, to: 22 }, // ...g6 — King's Indian / Grünfeld family
+        { from: 12, to: 20 }, // ...e6 — Nimzo/Queen's Indian
+        { from: 14, to: 22 }, // ...g6 — King's Indian / Grünfeld
         { from: 10, to: 26 }, // ...c5 — Benoni
+        { from: 11, to: 19 }, // ...d6 — Old Indian
+        { from: 12, to: 28 }, // ...e5 — Budapest Gambit
       ],
       random,
     );
+  }
+
+  // Nimzo-Indian: ...e6 plus Nc3 invites ...Bb4.
+  if (state.ply <= 7 &&
+      state.board[21]?.owner === 1 && state.board[21]?.type === 'knight' &&
+      state.board[20]?.owner === 1 && state.board[20]?.type === 'pawn' &&
+      state.board[34]?.owner === 0 && state.board[34]?.type === 'pawn' &&
+      state.board[42]?.owner === 0 && state.board[42]?.type === 'knight') {
+    return pickBookMove(legal, [{ from: 5, to: 33 }], random);
+  }
+
+  // Queen's Indian: ...e6 plus Nf3 invites ...b6 and ...Bb7.
+  if (state.ply <= 7 &&
+      state.board[21]?.owner === 1 && state.board[21]?.type === 'knight' &&
+      state.board[20]?.owner === 1 && state.board[20]?.type === 'pawn' &&
+      state.board[34]?.owner === 0 && state.board[34]?.type === 'pawn' &&
+      state.board[45]?.owner === 0 && state.board[45]?.type === 'knight') {
+    return pickBookMove(legal, [{ from: 9, to: 17 }, { from: 10, to: 26 }], random);
+  }
+
+  // Grünfeld: after ...Nf6/...g6 and Nc3, strike with ...d5.
+  if (state.ply <= 7 &&
+      state.board[21]?.owner === 1 && state.board[21]?.type === 'knight' &&
+      state.board[22]?.owner === 1 && state.board[22]?.type === 'pawn' &&
+      state.board[34]?.owner === 0 && state.board[34]?.type === 'pawn' &&
+      state.board[42]?.owner === 0 && state.board[42]?.type === 'knight') {
+    return pickBookMove(legal, [{ from: 11, to: 27 }], random);
+  }
+
+  // Old Indian: after ...Nf6/...d6, develop b8-knight to d7.
+  if (state.ply <= 7 &&
+      state.board[21]?.owner === 1 && state.board[21]?.type === 'knight' &&
+      state.board[19]?.owner === 1 && state.board[19]?.type === 'pawn' &&
+      state.board[1]?.owner === 1 && state.board[1]?.type === 'knight') {
+    return pickBookMove(legal, [{ from: 1, to: 11 }, { from: 12, to: 28 }], random);
+  }
+
+  // Slav / Chigorin after 1.d4 d5 2.c4.
+  if (state.ply === 3 &&
+      state.board[35]?.owner === 0 && state.board[35]?.type === 'pawn' &&
+      state.board[34]?.owner === 0 && state.board[34]?.type === 'pawn' &&
+      state.board[27]?.owner === 1 && state.board[27]?.type === 'pawn') {
+    return pickBookMove(
+      legal,
+      [
+        { from: 10, to: 18 }, // ...c6 Slav
+        { from: 1, to: 18 },  // ...Nc6 Chigorin
+      ],
+      random,
+    );
+  }
+
+  // Semi-Slav: add ...e6 after the Slav structure is established.
+  if (state.ply <= 7 &&
+      state.board[27]?.owner === 1 && state.board[27]?.type === 'pawn' &&
+      state.board[18]?.owner === 1 && state.board[18]?.type === 'pawn' &&
+      state.board[34]?.owner === 0 && state.board[34]?.type === 'pawn') {
+    return pickBookMove(legal, [{ from: 12, to: 20 }], random);
+  }
+
+  // Blumenfeld motif: ...Nf6/...e6/...c5 versus c4+d5, then ...b5.
+  if (state.ply <= 9 &&
+      state.board[21]?.owner === 1 && state.board[21]?.type === 'knight' &&
+      state.board[20]?.owner === 1 && state.board[20]?.type === 'pawn' &&
+      state.board[26]?.owner === 1 && state.board[26]?.type === 'pawn' &&
+      state.board[34]?.owner === 0 && state.board[34]?.type === 'pawn' &&
+      state.board[27]?.owner === 0 && state.board[27]?.type === 'pawn') {
+    return pickBookMove(legal, [{ from: 9, to: 25 }], random);
   }
 
   // French: after 1.e4 e6, strike the center immediately with ...d5.
@@ -642,10 +914,10 @@ function openingFollowUp(
     return pickBookMove(legal, [{ from: 21, to: 27 }], random);
   }
 
-  // Open Game: develop naturally with ...Nc6.
+  // Generic Open Game development when White does not enter Petroff/Philidor patterns.
   if (state.ply === 3 && state.board[36]?.owner === 0 && state.board[36]?.type === 'pawn' &&
       state.board[28]?.owner === 1 && state.board[28]?.type === 'pawn') {
-    return pickBookMove(legal, [{ from: 1, to: 18 }], random);
+    return pickBookMove(legal, [{ from: 1, to: 18 }, { from: 6, to: 21 }, { from: 11, to: 19 }], random);
   }
 
   // Scandinavian: after exd5, recapture with the queen when legal.
@@ -654,7 +926,7 @@ function openingFollowUp(
     return pickBookMove(legal, [{ from: 3, to: 27 }], random);
   }
 
-  // English setups: ...Nf6 is the main flexible developing follow-up.
+  // English setups: flexible development.
   if (state.ply === 3 && state.board[34]?.owner === 0 && state.board[34]?.type === 'pawn') {
     return pickBookMove(legal, [{ from: 6, to: 21 }, { from: 1, to: 18 }, { from: 14, to: 22 }], random);
   }
@@ -673,7 +945,6 @@ function openingFollowUp(
 
   return null;
 }
-
 function openingBook(state: ChessState, random: () => number): ChessMove | null {
   if (state.turn !== 1) return null;
   const legal = chessLegalMoves(state);
@@ -730,7 +1001,10 @@ export function chooseChessExpertMove(
     ttBest?: string,
   ) => {
     const killer = killers.get(ply) ?? [];
-    return [...moves].sort((a, b) => scoreMove(b) - scoreMove(a));
+    return moves
+      .map((move) => ({ move, score: scoreMove(move) }))
+      .sort((a, b) => b.score - a.score)
+      .map(({ move }) => move);
 
     function scoreMove(move: ChessMove) {
       const key = moveKey(move);
@@ -742,6 +1016,9 @@ export function chooseChessExpertMove(
         score += 500_000 + PIECE_VALUE[captured.type] * 16 - PIECE_VALUE[attacker.type];
       if (move.promotion) score += 420_000 + PIECE_VALUE[move.promotion] * 8;
       if (attacker?.type === 'king' && Math.abs(move.to - move.from) === 2) score += 28_000;
+      const child = advanceSearchState(position, move);
+      if (child.inCheck) score += 180_000;
+      if (move.promotion && move.promotion !== 'queen' && child.inCheck) score += 35_000;
       if (killer[0] === key) score += 22_000;
       else if (killer[1] === key) score += 14_000;
       score += history.get(key) ?? 0;
@@ -782,7 +1059,12 @@ export function chooseChessExpertMove(
 
     const tactical = position.inCheck
       ? moves
-      : moves.filter((move) => !!capturedPiece(position, move) || !!move.promotion);
+      : moves.filter(
+          (move) =>
+            !!capturedPiece(position, move) ||
+            !!move.promotion ||
+            advanceSearchState(position, move).inCheck,
+        );
     if (!tactical.length) return stand;
     const ordered = orderMoves(position, tactical, ply);
 
