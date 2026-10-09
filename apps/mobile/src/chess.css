@@ -82,18 +82,29 @@ dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child
   transform: rotate(180deg);
   transform-origin: center;
 }
+.match-page[data-game='chess'][data-mode='local'] .match-layout,
+.match-page[data-game='chess'][data-mode='local'] .board-column,
+.match-page[data-game='chess'][data-mode='local'] .match-side {
+  min-width: 0;
+}
 .match-page[data-game='chess'][data-mode='local'] .chess-tabletop-clocks {
   display: grid;
   gap: 12px;
+  min-width: 0;
+  max-width: 100%;
   padding: 14px;
+  box-sizing: border-box;
 }
 .match-page[data-game='chess'][data-mode='local'] .chess-tabletop-clock {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 10px;
+  min-width: 0;
+  max-width: 100%;
   min-height: 92px;
-  padding: 14px 16px;
+  padding: 12px;
+  box-sizing: border-box;
   border: 1px solid #ffffff18;
   border-radius: 16px;
   background: linear-gradient(135deg, #111a18f2, #0d1413f5);
@@ -114,22 +125,27 @@ dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child
   align-items: center;
   gap: 10px;
   min-width: 0;
+  width: 100%;
 }
 .match-page[data-game='chess'][data-mode='local'] .chess-clock-player > div {
   display: grid;
   gap: 2px;
   min-width: 0;
+  flex: 1;
+}
+.match-page[data-game='chess'][data-mode='local'] .chess-clock-player strong,
+.match-page[data-game='chess'][data-mode='local'] .chess-clock-player small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .match-page[data-game='chess'][data-mode='local'] .chess-clock-player strong {
   font-size: .95rem;
   color: var(--text);
 }
 .match-page[data-game='chess'][data-mode='local'] .chess-clock-player small {
-  max-width: 150px;
-  overflow: hidden;
   color: var(--muted);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .match-page[data-game='chess'][data-mode='local'] .chess-clock-piece {
   flex: 0 0 auto;
@@ -146,13 +162,15 @@ dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child
   text-shadow: 0 0 1px #101817, 0 1px 0 #101817;
 }
 .match-page[data-game='chess'][data-mode='local'] .chess-clock-time {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-width: 118px;
+  width: 100%;
+  min-width: 0;
   min-height: 54px;
-  padding: 8px 12px;
+  padding: 8px 10px;
+  box-sizing: border-box;
   border: 1px solid #ffffff1c;
   border-radius: 14px;
   background: #0b1213d9;
@@ -271,7 +289,7 @@ dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child
     gap: 8px;
   }
   .match-page[data-game='chess'][data-mode='local'] .chess-clock-time {
-    min-width: 96px;
+    min-width: 0;
     min-height: 46px;
     padding: 6px 9px;
   }
