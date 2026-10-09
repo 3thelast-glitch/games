@@ -85,7 +85,7 @@ export function MatchPage(p: MatchPageProps) {
     return (
       <div
         key={player}
-        className={`player-panel player-${player} ${p.state.turn === player && !p.result ? 'active' : ''}`}
+        className={`player-panel player-${player} ${p.state.turn === player && !p.result ? 'active' : ''} ${p.mode === 'local' && p.state.gameId === 'chess' && player === 1 ? 'tabletop-facing-panel' : ''}`}
       >
         <Avatar name={person.name} avatar={person.avatar} />
         <div className="player-details">
@@ -113,11 +113,14 @@ export function MatchPage(p: MatchPageProps) {
       </div>
     );
   };
+  const localChessTabletop = p.mode === 'local' && p.state.gameId === 'chess';
   const opponents = p.players
     .map((_, index) => index as Seat)
     .filter((seat) => seat !== p.self);
+  const topSeats = localChessTabletop ? ([1] as Seat[]) : opponents;
+  const bottomSeat = localChessTabletop ? (0 as Seat) : p.self;
   return (
-    <div className="match-page page-enter" data-game={p.state.gameId}>
+    <div className="match-page page-enter" data-game={p.state.gameId} data-mode={p.mode}>
       <header className="match-header">
         <button className="icon-button" aria-label={t('home')} onClick={p.onHome}>
           <Icon name="back" />
@@ -158,13 +161,16 @@ export function MatchPage(p: MatchPageProps) {
       )}
       <div className="match-layout">
         <div className="board-column">
-          <div className="multiplayer-opponents">{opponents.map((seat) => panel(seat))}</div>
-          <div className={`turn-banner player-${p.state.turn}`} role="status">
+          <div className="multiplayer-opponents">{topSeats.map((seat) => panel(seat))}</div>
+          <div
+            className={`turn-banner player-${p.state.turn} ${localChessTabletop && p.state.turn === 1 ? 'tabletop-facing-banner' : ''}`}
+            role="status"
+          >
             <span className="live-dot" />
             {turnText}
           </div>
           {view({ state: p.state, disabled: p.disabled, onMove: p.onMove, t, mode: p.mode })}
-          {panel(p.self)}
+          {panel(bottomSeat)}
         </div>
         <aside className="match-side">
           <section className="panel match-controls">
