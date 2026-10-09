@@ -6,6 +6,7 @@ import { AbaloneBoard } from '../packages/games/abalone/ui.tsx';
 import { QuoridorBoard } from '../packages/games/quoridor/ui.tsx';
 import { createAbalone, type AbaloneMove } from '../packages/games/abalone/state.ts';
 import { createQuoridor, type QuoridorMove } from '../packages/games/quoridor/state.ts';
+import { createChess } from '../packages/games/chess/state.ts';
 import { applyQuoridor } from '../packages/games/quoridor/rules.ts';
 import { applyAbalone } from '../packages/games/abalone/rules.ts';
 import { I18n } from '../apps/mobile/src/i18n.tsx';
@@ -176,6 +177,42 @@ test('online match has no undo or restart; local match exposes both', () => {
   );
   assert.ok(view.getByRole('button', { name: 'Undo' }));
   assert.ok(view.getByRole('button', { name: 'Restart' }));
+});
+
+test('local chess presents player two toward the opposite physical seat', () => {
+  const props = matchProps('local');
+  props.state = createChess();
+  const view = render(
+    <I18n lang="en">
+      <MatchPage {...props} />
+    </I18n>,
+  );
+
+  const match = view.container.querySelector<HTMLElement>('.match-page[data-game="chess"]');
+  assert.ok(match);
+  assert.equal(match?.dataset.mode, 'local');
+
+  const topPanel = view.container.querySelector<HTMLElement>(
+    '.multiplayer-opponents .player-panel.player-1.tabletop-facing-panel',
+  );
+  assert.ok(topPanel);
+  assert.match(topPanel?.textContent ?? '', /Bob/);
+
+  const bottomPanel = view.container.querySelector<HTMLElement>(
+    '.board-column > .player-panel.player-0',
+  );
+  assert.ok(bottomPanel);
+  assert.match(bottomPanel?.textContent ?? '', /Alice/);
+
+  const blackTurn = createChess();
+  blackTurn.turn = 1;
+  props.state = blackTurn;
+  view.rerender(
+    <I18n lang="en">
+      <MatchPage {...props} />
+    </I18n>,
+  );
+  assert.ok(view.container.querySelector('.turn-banner.player-1.tabletop-facing-banner'));
 });
 test('result screen identifies winner, reason, rating and rematch', () => {
   const props = matchProps('online');
