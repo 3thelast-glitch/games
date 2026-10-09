@@ -8,6 +8,10 @@ import {
 } from '../../../packages/core/src/timing.ts';
 import { Avatar, formatTime, Icon, Modal } from './components.tsx';
 import { gameResource, gameViews } from './gameViews.tsx';
+import {
+  summarizeChessReviews,
+  type ChessMoveReview,
+} from '../../../packages/games/chess/review.ts';
 import { useI18n } from './i18n.tsx';
 export interface MatchPageProps {
   id: string;
@@ -34,6 +38,7 @@ export interface MatchPageProps {
   drawAccepts?: Seat[];
   rematchWaiting: boolean;
   emote: { player: Seat; value: string } | null;
+  chessReviews?: ChessMoveReview[];
   onMove: (move: unknown) => void;
   onUndo: () => void;
   onRestart: () => void;
@@ -117,6 +122,12 @@ export function MatchPage(p: MatchPageProps) {
     );
   };
   const localChessTabletop = p.mode === 'local' && p.state.gameId === 'chess';
+  const chessReviews = p.state.gameId === 'chess' ? (p.chessReviews ?? []) : [];
+  const lastChessReview = chessReviews[chessReviews.length - 1] ?? null;
+  const chessReviewPending =
+    p.state.gameId === 'chess' && p.state.ply > 0 && (lastChessReview?.ply ?? 0) < p.state.ply;
+  const chessReviewSummary =
+    p.state.gameId === 'chess' ? summarizeChessReviews(chessReviews) : null;
   const opponents = p.players
     .map((_, index) => index as Seat)
     .filter((seat) => seat !== p.self);
@@ -273,6 +284,84 @@ export function MatchPage(p: MatchPageProps) {
               <p>{t(`${p.state.gameId}Rules`)}</p>
             </section>
           )}
+          {p.state.gameId === 'chess' && (
+            <section
+              className={`panel chess-move-review-panel ${
+                localChessTabletop && lastChessReview?.player === 1
+                  ? 'tabletop-facing-review'
+                  : ''
+              }`}
+              aria-live="polite"
+            >
+              <div className="chess-review-heading">
+                <div>
+                  <span className="eyebrow">{t('chessMoveReview')}</span>
+                  <h3>{t('chessMoveReviewLive')}</h3>
+                </div>
+                {chessReviewPending && (
+                  <span className="chess-review-analyzing">
+                    <span className="spinner" />
+                    {t('chessAnalyzingMove')}
+                  </span>
+                )}
+              </div>
+              {lastChessReview ? (
+                <>
+                  <div className={`chess-review-hero grade-${lastChessReview.grade}`}>
+                    <span className="chess-review-mark" aria-hidden="true">
+                      {lastChessReview.grade === 'best'
+                        ? '★'
+                        : lastChessReview.grade === 'excellent'
+                          ? '✦'
+                          : lastChessReview.grade === 'good'
+                            ? '✓'
+                            : lastChessReview.grade === 'inaccuracy'
+                              ? '?!'
+                              : lastChessReview.grade === 'mistake'
+                                ? '?'
+                                : '??'}
+                    </span>
+                    <div>
+                      <strong>{t(`chessGrade_${lastChessReview.grade}`)}</strong>
+                      <small>
+                        {lastChessReview.notation} · {lastChessReview.accuracy}%
+                      </small>
+                    </div>
+                    <span className="chess-review-loss" dir="ltr">
+                      −{lastChessReview.centipawnLoss / 100}
+                    </span>
+                  </div>
+                  {lastChessReview.bestNotation &&
+                    lastChessReview.bestNotation !== lastChessReview.notation && (
+                      <div className="chess-best-line">
+                        <span>{t('chessBestMove')}</span>
+                        <strong dir="ltr">{lastChessReview.bestNotation}</strong>
+                      </div>
+                    )}
+                  <div className="chess-review-history">
+                    {chessReviews
+                      .slice(-6)
+                      .reverse()
+                      .map((review) => (
+                        <div key={review.ply} className={`grade-${review.grade}`}>
+                          <span>
+                            {Math.ceil(review.ply / 2)}.
+                            {review.player === 1 ? '…' : ''}
+                          </span>
+                          <strong dir="ltr">{review.notation}</strong>
+                          <small>{t(`chessGrade_${review.grade}`)}</small>
+                          <b>{review.accuracy}%</b>
+                        </div>
+                      ))}
+                  </div>
+                </>
+              ) : (
+                <p className="small-muted">
+                  {p.state.ply > 0 ? t('chessAnalyzingMove') : t('chessReviewStartsAfterMove')}
+                </p>
+              )}
+            </section>
+          )}
           {p.drawOffer !== null && !p.result && (
             <section className="panel draw-panel">
               <p>{t(p.drawOffer === p.self || (p.drawAccepts ?? []).includes(p.self) ? 'drawSent' : 'drawOffered')}</p>
@@ -370,6 +459,70 @@ export function MatchPage(p: MatchPageProps) {
                 </strong>
               </div>
             </div>
+            {p.state.gameId === 'chess' && chessReviewSummary && (
+              <section className="chess-final-review">
+                <div className="chess-final-review-head">
+                  <div>
+                    <small>{t('chessGameReview')}</small>
+                    <strong>{t('chessGameQuality')}</strong>
+                  </div>
+                  <b>{chessReviewSummary.quality}%</b>
+                </div>
+                <div className="chess-final-player-grid">
+                  {chessReviewSummary.players.map((summary) => (
+                    <div key={summary.player} className={`chess-final-player player-${summary.player}`}>
+                      <div className="chess-final-player-title">
+                        <span aria-hidden="true">{summary.player === 0 ? '♔' : '♚'}</span>
+                        <div>
+                          <strong>{p.players[summary.player]?.name}</strong>
+                          <small>{t(summary.player === 0 ? 'chessWhite' : 'chessBlack')}</small>
+                        </div>
+                      </div>
+                      <div className="chess-final-accuracy">
+                        <strong>{summary.accuracy}%</strong>
+                        <small>{t('chessAccuracy')}</small>
+                      </div>
+                      <div className="chess-final-breakdown">
+                        <span>
+                          <b>{summary.grades.best}</b>
+                          {t('chessGrade_best')}
+                        </span>
+                        <span>
+                          <b>{summary.grades.excellent}</b>
+                          {t('chessGrade_excellent')}
+                        </span>
+                        <span>
+                          <b>{summary.grades.good}</b>
+                          {t('chessGrade_good')}
+                        </span>
+                        <span>
+                          <b>{summary.grades.inaccuracy}</b>
+                          {t('chessGrade_inaccuracy')}
+                        </span>
+                        <span>
+                          <b>{summary.grades.mistake}</b>
+                          {t('chessGrade_mistake')}
+                        </span>
+                        <span>
+                          <b>{summary.grades.blunder}</b>
+                          {t('chessGrade_blunder')}
+                        </span>
+                      </div>
+                      <div className="chess-final-meta">
+                        <span>{t('chessReviewedMoves')}: {summary.moves}</span>
+                        <span dir="ltr">ACPL: {summary.averageCentipawnLoss}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {chessReviewPending && (
+                  <div className="chess-final-pending">
+                    <span className="spinner" />
+                    {t('chessFinalAnalysisPending')}
+                  </div>
+                )}
+              </section>
+            )}
             <button
               className="button primary full"
               disabled={p.rematchWaiting}
