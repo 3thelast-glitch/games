@@ -275,9 +275,9 @@ test('chess shows live move evaluation and final player/game ratings', () => {
   );
 
   assert.ok(view.getByText('Latest move evaluation'));
-  assert.ok(view.getByText('Excellent'));
-  assert.ok(view.getByText('c7–c5'));
-  assert.ok(view.getByText('92%'));
+  assert.ok(view.getAllByText('Excellent').length >= 1);
+  assert.ok(view.getAllByText('c7–c5').length >= 1);
+  assert.ok(view.getAllByText('92%').length >= 1);
 
   props.result = { winner: 0, reason: 'checkmate', ratingDelta: [0, 0] };
   props.endedAt = 61000;
@@ -289,10 +289,10 @@ test('chess shows live move evaluation and final player/game ratings', () => {
 
   assert.ok(view.getByText('Game quality'));
   assert.ok(view.getByText('96%'));
-  assert.ok(view.getByText('Accuracy', { exact: true }));
-  assert.ok(view.getByText('Alice'));
-  assert.ok(view.getByText('Bob'));
-  assert.ok(view.getByText('Reviewed moves: 1'));
+  assert.equal(view.getAllByText('Accuracy', { exact: true }).length, 2);
+  assert.ok(view.getAllByText('Alice').length >= 1);
+  assert.ok(view.getAllByText('Bob').length >= 1);
+  assert.equal(view.getAllByText('Reviewed moves: 1').length, 2);
 });
 
 test('result screen identifies winner, reason, rating and rematch', () => {
