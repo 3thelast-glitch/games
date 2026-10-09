@@ -11,6 +11,12 @@ import {
   type ChessPieceType,
   type ChessState,
 } from './state.ts';
+import {
+  chessMoveAccuracy,
+  chessMoveGrade,
+  chessMoveNotation,
+  type ChessMoveReview,
+} from './review.ts';
 
 export interface ChessExpertOptions {
   /** Wall-clock budget for one move. Production defaults to 6.5 seconds. */
@@ -1369,4 +1375,68 @@ export function chooseChessExpertMove(
   // a move from a fully completed iteration. Depth zero falls back to a legal move.
   void completedDepth;
   return bestMove;
+}
+
+export interface ChessMoveReviewOptions {
+  budgetMs?: number;
+  maxDepth?: number;
+  now?: () => number;
+}
+
+function reviewPositionScore(state: ChessState, root: Player): number {
+  const legal = chessLegalMoves(state);
+  if (!legal.length) {
+    if (state.inCheck) return state.turn === root ? -MATE : MATE;
+    return 0;
+  }
+  if (automaticDraw(state)) return 0;
+  return evaluate(state, root);
+}
+
+export function reviewChessMove(
+  state: ChessState,
+  move: ChessMove,
+  options: ChessMoveReviewOptions = {},
+): ChessMoveReview | null {
+  if (state.winner !== null || state.drawReason) return null;
+
+  const legal = chessLegalMoves(state);
+  const played = legal.find((candidate) => moveKey(candidate) === moveKey(move));
+  if (!played) return null;
+
+  const root = state.turn;
+  const bestMove = chooseChessExpertMove(state, {
+    useBook: false,
+    budgetMs: options.budgetMs ?? 450,
+    maxDepth: options.maxDepth ?? 4,
+    ...(options.now ? { now: options.now } : {}),
+  });
+
+  const playedState = advanceSearchState(state, played);
+  const playedScore = reviewPositionScore(playedState, root);
+
+  const best = bestMove && legal.some((candidate) => moveKey(candidate) === moveKey(bestMove))
+    ? bestMove
+    : played;
+  const bestState = moveKey(best) === moveKey(played)
+    ? playedState
+    : advanceSearchState(state, best);
+  const bestScore = reviewPositionScore(bestState, root);
+
+  const isBestMove = moveKey(best) === moveKey(played);
+  const centipawnLoss = isBestMove
+    ? 0
+    : Math.max(0, Math.min(5000, Math.round(bestScore - playedScore)));
+
+  return {
+    player: root,
+    ply: state.ply + 1,
+    move: { ...played },
+    notation: chessMoveNotation(played),
+    grade: chessMoveGrade(centipawnLoss, isBestMove),
+    accuracy: chessMoveAccuracy(centipawnLoss, isBestMove),
+    centipawnLoss,
+    bestMove: best ? { ...best } : null,
+    bestNotation: best ? chessMoveNotation(best) : null,
+  };
 }
