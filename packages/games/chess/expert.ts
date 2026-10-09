@@ -835,6 +835,7 @@ function openingFollowUp(
   if (state.ply <= 7 &&
       state.board[21]?.owner === 1 && state.board[21]?.type === 'knight' &&
       state.board[20]?.owner === 1 && state.board[20]?.type === 'pawn' &&
+      state.board[10]?.owner === 1 && state.board[10]?.type === 'pawn' &&
       state.board[34]?.owner === 0 && state.board[34]?.type === 'pawn' &&
       state.board[45]?.owner === 0 && state.board[45]?.type === 'knight') {
     return pickBookMove(legal, [{ from: 9, to: 17 }, { from: 10, to: 26 }], random);
