@@ -82,6 +82,96 @@ dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child
   transform: rotate(180deg);
   transform-origin: center;
 }
+.match-page[data-game='chess'][data-mode='local'] .chess-tabletop-clocks {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+.match-page[data-game='chess'][data-mode='local'] .chess-tabletop-clock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 92px;
+  padding: 14px 16px;
+  border: 1px solid #ffffff18;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #111a18f2, #0d1413f5);
+  box-shadow: inset 0 1px 0 #ffffff08;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+.match-page[data-game='chess'][data-mode='local'] .chess-tabletop-clock.active {
+  border-color: #8fd8b899;
+  background: linear-gradient(135deg, #14231ff5, #0d1714f5);
+  box-shadow: 0 0 0 1px #8fd8b822, inset 0 1px 0 #ffffff0d;
+}
+.match-page[data-game='chess'][data-mode='local'] .chess-black-clock {
+  transform: rotate(180deg);
+  transform-origin: center;
+}
+.match-page[data-game='chess'][data-mode='local'] .chess-clock-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.match-page[data-game='chess'][data-mode='local'] .chess-clock-player > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.match-page[data-game='chess'][data-mode='local'] .chess-clock-player strong {
+  font-size: .95rem;
+  color: var(--text);
+}
+.match-page[data-game='chess'][data-mode='local'] .chess-clock-player small {
+  max-width: 150px;
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.match-page[data-game='chess'][data-mode='local'] .chess-clock-piece {
+  flex: 0 0 auto;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 34px;
+  line-height: 1;
+}
+.match-page[data-game='chess'][data-mode='local'] .chess-black-clock .chess-clock-piece {
+  color: #c5d0cc;
+  text-shadow: 0 1px 0 #ffffff22;
+}
+.match-page[data-game='chess'][data-mode='local'] .chess-white-clock .chess-clock-piece {
+  color: #fff8e9;
+  text-shadow: 0 0 1px #101817, 0 1px 0 #101817;
+}
+.match-page[data-game='chess'][data-mode='local'] .chess-clock-time {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 118px;
+  min-height: 54px;
+  padding: 8px 12px;
+  border: 1px solid #ffffff1c;
+  border-radius: 14px;
+  background: #0b1213d9;
+  color: #eef9f4;
+  font-variant-numeric: tabular-nums;
+}
+.match-page[data-game='chess'][data-mode='local'] .chess-tabletop-clock.active .chess-clock-time {
+  border-color: #8fd8b866;
+  background: #10201bd9;
+}
+.match-page[data-game='chess'][data-mode='local'] .chess-clock-time strong {
+  font-size: clamp(1.6rem, 2.7vw, 2.1rem);
+  line-height: 1;
+  letter-spacing: .02em;
+}
+.match-page[data-game='chess'][data-mode='local'] .chess-clock-time.low {
+  border-color: #ff7a7a80;
+  color: #ff9b9b;
+}
 .chess-cell .target-dot {
   position: absolute;
   width: 22%;
@@ -172,6 +262,22 @@ dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child
   .chess-board-wrap { width: min(100%, calc(100dvh - 250px), 560px); min-width: 280px; }
   .chess-board { border-radius: 12px; }
   .chess-cell.selected-cell { box-shadow: inset 0 0 0 3px #9ee8c4; }
+  .match-page[data-game='chess'][data-mode='local'] .chess-tabletop-clocks {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .match-page[data-game='chess'][data-mode='local'] .chess-tabletop-clock {
+    min-height: 82px;
+    padding: 10px;
+    gap: 8px;
+  }
+  .match-page[data-game='chess'][data-mode='local'] .chess-clock-time {
+    min-width: 96px;
+    min-height: 46px;
+    padding: 6px 9px;
+  }
+  .match-page[data-game='chess'][data-mode='local'] .chess-clock-player small {
+    display: none;
+  }
 }
 @media (max-width: 420px) {
   .chess-board-wrap { min-width: 0; width: 100%; }
