@@ -108,9 +108,22 @@ export const BLACK_OPENING_REPERTOIRE: readonly BlackOpeningRepertoireEntry[] = 
       { move: { from: 6, to: 21 }, name: 'Symmetrical Réti', idea: 'match development and keep the pawn structure flexible' },
     ],
   },
+  {
+    whiteFirstMove: 'f4',
+    key: '53-37-',
+    replies: [
+      { move: { from: 12, to: 28 }, name: "From's Gambit", idea: 'counter Bird’s Opening immediately with ...e5 and rapid kingside activity' },
+    ],
+  },
 ] as const;
 
 export const BLACK_OPENING_FOLLOW_UPS = [
+  { name: 'Latvian Gambit', trigger: '1.e4 e5 2.Nf3 f5', idea: 'sacrifice the f-pawn for immediate central and kingside counterplay' },
+  { name: 'Elephant Gambit', trigger: '1.e4 e5 2.Nf3 d5', idea: 'ignore the attacked e5 pawn and strike back in the center with ...d5' },
+  { name: 'Albin Countergambit', trigger: '1.d4 d5 2.c4 e5', idea: 'offer e5 to create a dangerous advanced d-pawn and rapid activity' },
+  { name: 'Tarrasch Defense', trigger: '1.d4 d5 2.c4 e6 then ...c5', idea: 'accept an isolated queen pawn in exchange for active piece play and central freedom' },
+  { name: 'Baltic Defense', trigger: '1.d4 d5 2.c4 Bf5', idea: 'develop the queen bishop before closing the center and surprise Queen’s Gambit setups' },
+  { name: "From's Gambit", trigger: '1.f4 e5', idea: 'counter Bird’s Opening with a sharp pawn sacrifice aimed at the white king' },
   { name: 'Petroff Defense', trigger: '1.e4 e5 2.Nf3', idea: 'counterattack e4 with ...Nf6 instead of defending passively' },
   { name: 'Philidor Defense', trigger: '1.e4 e5 2.Nf3', idea: 'support the e5 center with ...d6 and keep a compact structure' },
   { name: 'Modern Defense fianchetto', trigger: '1.e4 g6', idea: 'play ...Bg7 and attack the center from the long diagonal' },
@@ -162,6 +175,14 @@ export const BLACK_STRATEGIC_IDEAS = [
   { name: 'Smothered Mate', idea: 'recognize knight mating patterns around a boxed-in king through forcing search' },
   { name: 'The Windmill', idea: 'use repeated discovered checks and captures when the search finds a forcing cycle' },
   { name: 'Underpromotion', idea: 'allow promotion to knight, rook, or bishop when it is tactically superior to a queen' },
+  { name: 'Clearance Sacrifice', idea: 'sacrifice or move a piece to vacate a critical square or line for a stronger attacking piece' },
+  { name: 'The Desperado Piece', idea: 'extract maximum forcing value from a piece that is likely to be lost in the tactical sequence' },
+  { name: 'Luft', idea: 'create a safe king escape square to reduce back-rank mating danger' },
+  { name: 'Hanging Pawns', idea: 'use connected c/d pawns for space and activity while accounting for their long-term vulnerability' },
+  { name: 'Backward Pawn', idea: 'identify a pawn that cannot advance safely and can become a durable target on an open or semi-open file' },
+  { name: 'Overprotection', idea: 'assign extra defenders to a strong central point so surrounding pieces gain flexibility' },
+  { name: 'Triangulation', idea: 'use endgame king move-order and tempo to return to the same position with the opponent to move' },
+  { name: 'The Opposition', idea: 'in king endings, exploit direct king opposition to force the enemy king aside' },
 ] as const;
 
 function cloneBoard(board: (ChessPiece | null)[]) {
@@ -673,6 +694,124 @@ function xRayPressureBonus(state: ChessState, player: Player): number {
   return Math.min(28, score);
 }
 
+function luftBonus(state: ChessState, player: Player, endgame: boolean): number {
+  if (endgame) return 0;
+  const king = state.board.findIndex((piece) => piece?.owner === player && piece.type === 'king');
+  if (king < 0 || rowOf(king) !== (player === 0 ? 7 : 0)) return 0;
+  const homePawnRow = player === 0 ? 6 : 1;
+  const luftRow = player === 0 ? 5 : 2;
+  let score = 0;
+  for (const file of [6, 7]) {
+    const home = state.board[homePawnRow * 8 + file];
+    const advanced = state.board[luftRow * 8 + file];
+    if (!home && advanced?.owner === player && advanced.type === 'pawn') score += 6;
+  }
+  return Math.min(10, score);
+}
+
+function hangingPawnsBonus(state: ChessState, player: Player): number {
+  const cPawn = state.board.findIndex(
+    (piece, index) => piece?.owner === player && piece.type === 'pawn' && colOf(index) === 2,
+  );
+  const dPawn = state.board.findIndex(
+    (piece, index) => piece?.owner === player && piece.type === 'pawn' && colOf(index) === 3,
+  );
+  if (cPawn < 0 || dPawn < 0) return 0;
+  if (Math.abs(rowOf(cPawn) - rowOf(dPawn)) > 1) return 0;
+
+  const hasWingSupport = state.board.some(
+    (piece, index) =>
+      piece?.owner === player &&
+      piece.type === 'pawn' &&
+      (colOf(index) === 1 || colOf(index) === 4),
+  );
+  if (hasWingSupport) return 0;
+
+  const advanceC = player === 0 ? 6 - rowOf(cPawn) : rowOf(cPawn) - 1;
+  const advanceD = player === 0 ? 6 - rowOf(dPawn) : rowOf(dPawn) - 1;
+  const direction = player === 0 ? -8 : 8;
+  const blocked =
+    !!state.board[cPawn + direction] || !!state.board[dPawn + direction];
+  return Math.max(-16, Math.min(16, (advanceC + advanceD) * 3 - (blocked ? 12 : 2)));
+}
+
+function backwardPawnPenalty(state: ChessState, player: Player): number {
+  const enemy = opponent(player);
+  let penalty = 0;
+  for (let index = 0; index < 64; index++) {
+    const pawn = state.board[index];
+    if (pawn?.owner !== player || pawn.type !== 'pawn') continue;
+    const row = rowOf(index);
+    const col = colOf(index);
+    const forward = index + (player === 0 ? -8 : 8);
+    if (forward < 0 || forward >= 64) continue;
+
+    const hasAdjacentSupport = state.board.some((piece, other) => {
+      if (piece?.owner !== player || piece.type !== 'pawn') return false;
+      if (Math.abs(colOf(other) - col) !== 1) return false;
+      return player === 0 ? rowOf(other) <= row : rowOf(other) >= row;
+    });
+    if (hasAdjacentSupport) continue;
+
+    const targetRow = rowOf(forward);
+    const targetCol = colOf(forward);
+    const enemySourceRow = targetRow + (enemy === 0 ? 1 : -1);
+    const attackedByEnemyPawn = [-1, 1].some((dc) => {
+      const sourceCol = targetCol + dc;
+      if (enemySourceRow < 0 || enemySourceRow > 7 || sourceCol < 0 || sourceCol > 7) return false;
+      const piece = state.board[enemySourceRow * 8 + sourceCol];
+      return piece?.owner === enemy && piece.type === 'pawn';
+    });
+    if (attackedByEnemyPawn) penalty += 9;
+  }
+  return -Math.min(27, penalty);
+}
+
+function overprotectionBonus(state: ChessState, player: Player): number {
+  const central = [27, 28, 35, 36];
+  let score = 0;
+  const knightSteps = [
+    [-2, -1], [-2, 1], [-1, -2], [-1, 2],
+    [1, -2], [1, 2], [2, -1], [2, 1],
+  ] as const;
+
+  for (const target of central) {
+    const occupant = state.board[target];
+    if (!occupant || occupant.owner !== player) continue;
+    const tr = rowOf(target), tc = colOf(target);
+    let defenders = 0;
+
+    const pawnSourceRow = tr + (player === 0 ? 1 : -1);
+    for (const dc of [-1, 1]) {
+      const col = tc + dc;
+      if (pawnSourceRow < 0 || pawnSourceRow > 7 || col < 0 || col > 7) continue;
+      const pawn = state.board[pawnSourceRow * 8 + col];
+      if (pawn?.owner === player && pawn.type === 'pawn') defenders++;
+    }
+
+    for (const [dr, dc] of knightSteps) {
+      const r = tr + dr, col = tc + dc;
+      if (r < 0 || r > 7 || col < 0 || col > 7) continue;
+      const knight = state.board[r * 8 + col];
+      if (knight?.owner === player && knight.type === 'knight') defenders++;
+    }
+
+    if (defenders >= 2) score += Math.min(12, (defenders - 1) * 4);
+  }
+  return score;
+}
+
+function oppositionBonus(state: ChessState, player: Player, endgame: boolean): number {
+  if (!endgame) return 0;
+  const ownKing = state.board.findIndex((piece) => piece?.owner === player && piece.type === 'king');
+  const enemyKing = state.board.findIndex((piece) => piece?.owner === opponent(player) && piece.type === 'king');
+  if (ownKing < 0 || enemyKing < 0) return 0;
+  const sameFile = colOf(ownKing) === colOf(enemyKing) && Math.abs(rowOf(ownKing) - rowOf(enemyKing)) === 2;
+  const sameRank = rowOf(ownKing) === rowOf(enemyKing) && Math.abs(colOf(ownKing) - colOf(enemyKing)) === 2;
+  if (!sameFile && !sameRank) return 0;
+  return state.turn === player ? -14 : 18;
+}
+
 function evaluate(state: ChessState, root: Player): number {
   let nonPawnMaterial = 0;
   for (const piece of state.board) {
@@ -709,7 +848,12 @@ function evaluate(state: ChessState, root: Player): number {
       bishopQualityBonus(state, player) +
       isolatedQueenPawnActivity(state, player) +
       batteryBonus(state, player) +
-      xRayPressureBonus(state, player);
+      xRayPressureBonus(state, player) +
+      luftBonus(state, player, endgame) +
+      hangingPawnsBonus(state, player) +
+      backwardPawnPenalty(state, player) +
+      overprotectionBonus(state, player) +
+      oppositionBonus(state, player, endgame);
     if (bishops[player] >= 2) positional += 28;
     if (state.castling[player].kingSide || state.castling[player].queenSide) positional += 8;
     score += player === root ? positional : -positional;
@@ -769,6 +913,8 @@ function openingFollowUp(
         { from: 6, to: 21 },  // ...Nf6 Petroff
         { from: 11, to: 19 }, // ...d6 Philidor
         { from: 1, to: 18 },  // ...Nc6 classical Open Game
+        { from: 13, to: 29 }, // ...f5 Latvian Gambit
+        { from: 11, to: 27 }, // ...d5 Elephant Gambit
       ],
       random,
     );
@@ -868,9 +1014,22 @@ function openingFollowUp(
       [
         { from: 10, to: 18 }, // ...c6 Slav
         { from: 1, to: 18 },  // ...Nc6 Chigorin
+        { from: 12, to: 28 }, // ...e5 Albin Countergambit
+        { from: 2, to: 29 },  // ...Bf5 Baltic Defense
+        { from: 12, to: 20 }, // ...e6 Tarrasch setup
       ],
       random,
     );
+  }
+
+  // Tarrasch: after ...d5/...e6 against c4, challenge immediately with ...c5.
+  if (state.ply <= 7 &&
+      state.board[27]?.owner === 1 && state.board[27]?.type === 'pawn' &&
+      state.board[20]?.owner === 1 && state.board[20]?.type === 'pawn' &&
+      state.board[10]?.owner === 1 && state.board[10]?.type === 'pawn' &&
+      state.board[34]?.owner === 0 && state.board[34]?.type === 'pawn' &&
+      state.board[35]?.owner === 0 && state.board[35]?.type === 'pawn') {
+    return pickBookMove(legal, [{ from: 10, to: 26 }], random);
   }
 
   // Semi-Slav: add ...e6 after the Slav structure is established.
