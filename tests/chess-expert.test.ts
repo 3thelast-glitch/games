@@ -25,7 +25,7 @@ test('Chess AI has one dedicated expert route instead of shared difficulty behav
 test('Chess expert opening repertoire includes the requested first-move families', () => {
   assert.deepEqual(
     BLACK_OPENING_REPERTOIRE.map((entry) => entry.whiteFirstMove),
-    ['e4', 'd4', 'c4', 'Nf3'],
+    ['e4', 'd4', 'c4', 'Nf3', 'f4'],
   );
   const names = new Set<string>(
     BLACK_OPENING_REPERTOIRE.flatMap((entry) => entry.replies.map((reply) => reply.name)),
@@ -52,6 +52,7 @@ test('Chess expert opening repertoire includes the requested first-move families
     'Anglo-Indian Defense',
     'Réti: ...d5',
     'Symmetrical Réti',
+    "From's Gambit",
   ]) {
     assert.ok(names.has(expected), expected);
   }
@@ -110,11 +111,13 @@ test('Chess expert branches Indian setups across five major structures', () => {
   }
 });
 
-test('Chess expert follows Petroff and Philidor paths after 1.e4 e5 2.Nf3', () => {
+test('Chess expert varies classical, Petroff, Philidor, Latvian, and Elephant paths after 1.e4 e5 2.Nf3', () => {
   const expected = [
-    { roll: 0, move: '6-21-' },     // ...Nf6 Petroff
-    { roll: 0.4, move: '11-19-' },  // ...d6 Philidor
-    { roll: 0.9, move: '1-18-' },   // ...Nc6 Open Game
+    { roll: 0, move: '6-21-' },      // ...Nf6 Petroff
+    { roll: 0.21, move: '11-19-' },  // ...d6 Philidor
+    { roll: 0.41, move: '1-18-' },   // ...Nc6 classical Open Game
+    { roll: 0.61, move: '13-29-' },  // ...f5 Latvian Gambit
+    { roll: 0.99, move: '11-27-' },  // ...d5 Elephant Gambit
   ];
   for (const item of expected) {
     let state = createChess();
@@ -123,6 +126,7 @@ test('Chess expert follows Petroff and Philidor paths after 1.e4 e5 2.Nf3', () =
     state = applyChess(state, { from: 62, to: 45 }); // 2.Nf3
     const move = chooseChessExpertMove(state, { random: () => item.roll });
     assert.ok(move);
+    assert.ok(chessLegalMoves(state).some((candidate) => moveKey(candidate) === moveKey(move)));
     assert.equal(moveKey(move!), item.move);
   }
 });
@@ -157,10 +161,13 @@ test('Chess expert follows Modern, Nimzowitsch, Owen, and St. George plans', () 
   }
 });
 
-test('Chess expert supports Slav and Chigorin after 1.d4 d5 2.c4', () => {
+test('Chess expert supports Slav, Chigorin, Albin, Baltic, and Tarrasch setups after 1.d4 d5 2.c4', () => {
   const expected = [
-    { roll: 0, move: '10-18-' },   // ...c6 Slav
-    { roll: 0.99, move: '1-18-' }, // ...Nc6 Chigorin
+    { roll: 0, move: '10-18-' },     // ...c6 Slav
+    { roll: 0.21, move: '1-18-' },   // ...Nc6 Chigorin
+    { roll: 0.41, move: '12-28-' },  // ...e5 Albin
+    { roll: 0.61, move: '2-29-' },   // ...Bf5 Baltic
+    { roll: 0.99, move: '12-20-' },  // ...e6 Tarrasch setup
   ];
   for (const item of expected) {
     let state = createChess();
@@ -169,8 +176,28 @@ test('Chess expert supports Slav and Chigorin after 1.d4 d5 2.c4', () => {
     state = applyChess(state, { from: 50, to: 34 }); // 2.c4
     const move = chooseChessExpertMove(state, { random: () => item.roll });
     assert.ok(move);
+    assert.ok(chessLegalMoves(state).some((candidate) => moveKey(candidate) === moveKey(move)));
     assert.equal(moveKey(move!), item.move);
   }
+});
+
+test("Chess expert answers 1.f4 with From's Gambit", () => {
+  let state = createChess();
+  state = applyChess(state, { from: 53, to: 37 }); // 1.f4
+  const move = chooseChessExpertMove(state, { random: () => 0 });
+  assert.deepEqual(move, { from: 12, to: 28 }); // ...e5
+  assert.ok(chessLegalMoves(state).some((candidate) => moveKey(candidate) === moveKey(move!)));
+});
+
+test('Chess expert continues the Tarrasch setup with ...c5', () => {
+  let state = createChess();
+  state = applyChess(state, { from: 51, to: 35 }); // 1.d4
+  state = applyChess(state, { from: 11, to: 27 }); // ...d5
+  state = applyChess(state, { from: 50, to: 34 }); // 2.c4
+  state = applyChess(state, { from: 12, to: 20 }); // ...e6
+  state = applyChess(state, { from: 62, to: 45 }); // 3.Nf3
+  const move = chooseChessExpertMove(state, { random: () => 0 });
+  assert.deepEqual(move, { from: 10, to: 26 }); // ...c5
 });
 
 test('Chess expert continues Slav into a Semi-Slav structure', () => {
@@ -249,6 +276,12 @@ test('Chess expert recognizes the Benko ...b5 pawn-sacrifice motif', () => {
 test('Chess expert exposes the requested deeper black opening plans', () => {
   const names = new Set<string>(BLACK_OPENING_FOLLOW_UPS.map((plan) => plan.name));
   for (const expected of [
+    'Latvian Gambit',
+    'Elephant Gambit',
+    'Albin Countergambit',
+    'Tarrasch Defense',
+    'Baltic Defense',
+    "From's Gambit",
     'Petroff Defense',
     'Philidor Defense',
     'Modern Defense fianchetto',
@@ -305,6 +338,14 @@ test('Chess expert advertises and evaluates the requested strategic motif set', 
     'Smothered Mate',
     'The Windmill',
     'Underpromotion',
+    'Clearance Sacrifice',
+    'The Desperado Piece',
+    'Luft',
+    'Hanging Pawns',
+    'Backward Pawn',
+    'Overprotection',
+    'Triangulation',
+    'The Opposition',
   ]) {
     assert.ok(names.has(expected), expected);
   }
