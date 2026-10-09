@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
+  BLACK_OPENING_FOLLOW_UPS,
   BLACK_OPENING_REPERTOIRE,
   BLACK_STRATEGIC_IDEAS,
   chooseChessExpertMove,
@@ -105,6 +106,23 @@ test('Chess expert recognizes the Benko ...b5 pawn-sacrifice motif', () => {
   state = applyChess(state, { from: 35, to: 27 }); // 3.d5
   const move = chooseChessExpertMove(state, { random: () => 0 });
   assert.deepEqual(move, { from: 9, to: 25 }); // ...b5 Benko Gambit
+});
+
+test('Chess expert exposes the requested deeper black opening plans', () => {
+  const names = BLACK_OPENING_FOLLOW_UPS.map((plan) => plan.name);
+  for (const expected of [
+    'Nimzo-Indian Defense',
+    "King's Indian Defense",
+    'Benko Gambit',
+    'French ...d5 break',
+    'Caro-Kann ...d5 break',
+    'Pirc fianchetto setup',
+    'Alekhine retreat to d5',
+    'Open Game development',
+    'Scandinavian recapture',
+  ]) {
+    assert.ok(names.includes(expected), expected);
+  }
 });
 
 test('Chess expert advertises and evaluates the requested strategic motif set', () => {
