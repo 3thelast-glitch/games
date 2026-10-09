@@ -68,20 +68,23 @@ export function MatchPage(p: MatchPageProps) {
             : p.state.turn === p.self
               ? t('yourTurn')
               : t('theirTurn');
+  const clockFor = (player: Seat) =>
+    p.result
+      ? Math.max(0, p.clocks[player] ?? 0)
+      : remainingTimeMs(
+          timeControl,
+          p.clocks,
+          p.state.turn,
+          player,
+          p.turnStartedAt,
+          p.now,
+        );
+  const lowThreshold =
+    timeControl.mode === 'turn' ? Math.min(10000, timeControl.turnMs / 3) : 60000;
   const panel = (player: Seat) => {
     const person = p.players[player],
       resource = gameResource(p.state, player),
-      clock = p.result
-        ? Math.max(0, p.clocks[player] ?? 0)
-        : remainingTimeMs(
-            timeControl,
-            p.clocks,
-            p.state.turn,
-            player,
-            p.turnStartedAt,
-            p.now,
-          ),
-      lowThreshold = timeControl.mode === 'turn' ? Math.min(10000, timeControl.turnMs / 3) : 60000;
+      clock = clockFor(player);
     return (
       <div
         key={player}
@@ -224,11 +227,52 @@ export function MatchPage(p: MatchPageProps) {
               </div>
             )}
           </section>
-          <section className="panel match-guide">
-            <span className="eyebrow">{t('rules')}</span>
-            <h3>{t(`${p.state.gameId}Tag`)}</h3>
-            <p>{t(`${p.state.gameId}Rules`)}</p>
-          </section>
+          {localChessTabletop ? (
+            <section className="panel chess-tabletop-clocks" aria-label={t('chess')}>
+              <div
+                className={`chess-tabletop-clock chess-black-clock ${p.state.turn === 1 && !p.result ? 'active' : ''}`}
+              >
+                <div className="chess-clock-player">
+                  <span className="chess-clock-piece" aria-hidden="true">♚</span>
+                  <div>
+                    <strong>{t('chessBlack')}</strong>
+                    <small>{p.players[1].name}</small>
+                  </div>
+                </div>
+                <div
+                  className={`chess-clock-time ${!p.result && p.state.turn === 1 && clockFor(1) <= lowThreshold ? 'low' : ''}`}
+                  dir="ltr"
+                >
+                  <Icon name="clock" size={18} />
+                  <strong>{formatTime(clockFor(1))}</strong>
+                </div>
+              </div>
+              <div
+                className={`chess-tabletop-clock chess-white-clock ${p.state.turn === 0 && !p.result ? 'active' : ''}`}
+              >
+                <div className="chess-clock-player">
+                  <span className="chess-clock-piece" aria-hidden="true">♔</span>
+                  <div>
+                    <strong>{t('chessWhite')}</strong>
+                    <small>{p.players[0].name}</small>
+                  </div>
+                </div>
+                <div
+                  className={`chess-clock-time ${!p.result && p.state.turn === 0 && clockFor(0) <= lowThreshold ? 'low' : ''}`}
+                  dir="ltr"
+                >
+                  <Icon name="clock" size={18} />
+                  <strong>{formatTime(clockFor(0))}</strong>
+                </div>
+              </div>
+            </section>
+          ) : (
+            <section className="panel match-guide">
+              <span className="eyebrow">{t('rules')}</span>
+              <h3>{t(`${p.state.gameId}Tag`)}</h3>
+              <p>{t(`${p.state.gameId}Rules`)}</p>
+            </section>
+          )}
           {p.drawOffer !== null && !p.result && (
             <section className="panel draw-panel">
               <p>{t(p.drawOffer === p.self || (p.drawAccepts ?? []).includes(p.self) ? 'drawSent' : 'drawOffered')}</p>
