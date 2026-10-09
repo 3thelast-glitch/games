@@ -105,6 +105,18 @@ export const BLACK_OPENING_REPERTOIRE: readonly BlackOpeningRepertoireEntry[] = 
   },
 ] as const;
 
+export const BLACK_OPENING_FOLLOW_UPS = [
+  { name: 'Nimzo-Indian Defense', trigger: '1.d4 Nf6 with ...e6', idea: 'control e4 and prepare ...Bb4 to pressure the c3 knight' },
+  { name: "King's Indian Defense", trigger: '1.d4 Nf6 with ...g6', idea: 'fianchetto the king bishop, concede space, then attack the center and kingside' },
+  { name: 'Benko Gambit', trigger: 'Benoni structure with white pawn on d5', idea: 'offer ...b5 for long-term pressure on open queenside files' },
+  { name: 'French ...d5 break', trigger: '1.e4 e6', idea: 'strike the white center immediately with ...d5' },
+  { name: 'Caro-Kann ...d5 break', trigger: '1.e4 c6', idea: 'build a solid central challenge while keeping the c8 bishop available' },
+  { name: 'Pirc fianchetto setup', trigger: '1.e4 d6', idea: 'develop ...Nf6/...g6 and undermine the broad white center later' },
+  { name: 'Alekhine retreat to d5', trigger: '1.e4 Nf6 2.e5', idea: 'keep provoking and attacking the advanced pawn center' },
+  { name: 'Open Game development', trigger: '1.e4 e5', idea: 'develop ...Nc6 and contest the classical center' },
+  { name: 'Scandinavian recapture', trigger: '1.e4 d5 2.exd5', idea: 'recapture on d5 when legal and force an early concrete position' },
+] as const;
+
 export const BLACK_STRATEGIC_IDEAS = [
   { name: 'Fianchetto', idea: 'develop a bishop to b7/g7 and control a long diagonal from distance' },
   { name: 'Undermining the Center', idea: 'challenge an extended pawn center with timely ...c5 or ...f5 breaks' },
