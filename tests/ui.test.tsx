@@ -7,6 +7,7 @@ import { QuoridorBoard } from '../packages/games/quoridor/ui.tsx';
 import { createAbalone, type AbaloneMove } from '../packages/games/abalone/state.ts';
 import { createQuoridor, type QuoridorMove } from '../packages/games/quoridor/state.ts';
 import { createChess } from '../packages/games/chess/state.ts';
+import type { ChessMoveReview } from '../packages/games/chess/review.ts';
 import { applyQuoridor } from '../packages/games/quoridor/rules.ts';
 import { applyAbalone } from '../packages/games/abalone/rules.ts';
 import { I18n } from '../apps/mobile/src/i18n.tsx';
@@ -235,6 +236,65 @@ test('local chess presents player two toward the opposite physical seat', () => 
   assert.match(blackTurnClock?.textContent ?? '', /9:59/);
   assert.match(whiteWaitingClock?.textContent ?? '', /10:00/);
 });
+test('chess shows live move evaluation and final player/game ratings', () => {
+  const props = matchProps('local');
+  const state = createChess();
+  state.ply = 2;
+  state.turn = 0;
+  props.state = state;
+  const reviews: ChessMoveReview[] = [
+    {
+      player: 0,
+      ply: 1,
+      move: { from: 52, to: 36 },
+      notation: 'e2–e4',
+      grade: 'best',
+      accuracy: 100,
+      centipawnLoss: 0,
+      bestMove: { from: 52, to: 36 },
+      bestNotation: 'e2–e4',
+    },
+    {
+      player: 1,
+      ply: 2,
+      move: { from: 10, to: 26 },
+      notation: 'c7–c5',
+      grade: 'excellent',
+      accuracy: 92,
+      centipawnLoss: 15,
+      bestMove: { from: 10, to: 26 },
+      bestNotation: 'c7–c5',
+    },
+  ];
+  props.chessReviews = reviews;
+
+  const view = render(
+    <I18n lang="en">
+      <MatchPage {...props} />
+    </I18n>,
+  );
+
+  assert.ok(view.getByText('Latest move evaluation'));
+  assert.ok(view.getAllByText('Excellent').length >= 1);
+  assert.ok(view.getAllByText('c7–c5').length >= 1);
+  assert.ok(view.getAllByText('92%').length >= 1);
+
+  props.result = { winner: 0, reason: 'checkmate', ratingDelta: [0, 0] };
+  props.endedAt = 61000;
+  view.rerender(
+    <I18n lang="en">
+      <MatchPage {...props} />
+    </I18n>,
+  );
+
+  assert.ok(view.getByText('Game quality'));
+  assert.ok(view.getByText('96%'));
+  assert.equal(view.getAllByText('Accuracy', { exact: true }).length, 2);
+  assert.ok(view.getAllByText('Alice').length >= 1);
+  assert.ok(view.getAllByText('Bob').length >= 1);
+  assert.equal(view.getAllByText('Reviewed moves: 1').length, 2);
+});
+
 test('result screen identifies winner, reason, rating and rematch', () => {
   const props = matchProps('online');
   props.result = { winner: 0, reason: 'goal', ratingDelta: [16, -16] };
