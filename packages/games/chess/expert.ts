@@ -105,6 +105,18 @@ export const BLACK_OPENING_REPERTOIRE: readonly BlackOpeningRepertoireEntry[] = 
   },
 ] as const;
 
+export const BLACK_STRATEGIC_IDEAS = [
+  { name: 'Fianchetto', idea: 'develop a bishop to b7/g7 and control a long diagonal from distance' },
+  { name: 'Undermining the Center', idea: 'challenge an extended pawn center with timely ...c5 or ...f5 breaks' },
+  { name: 'Pawn Chain Break', idea: 'attack the base of an enemy pawn chain instead of its protected head' },
+  { name: 'Prophylaxis', idea: 'use restrained moves such as ...a6 or ...h6 when they prevent an enemy plan' },
+  { name: 'The Blockade', idea: 'place a stable piece in front of an enemy passed pawn to stop and target it' },
+  { name: 'Minority Attack', idea: 'advance a smaller queenside pawn group to create a fixed weakness in a larger chain' },
+  { name: 'Outpost Creation', idea: 'occupy a protected central square that enemy pawns cannot easily challenge' },
+  { name: 'Pawn Storm', idea: 'push flank pawns toward the enemy king when the kings are castled on opposite wings' },
+  { name: 'The Exchange Sacrifice', idea: 'accept a rook-for-minor material deficit only when king attack or structure gives compensation' },
+] as const;
+
 function cloneBoard(board: (ChessPiece | null)[]) {
   return board.map((piece) => (piece ? { ...piece } : null));
 }
@@ -333,6 +345,43 @@ function centerUnderminingBonus(state: ChessState, player: Player): number {
   );
 }
 
+function pawnChainBreakBonus(state: ChessState, player: Player): number {
+  const enemy = opponent(player);
+  let score = 0;
+  for (const target of [27, 28, 35, 36]) {
+    const pawn = state.board[target];
+    if (pawn?.owner !== enemy || pawn.type !== 'pawn') continue;
+    const row = rowOf(target);
+    const col = colOf(target);
+    const sourceRow = row + (player === 0 ? 1 : -1);
+    for (const dc of [-1, 1]) {
+      const sourceCol = col + dc;
+      if (sourceRow < 0 || sourceRow > 7 || sourceCol < 0 || sourceCol > 7) continue;
+      const attacker = state.board[sourceRow * 8 + sourceCol];
+      if (attacker?.owner === player && attacker.type === 'pawn') score += 8;
+    }
+  }
+  return score;
+}
+
+function minorityAttackBonus(state: ChessState, player: Player): number {
+  const enemy = opponent(player);
+  const files = [0, 1, 2];
+  const ownPawns: number[] = [];
+  let enemyCount = 0;
+  for (let index = 0; index < 64; index++) {
+    const piece = state.board[index];
+    if (piece?.type !== 'pawn' || !files.includes(colOf(index))) continue;
+    if (piece.owner === player) ownPawns.push(index);
+    else if (piece.owner === enemy) enemyCount++;
+  }
+  if (!ownPawns.length || ownPawns.length >= enemyCount) return 0;
+  return ownPawns.reduce((score, index) => {
+    const advance = player === 0 ? 6 - rowOf(index) : rowOf(index) - 1;
+    return score + Math.max(0, advance) * 3;
+  }, 0);
+}
+
 function outpostBonus(state: ChessState, player: Player): number {
   const enemy = opponent(player);
   const central = [26, 27, 28, 29, 34, 35, 36, 37];
@@ -405,6 +454,50 @@ function pawnStormBonus(state: ChessState, player: Player): number {
   return score;
 }
 
+function exchangeSacrificeCompensation(state: ChessState, player: Player): number {
+  const enemy = opponent(player);
+  let ownRooks = 0;
+  let enemyRooks = 0;
+  let ownMinors = 0;
+  let enemyMinors = 0;
+  for (const piece of state.board) {
+    if (!piece) continue;
+    if (piece.type === 'rook') {
+      if (piece.owner === player) ownRooks++;
+      else enemyRooks++;
+    }
+    if (piece.type === 'bishop' || piece.type === 'knight') {
+      if (piece.owner === player) ownMinors++;
+      else enemyMinors++;
+    }
+  }
+  if (ownRooks >= enemyRooks || ownMinors <= enemyMinors) return 0;
+
+  const king = state.board.findIndex((piece) => piece?.owner === enemy && piece.type === 'king');
+  if (king < 0) return 0;
+  const kr = rowOf(king);
+  const kc = colOf(king);
+  let attackers = 0;
+  for (let index = 0; index < 64; index++) {
+    const piece = state.board[index];
+    if (piece?.owner !== player || !['queen', 'rook', 'bishop', 'knight'].includes(piece.type)) continue;
+    const distance = Math.max(Math.abs(rowOf(index) - kr), Math.abs(colOf(index) - kc));
+    if (distance <= 3) attackers++;
+  }
+
+  const shieldDirection = enemy === 0 ? -1 : 1;
+  let shield = 0;
+  for (const dc of [-1, 0, 1]) {
+    const r = kr + shieldDirection;
+    const col = kc + dc;
+    if (r < 0 || r > 7 || col < 0 || col > 7) continue;
+    const piece = state.board[r * 8 + col];
+    if (piece?.owner === enemy && piece.type === 'pawn') shield++;
+  }
+  const damagedShield = 3 - shield;
+  return Math.min(110, attackers * 9 + damagedShield * 14);
+}
+
 function prophylaxisBonus(state: ChessState, player: Player): number {
   const row = player === 0 ? 6 : 1;
   const advancedRow = player === 0 ? 5 : 2;
@@ -443,9 +536,12 @@ function evaluate(state: ChessState, root: Player): number {
       kingShield(state, player, endgame) +
       fianchettoBonus(state, player) +
       centerUnderminingBonus(state, player) +
+      pawnChainBreakBonus(state, player) +
+      minorityAttackBonus(state, player) +
       outpostBonus(state, player) +
       blockadeBonus(state, player) +
       pawnStormBonus(state, player) +
+      exchangeSacrificeCompensation(state, player) +
       prophylaxisBonus(state, player);
     if (bishops[player] >= 2) positional += 28;
     if (state.castling[player].kingSide || state.castling[player].queenSide) positional += 8;
