@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { chooseChessExpertMove } from '../packages/games/chess/expert.ts';
+import {
+  BLACK_OPENING_FOLLOW_UPS,
+  BLACK_OPENING_REPERTOIRE,
+  BLACK_STRATEGIC_IDEAS,
+  chooseChessExpertMove,
+} from '../packages/games/chess/expert.ts';
 import { applyChess, chessLegalMoves } from '../packages/games/chess/rules.ts';
 import { createChess } from '../packages/games/chess/state.ts';
 
@@ -17,12 +22,126 @@ test('Chess AI has one dedicated expert route instead of shared difficulty behav
   assert.match(css, /mode-card:nth-child\(2\)\.selected/);
 });
 
-test('Chess expert uses a deterministic principled opening response', () => {
+test('Chess expert opening repertoire includes the requested first-move families', () => {
+  assert.deepEqual(
+    BLACK_OPENING_REPERTOIRE.map((entry) => entry.whiteFirstMove),
+    ['e4', 'd4', 'c4', 'Nf3'],
+  );
+  const names = new Set<string>(
+    BLACK_OPENING_REPERTOIRE.flatMap((entry) => entry.replies.map((reply) => reply.name)),
+  );
+  for (const expected of [
+    'Sicilian Defence',
+    'Open Game',
+    'French Defense',
+    'Caro-Kann',
+    'Scandinavian Defense',
+    'Pirc Defense',
+    "Alekhine's Defense",
+    'Indian Defenses',
+    "Queen's Pawn Game",
+    'Dutch Defense',
+    'Benoni Defense',
+    'Reversed English',
+    'Symmetrical English',
+    'Anglo-Indian Defense',
+    'Réti: ...d5',
+    'Symmetrical Réti',
+  ]) {
+    assert.ok(names.has(expected), expected);
+  }
+});
+
+test('Chess expert can vary all seven black replies to 1.e4 while staying legal', () => {
   let state = createChess();
   state = applyChess(state, { from: 52, to: 36 }); // 1.e4
-  const move = chooseChessExpertMove(state);
+  const expected = [
+    '10-26-', // ...c5 Sicilian
+    '12-28-', // ...e5 Open Game
+    '12-20-', // ...e6 French
+    '10-18-', // ...c6 Caro-Kann
+    '11-27-', // ...d5 Scandinavian
+    '11-19-', // ...d6 Pirc
+    '6-21-',  // ...Nf6 Alekhine
+  ];
+  const actual = expected.map((_, index) => {
+    const move = chooseChessExpertMove(state, {
+      random: () => (index + 0.1) / expected.length,
+    });
+    assert.ok(move);
+    assert.ok(chessLegalMoves(state).some((candidate) => moveKey(candidate) === moveKey(move)));
+    return moveKey(move!);
+  });
+  assert.deepEqual(actual, expected);
+});
+
+test('Chess expert keeps Sicilian as the first deterministic injected repertoire choice', () => {
+  let state = createChess();
+  state = applyChess(state, { from: 52, to: 36 }); // 1.e4
+  const move = chooseChessExpertMove(state, { random: () => 0 });
   assert.deepEqual(move, { from: 10, to: 26 }); // ...c5 Sicilian Defence
-  assert.ok(chessLegalMoves(state).some((candidate) => moveKey(candidate) === moveKey(move!)));
+});
+
+test('Chess expert branches Indian setups into e6, g6, or c5 follow-ups', () => {
+  const expected = [
+    { roll: 0, move: '12-20-' },   // ...e6 Nimzo/Queen's Indian structures
+    { roll: 0.5, move: '14-22-' }, // ...g6 King's Indian
+    { roll: 0.99, move: '10-26-' },// ...c5 Benoni
+  ];
+  for (const item of expected) {
+    let state = createChess();
+    state = applyChess(state, { from: 51, to: 35 }); // 1.d4
+    state = applyChess(state, { from: 6, to: 21 });  // ...Nf6
+    state = applyChess(state, { from: 50, to: 34 }); // 2.c4
+    const move = chooseChessExpertMove(state, { random: () => item.roll });
+    assert.ok(move);
+    assert.equal(moveKey(move!), item.move);
+  }
+});
+
+test('Chess expert recognizes the Benko ...b5 pawn-sacrifice motif', () => {
+  let state = createChess();
+  state = applyChess(state, { from: 51, to: 35 }); // 1.d4
+  state = applyChess(state, { from: 6, to: 21 });  // ...Nf6
+  state = applyChess(state, { from: 50, to: 34 }); // 2.c4
+  state = applyChess(state, { from: 10, to: 26 }); // ...c5
+  state = applyChess(state, { from: 35, to: 27 }); // 3.d5
+  const move = chooseChessExpertMove(state, { random: () => 0 });
+  assert.deepEqual(move, { from: 9, to: 25 }); // ...b5 Benko Gambit
+});
+
+test('Chess expert exposes the requested deeper black opening plans', () => {
+  const names = new Set<string>(BLACK_OPENING_FOLLOW_UPS.map((plan) => plan.name));
+  for (const expected of [
+    'Nimzo-Indian Defense',
+    "King's Indian Defense",
+    'Benko Gambit',
+    'French ...d5 break',
+    'Caro-Kann ...d5 break',
+    'Pirc fianchetto setup',
+    'Alekhine retreat to d5',
+    'Open Game development',
+    'Scandinavian recapture',
+  ]) {
+    assert.ok(names.has(expected), expected);
+  }
+});
+
+test('Chess expert advertises and evaluates the requested strategic motif set', () => {
+  const names = new Set<string>(BLACK_STRATEGIC_IDEAS.map((idea) => idea.name));
+  for (const expected of [
+    'Fianchetto',
+    'Undermining the Center',
+    'Pawn Chain Break',
+    'Prophylaxis',
+    'The Blockade',
+    'Minority Attack',
+    'Outpost Creation',
+    'Pawn Storm',
+    'The Exchange Sacrifice',
+  ]) {
+    assert.ok(names.has(expected), expected);
+  }
 });
 
 test('Chess expert finds the immediate checkmate in the Fools Mate pattern', () => {
