@@ -204,6 +204,21 @@ test('local chess presents player two toward the opposite physical seat', () => 
   assert.ok(bottomPanel);
   assert.match(bottomPanel?.textContent ?? '', /Alice/);
 
+  const clockDock = view.container.querySelector<HTMLElement>('.chess-tabletop-clocks');
+  assert.ok(clockDock);
+  assert.equal(view.container.querySelector('.match-guide'), null);
+  const blackClock = clockDock?.querySelector<HTMLElement>('.chess-black-clock');
+  const whiteClock = clockDock?.querySelector<HTMLElement>('.chess-white-clock');
+  assert.ok(blackClock);
+  assert.ok(whiteClock);
+  assert.match(blackClock?.textContent ?? '', /Black/);
+  assert.match(blackClock?.textContent ?? '', /Bob/);
+  assert.match(blackClock?.textContent ?? '', /10:00/);
+  assert.match(whiteClock?.textContent ?? '', /White/);
+  assert.match(whiteClock?.textContent ?? '', /Alice/);
+  assert.match(whiteClock?.textContent ?? '', /9:59/);
+  assert.ok(whiteClock?.classList.contains('active'));
+
   const blackTurn = createChess();
   blackTurn.turn = 1;
   props.state = blackTurn;
@@ -213,6 +228,12 @@ test('local chess presents player two toward the opposite physical seat', () => 
     </I18n>,
   );
   assert.ok(view.container.querySelector('.turn-banner.player-1.tabletop-facing-banner'));
+  const blackTurnClock = view.container.querySelector<HTMLElement>('.chess-black-clock');
+  const whiteWaitingClock = view.container.querySelector<HTMLElement>('.chess-white-clock');
+  assert.ok(blackTurnClock?.classList.contains('active'));
+  assert.ok(!whiteWaitingClock?.classList.contains('active'));
+  assert.match(blackTurnClock?.textContent ?? '', /9:59/);
+  assert.match(whiteWaitingClock?.textContent ?? '', /10:00/);
 });
 test('result screen identifies winner, reason, rating and rematch', () => {
   const props = matchProps('online');
