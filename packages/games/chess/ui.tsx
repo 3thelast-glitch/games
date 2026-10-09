@@ -11,8 +11,13 @@ const glyphs: Record<0 | 1, Record<ChessPieceType, string>> = {
 const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const promotions: ChessPromotion[] = ['queen', 'rook', 'bishop', 'knight'];
 
-export function ChessBoard({ state, disabled, onMove, t }: BoardProps<ChessState, ChessMove>) {
+type ChessBoardProps = BoardProps<ChessState, ChessMove> & {
+  mode?: 'local' | 'ai' | 'online';
+};
+
+export function ChessBoard({ state, disabled, onMove, t, mode }: ChessBoardProps) {
   const [selection, setSelection] = useState<number | null>(null);
+  const tabletop = mode === 'local';
   const [promotionTarget, setPromotionTarget] = useState<{ from: number; to: number } | null>(null);
   useEffect(() => {
     setSelection(null);
@@ -44,7 +49,7 @@ export function ChessBoard({ state, disabled, onMove, t }: BoardProps<ChessState
   };
 
   return (
-    <div className="classic-game chess-game">
+    <div className={`classic-game chess-game ${tabletop ? 'chess-tabletop' : ''} turn-${state.turn}`}>
       <p className="board-hint" role="status">
         {state.inCheck ? t('chessCheckHint') : t('chessHint')}
       </p>
@@ -67,16 +72,32 @@ export function ChessBoard({ state, disabled, onMove, t }: BoardProps<ChessState
                 disabled={locked || (!selectable && !target)}
                 onClick={() => chooseSquare(index)}
               >
-                {piece && <span className={`chess-piece owner-${piece.owner}`}>{glyphs[piece.owner][piece.type]}</span>}
+                {piece && (
+                  <span
+                    className={`chess-piece owner-${piece.owner} ${tabletop && piece.owner === 1 ? 'tabletop-facing-piece' : ''}`}
+                  >
+                    {glyphs[piece.owner][piece.type]}
+                  </span>
+                )}
                 {target && <span className={piece ? 'chess-capture-ring' : 'target-dot'} aria-hidden="true" />}
                 {row === 7 && <span className="chess-file" aria-hidden="true">{files[col]}</span>}
                 {col === 0 && <span className="chess-rank" aria-hidden="true">{8 - row}</span>}
+                {tabletop && row === 0 && (
+                  <span className="chess-file chess-file-opposite" aria-hidden="true">{files[col]}</span>
+                )}
+                {tabletop && col === 7 && (
+                  <span className="chess-rank chess-rank-opposite" aria-hidden="true">{8 - row}</span>
+                )}
               </button>
             );
           })}
         </div>
         {promotionTarget && (
-          <div className="chess-promotion" role="dialog" aria-label={t('chessPromotion')}>
+          <div
+            className={`chess-promotion ${tabletop && state.turn === 1 ? 'tabletop-facing-promotion' : ''}`}
+            role="dialog"
+            aria-label={t('chessPromotion')}
+          >
             <strong>{t('chessChoosePromotion')}</strong>
             <div>
               {promotions.map((promotion) => (
