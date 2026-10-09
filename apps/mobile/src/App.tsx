@@ -15,6 +15,8 @@ import type {
   ServerMessage,
 } from '../../../packages/core/src/protocol.ts';
 import { games } from '../../../packages/games/registry.ts';
+import type { ChessMoveReview } from '../../../packages/games/chess/review.ts';
+import type { ChessMove, ChessState } from '../../../packages/games/chess/state.ts';
 import { Avatar, Icon, Logo, Modal, NoticeContext } from './components.tsx';
 import {
   HomePage,
@@ -103,7 +105,8 @@ function ArenaApp({
     [choice, setChoice] = useState<{ gameId: string; mode?: PlayMode } | null>(null),
     [rules, setRules] = useState<string | null>(null),
     [lobby, setLobby] = useState<Extract<ServerMessage, { type: 'room' | 'queued' }> | null>(null),
-    [emote, setEmote] = useState<{ player: Seat; value: string } | null>(null);
+    [emote, setEmote] = useState<{ player: Seat; value: string } | null>(null),
+    [chessReviews, setChessReviews] = useState<ChessMoveReview[]>([]);
   const tokenRef = useRef<string | null>(null),
     onlineRef = useRef<MatchSnapshot | null>(null),
     offlineRef = useRef<OfflineSession | null>(null),
@@ -113,6 +116,8 @@ function ArenaApp({
     ensurePromise = useRef<Promise<string> | null>(null),
     toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null),
     emoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null),
+    chessReviewMatch = useRef<string | null>(null),
+    chessReviewWorkers = useRef(new Set<Worker>()),
     serverOffset = useRef(0);
   settingsRef.current = settings;
   const notify = useCallback((value: unknown) => {
@@ -120,6 +125,54 @@ function ArenaApp({
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setNotice(''), 6500);
   }, []);
+  const queueChessReview = useCallback(
+    (matchId: string, state: ChessState, move: ChessMove) => {
+      if (state.gameId !== 'chess') return;
+      if (chessReviewMatch.current !== matchId) {
+        chessReviewMatch.current = matchId;
+        setChessReviews([]);
+      }
+
+      const requestId = crypto.randomUUID();
+      const worker = new Worker(new URL('./chess-review.worker.ts', import.meta.url), {
+        type: 'module',
+      });
+      chessReviewWorkers.current.add(worker);
+      const cleanup = () => {
+        worker.terminate();
+        chessReviewWorkers.current.delete(worker);
+      };
+      const timeout = setTimeout(cleanup, 6000);
+
+      worker.onmessage = (event) => {
+        if (event.data.requestId !== requestId) return;
+        clearTimeout(timeout);
+        if (event.data.review && chessReviewMatch.current === matchId) {
+          const review = event.data.review as ChessMoveReview;
+          setChessReviews((previous) =>
+            [...previous.filter((item) => item.ply !== review.ply), review].sort(
+              (a, b) => a.ply - b.ply,
+            ),
+          );
+        }
+        cleanup();
+      };
+      worker.onerror = () => {
+        clearTimeout(timeout);
+        cleanup();
+      };
+      worker.postMessage({ requestId, state, move });
+    },
+    [],
+  );
+  useEffect(
+    () => () => {
+      for (const worker of chessReviewWorkers.current) worker.terminate();
+      chessReviewWorkers.current.clear();
+    },
+    [],
+  );
+
   const acceptSession = useCallback(async (session: { token: string; profile: Profile }) => {
     tokenRef.current = session.token;
     setToken(session.token);
@@ -226,8 +279,24 @@ function ArenaApp({
           offlineRef.current = null;
           setOffline(null);
           void storage.remove('offline-match');
+          chessReviewMatch.current = match.id;
+          setChessReviews([]);
           setPage('match');
           if (settingsRef.current.notifications) notify('matchReady');
+        }
+        if (
+          previous?.id === match.id &&
+          previous.state.gameId === 'chess' &&
+          match.state.gameId === 'chess' &&
+          match.state.ply === previous.state.ply + 1
+        ) {
+          const nextChess = match.state as ChessState;
+          if (nextChess.lastMove)
+            queueChessReview(
+              match.id,
+              structuredClone(previous.state) as ChessState,
+              nextChess.lastMove as ChessMove,
+            );
         }
         if (previous?.id === match.id && previous.state.ply < match.state.ply)
           feedback(settingsRef.current);
@@ -322,7 +391,7 @@ function ArenaApp({
       removeAuth?.();
       connection.stop();
     };
-  }, []);
+  }, [queueChessReview]);
   const profileRef = useRef(profile);
   profileRef.current = profile;
   useEffect(() => {
@@ -377,7 +446,14 @@ function ArenaApp({
       if (event.data.error) notify(event.data.error);
       else if (event.data.move) {
         try {
-          offlineRef.current.controller.move(event.data.move);
+          const currentSession = offlineRef.current;
+          const before =
+            currentSession.controller.current.state.gameId === 'chess'
+              ? (structuredClone(currentSession.controller.current.state) as ChessState)
+              : null;
+          currentSession.controller.move(event.data.move);
+          if (before)
+            queueChessReview(sessionId, before, event.data.move as ChessMove);
           feedback(settingsRef.current);
           syncOffline();
         } catch (e) {
@@ -405,7 +481,14 @@ function ArenaApp({
       clearTimeout(timeout);
       worker.terminate();
     };
-  }, [offline?.id, localState?.ply, offline?.controller.current.result, notify, syncOffline]);
+  }, [
+    offline?.id,
+    localState?.ply,
+    offline?.controller.current.result,
+    notify,
+    queueChessReview,
+    syncOffline,
+  ]);
   const startOffline = (
     gameId: string,
     mode: 'local' | 'ai',
@@ -426,6 +509,8 @@ function ArenaApp({
     };
     offlineRef.current = session;
     setOffline(session);
+    chessReviewMatch.current = session.id;
+    setChessReviews([]);
     onlineRef.current = null;
     setOnline(null);
     connection.forgetMatch();
@@ -530,7 +615,12 @@ function ArenaApp({
     if (!local) return;
     try {
       if (local.controller.mode === 'ai' && local.controller.current.state.turn !== 0) return;
+      const before =
+        local.controller.current.state.gameId === 'chess'
+          ? (structuredClone(local.controller.current.state) as ChessState)
+          : null;
       local.controller.move(move);
+      if (before) queueChessReview(local.id, before, move as ChessMove);
       feedback(settings);
       syncOffline();
     } catch (e) {
@@ -799,10 +889,15 @@ function ArenaApp({
                 drawAccepts={online?.drawAccepts ?? []}
                 rematchWaiting={!!online?.rematchVotes.includes(self)}
                 emote={emote}
+                chessReviews={current.gameId === 'chess' ? chessReviews : []}
                 onMove={makeMove}
                 onUndo={() => {
                   try {
                     offline!.controller.undo();
+                    if (offline!.controller.current.state.gameId === 'chess') {
+                      const ply = offline!.controller.current.state.ply;
+                      setChessReviews((previous) => previous.filter((review) => review.ply <= ply));
+                    }
                     finished.current.delete(offline!.id);
                     setLocalHistory((previous) => {
                       const next = previous.filter((h) => h.id !== offline!.id);
