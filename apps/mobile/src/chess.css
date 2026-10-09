@@ -68,6 +68,20 @@ dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child
 }
 .chess-piece.owner-0 { color: #fff8e9; text-shadow: 0 0 1px #101817, 0 1px 0 #101817; }
 .chess-piece.owner-1 { color: #17211e; text-shadow: 0 1px 0 #ffffff33; }
+
+/* Local two-player chess behaves like a physical tabletop:
+   white faces seat 1 at the bottom, black faces seat 2 across the device. */
+.chess-tabletop .tabletop-facing-piece {
+  transform: translateY(-1px) rotate(180deg);
+}
+.match-page[data-game='chess'][data-mode='local'] .tabletop-facing-panel {
+  transform: rotate(180deg);
+  transform-origin: center;
+}
+.match-page[data-game='chess'][data-mode='local'] .tabletop-facing-banner {
+  transform: rotate(180deg);
+  transform-origin: center;
+}
 .chess-cell .target-dot {
   position: absolute;
   width: 22%;
@@ -94,6 +108,20 @@ dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child
 }
 .chess-file { right: 4px; bottom: 2px; }
 .chess-rank { left: 4px; top: 2px; }
+.chess-tabletop .chess-file-opposite {
+  right: auto;
+  left: 4px;
+  top: 2px;
+  bottom: auto;
+  transform: rotate(180deg);
+}
+.chess-tabletop .chess-rank-opposite {
+  left: auto;
+  right: 4px;
+  top: auto;
+  bottom: 2px;
+  transform: rotate(180deg);
+}
 .chess-status-row {
   width: min(100%, 680px);
   display: flex;
@@ -118,6 +146,9 @@ dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child
   box-shadow: 0 24px 80px #000c;
   text-align: center;
   backdrop-filter: blur(14px);
+}
+.chess-tabletop .chess-promotion.tabletop-facing-promotion {
+  transform: translate(-50%, -50%) rotate(180deg);
 }
 .chess-promotion > div {
   display: grid;
