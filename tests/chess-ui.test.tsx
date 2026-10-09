@@ -47,3 +47,38 @@ test('Chess UI locks every square when the match layer disables input', () => {
   assert.equal(cells.length, 64);
   assert.ok(cells.every((cell) => cell.disabled));
 });
+
+test('Local chess uses face-to-face tabletop orientation only for the opposite seat', () => {
+  const local = render(
+    <ChessBoard
+      state={createChess()}
+      disabled={false}
+      onMove={() => {}}
+      t={t}
+      mode="local"
+    />,
+  );
+
+  assert.ok(local.container.querySelector('.chess-game.chess-tabletop'));
+  const facingPieces = Array.from(
+    local.container.querySelectorAll<HTMLElement>('.chess-piece.tabletop-facing-piece'),
+  );
+  assert.equal(facingPieces.length, 16);
+  assert.ok(facingPieces.every((piece) => piece.classList.contains('owner-1')));
+  assert.equal(local.container.querySelectorAll('.chess-file-opposite').length, 8);
+  assert.equal(local.container.querySelectorAll('.chess-rank-opposite').length, 8);
+
+  local.rerender(
+    <ChessBoard
+      state={createChess()}
+      disabled={false}
+      onMove={() => {}}
+      t={t}
+      mode="ai"
+    />,
+  );
+  assert.equal(local.container.querySelector('.chess-game.chess-tabletop'), null);
+  assert.equal(local.container.querySelectorAll('.tabletop-facing-piece').length, 0);
+  assert.equal(local.container.querySelectorAll('.chess-file-opposite').length, 0);
+  assert.equal(local.container.querySelectorAll('.chess-rank-opposite').length, 0);
+});
