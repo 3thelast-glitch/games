@@ -32,6 +32,8 @@ test('Chess UI renders 64 fixed-coordinate squares and emits a legal e2-e4 move'
   assert.equal(board.getAttribute('dir'), 'ltr');
   assert.equal(view.container.querySelectorAll('.chess-cell').length, 64);
   assert.equal(view.container.querySelectorAll('.chess-piece').length, 32);
+  assert.equal(view.container.querySelectorAll('.chess-piece-svg').length, 6);
+  assert.ok(!/[♔♚♗♝]/u.test(view.container.textContent ?? ''));
 
   fireEvent.click(view.getByRole('gridcell', { name: /e2: chessWhite chessPawn/ }));
   assert.equal(view.container.querySelectorAll('.chess-cell.legal-cell').length, 2);
