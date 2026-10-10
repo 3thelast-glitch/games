@@ -277,13 +277,13 @@ export function MatchPage(p: MatchPageProps) {
                 </div>
               </div>
             </section>
-          ) : (
+          ) : p.state.gameId !== 'chess' ? (
             <section className="panel match-guide">
               <span className="eyebrow">{t('rules')}</span>
               <h3>{t(`${p.state.gameId}Tag`)}</h3>
               <p>{t(`${p.state.gameId}Rules`)}</p>
             </section>
-          )}
+          ) : null}
           {p.state.gameId === 'chess' && (
             <section
               className={`panel chess-move-review-panel ${

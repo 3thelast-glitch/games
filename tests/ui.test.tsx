@@ -236,6 +236,22 @@ test('local chess presents player two toward the opposite physical seat', () => 
   assert.match(blackTurnClock?.textContent ?? '', /9:59/);
   assert.match(whiteWaitingClock?.textContent ?? '', /10:00/);
 });
+test('chess removes the persistent rules card but keeps rules available on demand', () => {
+  const props = matchProps('online');
+  props.state = createChess();
+  const view = render(
+    <I18n lang="en">
+      <MatchPage {...props} />
+    </I18n>,
+  );
+
+  assert.equal(view.container.querySelector('.match-guide'), null);
+  const rulesButton = view.getByRole('button', { name: 'How to play' });
+  fireEvent.click(rulesButton);
+  assert.ok(view.getByRole('dialog', { name: 'How to play · Chess' }));
+  assert.ok(view.getByText(/Standard Chess on an 8×8 board/));
+});
+
 test('chess shows live move evaluation and final player/game ratings', () => {
   const props = matchProps('local');
   const state = createChess();
