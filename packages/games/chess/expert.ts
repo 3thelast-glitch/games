@@ -12,10 +12,14 @@ import {
   type ChessState,
 } from './state.ts';
 import {
+  chessEvaluationWhitePercent,
   chessMoveAccuracy,
   chessMoveGrade,
   chessMoveNotation,
+  type ChessEvaluation,
   type ChessMoveReview,
+  type ChessStrategicScores,
+  type ChessStrategicSnapshot,
 } from './review.ts';
 
 export interface ChessExpertOptions {
@@ -1383,6 +1387,194 @@ export interface ChessMoveReviewOptions {
   now?: () => number;
 }
 
+const clampAnalysisScore = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
+
+function analysisMaterial(state: ChessState, player: Player): number {
+  let own = 0;
+  let total = 0;
+  for (const piece of state.board) {
+    if (!piece || piece.type === 'king') continue;
+    const value = PIECE_VALUE[piece.type];
+    total += value;
+    if (piece.owner === player) own += value;
+  }
+  return total ? clampAnalysisScore((own / total) * 100) : 50;
+}
+
+function analysisDevelopment(state: ChessState, player: Player): number {
+  const starting =
+    player === 0
+      ? new Map<number, ChessPieceType>([
+          [56, 'rook'], [57, 'knight'], [58, 'bishop'], [59, 'queen'],
+          [61, 'bishop'], [62, 'knight'], [63, 'rook'],
+        ])
+      : new Map<number, ChessPieceType>([
+          [0, 'rook'], [1, 'knight'], [2, 'bishop'], [3, 'queen'],
+          [5, 'bishop'], [6, 'knight'], [7, 'rook'],
+        ]);
+  let developed = 0;
+  let existing = 0;
+  for (const [index, type] of starting) {
+    const stillHome = state.board[index]?.owner === player && state.board[index]?.type === type;
+    const pieceStillExists = state.board.some(
+      (piece) => piece?.owner === player && piece.type === type,
+    );
+    if (pieceStillExists) existing++;
+    if (pieceStillExists && !stillHome) developed++;
+  }
+  if (!existing) return 100;
+  const castled =
+    (player === 0 && [62, 58].some((index) => state.board[index]?.owner === player && state.board[index]?.type === 'king')) ||
+    (player === 1 && [6, 2].some((index) => state.board[index]?.owner === player && state.board[index]?.type === 'king'));
+  return clampAnalysisScore((developed / existing) * 85 + (castled ? 15 : 0));
+}
+
+function analysisCenterControl(state: ChessState, player: Player): number {
+  const core = new Set([27, 28, 35, 36]);
+  const ring = new Set([18, 19, 20, 21, 26, 29, 34, 37, 42, 43, 44, 45]);
+  let points = 0;
+  let pieces = 0;
+  for (let index = 0; index < 64; index++) {
+    const piece = state.board[index];
+    if (piece?.owner !== player) continue;
+    pieces++;
+    if (core.has(index)) points += piece.type === 'pawn' ? 13 : 16;
+    else if (ring.has(index)) points += piece.type === 'pawn' ? 6 : 8;
+  }
+  return clampAnalysisScore(35 + points + Math.min(12, pieces));
+}
+
+function analysisPieceActivity(state: ChessState, player: Player): number {
+  let activity = 0;
+  let count = 0;
+  for (let index = 0; index < 64; index++) {
+    const piece = state.board[index];
+    if (piece?.owner !== player || piece.type === 'pawn' || piece.type === 'king') continue;
+    count++;
+    const central = centerScore(rowOf(index), colOf(index));
+    const advanced =
+      player === 0 ? Math.max(0, 6 - rowOf(index)) : Math.max(0, rowOf(index) - 1);
+    activity += central * 7 + Math.min(3, advanced) * 2;
+  }
+  if (!count) return 35;
+  return clampAnalysisScore(28 + (activity / count) * 5);
+}
+
+function analysisPassedPawns(state: ChessState, player: Player): number {
+  const enemy = opponent(player);
+  let count = 0;
+  let advancement = 0;
+  for (let index = 0; index < 64; index++) {
+    const pawn = state.board[index];
+    if (pawn?.owner !== player || pawn.type !== 'pawn') continue;
+    const row = rowOf(index);
+    const col = colOf(index);
+    let blocked = false;
+    for (let other = 0; other < 64; other++) {
+      const rival = state.board[other];
+      if (rival?.owner !== enemy || rival.type !== 'pawn') continue;
+      if (Math.abs(colOf(other) - col) > 1) continue;
+      if (player === 0 ? rowOf(other) < row : rowOf(other) > row) {
+        blocked = true;
+        break;
+      }
+    }
+    if (!blocked) {
+      count++;
+      advancement += player === 0 ? 6 - row : row - 1;
+    }
+  }
+  return clampAnalysisScore(35 + count * 14 + advancement * 4);
+}
+
+function analysisSpace(state: ChessState, player: Player): number {
+  let points = 0;
+  for (let index = 0; index < 64; index++) {
+    const piece = state.board[index];
+    if (piece?.owner !== player) continue;
+    const row = rowOf(index);
+    const inEnemyHalf = player === 0 ? row <= 3 : row >= 4;
+    if (inEnemyHalf) points += piece.type === 'pawn' ? 5 : 3;
+  }
+  return clampAnalysisScore(38 + points * 2);
+}
+
+function analysisInitiative(state: ChessState, player: Player): number {
+  const turnBonus = state.turn === player ? 7 : 0;
+  const checking = state.inCheck && state.turn === opponent(player) ? 18 : 0;
+  const checked = state.inCheck && state.turn === player ? -20 : 0;
+  const attackingPieces = state.board.filter(
+    (piece) =>
+      piece?.owner === player &&
+      (piece.type === 'queen' || piece.type === 'rook' || piece.type === 'bishop' || piece.type === 'knight'),
+  ).length;
+  return clampAnalysisScore(48 + turnBonus + checking + checked + attackingPieces * 2);
+}
+
+function analysisEndgame(state: ChessState, player: Player): number {
+  let nonPawnMaterial = 0;
+  for (const piece of state.board)
+    if (piece && piece.type !== 'pawn' && piece.type !== 'king')
+      nonPawnMaterial += PIECE_VALUE[piece.type];
+  if (nonPawnMaterial > 2800) return 50;
+
+  const king = state.board.findIndex((piece) => piece?.owner === player && piece.type === 'king');
+  const kingCentral = king >= 0 ? centerScore(rowOf(king), colOf(king)) : 0;
+  const passed = analysisPassedPawns(state, player);
+  return clampAnalysisScore(35 + kingCentral * 12 + (passed - 35) * 0.55);
+}
+
+function analysisStrategicScores(state: ChessState, player: Player): ChessStrategicScores {
+  const nonPawnMaterial = state.board.reduce(
+    (sum, piece) =>
+      sum + (piece && piece.type !== 'pawn' && piece.type !== 'king' ? PIECE_VALUE[piece.type] : 0),
+    0,
+  );
+  const endgame = nonPawnMaterial <= 2800;
+  const structure = pawnStructure(state, player);
+  const safety = kingShield(state, player, endgame);
+  return {
+    material: analysisMaterial(state, player),
+    kingSafety: clampAnalysisScore(52 + safety * 1.8),
+    centerControl: analysisCenterControl(state, player),
+    development: analysisDevelopment(state, player),
+    pieceActivity: analysisPieceActivity(state, player),
+    pawnStructure: clampAnalysisScore(55 + structure * 0.9),
+    space: analysisSpace(state, player),
+    initiative: analysisInitiative(state, player),
+    passedPawns: analysisPassedPawns(state, player),
+    endgame: analysisEndgame(state, player),
+  };
+}
+
+export function analyzeChessStrategicPosition(state: ChessState): ChessStrategicSnapshot {
+  return {
+    white: analysisStrategicScores(state, 0),
+    black: analysisStrategicScores(state, 1),
+  };
+}
+
+export function analyzeChessEvaluation(state: ChessState): ChessEvaluation {
+  const legal = chessLegalMoves(state);
+  if (!legal.length && state.inCheck) {
+    const whiteWon = state.turn === 1;
+    const centipawns = whiteWon ? 100000 : -100000;
+    return {
+      centipawns,
+      mate: 0,
+      whitePercent: whiteWon ? 100 : 0,
+    };
+  }
+  const centipawns = automaticDraw(state)
+    ? 0
+    : Math.max(-5000, Math.min(5000, Math.round(evaluate(state, 0))));
+  return {
+    centipawns,
+    mate: null,
+    whitePercent: chessEvaluationWhitePercent(centipawns),
+  };
+}
+
 function reviewPositionScore(state: ChessState, root: Player): number {
   const legal = chessLegalMoves(state);
   if (!legal.length) {
@@ -1438,5 +1630,8 @@ export function reviewChessMove(
     centipawnLoss,
     bestMove: best ? { ...best } : null,
     bestNotation: best ? chessMoveNotation(best) : null,
+    evaluationBefore: analyzeChessEvaluation(state),
+    evaluationAfter: analyzeChessEvaluation(playedState),
+    strategicAfter: analyzeChessStrategicPosition(playedState),
   };
 }

@@ -269,6 +269,33 @@ test('chess shows live move evaluation and final player/game ratings', () => {
       centipawnLoss: 0,
       bestMove: { from: 52, to: 36 },
       bestNotation: 'e2–e4',
+      evaluationAfter: { centipawns: 35, mate: null, whitePercent: 53 },
+      strategicAfter: {
+        white: {
+          material: 50,
+          kingSafety: 55,
+          centerControl: 70,
+          development: 62,
+          pieceActivity: 64,
+          pawnStructure: 58,
+          space: 61,
+          initiative: 66,
+          passedPawns: 35,
+          endgame: 50,
+        },
+        black: {
+          material: 50,
+          kingSafety: 52,
+          centerControl: 48,
+          development: 45,
+          pieceActivity: 49,
+          pawnStructure: 56,
+          space: 44,
+          initiative: 48,
+          passedPawns: 35,
+          endgame: 50,
+        },
+      },
     },
     {
       player: 1,
@@ -280,6 +307,33 @@ test('chess shows live move evaluation and final player/game ratings', () => {
       centipawnLoss: 15,
       bestMove: { from: 10, to: 26 },
       bestNotation: 'c7–c5',
+      evaluationAfter: { centipawns: 18, mate: null, whitePercent: 51 },
+      strategicAfter: {
+        white: {
+          material: 50,
+          kingSafety: 55,
+          centerControl: 64,
+          development: 62,
+          pieceActivity: 60,
+          pawnStructure: 58,
+          space: 57,
+          initiative: 52,
+          passedPawns: 35,
+          endgame: 50,
+        },
+        black: {
+          material: 50,
+          kingSafety: 54,
+          centerControl: 60,
+          development: 58,
+          pieceActivity: 57,
+          pawnStructure: 57,
+          space: 54,
+          initiative: 56,
+          passedPawns: 35,
+          endgame: 50,
+        },
+      },
     },
   ];
   props.chessReviews = reviews;
@@ -291,6 +345,10 @@ test('chess shows live move evaluation and final player/game ratings', () => {
   );
 
   assert.ok(view.getByText('Latest move evaluation'));
+  assert.ok(view.getByText('Evaluation'));
+  assert.ok(view.getByRole('meter', { name: 'Evaluation' }));
+  assert.ok(view.getByText('Strategic indicators'));
+  assert.ok(view.getByText('Center control'));
   assert.ok(view.getAllByText('Excellent').length >= 1);
   assert.ok(view.getAllByText('c7–c5').length >= 1);
   assert.ok(view.getAllByText('92%').length >= 1);
@@ -304,11 +362,31 @@ test('chess shows live move evaluation and final player/game ratings', () => {
   );
 
   assert.ok(view.getByText('Game quality'));
+  assert.ok(view.getByText('Final evaluation'));
+  assert.ok(view.getByText('Turning point'));
+  assert.ok(view.getByText('Final position profile'));
   assert.ok(view.getByText('96%'));
   assert.equal(view.getAllByText('Accuracy', { exact: true }).length, 2);
   assert.ok(view.getAllByText('Alice').length >= 1);
   assert.ok(view.getAllByText('Bob').length >= 1);
   assert.equal(view.getAllByText('Reviewed moves: 1').length, 2);
+});
+
+test('ranked online chess hides engine analysis until the game ends', () => {
+  const props = matchProps('online');
+  props.state = createChess();
+  props.ranked = true;
+  props.chessReviews = [];
+  const view = render(
+    <I18n lang="en">
+      <MatchPage {...props} />
+    </I18n>,
+  );
+
+  assert.equal(view.queryByText('Latest move evaluation'), null);
+  assert.equal(view.queryByRole('meter', { name: 'Evaluation' }), null);
+  assert.ok(view.getByText('Live analysis disabled'));
+  assert.ok(view.getByText(/unlocks only after the game ends/));
 });
 
 test('result screen identifies winner, reason, rating and rematch', () => {

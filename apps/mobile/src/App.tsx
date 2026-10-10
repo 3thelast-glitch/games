@@ -118,6 +118,10 @@ function ArenaApp({
     emoteTimer = useRef<ReturnType<typeof setTimeout> | null>(null),
     chessReviewMatch = useRef<string | null>(null),
     chessReviewWorkers = useRef(new Set<Worker>()),
+    rankedChessReviewJobs = useRef<
+      { matchId: string; state: ChessState; move: ChessMove }[]
+    >([]),
+    rankedChessReviewFlushed = useRef(new Set<string>()),
     serverOffset = useRef(0);
   settingsRef.current = settings;
   const notify = useCallback((value: unknown) => {
@@ -165,6 +169,48 @@ function ArenaApp({
     },
     [],
   );
+  const flushRankedChessReview = useCallback((matchId: string) => {
+    if (rankedChessReviewFlushed.current.has(matchId)) return;
+    const batch = rankedChessReviewJobs.current
+      .filter((job) => job.matchId === matchId)
+      .map(({ state, move }) => ({ state, move }));
+    if (!batch.length) return;
+
+    rankedChessReviewFlushed.current.add(matchId);
+    rankedChessReviewJobs.current = rankedChessReviewJobs.current.filter(
+      (job) => job.matchId !== matchId,
+    );
+    chessReviewMatch.current = matchId;
+    setChessReviews([]);
+
+    const requestId = crypto.randomUUID();
+    const worker = new Worker(new URL('./chess-review.worker.ts', import.meta.url), {
+      type: 'module',
+    });
+    chessReviewWorkers.current.add(worker);
+    const cleanup = () => {
+      worker.terminate();
+      chessReviewWorkers.current.delete(worker);
+    };
+    const timeout = setTimeout(cleanup, 90000);
+
+    worker.onmessage = (event) => {
+      if (event.data.requestId !== requestId) return;
+      clearTimeout(timeout);
+      if (Array.isArray(event.data.reviews) && chessReviewMatch.current === matchId) {
+        setChessReviews(
+          (event.data.reviews as ChessMoveReview[]).sort((a, b) => a.ply - b.ply),
+        );
+      }
+      cleanup();
+    };
+    worker.onerror = () => {
+      clearTimeout(timeout);
+      cleanup();
+    };
+    worker.postMessage({ requestId, batch });
+  }, []);
+
   useEffect(
     () => () => {
       for (const worker of chessReviewWorkers.current) worker.terminate();
@@ -280,6 +326,10 @@ function ArenaApp({
           setOffline(null);
           void storage.remove('offline-match');
           chessReviewMatch.current = match.id;
+          rankedChessReviewJobs.current = rankedChessReviewJobs.current.filter(
+            (job) => job.matchId === match.id,
+          );
+          rankedChessReviewFlushed.current.delete(match.id);
           setChessReviews([]);
           setPage('match');
           if (settingsRef.current.notifications) notify('matchReady');
@@ -291,17 +341,22 @@ function ArenaApp({
           match.state.ply === previous.state.ply + 1
         ) {
           const nextChess = match.state as ChessState;
-          if (nextChess.lastMove)
-            queueChessReview(
-              match.id,
-              structuredClone(previous.state) as ChessState,
-              nextChess.lastMove as ChessMove,
-            );
+          if (nextChess.lastMove) {
+            const job = {
+              matchId: match.id,
+              state: structuredClone(previous.state) as ChessState,
+              move: nextChess.lastMove as ChessMove,
+            };
+            if (match.ranked) rankedChessReviewJobs.current.push(job);
+            else queueChessReview(match.id, job.state, job.move);
+          }
         }
         if (previous?.id === match.id && previous.state.ply < match.state.ply)
           feedback(settingsRef.current);
         if (match.result && !finished.current.has(match.id)) {
           finished.current.add(match.id);
+          if (match.state.gameId === 'chess' && match.ranked)
+            flushRankedChessReview(match.id);
           const seat = match.players.findIndex((p) => p.id === profileRef.current?.id);
           if (match.result.winner === seat) feedback(settingsRef.current, 'win');
           void refreshProfile().catch(() => {});
@@ -391,7 +446,7 @@ function ArenaApp({
       removeAuth?.();
       connection.stop();
     };
-  }, [queueChessReview]);
+  }, [flushRankedChessReview, queueChessReview]);
   const profileRef = useRef(profile);
   profileRef.current = profile;
   useEffect(() => {
