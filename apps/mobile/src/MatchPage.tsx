@@ -9,12 +9,22 @@ import {
 import { Avatar, formatTime, Icon, Modal } from './components.tsx';
 import { gameResource, gameViews } from './gameViews.tsx';
 import {
+  deriveChessPlan,
   formatChessEvaluation,
+  chessMoveNotation,
   summarizeChessReviews,
   type ChessMoveReview,
   type ChessStrategicMetric,
   type ChessStrategicSnapshot,
 } from '../../../packages/games/chess/review.ts';
+import {
+  BLACK_REPERTOIRE_OPTIONS,
+  WHITE_REPERTOIRE_OPTIONS,
+  chessOpeningCandidates,
+  chessOpeningMatchesRepertoire,
+  detectChessOpening,
+  type ChessRepertoire,
+} from '../../../packages/games/chess/opening.ts';
 import { ChessPieceIcon } from '../../../packages/games/chess/pieces.tsx';
 import { useI18n } from './i18n.tsx';
 export interface MatchPageProps {
@@ -43,6 +53,8 @@ export interface MatchPageProps {
   rematchWaiting: boolean;
   emote: { player: Seat; value: string } | null;
   chessReviews?: ChessMoveReview[];
+  chessRepertoire?: ChessRepertoire;
+  onChessRepertoireChange?: (repertoire: ChessRepertoire) => void;
   onMove: (move: unknown) => void;
   onUndo: () => void;
   onRestart: () => void;
@@ -102,11 +114,12 @@ function StrategicIndicators({
 }
 
 export function MatchPage(p: MatchPageProps) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [confirmation, setConfirmation] = useState<'restart' | 'resign' | 'draw' | null>(null),
     [emotesOpen, setEmotesOpen] = useState(false),
     [resultOpen, setResultOpen] = useState(true),
-    [rulesOpen, setRulesOpen] = useState(false);
+    [rulesOpen, setRulesOpen] = useState(false),
+    [showChessGuidance, setShowChessGuidance] = useState(true);
   useEffect(() => {
     setResultOpen(true);
     setConfirmation(null);
@@ -185,6 +198,15 @@ export function MatchPage(p: MatchPageProps) {
     lastChessReview?.evaluationAfter ?? lastChessReview?.evaluationBefore ?? null;
   const latestStrategy = lastChessReview?.strategicAfter ?? null;
   const evaluationWhitePercent = latestEvaluation?.whitePercent ?? 50;
+  const chessMoves = chessReviews.map((review) => review.move);
+  const chessOpening = detectChessOpening(chessMoves);
+  const chessOpeningNext = chessOpeningCandidates(chessMoves);
+  const repertoireMatches =
+    p.chessRepertoire && chessOpening
+      ? chessOpeningMatchesRepertoire(chessOpening, p.chessRepertoire)
+      : null;
+  const chessPlan = chessAnalysisVisible ? deriveChessPlan(lastChessReview) : null;
+  const visibleChessPlan = showChessGuidance ? chessPlan : null;
   const opponents = p.players
     .map((_, index) => index as Seat)
     .filter((seat) => seat !== p.self);
@@ -240,7 +262,14 @@ export function MatchPage(p: MatchPageProps) {
             <span className="live-dot" />
             {turnText}
           </div>
-          {view({ state: p.state, disabled: p.disabled, onMove: p.onMove, t, mode: p.mode })}
+          {view({
+            state: p.state,
+            disabled: p.disabled,
+            onMove: p.onMove,
+            t,
+            mode: p.mode,
+            chessPlan: p.state.gameId === 'chess' ? visibleChessPlan : null,
+          })}
           {panel(bottomSeat)}
         </div>
         <aside className="match-side">
@@ -368,6 +397,131 @@ export function MatchPage(p: MatchPageProps) {
                 <span className="white" style={{ width: `${evaluationWhitePercent}%` }} />
                 <span className="black" style={{ width: `${100 - evaluationWhitePercent}%` }} />
               </div>
+            </section>
+          )}
+          {chessAnalysisVisible && p.state.gameId === 'chess' && (
+            <section className="panel chess-opening-explorer">
+              <div className="chess-review-heading">
+                <div>
+                  <span className="eyebrow">{t('chessOpeningExplorer')}</span>
+                  <h3>
+                    {chessOpening
+                      ? lang === 'ar'
+                        ? chessOpening.nameAr
+                        : chessOpening.nameEn
+                      : t('chessOpeningUnknown')}
+                  </h3>
+                </div>
+                {chessOpening && <span className="chess-eco-badge">{chessOpening.eco}</span>}
+              </div>
+              {chessOpening ? (
+                <>
+                  <p className="chess-opening-family">
+                    {lang === 'ar' ? chessOpening.familyAr : chessOpening.familyEn}
+                  </p>
+                  <p className="small-muted">
+                    {lang === 'ar' ? chessOpening.ideaAr : chessOpening.ideaEn}
+                  </p>
+                  {repertoireMatches && (
+                    <div className="chess-repertoire-match">
+                      <span className={repertoireMatches.white ? 'matched' : ''}>
+                        {t('chessWhiteRepertoire')} · {repertoireMatches.white ? '✓' : '—'}
+                      </span>
+                      <span className={repertoireMatches.black ? 'matched' : ''}>
+                        {t('chessBlackRepertoire')} · {repertoireMatches.black ? '✓' : '—'}
+                      </span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="small-muted">{t('chessOpeningWaiting')}</p>
+              )}
+              {chessOpeningNext.length > 0 && !p.result && (
+                <div className="chess-opening-candidates">
+                  <small>{t('chessCommonContinuations')}</small>
+                  {chessOpeningNext.slice(0, 3).map((candidate) => (
+                    <div key={candidate.opening.id}>
+                      <strong dir="ltr">{chessMoveNotation(candidate.move)}</strong>
+                      <span>
+                        {lang === 'ar' ? candidate.opening.nameAr : candidate.opening.nameEn}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
+          {chessAnalysisVisible && p.state.gameId === 'chess' && p.chessRepertoire && (
+            <section className="panel chess-repertoire-panel">
+              <div className="chess-review-heading">
+                <div>
+                  <span className="eyebrow">{t('chessOpeningRepertoire')}</span>
+                  <h3>{t('chessYourRepertoire')}</h3>
+                </div>
+              </div>
+              <div className="chess-repertoire-selects">
+                <label>
+                  <span>{t('chessAsWhite')}</span>
+                  <select
+                    value={p.chessRepertoire.white}
+                    onChange={(event) =>
+                      p.onChessRepertoireChange?.({
+                        ...p.chessRepertoire!,
+                        white: event.target.value as ChessRepertoire['white'],
+                      })
+                    }
+                  >
+                    {WHITE_REPERTOIRE_OPTIONS.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {lang === 'ar' ? option.nameAr : option.nameEn}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>{t('chessAsBlack')}</span>
+                  <select
+                    value={p.chessRepertoire.black}
+                    onChange={(event) =>
+                      p.onChessRepertoireChange?.({
+                        ...p.chessRepertoire!,
+                        black: event.target.value as ChessRepertoire['black'],
+                      })
+                    }
+                  >
+                    {BLACK_REPERTOIRE_OPTIONS.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {lang === 'ar' ? option.nameAr : option.nameEn}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </section>
+          )}
+          {chessAnalysisVisible && chessPlan && !p.result && (
+            <section className="panel chess-plan-panel">
+              <div className="chess-plan-head">
+                <div>
+                  <span className="eyebrow">{t('chessPlan')}</span>
+                  <h3>{t(`chessPlan_${chessPlan.kind}`)}</h3>
+                </div>
+                <button
+                  className={`chess-guidance-toggle ${showChessGuidance ? 'active' : ''}`}
+                  type="button"
+                  aria-pressed={showChessGuidance}
+                  onClick={() => setShowChessGuidance((value) => !value)}
+                >
+                  {t(showChessGuidance ? 'chessHideArrow' : 'chessShowArrow')}
+                </button>
+              </div>
+              <div className="chess-plan-move">
+                <span>{t('chessRecommendedMove')}</span>
+                <strong dir="ltr">
+                  {lastChessReview?.bestMove ? chessMoveNotation(lastChessReview.bestMove) : '—'}
+                </strong>
+              </div>
+              <p className="small-muted">{t(`chessPlanDesc_${chessPlan.kind}`)}</p>
             </section>
           )}
           {chessAnalysisVisible && latestStrategy && !p.result && (
