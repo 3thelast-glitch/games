@@ -12,6 +12,7 @@ import {
   summarizeChessReviews,
   type ChessMoveReview,
 } from '../../../packages/games/chess/review.ts';
+import { ChessPieceIcon } from '../../../packages/games/chess/pieces.tsx';
 import { useI18n } from './i18n.tsx';
 export interface MatchPageProps {
   id: string;
@@ -244,7 +245,9 @@ export function MatchPage(p: MatchPageProps) {
                 className={`chess-tabletop-clock chess-black-clock ${p.state.turn === 1 && !p.result ? 'active' : ''}`}
               >
                 <div className="chess-clock-player">
-                  <span className="chess-clock-piece" aria-hidden="true">♚</span>
+                  <span className="chess-clock-piece" aria-hidden="true">
+                    <ChessPieceIcon type="king" owner={1} />
+                  </span>
                   <div>
                     <strong>{t('chessBlack')}</strong>
                     <small>{p.players[1].name}</small>
@@ -262,7 +265,9 @@ export function MatchPage(p: MatchPageProps) {
                 className={`chess-tabletop-clock chess-white-clock ${p.state.turn === 0 && !p.result ? 'active' : ''}`}
               >
                 <div className="chess-clock-player">
-                  <span className="chess-clock-piece" aria-hidden="true">♔</span>
+                  <span className="chess-clock-piece" aria-hidden="true">
+                    <ChessPieceIcon type="king" owner={0} />
+                  </span>
                   <div>
                     <strong>{t('chessWhite')}</strong>
                     <small>{p.players[0].name}</small>
@@ -472,7 +477,9 @@ export function MatchPage(p: MatchPageProps) {
                   {chessReviewSummary.players.map((summary) => (
                     <div key={summary.player} className={`chess-final-player player-${summary.player}`}>
                       <div className="chess-final-player-title">
-                        <span aria-hidden="true">{summary.player === 0 ? '♔' : '♚'}</span>
+                        <span aria-hidden="true">
+                          <ChessPieceIcon type="king" owner={summary.player} />
+                        </span>
                         <div>
                           <strong>{p.players[summary.player]?.name}</strong>
                           <small>{t(summary.player === 0 ? 'chessWhite' : 'chessBlack')}</small>
