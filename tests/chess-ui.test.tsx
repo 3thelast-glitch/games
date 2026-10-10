@@ -39,6 +39,17 @@ test('Chess UI renders 64 fixed-coordinate squares and emits a legal e2-e4 move'
   assert.deepEqual(move, { from: 52, to: 36 });
 });
 
+test('Chess UI uses custom crossless vectors for king, queen and bishop', () => {
+  const view = render(
+    <ChessBoard state={createChess()} disabled={false} onMove={() => {}} t={t} />,
+  );
+
+  assert.equal(view.container.querySelectorAll('.chess-piece-svg-king').length, 2);
+  assert.equal(view.container.querySelectorAll('.chess-piece-svg-queen').length, 2);
+  assert.equal(view.container.querySelectorAll('.chess-piece-svg-bishop').length, 4);
+  assert.ok(!/[♔♚♕♛♗♝]/u.test(view.container.textContent ?? ''));
+});
+
 test('Chess UI locks every square when the match layer disables input', () => {
   const view = render(
     <ChessBoard state={createChess()} disabled={true} onMove={() => assert.fail('move emitted')} t={t} />,
