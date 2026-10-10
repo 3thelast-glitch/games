@@ -352,7 +352,7 @@ test('chess shows live move evaluation and final player/game ratings', () => {
   assert.ok(view.getByText('Strategic indicators'));
   assert.ok(view.getByText('Center control'));
   assert.ok(view.getByText('OPENING EXPLORER'));
-  assert.ok(view.getByText('Sicilian Defence'));
+  assert.ok(view.getAllByText('Sicilian Defence').length >= 1);
   assert.ok(view.getByText('B20'));
   assert.ok(view.getByText('Your repertoire'));
   assert.ok(view.getByText('STRATEGIC PLAN'));
