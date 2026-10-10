@@ -58,6 +58,24 @@ test('Chess UI renders 64 fixed-coordinate squares and emits a legal e2-e4 move'
   assert.deepEqual(move, { from: 52, to: 36 });
 });
 
+test('Chess UI renders a non-interactive strategic plan arrow over the board', () => {
+  const view = render(
+    <ChessBoard
+      state={createChess()}
+      disabled={false}
+      onMove={() => {}}
+      t={t}
+      plan={{ from: 52, to: 36, kind: 'centerControl', player: 0 }}
+    />,
+  );
+
+  const overlay = view.container.querySelector<SVGElement>('.chess-plan-overlay');
+  assert.ok(overlay);
+  assert.equal(overlay?.getAttribute('aria-hidden'), 'true');
+  assert.ok(overlay?.querySelector('line'));
+  assert.ok(overlay?.querySelector('marker'));
+});
+
 test('Chess UI locks every square when the match layer disables input', () => {
   const view = render(
     <ChessBoard state={createChess()} disabled={true} onMove={() => assert.fail('move emitted')} t={t} />,

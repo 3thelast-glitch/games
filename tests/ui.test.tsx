@@ -337,6 +337,8 @@ test('chess shows live move evaluation and final player/game ratings', () => {
     },
   ];
   props.chessReviews = reviews;
+  props.chessRepertoire = { white: 'e4', black: 'sicilian' };
+  props.onChessRepertoireChange = () => {};
 
   const view = render(
     <I18n lang="en">
@@ -349,6 +351,13 @@ test('chess shows live move evaluation and final player/game ratings', () => {
   assert.ok(view.getByRole('meter', { name: 'Evaluation' }));
   assert.ok(view.getByText('Strategic indicators'));
   assert.ok(view.getByText('Center control'));
+  assert.ok(view.getByText('OPENING EXPLORER'));
+  assert.ok(view.getAllByText('Sicilian Defence').length >= 1);
+  assert.ok(view.getByText('B20'));
+  assert.ok(view.getByText('Your repertoire'));
+  assert.ok(view.getByText('STRATEGIC PLAN'));
+  assert.ok(view.getByText('Recommended move'));
+  assert.ok(view.container.querySelector('.chess-plan-overlay'));
   assert.ok(view.getAllByText('Excellent').length >= 1);
   assert.ok(view.getAllByText('c7–c5').length >= 1);
   assert.ok(view.getAllByText('92%').length >= 1);
@@ -385,6 +394,9 @@ test('ranked online chess hides engine analysis until the game ends', () => {
 
   assert.equal(view.queryByText('Latest move evaluation'), null);
   assert.equal(view.queryByRole('meter', { name: 'Evaluation' }), null);
+  assert.equal(view.queryByText('OPENING EXPLORER'), null);
+  assert.equal(view.queryByText('STRATEGIC PLAN'), null);
+  assert.equal(view.container.querySelector('.chess-plan-overlay'), null);
   assert.ok(view.getByText('Live analysis disabled'));
   assert.ok(view.getByText(/unlocks only after the game ends/));
 });

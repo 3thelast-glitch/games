@@ -17,6 +17,7 @@ import { QuoridorBoard } from '../../../packages/games/quoridor/ui.tsx';
 import type { QuoridorState } from '../../../packages/games/quoridor/state.ts';
 import { ChessBoard } from '../../../packages/games/chess/ui.tsx';
 import type { ChessState } from '../../../packages/games/chess/state.ts';
+import type { ChessPlanHint } from '../../../packages/games/chess/review.ts';
 import { DotsAndBoxesBoard } from '../../../packages/games/dots-and-boxes/ui.tsx';
 import type { DotsAndBoxesState } from '../../../packages/games/dots-and-boxes/state.ts';
 import { DominoesBoard } from '../../../packages/games/dominoes/ui.tsx';
@@ -29,6 +30,7 @@ interface Props {
   onMove: (move: unknown) => void;
   t: (key: string) => string;
   mode?: 'local' | 'ai' | 'online';
+  chessPlan?: ChessPlanHint | null;
 }
 export const gameViews: Record<string, (props: Props) => React.ReactNode> = {
   nineMensMorris: (props) => <MorrisBoard {...props} state={props.state as MorrisState} />,
@@ -39,7 +41,13 @@ export const gameViews: Record<string, (props: Props) => React.ReactNode> = {
   digitalGame: (props) => <DigitalGameBoard {...props} state={props.state as DigitalGameState} />,
   abalone: (props) => <AbaloneBoard {...props} state={props.state as AbaloneState} />,
   quoridor: (props) => <QuoridorBoard {...props} state={props.state as QuoridorState} />,
-  chess: (props) => <ChessBoard {...props} state={props.state as ChessState} />,
+  chess: (props) => (
+    <ChessBoard
+      {...props}
+      state={props.state as ChessState}
+      plan={props.chessPlan}
+    />
+  ),
   dotsAndBoxes: (props) => <DotsAndBoxesBoard {...props} state={props.state as DotsAndBoxesState} />,
   dominoes: (props) => (
     <DominoesBoard

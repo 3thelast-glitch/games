@@ -36,6 +36,24 @@ export interface ChessEvaluation {
   /** UI-friendly share for the evaluation bar. */
   whitePercent: number;
 }
+export type ChessPlanKind =
+  | 'kingSafety'
+  | 'centerControl'
+  | 'development'
+  | 'pieceActivity'
+  | 'pawnStructure'
+  | 'space'
+  | 'initiative'
+  | 'passedPawns'
+  | 'endgame';
+
+export interface ChessPlanHint {
+  from: number;
+  to: number;
+  kind: ChessPlanKind;
+  player: Player;
+}
+
 
 export interface ChessMoveReview {
   player: Player;
@@ -125,6 +143,31 @@ const emptyGrades = (): Record<ChessMoveGrade, number> => ({
   mistake: 0,
   blunder: 0,
 });
+
+export function deriveChessPlan(review: ChessMoveReview | null | undefined): ChessPlanHint | null {
+  if (!review?.bestMove || !review.strategicAfter) return null;
+  const scores = review.player === 0 ? review.strategicAfter.white : review.strategicAfter.black;
+  const candidates: ChessPlanKind[] = [
+    'kingSafety',
+    'centerControl',
+    'development',
+    'pieceActivity',
+    'pawnStructure',
+    'space',
+    'initiative',
+    'passedPawns',
+    'endgame',
+  ];
+  const kind = candidates.reduce((lowest, metric) =>
+    scores[metric] < scores[lowest] ? metric : lowest,
+  );
+  return {
+    from: review.bestMove.from,
+    to: review.bestMove.to,
+    kind,
+    player: review.player,
+  };
+}
 
 export function summarizeChessReviews(reviews: readonly ChessMoveReview[]): ChessGameReviewSummary {
   const players = ([0, 1] as const).map((player) => {
