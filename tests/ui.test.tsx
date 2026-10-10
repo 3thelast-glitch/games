@@ -246,9 +246,9 @@ test('chess removes the persistent rules card but keeps rules available on deman
   );
 
   assert.equal(view.container.querySelector('.match-guide'), null);
-  const rulesButton = view.getByRole('button', { name: 'Rules' });
+  const rulesButton = view.getByRole('button', { name: 'How to play' });
   fireEvent.click(rulesButton);
-  assert.ok(view.getByRole('dialog', { name: 'Rules · Chess' }));
+  assert.ok(view.getByRole('dialog', { name: 'How to play · Chess' }));
   assert.ok(view.getByText(/Standard Chess on an 8×8 board/));
 });
 
