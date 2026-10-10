@@ -32,8 +32,11 @@ test('Chess UI renders 64 fixed-coordinate squares and emits a legal e2-e4 move'
   assert.equal(board.getAttribute('dir'), 'ltr');
   assert.equal(view.container.querySelectorAll('.chess-cell').length, 64);
   assert.equal(view.container.querySelectorAll('.chess-piece').length, 32);
-  assert.equal(view.container.querySelectorAll('.chess-piece-svg').length, 6);
-  assert.ok(!/[♔♚♗♝]/u.test(view.container.textContent ?? ''));
+  assert.equal(view.container.querySelectorAll('.chess-piece-svg').length, 32);
+  assert.ok(!/[♔♕♖♗♘♙♚♛♜♝♞♟]/u.test(view.container.textContent ?? ''));
+  for (const type of ['pawn', 'knight', 'queen', 'king', 'bishop', 'rook']) {
+    assert.ok(view.container.querySelector(`.chess-piece-svg[data-piece="${type}"]`));
+  }
 
   fireEvent.click(view.getByRole('gridcell', { name: /e2: chessWhite chessPawn/ }));
   assert.equal(view.container.querySelectorAll('.chess-cell.legal-cell').length, 2);
