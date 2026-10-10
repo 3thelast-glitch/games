@@ -1,18 +1,21 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { isGameOver } from '../../core/src/game.ts';
 import type { BoardProps } from '../shared/ui.tsx';
 import { ChessPieceIcon } from './pieces.tsx';
 import { chessLegalMoves, isChessInCheck } from './rules.ts';
+import type { ChessPlanHint } from './review.ts';
 import type { ChessMove, ChessPromotion, ChessState } from './state.ts';
 const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const promotions: ChessPromotion[] = ['queen', 'rook', 'bishop', 'knight'];
 
 type ChessBoardProps = BoardProps<ChessState, ChessMove> & {
   mode?: 'local' | 'ai' | 'online';
+  plan?: ChessPlanHint | null;
 };
 
-export function ChessBoard({ state, disabled, onMove, t, mode }: ChessBoardProps) {
+export function ChessBoard({ state, disabled, onMove, t, mode, plan }: ChessBoardProps) {
   const [selection, setSelection] = useState<number | null>(null);
+  const arrowId = useId().replace(/:/g, '');
   const tabletop = mode === 'local';
   const [promotionTarget, setPromotionTarget] = useState<{ from: number; to: number } | null>(null);
   useEffect(() => {
@@ -88,6 +91,39 @@ export function ChessBoard({ state, disabled, onMove, t, mode }: ChessBoardProps
             );
           })}
         </div>
+        {plan && (
+          <svg
+            className="chess-plan-overlay"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
+            <defs>
+              <marker
+                id={`chess-plan-arrow-${arrowId}`}
+                markerWidth="5"
+                markerHeight="5"
+                refX="4.2"
+                refY="2.5"
+                orient="auto"
+              >
+                <path d="M0 0 L5 2.5 L0 5 Z" />
+              </marker>
+            </defs>
+            <line
+              x1={(plan.from % 8 + 0.5) * 12.5}
+              y1={(Math.floor(plan.from / 8) + 0.5) * 12.5}
+              x2={(plan.to % 8 + 0.5) * 12.5}
+              y2={(Math.floor(plan.to / 8) + 0.5) * 12.5}
+              markerEnd={`url(#chess-plan-arrow-${arrowId})`}
+            />
+            <circle
+              cx={(plan.from % 8 + 0.5) * 12.5}
+              cy={(Math.floor(plan.from / 8) + 0.5) * 12.5}
+              r="1.25"
+            />
+          </svg>
+        )}
         {promotionTarget && (
           <div
             className={`chess-promotion ${tabletop && state.turn === 1 ? 'tabletop-facing-promotion' : ''}`}
