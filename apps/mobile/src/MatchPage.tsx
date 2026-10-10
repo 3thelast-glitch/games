@@ -9,8 +9,11 @@ import {
 import { Avatar, formatTime, Icon, Modal } from './components.tsx';
 import { gameResource, gameViews } from './gameViews.tsx';
 import {
+  formatChessEvaluation,
   summarizeChessReviews,
   type ChessMoveReview,
+  type ChessStrategicMetric,
+  type ChessStrategicSnapshot,
 } from '../../../packages/games/chess/review.ts';
 import { ChessPieceIcon } from '../../../packages/games/chess/pieces.tsx';
 import { useI18n } from './i18n.tsx';
@@ -51,6 +54,53 @@ export interface MatchPageProps {
   onSound: () => void;
   onEmote: (emote: string) => void;
 }
+const chessStrategicMetrics: ChessStrategicMetric[] = [
+  'material',
+  'kingSafety',
+  'centerControl',
+  'development',
+  'pieceActivity',
+  'pawnStructure',
+  'space',
+  'initiative',
+  'passedPawns',
+  'endgame',
+];
+
+function StrategicIndicators({
+  snapshot,
+  t,
+  compact = false,
+}: {
+  snapshot: ChessStrategicSnapshot;
+  t: (key: string) => string;
+  compact?: boolean;
+}) {
+  return (
+    <div className={`chess-strategy-grid ${compact ? 'compact' : ''}`}>
+      {chessStrategicMetrics.map((metric) => {
+        const white = snapshot.white[metric];
+        const black = snapshot.black[metric];
+        const total = Math.max(1, white + black);
+        const whiteShare = (white / total) * 100;
+        return (
+          <div className="chess-strategy-row" key={metric}>
+            <strong className="white-value">{white}</strong>
+            <div>
+              <small>{t(`chessStrategy_${metric}`)}</small>
+              <div className="chess-strategy-track" aria-hidden="true">
+                <span className="white" style={{ width: `${whiteShare}%` }} />
+                <span className="black" style={{ width: `${100 - whiteShare}%` }} />
+              </div>
+            </div>
+            <strong className="black-value">{black}</strong>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function MatchPage(p: MatchPageProps) {
   const { t } = useI18n();
   const [confirmation, setConfirmation] = useState<'restart' | 'resign' | 'draw' | null>(null),
@@ -129,6 +179,12 @@ export function MatchPage(p: MatchPageProps) {
     p.state.gameId === 'chess' && p.state.ply > 0 && (lastChessReview?.ply ?? 0) < p.state.ply;
   const chessReviewSummary =
     p.state.gameId === 'chess' ? summarizeChessReviews(chessReviews) : null;
+  const chessAnalysisVisible =
+    p.state.gameId === 'chess' && (p.mode !== 'online' || !p.ranked || !!p.result);
+  const latestEvaluation =
+    lastChessReview?.evaluationAfter ?? lastChessReview?.evaluationBefore ?? null;
+  const latestStrategy = lastChessReview?.strategicAfter ?? null;
+  const evaluationWhitePercent = latestEvaluation?.whitePercent ?? 50;
   const opponents = p.players
     .map((_, index) => index as Seat)
     .filter((seat) => seat !== p.self);
@@ -289,7 +345,43 @@ export function MatchPage(p: MatchPageProps) {
               <p>{t(`${p.state.gameId}Rules`)}</p>
             </section>
           ) : null}
-          {p.state.gameId === 'chess' && (
+          {chessAnalysisVisible && (
+            <section className="panel chess-evaluation-panel" aria-label={t('chessEvaluation')}>
+              <div className="chess-evaluation-head">
+                <div>
+                  <span className="eyebrow">{t('chessEvaluation')}</span>
+                  <strong dir="ltr">{formatChessEvaluation(latestEvaluation)}</strong>
+                </div>
+                <div className="chess-evaluation-side-labels">
+                  <span>{t('chessWhite')}</span>
+                  <span>{t('chessBlack')}</span>
+                </div>
+              </div>
+              <div
+                className="chess-evaluation-bar"
+                role="meter"
+                aria-label={t('chessEvaluation')}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(evaluationWhitePercent)}
+              >
+                <span className="white" style={{ width: `${evaluationWhitePercent}%` }} />
+                <span className="black" style={{ width: `${100 - evaluationWhitePercent}%` }} />
+              </div>
+            </section>
+          )}
+          {chessAnalysisVisible && latestStrategy && !p.result && (
+            <section className="panel chess-strategy-panel">
+              <div className="chess-review-heading">
+                <div>
+                  <span className="eyebrow">{t('chessStrategicIndicators')}</span>
+                  <h3>{t('chessPositionProfile')}</h3>
+                </div>
+              </div>
+              <StrategicIndicators snapshot={latestStrategy} t={t} compact />
+            </section>
+          )}
+          {chessAnalysisVisible && (
             <section
               className={`panel chess-move-review-panel ${
                 localChessTabletop && lastChessReview?.player === 1
@@ -365,6 +457,15 @@ export function MatchPage(p: MatchPageProps) {
                   {p.state.ply > 0 ? t('chessAnalyzingMove') : t('chessReviewStartsAfterMove')}
                 </p>
               )}
+            </section>
+          )}
+          {p.state.gameId === 'chess' && p.mode === 'online' && p.ranked && !p.result && (
+            <section className="panel chess-analysis-locked">
+              <Icon name="lock" size={18} />
+              <div>
+                <strong>{t('chessAnalysisLocked')}</strong>
+                <small>{t('chessAnalysisLockedDesc')}</small>
+              </div>
             </section>
           )}
           {p.drawOffer !== null && !p.result && (
@@ -473,6 +574,24 @@ export function MatchPage(p: MatchPageProps) {
                   </div>
                   <b>{chessReviewSummary.quality}%</b>
                 </div>
+                <div className="chess-final-evaluation">
+                  <span>{t('chessFinalEvaluation')}</span>
+                  <strong dir="ltr">
+                    {formatChessEvaluation(chessReviewSummary.finalEvaluation)}
+                  </strong>
+                </div>
+                {chessReviewSummary.turningPoint && (
+                  <div className="chess-key-moment turning-point">
+                    <span>{t('chessTurningPoint')}</span>
+                    <div>
+                      <strong dir="ltr">{chessReviewSummary.turningPoint.notation}</strong>
+                      <small>
+                        {t(`chessGrade_${chessReviewSummary.turningPoint.grade}`)} · −
+                        {(chessReviewSummary.turningPoint.centipawnLoss / 100).toFixed(1)}
+                      </small>
+                    </div>
+                  </div>
+                )}
                 <div className="chess-final-player-grid">
                   {chessReviewSummary.players.map((summary) => (
                     <div key={summary.player} className={`chess-final-player player-${summary.player}`}>
@@ -515,6 +634,20 @@ export function MatchPage(p: MatchPageProps) {
                           {t('chessGrade_blunder')}
                         </span>
                       </div>
+                      <div className="chess-player-key-moves">
+                        {summary.bestMove && (
+                          <span>
+                            <small>{t('chessBestMove')}</small>
+                            <b dir="ltr">{summary.bestMove.notation}</b>
+                          </span>
+                        )}
+                        {summary.biggestMistake && summary.biggestMistake.centipawnLoss > 10 && (
+                          <span>
+                            <small>{t('chessBiggestMistake')}</small>
+                            <b dir="ltr">{summary.biggestMistake.notation}</b>
+                          </span>
+                        )}
+                      </div>
                       <div className="chess-final-meta">
                         <span>{t('chessReviewedMoves')}: {summary.moves}</span>
                         <span dir="ltr">ACPL: {summary.averageCentipawnLoss}</span>
@@ -522,6 +655,18 @@ export function MatchPage(p: MatchPageProps) {
                     </div>
                   ))}
                 </div>
+                {chessReviewSummary.finalStrategic && (
+                  <div className="chess-final-strategy">
+                    <div className="chess-final-section-title">
+                      <strong>{t('chessStrategicIndicators')}</strong>
+                      <small>{t('chessFinalPosition')}</small>
+                    </div>
+                    <StrategicIndicators
+                      snapshot={chessReviewSummary.finalStrategic}
+                      t={t}
+                    />
+                  </div>
+                )}
                 {chessReviewPending && (
                   <div className="chess-final-pending">
                     <span className="spinner" />
