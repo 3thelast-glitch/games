@@ -32,8 +32,25 @@ test('Chess UI renders 64 fixed-coordinate squares and emits a legal e2-e4 move'
   assert.equal(board.getAttribute('dir'), 'ltr');
   assert.equal(view.container.querySelectorAll('.chess-cell').length, 64);
   assert.equal(view.container.querySelectorAll('.chess-piece').length, 32);
-  assert.equal(view.container.querySelectorAll('.chess-piece-svg').length, 6);
-  assert.ok(!/[♔♚♗♝]/u.test(view.container.textContent ?? ''));
+  const svgs = Array.from(view.container.querySelectorAll<SVGElement>('.chess-piece-svg'));
+  assert.equal(svgs.length, 32);
+  assert.ok(!/[♔♕♖♗♘♙♚♛♜♝♞♟]/u.test(view.container.textContent ?? ''));
+  for (const type of ['pawn', 'knight', 'queen', 'king', 'bishop', 'rook']) {
+    const piece = view.container.querySelector<SVGElement>(
+      `.chess-piece-svg[data-piece="${type}"]`,
+    );
+    assert.ok(piece, type);
+    assert.equal(piece.getAttribute('viewBox'), '0 0 220 430');
+    assert.equal(piece.getAttribute('data-reference-traced'), 'true');
+  }
+  assert.equal(
+    view.container.querySelectorAll('.chess-piece-svg[data-piece="queen"]').length,
+    2,
+  );
+  assert.equal(
+    view.container.querySelectorAll('.chess-piece-svg[data-piece="king"]').length,
+    2,
+  );
 
   fireEvent.click(view.getByRole('gridcell', { name: /e2: chessWhite chessPawn/ }));
   assert.equal(view.container.querySelectorAll('.chess-cell.legal-cell').length, 2);

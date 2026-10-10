@@ -59,34 +59,39 @@ dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child
 .chess-piece {
   position: relative;
   z-index: 2;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(30px, 7.2vw, 62px);
+  display: grid;
+  place-items: center;
+  width: 84%;
+  height: 84%;
   line-height: 1;
   transform: translateY(-1px);
   user-select: none;
-  filter: drop-shadow(0 3px 2px #0005);
 }
-.chess-piece.owner-0 { color: #fff8e9; text-shadow: 0 0 1px #101817, 0 1px 0 #101817; }
-.chess-piece.owner-1 { color: #17211e; text-shadow: 0 1px 0 #ffffff33; }
+.chess-piece.owner-0 { color: #fff8e9; }
+.chess-piece.owner-1 { color: #181818; }
 .chess-piece-svg {
   display: block;
-  width: .92em;
-  height: .92em;
+  width: 100%;
+  height: 100%;
   overflow: visible;
   color: inherit;
+  pointer-events: none;
 }
-.chess-piece > .chess-piece-svg {
-  width: 1em;
-  height: 1em;
+.chess-piece-svg.owner-0 {
+  color: #fff8e9;
+  filter: drop-shadow(0 0 1px #101817) drop-shadow(0 1px 0 #101817);
+}
+.chess-piece-svg.owner-1 {
+  color: #181818;
 }
 .chess-clock-piece .chess-piece-svg,
 .chess-final-player-title .chess-piece-svg {
-  width: 1em;
-  height: 1em;
+  width: 34px;
+  height: 34px;
 }
 .chess-promotion-piece .chess-piece-svg {
-  width: 44px;
-  height: 44px;
+  width: 50px;
+  height: 50px;
   margin-inline: auto;
 }
 
@@ -578,7 +583,7 @@ dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child
 }
 @media (max-width: 420px) {
   .chess-board-wrap { min-width: 0; width: 100%; }
-  .chess-piece { font-size: clamp(28px, 10vw, 44px); }
+  .chess-piece { width: 88%; height: 88%; }
   .chess-status-row { font-size: .78rem; }
 }
 @media (prefers-reduced-motion: reduce) {
