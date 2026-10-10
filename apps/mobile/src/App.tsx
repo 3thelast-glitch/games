@@ -16,6 +16,10 @@ import type {
 } from '../../../packages/core/src/protocol.ts';
 import { games } from '../../../packages/games/registry.ts';
 import type { ChessMoveReview } from '../../../packages/games/chess/review.ts';
+import {
+  DEFAULT_CHESS_REPERTOIRE,
+  type ChessRepertoire,
+} from '../../../packages/games/chess/opening.ts';
 import type { ChessMove, ChessState } from '../../../packages/games/chess/state.ts';
 import { Avatar, Icon, Logo, Modal, NoticeContext } from './components.tsx';
 import {
@@ -106,7 +110,9 @@ function ArenaApp({
     [rules, setRules] = useState<string | null>(null),
     [lobby, setLobby] = useState<Extract<ServerMessage, { type: 'room' | 'queued' }> | null>(null),
     [emote, setEmote] = useState<{ player: Seat; value: string } | null>(null),
-    [chessReviews, setChessReviews] = useState<ChessMoveReview[]>([]);
+    [chessReviews, setChessReviews] = useState<ChessMoveReview[]>([]),
+    [chessRepertoire, setChessRepertoire] =
+      useState<ChessRepertoire>(DEFAULT_CHESS_REPERTOIRE);
   const tokenRef = useRef<string | null>(null),
     onlineRef = useRef<MatchSnapshot | null>(null),
     offlineRef = useRef<OfflineSession | null>(null),
@@ -124,6 +130,11 @@ function ArenaApp({
     rankedChessReviewFlushed = useRef(new Set<string>()),
     serverOffset = useRef(0);
   settingsRef.current = settings;
+  useEffect(() => {
+    void storage
+      .get<ChessRepertoire>('chess-repertoire', DEFAULT_CHESS_REPERTOIRE)
+      .then(setChessRepertoire);
+  }, []);
   const notify = useCallback((value: unknown) => {
     setNotice(value instanceof Error ? value.message : String(value));
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -945,6 +956,11 @@ function ArenaApp({
                 rematchWaiting={!!online?.rematchVotes.includes(self)}
                 emote={emote}
                 chessReviews={current.gameId === 'chess' ? chessReviews : []}
+                chessRepertoire={chessRepertoire}
+                onChessRepertoireChange={(next) => {
+                  setChessRepertoire(next);
+                  void storage.set('chess-repertoire', next);
+                }}
                 onMove={makeMove}
                 onUndo={() => {
                   try {
