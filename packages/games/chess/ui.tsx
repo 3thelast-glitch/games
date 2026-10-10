@@ -1,13 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { isGameOver } from '../../core/src/game.ts';
 import type { BoardProps } from '../shared/ui.tsx';
+import { ChessPieceIcon } from './pieces.tsx';
 import { chessLegalMoves, isChessInCheck } from './rules.ts';
-import type { ChessMove, ChessPieceType, ChessPromotion, ChessState } from './state.ts';
-
-const glyphs: Record<0 | 1, Record<ChessPieceType, string>> = {
-  0: { king: '♔', queen: '♕', rook: '♖', bishop: '♗', knight: '♘', pawn: '♙' },
-  1: { king: '♚', queen: '♛', rook: '♜', bishop: '♝', knight: '♞', pawn: '♟' },
-};
+import type { ChessMove, ChessPromotion, ChessState } from './state.ts';
 const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const promotions: ChessPromotion[] = ['queen', 'rook', 'bishop', 'knight'];
 
@@ -76,7 +72,7 @@ export function ChessBoard({ state, disabled, onMove, t, mode }: ChessBoardProps
                   <span
                     className={`chess-piece owner-${piece.owner} ${tabletop && piece.owner === 1 ? 'tabletop-facing-piece' : ''}`}
                   >
-                    {glyphs[piece.owner][piece.type]}
+                    <ChessPieceIcon type={piece.type} owner={piece.owner} />
                   </span>
                 )}
                 {target && <span className={piece ? 'chess-capture-ring' : 'target-dot'} aria-hidden="true" />}
@@ -113,7 +109,7 @@ export function ChessBoard({ state, disabled, onMove, t, mode }: ChessBoardProps
                     })
                   }
                 >
-                  {glyphs[state.turn][promotion]}
+                  <ChessPieceIcon type={promotion} owner={state.turn} />
                 </button>
               ))}
             </div>
