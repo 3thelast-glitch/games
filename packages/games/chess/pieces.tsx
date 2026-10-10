@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { ChessPieceType } from './state.ts';
 
 type PieceProps = { owner: 0 | 1 };
@@ -6,7 +7,7 @@ function PieceSvg({
   owner,
   type,
   children,
-}: PieceProps & { type: ChessPieceType; children: React.ReactNode }) {
+}: PieceProps & { type: ChessPieceType; children: ReactNode }) {
   return (
     <svg
       className={`chess-piece-svg owner-${owner}`}
