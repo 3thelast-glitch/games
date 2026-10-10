@@ -68,6 +68,27 @@ dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child
 }
 .chess-piece.owner-0 { color: #fff8e9; text-shadow: 0 0 1px #101817, 0 1px 0 #101817; }
 .chess-piece.owner-1 { color: #17211e; text-shadow: 0 1px 0 #ffffff33; }
+.chess-piece-svg {
+  display: block;
+  width: .92em;
+  height: .92em;
+  overflow: visible;
+  color: inherit;
+}
+.chess-piece > .chess-piece-svg {
+  width: 1em;
+  height: 1em;
+}
+.chess-clock-piece .chess-piece-svg,
+.chess-final-player-title .chess-piece-svg {
+  width: 1em;
+  height: 1em;
+}
+.chess-promotion-piece .chess-piece-svg {
+  width: 44px;
+  height: 44px;
+  margin-inline: auto;
+}
 
 /* Local two-player chess behaves like a physical tabletop:
    white faces seat 1 at the bottom, black faces seat 2 across the device. */
