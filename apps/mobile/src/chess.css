@@ -14,6 +14,24 @@ dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child
   width: min(100%, 680px);
   margin-inline: auto;
 }
+.chess-plan-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.chess-plan-overlay line {
+  stroke: #43e7b0;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  filter: drop-shadow(0 1px 1px #0009);
+}
+.chess-plan-overlay marker path,
+.chess-plan-overlay circle {
+  fill: #43e7b0;
+}
 .chess-board {
   display: grid;
   grid-template-columns: repeat(8, minmax(0, 1fr));
@@ -217,7 +235,10 @@ dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child
   color: #ff9b9b;
 }
 .match-page[data-game='chess'] .chess-evaluation-panel,
-.match-page[data-game='chess'] .chess-strategy-panel {
+.match-page[data-game='chess'] .chess-strategy-panel,
+.match-page[data-game='chess'] .chess-opening-explorer,
+.match-page[data-game='chess'] .chess-repertoire-panel,
+.match-page[data-game='chess'] .chess-plan-panel {
   display: grid;
   gap: 10px;
   min-width: 0;
@@ -318,6 +339,124 @@ dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child
 }
 .chess-strategy-track .black {
   background: #53615b;
+}
+.chess-eco-badge {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border: 1px solid #ffffff1b;
+  border-radius: 999px;
+  background: #ffffff08;
+  color: #b8c8c1;
+  font-size: .7rem;
+  font-weight: 800;
+}
+.chess-opening-family {
+  margin: 0;
+  color: #9fe0c3;
+  font-size: .8rem;
+  font-weight: 700;
+}
+.chess-repertoire-match {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chess-repertoire-match span {
+  padding: 5px 7px;
+  border-radius: 8px;
+  background: #ffffff06;
+  color: var(--muted);
+  font-size: .7rem;
+}
+.chess-repertoire-match span.matched {
+  background: #6ed6a31a;
+  color: #9ce9c7;
+}
+.chess-opening-candidates {
+  display: grid;
+  gap: 6px;
+}
+.chess-opening-candidates > small {
+  color: var(--muted);
+}
+.chess-opening-candidates > div {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 9px;
+  background: #ffffff05;
+}
+.chess-opening-candidates span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: .75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chess-repertoire-selects {
+  display: grid;
+  gap: 9px;
+}
+.chess-repertoire-selects label {
+  display: grid;
+  gap: 5px;
+}
+.chess-repertoire-selects label > span {
+  color: var(--muted);
+  font-size: .72rem;
+}
+.chess-repertoire-selects select {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #ffffff1c;
+  border-radius: 10px;
+  background: #101816;
+  color: var(--text);
+  font: inherit;
+}
+.chess-plan-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+.chess-plan-head h3 {
+  margin: 3px 0 0;
+  font-size: 1rem;
+}
+.chess-guidance-toggle {
+  flex: 0 0 auto;
+  padding: 6px 8px;
+  border: 1px solid #ffffff1c;
+  border-radius: 9px;
+  background: #ffffff07;
+  color: var(--muted);
+  font: inherit;
+  font-size: .7rem;
+}
+.chess-guidance-toggle.active {
+  border-color: #43e7b055;
+  color: #9ce9c7;
+  background: #43e7b010;
+}
+.chess-plan-move {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #43e7b00c;
+}
+.chess-plan-move span {
+  color: var(--muted);
+  font-size: .75rem;
+}
+.chess-plan-move strong {
+  color: #a9efd3;
 }
 .chess-analysis-locked {
   display: flex;
@@ -780,5 +919,5 @@ dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child
   .chess-status-row { font-size: .78rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .chess-piece, .chess-promotion { transition: none !important; }
+  .chess-piece, .chess-promotion, .chess-plan-overlay line { transition: none !important; }
 }
