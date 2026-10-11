@@ -13,7 +13,7 @@ const shots = [
 ] as const;
 
 for (const shot of shots) {
-  test(`Chess traced-piece visual evidence ${shot.id}`, async ({ browser, browserName }, testInfo) => {
+  test(`Chess production-vector visual evidence ${shot.id}`, async ({ browser, browserName }, testInfo) => {
     test.skip(browserName !== 'chromium');
     const locale = locales.find((item) => item.id === shot.locale) as LocaleCase;
     const touch = shot.width < 1024;
@@ -39,8 +39,15 @@ for (const shot of shots) {
       await expect(board.locator('.chess-piece-svg[data-piece="knight"]')).toHaveCount(4);
       await expect(board.locator('.chess-piece-svg[data-piece="pawn"]')).toHaveCount(16);
 
-      const traced = board.locator('.chess-piece-svg[data-reference-traced="true"]');
-      await expect(traced).toHaveCount(32);
+      const productionVectors = board.locator(
+        '.chess-piece-svg[data-professional-vector="true"]',
+      );
+      await expect(productionVectors).toHaveCount(32);
+
+      const viewBoxes = await productionVectors.evaluateAll((pieces) =>
+        pieces.map((piece) => piece.getAttribute('viewBox')),
+      );
+      expect(new Set(viewBoxes)).toEqual(new Set(['0 0 100 120']));
 
       await page.screenshot({
         path: testInfo.outputPath(`${shot.id}-chess-reference-set.png`),
