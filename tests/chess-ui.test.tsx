@@ -40,7 +40,8 @@ test('Chess UI renders 64 fixed-coordinate squares and emits a legal e2-e4 move'
       `.chess-piece-svg[data-piece="${type}"]`,
     );
     assert.ok(piece, type);
-    assert.equal(piece.getAttribute('viewBox'), '0 0 220 430');
+    assert.match(piece.getAttribute('viewBox') ?? '', /^\d+ \d+ \d+ \d+$/);
+    assert.ok(piece.getAttribute('style')?.includes('--chess-piece-reference-height'));
     assert.equal(piece.getAttribute('data-reference-traced'), 'true');
   }
   assert.equal(
@@ -56,6 +57,21 @@ test('Chess UI renders 64 fixed-coordinate squares and emits a legal e2-e4 move'
   assert.equal(view.container.querySelectorAll('.chess-cell.legal-cell').length, 2);
   fireEvent.click(view.getByRole('gridcell', { name: /e4: emptyCell/ }));
   assert.deepEqual(move, { from: 52, to: 36 });
+});
+
+test('Chess reference pieces use tight viewboxes and per-piece relative heights', () => {
+  const view = render(
+    <ChessBoard state={createChess()} disabled={false} onMove={() => {}} t={t} />,
+  );
+  const king = view.container.querySelector<SVGElement>('.chess-piece-svg[data-piece="king"]');
+  const pawn = view.container.querySelector<SVGElement>('.chess-piece-svg[data-piece="pawn"]');
+  assert.ok(king);
+  assert.ok(pawn);
+  assert.notEqual(king?.getAttribute('viewBox'), pawn?.getAttribute('viewBox'));
+  const kingStyle = king?.getAttribute('style') ?? '';
+  const pawnStyle = pawn?.getAttribute('style') ?? '';
+  assert.match(kingStyle, /94%/);
+  assert.match(pawnStyle, /43%/);
 });
 
 test('Chess UI renders a non-interactive strategic plan arrow over the board', () => {
