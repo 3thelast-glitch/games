@@ -1,6 +1,17 @@
+import type { CSSProperties } from 'react';
 import type { ChessPieceType } from './state.ts';
 
-const REFERENCE_VIEW_BOX = '0 0 220 430';
+const referenceGeometry: Record<
+  ChessPieceType,
+  { viewBox: string; height: number }
+> = {
+  pawn: { viewBox: '40 230 140 198', height: 43 },
+  knight: { viewBox: '20 142 180 286', height: 64 },
+  queen: { viewBox: '24 89 172 338', height: 76 },
+  king: { viewBox: '24 10 172 417', height: 94 },
+  bishop: { viewBox: '23 98 174 330', height: 74 },
+  rook: { viewBox: '25 157 170 271', height: 60 },
+};
 
 const referencePaths: Record<ChessPieceType, string> = {
   pawn: 'M99.0,237.0 L89.0,244.0 L83.0,254.0 L82.0,269.0 L84.0,275.0 L88.0,281.0 L99.0,290.0 L89.0,291.0 L87.0,296.0 L80.0,296.0 L77.0,298.0 L77.0,302.0 L85.0,308.0 L84.0,330.0 L78.0,346.0 L70.0,355.0 L66.0,357.0 L66.0,360.0 L73.0,365.0 L74.0,370.0 L72.0,375.0 L66.0,381.0 L53.0,389.0 L46.0,396.0 L46.0,400.0 L51.0,407.0 L45.0,412.0 L45.0,419.0 L48.0,422.0 L171.0,422.0 L174.0,418.0 L174.0,413.0 L168.0,406.0 L172.0,402.0 L173.0,397.0 L146.0,372.0 L146.0,365.0 L152.0,361.0 L154.0,357.0 L148.0,354.0 L139.0,344.0 L134.0,330.0 L133.0,307.0 L141.0,303.0 L142.0,300.0 L139.0,297.0 L132.0,297.0 L130.0,291.0 L121.0,290.0 L131.0,281.0 L137.0,270.0 L136.0,254.0 L131.0,245.0 L120.0,237.0 L113.0,235.0Z',
@@ -17,8 +28,9 @@ export function ChessPieceIcon({ type, owner }: { type: ChessPieceType; owner: 0
       className={`chess-piece-svg owner-${owner}`}
       data-piece={type}
       data-reference-traced="true"
-      viewBox={REFERENCE_VIEW_BOX}
-      preserveAspectRatio="xMidYMid meet"
+      viewBox={referenceGeometry[type].viewBox}
+      preserveAspectRatio="xMidYMax meet"
+      style={{ '--chess-piece-reference-height': `${referenceGeometry[type].height}%` } as CSSProperties}
       aria-hidden="true"
       focusable="false"
     >
