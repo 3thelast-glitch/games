@@ -92,7 +92,7 @@ dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child
 .chess-piece.owner-1 { color: #181818; }
 .chess-piece-svg {
   display: block;
-  width: auto;
+  width: var(--chess-piece-reference-width, 78%);
   max-width: 92%;
   height: var(--chess-piece-reference-height, 88%);
   max-height: 94%;
