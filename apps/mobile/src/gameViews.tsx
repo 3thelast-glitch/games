@@ -17,6 +17,7 @@ import { QuoridorBoard } from '../../../packages/games/quoridor/ui.tsx';
 import type { QuoridorState } from '../../../packages/games/quoridor/state.ts';
 import { ChessBoard } from '../../../packages/games/chess/ui.tsx';
 import type { ChessState } from '../../../packages/games/chess/state.ts';
+import type { ChessGuidanceSuggestion } from '../../../packages/games/chess/guidance.ts';
 import type { ChessPlanHint } from '../../../packages/games/chess/review.ts';
 import { DotsAndBoxesBoard } from '../../../packages/games/dots-and-boxes/ui.tsx';
 import type { DotsAndBoxesState } from '../../../packages/games/dots-and-boxes/state.ts';
@@ -31,6 +32,8 @@ interface Props {
   t: (key: string) => string;
   mode?: 'local' | 'ai' | 'online';
   chessPlan?: ChessPlanHint | null;
+  chessGuidance?: ChessGuidanceSuggestion | null;
+  chessGuidanceReveal?: 'cue' | 'piece' | 'move';
 }
 export const gameViews: Record<string, (props: Props) => React.ReactNode> = {
   nineMensMorris: (props) => <MorrisBoard {...props} state={props.state as MorrisState} />,
@@ -46,6 +49,8 @@ export const gameViews: Record<string, (props: Props) => React.ReactNode> = {
       {...props}
       state={props.state as ChessState}
       plan={props.chessPlan}
+      guidance={props.chessGuidance}
+      guidanceReveal={props.chessGuidanceReveal}
     />
   ),
   dotsAndBoxes: (props) => <DotsAndBoxesBoard {...props} state={props.state as DotsAndBoxesState} />,
