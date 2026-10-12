@@ -209,6 +209,9 @@ export function ModeDialog({
     [chessMinutes, setChessMinutes] = useState<ChessAiSessionConfig['minutes']>(
       DEFAULT_CHESS_AI_SESSION.minutes,
     ),
+    [chessGuidance, setChessGuidance] = useState<ChessAiSessionConfig['guidance']>(
+      DEFAULT_CHESS_AI_SESSION.guidance,
+    ),
     [code, setCode] = useState('');
   return (
     <Modal title={t('chooseMode')} onClose={onClose}>
@@ -336,6 +339,22 @@ export function ModeDialog({
               ))}
             </div>
           </fieldset>
+          <fieldset className="chess-guidance-setup">
+            <legend>{t('chessGuidanceLevel')}</legend>
+            <div className="chess-guidance-level-grid">
+              {(['full', 'light', 'test'] as const).map((level) => (
+                <button
+                  key={level}
+                  aria-pressed={chessGuidance === level}
+                  className={chessGuidance === level ? 'selected' : ''}
+                  onClick={() => setChessGuidance(level)}
+                >
+                  <strong>{t(`chessGuidanceLevel_${level}`)}</strong>
+                  <small>{t(`chessGuidanceLevelDesc_${level}`)}</small>
+                </button>
+              ))}
+            </div>
+          </fieldset>
           <fieldset className="chess-coach-setup">
             <legend>{t('chessCoachMode')}</legend>
             <label className="toggle-row">
@@ -458,7 +477,13 @@ export function ModeDialog({
               turnSeconds,
               undefined,
               gameId === 'chess' && mode === 'ai'
-                ? { style: chessStyle, coach: chessCoach, focus: chessFocus, minutes: chessMinutes }
+                ? {
+                    style: chessStyle,
+                    coach: chessCoach,
+                    focus: chessFocus,
+                    minutes: chessMinutes,
+                    guidance: chessGuidance,
+                  }
                 : undefined,
             )
           }
