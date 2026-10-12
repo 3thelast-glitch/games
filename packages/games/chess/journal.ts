@@ -66,6 +66,8 @@ export function appendAcceptedChessMove(
 
   const legalAfter = applyChess(before, move);
   if (chessPosition(legalAfter) !== chessPosition(after)) throw new Error('journal-state-mismatch');
+  const capturedClock: [number, number] | undefined =
+    clockMs && clockMs.length >= 2 ? [clockMs[0], clockMs[1]] : undefined;
   const entry: ChessMoveJournalEntry = {
     id: `${journal.matchId}:${after.ply}`,
     matchId: journal.matchId,
@@ -78,7 +80,7 @@ export function appendAcceptedChessMove(
     afterFen: chessToFen(after),
     afterPositionId: chessPosition(after),
     acceptedAt,
-    ...(clockMs?.length >= 2 ? { clockMs: [clockMs[0], clockMs[1]] } : {}),
+    ...(capturedClock ? { clockMs: capturedClock } : {}),
   };
   return { ...journal, entries: [...journal.entries, entry] };
 }
