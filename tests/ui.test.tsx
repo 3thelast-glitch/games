@@ -365,6 +365,8 @@ test('chess shows live move evaluation and final player/game ratings', () => {
   assert.ok(view.getByText('STRATEGIC PLAN'));
   assert.ok(view.getByText('Recommended move'));
   assert.ok(view.container.querySelector('.chess-plan-overlay'));
+
+  fireEvent.click(view.getByRole('tab', { name: 'Analysis' }));
   assert.ok(view.getAllByText('Excellent').length >= 1);
   assert.ok(view.getAllByText('c7–c5').length >= 1);
   assert.ok(view.getAllByText('92%').length >= 1);
