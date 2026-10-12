@@ -927,3 +927,33 @@ dialog.modal:has(.mode-game .game-art.chess):has(.mode-grid .mode-card:nth-child
 @media (prefers-reduced-motion: reduce) {
   .chess-piece, .chess-promotion, .chess-plan-overlay line { transition: none !important; }
 }
+
+
+.chess-ai-setup { display:grid; gap:14px; }
+.chess-option-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.chess-option-grid button { display:grid; gap:4px; text-align:start; padding:10px; border:1px solid #ffffff18; border-radius:12px; background:#ffffff06; color:var(--text); }
+.chess-option-grid button.selected { border-color:#43e7b077; background:#43e7b011; box-shadow:inset 0 0 0 1px #43e7b022; }
+.chess-option-grid button small { color:var(--muted); line-height:1.35; }
+.chess-assistant-shell { display:grid; gap:10px; }
+.chess-assistant-title { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+.chess-assistant-title > div { display:grid; gap:3px; }
+.chess-assistant-title strong { font-size:.9rem; }
+.chess-bot-badge { padding:5px 8px; border-radius:999px; background:#43e7b012; border:1px solid #43e7b044; color:#a6efd4; font-size:.7rem; white-space:nowrap; }
+.chess-assistant-tabs { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; }
+.chess-assistant-tabs button { min-width:0; padding:8px 6px; border:1px solid #ffffff14; border-radius:9px; background:#ffffff05; color:var(--muted); font:inherit; font-size:.72rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.chess-assistant-tabs button.active { background:#43e7b013; border-color:#43e7b055; color:#b7f4dc; }
+.chess-coach-panel { display:grid; gap:10px; border-color:#8ec5ff33; background:linear-gradient(135deg,#10202aee,#101816ee); }
+.chess-coach-head { display:flex; align-items:center; gap:10px; }
+.chess-coach-head > span { font-size:1.45rem; }
+.chess-coach-head h3 { margin:2px 0 0; font-size:1rem; }
+.chess-coach-panel p { margin:0; color:var(--muted); line-height:1.55; }
+.chess-coach-task { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px; border-radius:10px; background:#ffffff08; }
+.chess-coach-task span { color:var(--muted); font-size:.75rem; }
+.chess-coach-task strong { color:#b8dcff; }
+
+@media (max-width: 520px) {
+  .chess-option-grid { grid-template-columns:minmax(0,1fr); }
+  .chess-assistant-tabs { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .chess-assistant-title { align-items:stretch; flex-direction:column; }
+  .chess-bot-badge { width:max-content; max-width:100%; }
+}
