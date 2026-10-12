@@ -25,6 +25,7 @@ import {
   detectChessOpening,
   type ChessRepertoire,
 } from '../../../packages/games/chess/opening.ts';
+import type { ChessAiConfig } from '../../../packages/games/chess/bot.ts';
 import { ChessPieceIcon } from '../../../packages/games/chess/pieces.tsx';
 import { useI18n } from './i18n.tsx';
 export interface MatchPageProps {
@@ -54,6 +55,7 @@ export interface MatchPageProps {
   emote: { player: Seat; value: string } | null;
   chessReviews?: ChessMoveReview[];
   chessRepertoire?: ChessRepertoire;
+  chessAi?: ChessAiConfig;
   onChessRepertoireChange?: (repertoire: ChessRepertoire) => void;
   onMove: (move: unknown) => void;
   onUndo: () => void;
@@ -119,7 +121,9 @@ export function MatchPage(p: MatchPageProps) {
     [emotesOpen, setEmotesOpen] = useState(false),
     [resultOpen, setResultOpen] = useState(true),
     [rulesOpen, setRulesOpen] = useState(false),
-    [showChessGuidance, setShowChessGuidance] = useState(true);
+    [showChessGuidance, setShowChessGuidance] = useState(true),
+    [chessAssistantTab, setChessAssistantTab] =
+      useState<'analysis' | 'plan' | 'opening' | 'repertoire'>('analysis');
   useEffect(() => {
     setResultOpen(true);
     setConfirmation(null);
@@ -400,6 +404,53 @@ export function MatchPage(p: MatchPageProps) {
             </section>
           )}
           {chessAnalysisVisible && p.state.gameId === 'chess' && (
+            <section className="panel chess-assistant-shell">
+              <div className="chess-assistant-title">
+                <div>
+                  <span className="eyebrow">{t('chessAssistant')}</span>
+                  <strong>{t('chessAssistantDesc')}</strong>
+                </div>
+                {p.mode === 'ai' && p.chessAi && (
+                  <span className="chess-bot-badge">
+                    {t(`chessBotStyle_${p.chessAi.style}`)}
+                  </span>
+                )}
+              </div>
+              <div className="chess-assistant-tabs" role="tablist">
+                {(['analysis', 'plan', 'opening', 'repertoire'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    role="tab"
+                    aria-selected={chessAssistantTab === tab}
+                    className={chessAssistantTab === tab ? 'active' : ''}
+                    onClick={() => setChessAssistantTab(tab)}
+                  >
+                    {t(`chessAssistantTab_${tab}`)}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+          {chessAnalysisVisible && p.mode === 'ai' && p.chessAi?.coach !== 'off' && (
+            <section className="panel chess-coach-panel">
+              <div className="chess-coach-head">
+                <span aria-hidden="true">🎓</span>
+                <div>
+                  <span className="eyebrow">{t('chessCoach')}</span>
+                  <h3>{t(`chessCoach_${p.chessAi.coach}`)}</h3>
+                </div>
+              </div>
+              <p>{t(`chessCoachLesson_${p.chessAi.coach}`)}</p>
+              {lastChessReview?.bestNotation && (
+                <div className="chess-coach-task">
+                  <span>{t('chessCoachTry')}</span>
+                  <strong dir="ltr">{lastChessReview.bestNotation}</strong>
+                </div>
+              )}
+            </section>
+          )}
+          {chessAnalysisVisible && p.state.gameId === 'chess' && chessAssistantTab === 'opening' && (
             <section className="panel chess-opening-explorer">
               <div className="chess-review-heading">
                 <div>
@@ -451,7 +502,7 @@ export function MatchPage(p: MatchPageProps) {
               )}
             </section>
           )}
-          {chessAnalysisVisible && p.state.gameId === 'chess' && p.chessRepertoire && (
+          {chessAnalysisVisible && p.state.gameId === 'chess' && p.chessRepertoire && chessAssistantTab === 'repertoire' && (
             <section className="panel chess-repertoire-panel">
               <div className="chess-review-heading">
                 <div>
@@ -499,7 +550,7 @@ export function MatchPage(p: MatchPageProps) {
               </div>
             </section>
           )}
-          {chessAnalysisVisible && chessPlan && !p.result && (
+          {chessAnalysisVisible && chessPlan && !p.result && chessAssistantTab === 'plan' && (
             <section className="panel chess-plan-panel">
               <div className="chess-plan-head">
                 <div>
@@ -524,7 +575,7 @@ export function MatchPage(p: MatchPageProps) {
               <p className="small-muted">{t(`chessPlanDesc_${chessPlan.kind}`)}</p>
             </section>
           )}
-          {chessAnalysisVisible && latestStrategy && !p.result && (
+          {chessAnalysisVisible && latestStrategy && !p.result && chessAssistantTab === 'analysis' && (
             <section className="panel chess-strategy-panel">
               <div className="chess-review-heading">
                 <div>
@@ -535,7 +586,7 @@ export function MatchPage(p: MatchPageProps) {
               <StrategicIndicators snapshot={latestStrategy} t={t} compact />
             </section>
           )}
-          {chessAnalysisVisible && (
+          {chessAnalysisVisible && chessAssistantTab === 'analysis' && (
             <section
               className={`panel chess-move-review-panel ${
                 localChessTabletop && lastChessReview?.player === 1
