@@ -303,6 +303,12 @@ export function ModeDialog({
           <fieldset>
             <legend>{t('chessMatchTime')}</legend>
             <div className="segmented chess-time-segmented">
+              <button
+                aria-pressed={chessMinutes === null}
+                onClick={() => setChessMinutes(null)}
+              >
+                {t('chessNoClock')}
+              </button>
               {([3, 5, 10, 15] as const).map((minutes) => (
                 <button
                   key={minutes}
