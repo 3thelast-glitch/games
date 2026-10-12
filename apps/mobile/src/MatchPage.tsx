@@ -193,13 +193,15 @@ export function MatchPage(p: MatchPageProps) {
           <strong>{resource.value}</strong>
           <small>{t(resource.label)}</small>
         </div>
-        <div
-          className={`match-clock ${!p.result && p.state.turn === player && clock <= lowThreshold ? 'low' : ''}`}
-          dir="ltr"
-        >
-          <Icon name="clock" size={14} />
-          {formatTime(clock)}
-        </div>
+        {timeControl.mode !== 'none' && (
+          <div
+            className={`match-clock ${!p.result && p.state.turn === player && clock <= lowThreshold ? 'low' : ''}`}
+            dir="ltr"
+          >
+            <Icon name="clock" size={14} />
+            {formatTime(clock)}
+          </div>
+        )}
         {p.emote?.player === player && <span className="emote-bubble">{p.emote.value}</span>}
       </div>
     );
