@@ -393,9 +393,7 @@ export function ModeDialog({
                 playerCount,
                 turnSeconds,
                 undefined,
-                gameId === 'chess' && mode === 'ai'
-                  ? { style: chessStyle, coach: chessCoach, focus: chessFocus, minutes: chessMinutes }
-                  : undefined,
+                undefined,
               )
             }
           >
@@ -412,9 +410,7 @@ export function ModeDialog({
                 playerCount,
                 turnSeconds,
                 code,
-                gameId === 'chess' && mode === 'ai'
-                  ? { style: chessStyle, coach: chessCoach, focus: chessFocus, minutes: chessMinutes }
-                  : undefined,
+                undefined,
               );
             }}
           >
