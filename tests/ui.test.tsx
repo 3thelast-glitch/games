@@ -13,6 +13,7 @@ import { applyAbalone } from '../packages/games/abalone/rules.ts';
 import { I18n } from '../apps/mobile/src/i18n.tsx';
 import { Modal } from '../apps/mobile/src/components.tsx';
 import { MatchPage, type MatchPageProps } from '../apps/mobile/src/MatchPage.tsx';
+import { ModeDialog } from '../apps/mobile/src/pages.tsx';
 const dom = new JSDOM('<!doctype html><html><body></body></html>', {
   url: 'http://localhost',
 });
@@ -124,7 +125,7 @@ test('Arabic move controls render Arabic while board coordinates remain fixed', 
   assert.ok(board.getByRole('button', { name: 'تحريك البيدق 8,5' }));
   assert.equal(board.container.querySelector('svg')?.getAttribute('style'), 'direction: ltr;');
 });
-function matchProps(mode: 'local' | 'online'): MatchPageProps {
+function matchProps(mode: 'local' | 'ai' | 'online'): MatchPageProps {
   return {
     id: 'm1',
     state: createQuoridor(),
@@ -346,18 +347,28 @@ test('chess shows live move evaluation and final player/game ratings', () => {
     </I18n>,
   );
 
+  assert.ok(view.getByText('CHESS ASSISTANT'));
   assert.ok(view.getByText('Latest move evaluation'));
   assert.ok(view.getByText('Evaluation'));
   assert.ok(view.getByRole('meter', { name: 'Evaluation' }));
   assert.ok(view.getByText('Strategic indicators'));
   assert.ok(view.getByText('Center control'));
+  assert.equal(view.queryByText('OPENING EXPLORER'), null);
+
+  fireEvent.click(view.getByRole('tab', { name: 'Opening' }));
   assert.ok(view.getByText('OPENING EXPLORER'));
   assert.ok(view.getAllByText('Sicilian Defence').length >= 1);
   assert.ok(view.getByText('B20'));
+
+  fireEvent.click(view.getByRole('tab', { name: 'Repertoire' }));
   assert.ok(view.getByText('Your repertoire'));
+
+  fireEvent.click(view.getByRole('tab', { name: 'Coach' }));
   assert.ok(view.getByText('STRATEGIC PLAN'));
   assert.ok(view.getByText('Recommended move'));
   assert.ok(view.container.querySelector('.chess-plan-overlay'));
+
+  fireEvent.click(view.getByRole('tab', { name: 'Analysis' }));
   assert.ok(view.getAllByText('Excellent').length >= 1);
   assert.ok(view.getAllByText('c7–c5').length >= 1);
   assert.ok(view.getAllByText('92%').length >= 1);
@@ -379,6 +390,117 @@ test('chess shows live move evaluation and final player/game ratings', () => {
   assert.ok(view.getAllByText('Alice').length >= 1);
   assert.ok(view.getAllByText('Bob').length >= 1);
   assert.equal(view.getAllByText('Reviewed moves: 1').length, 2);
+});
+
+test('chess AI coach shows the selected training focus and persona without cluttering other tabs', () => {
+  const props = matchProps('ai');
+  const state = createChess();
+  state.ply = 1;
+  state.turn = 1;
+  props.state = state;
+  props.chessAi = {
+    style: 'aggressive',
+    coach: true,
+    focus: 'center',
+    minutes: 5,
+  };
+  props.chessReviews = [
+    {
+      player: 0,
+      ply: 1,
+      move: { from: 52, to: 36 },
+      notation: 'e2–e4',
+      grade: 'best',
+      accuracy: 100,
+      centipawnLoss: 0,
+      bestMove: { from: 52, to: 36 },
+      bestNotation: 'e2–e4',
+      strategicAfter: {
+        white: {
+          material: 50,
+          kingSafety: 55,
+          centerControl: 70,
+          development: 62,
+          pieceActivity: 64,
+          pawnStructure: 58,
+          space: 61,
+          initiative: 66,
+          passedPawns: 35,
+          endgame: 50,
+        },
+        black: {
+          material: 50,
+          kingSafety: 52,
+          centerControl: 48,
+          development: 45,
+          pieceActivity: 49,
+          pawnStructure: 56,
+          space: 44,
+          initiative: 48,
+          passedPawns: 35,
+          endgame: 50,
+        },
+      },
+    },
+  ];
+
+  const view = render(
+    <I18n lang="en">
+      <MatchPage {...props} />
+    </I18n>,
+  );
+
+  assert.ok(view.getByText('Aggressive'));
+  assert.ok(view.getByText('Center control'));
+  assert.ok(view.getByText('70/100'));
+  assert.ok(view.getByText(/Fight for e4, d4, e5, and d5/));
+  assert.equal(view.queryByText('OPENING EXPLORER'), null);
+  fireEvent.click(view.getByRole('tab', { name: 'Opening' }));
+  assert.ok(view.getByText('OPENING EXPLORER'));
+  assert.equal(view.queryByText(/Fight for e4, d4, e5, and d5/), null);
+});
+
+test('chess AI setup exposes time, real difficulty, personas, and training focus', () => {
+  let started:
+    | {
+        mode: string;
+        difficulty: string;
+        chessAi: unknown;
+      }
+    | undefined;
+  const view = render(
+    <I18n lang="en">
+      <ModeDialog
+        gameId="chess"
+        initialMode="ai"
+        onClose={() => {}}
+        onStart={(mode, difficulty, _ranked, _players, _turn, _code, chessAi) => {
+          started = { mode, difficulty, chessAi };
+        }}
+        guest={false}
+        onSignIn={() => {}}
+        busy={false}
+      />
+    </I18n>,
+  );
+
+  assert.ok(view.getByText('Match time'));
+  assert.ok(view.getByText('Bot playing style'));
+  assert.ok(view.getByText('Training coach'));
+  fireEvent.click(view.getByRole('button', { name: /5 min/i }));
+  fireEvent.click(view.getByRole('button', { name: /Aggressive/i }));
+  fireEvent.click(view.getByRole('button', { name: 'Tactical play' }));
+  fireEvent.click(view.getByRole('button', { name: 'Hard' }));
+  fireEvent.click(view.getByRole('button', { name: 'Start' }));
+
+  assert.equal(started?.mode, 'ai');
+  assert.equal(started?.difficulty, 'hard');
+  assert.deepEqual(started?.chessAi, {
+    style: 'aggressive',
+    coach: true,
+    focus: 'tactics',
+    minutes: 5,
+  });
 });
 
 test('ranked online chess hides engine analysis until the game ends', () => {
