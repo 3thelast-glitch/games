@@ -493,7 +493,7 @@ test('chess AI setup exposes time, real difficulty, personas, and training focus
   assert.ok(view.getByText('Match time'));
   assert.ok(view.getByText('Bot playing style'));
   assert.ok(view.getByText('Training coach'));
-  fireEvent.click(view.getByRole('button', { name: /5 min/i }));
+  fireEvent.click(view.getByRole('button', { name: /^5 min$/i }));
   fireEvent.click(view.getByRole('button', { name: /Aggressive/i }));
   fireEvent.click(view.getByRole('button', { name: 'Tactical play' }));
   fireEvent.click(view.getByRole('button', { name: 'Hard' }));
