@@ -1329,3 +1329,137 @@
     grid-column: auto;
   }
 }
+
+
+.chess-archive-page,
+.chess-replay-page {
+  display: grid;
+  gap: 16px;
+}
+.chess-archive-heading,
+.chess-replay-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.chess-archive-list {
+  display: grid;
+  gap: 10px;
+}
+.chess-archive-card {
+  display: grid;
+  gap: 10px;
+}
+.chess-archive-result {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto minmax(0,1fr);
+  align-items: center;
+  gap: 8px;
+}
+.chess-archive-result strong:last-child {
+  text-align: end;
+}
+.chess-archive-result bdi {
+  padding: 4px 7px;
+  border-radius: 8px;
+  background: #ffffff08;
+  font-weight: 800;
+}
+.chess-archive-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chess-archive-meta span {
+  padding: 4px 7px;
+  border-radius: 8px;
+  background: #ffffff05;
+  color: var(--muted);
+  font-size: .72rem;
+}
+.chess-archive-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.chess-archive-empty {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+.chess-archive-empty h2,
+.chess-archive-empty p {
+  margin: 0;
+}
+.chess-archive-empty p {
+  color: var(--muted);
+}
+.chess-replay-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 370px);
+  gap: 16px;
+  align-items: start;
+}
+.chess-replay-board {
+  min-width: 0;
+}
+.chess-replay-controls {
+  display: grid;
+  gap: 10px;
+}
+.chess-replay-counter {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.chess-replay-counter span {
+  color: var(--muted);
+  font-size: .75rem;
+}
+.chess-replay-buttons {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+}
+.chess-replay-buttons button {
+  min-height: 38px;
+  border: 1px solid #ffffff16;
+  border-radius: 9px;
+  background: #ffffff06;
+  color: var(--text);
+}
+.chess-replay-moves {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-height: 220px;
+  overflow: auto;
+}
+.chess-replay-moves button {
+  padding: 5px 7px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: #ffffff05;
+  color: var(--muted);
+  font: inherit;
+}
+.chess-replay-moves button.active {
+  border-color: #43e7b055;
+  background: #43e7b012;
+  color: #b4f1d9;
+}
+
+@media (max-width: 850px) {
+  .chess-replay-layout {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 520px) {
+  .chess-archive-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
