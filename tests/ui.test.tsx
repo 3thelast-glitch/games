@@ -509,6 +509,37 @@ test('chess AI setup exposes time, real difficulty, personas, and training focus
   });
 });
 
+test('chess AI setup can start a match with no clock', () => {
+  let chessAi: unknown;
+  const view = render(
+    <I18n lang="en">
+      <ModeDialog
+        gameId="chess"
+        initialMode="ai"
+        onClose={() => {}}
+        onStart={(_mode, _difficulty, _ranked, _players, _turn, _code, config) => {
+          chessAi = config;
+        }}
+        guest={false}
+        onSignIn={() => {}}
+        busy={false}
+      />
+    </I18n>,
+  );
+
+  const noClock = view.getByRole('button', { name: 'No clock' });
+  fireEvent.click(noClock);
+  assert.equal(noClock.getAttribute('aria-pressed'), 'true');
+  fireEvent.click(view.getByRole('button', { name: 'Start match' }));
+
+  assert.deepEqual(chessAi, {
+    style: 'balanced',
+    coach: true,
+    focus: 'development',
+    minutes: null,
+  });
+});
+
 test('ranked online chess hides engine analysis until the game ends', () => {
   const props = matchProps('online');
   props.state = createChess();
