@@ -438,10 +438,10 @@ export function MatchPage(p: MatchPageProps) {
                 <span aria-hidden="true">🎓</span>
                 <div>
                   <span className="eyebrow">{t('chessCoach')}</span>
-                  <h3>{t(`chessCoach_${p.chessAi.coach}`)}</h3>
+                  <h3>{t(`chessCoach_${p.chessAi!.coach}`)}</h3>
                 </div>
               </div>
-              <p>{t(`chessCoachLesson_${p.chessAi.coach}`)}</p>
+              <p>{t(`chessCoachLesson_${p.chessAi!.coach}`)}</p>
               {lastChessReview?.bestNotation && (
                 <div className="chess-coach-task">
                   <span>{t('chessCoachTry')}</span>
