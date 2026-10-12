@@ -19,6 +19,7 @@ const dom = new JSDOM('<!doctype html><html><body></body></html>', {
 Object.assign(globalThis, {
   window: dom.window,
   document: dom.window.document,
+  location: dom.window.location,
   HTMLElement: dom.window.HTMLElement,
   HTMLDialogElement: dom.window.HTMLDialogElement,
   MutationObserver: dom.window.MutationObserver,
