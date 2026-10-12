@@ -497,7 +497,7 @@ test('chess AI setup exposes time, real difficulty, personas, and training focus
   fireEvent.click(view.getByRole('button', { name: /Aggressive/i }));
   fireEvent.click(view.getByRole('button', { name: 'Tactical play' }));
   fireEvent.click(view.getByRole('button', { name: 'Hard' }));
-  fireEvent.click(view.getByRole('button', { name: 'Start' }));
+  fireEvent.click(view.getByRole('button', { name: 'Start match' }));
 
   assert.equal(started?.mode, 'ai');
   assert.equal(started?.difficulty, 'hard');
