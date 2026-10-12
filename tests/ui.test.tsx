@@ -408,7 +408,7 @@ test('chess AI coach shows the selected training focus and persona without clutt
     style: 'aggressive',
     coach: true,
     focus: 'center',
-    minutes: 5,
+    minutes: null,
   };
   props.chessReviews = [
     {
@@ -491,9 +491,10 @@ test('chess AI setup exposes time, real difficulty, personas, and training focus
   );
 
   assert.ok(view.getByText('Match time'));
+  assert.ok(view.getByRole('button', { name: 'No time limit' }));
   assert.ok(view.getByText('Bot playing style'));
   assert.ok(view.getByText('Training coach'));
-  fireEvent.click(view.getByRole('button', { name: /^5 min$/i }));
+  fireEvent.click(view.getByRole('button', { name: 'No time limit' }));
   fireEvent.click(view.getByRole('button', { name: /Aggressive/i }));
   fireEvent.click(view.getByRole('button', { name: 'Tactical play' }));
   fireEvent.click(view.getByRole('button', { name: 'Hard' }));
@@ -507,6 +508,28 @@ test('chess AI setup exposes time, real difficulty, personas, and training focus
     focus: 'tactics',
     minutes: 5,
   });
+});
+
+test('untimed chess AI hides both player clocks', () => {
+  const props = matchProps('ai');
+  props.state = createChess();
+  props.timeControl = { mode: 'none' };
+  props.clocks = [0, 0];
+  props.chessAi = {
+    style: 'balanced',
+    coach: true,
+    focus: 'development',
+    minutes: null,
+  };
+
+  const view = render(
+    <I18n lang="en">
+      <MatchPage {...props} />
+    </I18n>,
+  );
+
+  assert.equal(view.container.querySelectorAll('.match-clock').length, 0);
+  assert.equal(view.queryByText('00:00'), null);
 });
 
 test('ranked online chess hides engine analysis until the game ends', () => {
