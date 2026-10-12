@@ -13,7 +13,6 @@ import { applyAbalone } from '../packages/games/abalone/rules.ts';
 import { I18n } from '../apps/mobile/src/i18n.tsx';
 import { Modal } from '../apps/mobile/src/components.tsx';
 import { MatchPage, type MatchPageProps } from '../apps/mobile/src/MatchPage.tsx';
-import { ModeDialog } from '../apps/mobile/src/pages.tsx';
 const dom = new JSDOM('<!doctype html><html><body></body></html>', {
   url: 'http://localhost',
 });
@@ -23,6 +22,11 @@ Object.assign(globalThis, {
   HTMLElement: dom.window.HTMLElement,
   HTMLDialogElement: dom.window.HTMLDialogElement,
   MutationObserver: dom.window.MutationObserver,
+  matchMedia: () => ({
+    matches: false,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }),
   IS_REACT_ACT_ENVIRONMENT: true,
 });
 Object.defineProperty(globalThis, 'navigator', {
@@ -36,6 +40,7 @@ dom.window.HTMLDialogElement.prototype.close = function () {
   this.removeAttribute('open');
 };
 const { render, fireEvent, cleanup } = await import('@testing-library/react');
+const { ModeDialog } = await import('../apps/mobile/src/pages.tsx');
 afterEach(() => cleanup());
 const t = (key: string) => key;
 test('Abalone UI emits a legal selected move and prevents selecting the opponent', () => {
