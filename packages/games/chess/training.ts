@@ -20,7 +20,7 @@ export interface ChessAiSessionConfig {
   style: ChessAiStyle;
   coach: boolean;
   focus: ChessTrainingFocus;
-  minutes: 3 | 5 | 10 | 15;
+  minutes: 3 | 5 | 10 | 15 | null;
 }
 
 export const DEFAULT_CHESS_AI_SESSION: ChessAiSessionConfig = {

@@ -144,6 +144,7 @@ export function MatchPage(p: MatchPageProps) {
     setConfirmation(null);
   }, [p.id, p.result?.reason]);
   const timeControl = p.timeControl ?? bankTimeControl(600000),
+    untimed = timeControl.mode === 'none',
     view = gameViews[p.state.gameId],
     turnText = p.result
       ? t('game-over')
@@ -193,13 +194,15 @@ export function MatchPage(p: MatchPageProps) {
           <strong>{resource.value}</strong>
           <small>{t(resource.label)}</small>
         </div>
-        <div
-          className={`match-clock ${!p.result && p.state.turn === player && clock <= lowThreshold ? 'low' : ''}`}
-          dir="ltr"
-        >
-          <Icon name="clock" size={14} />
-          {formatTime(clock)}
-        </div>
+        {!untimed && (
+          <div
+            className={`match-clock ${!p.result && p.state.turn === player && clock <= lowThreshold ? 'low' : ''}`}
+            dir="ltr"
+          >
+            <Icon name="clock" size={14} />
+            {formatTime(clock)}
+          </div>
+        )}
         {p.emote?.player === player && <span className="emote-bubble">{p.emote.value}</span>}
       </div>
     );

@@ -43,6 +43,8 @@ export class MatchService {
         throw new RuleError('invalid-time-control');
       return control;
     }
+    // Untimed controls are intentionally offline-only (for example Chess vs AI).
+    if (control.mode === 'none') throw new RuleError('invalid-time-control');
     if (gameId === 'digitalGame') {
       if (control.turnMs !== CLASSIC_DIGITAL_TURN_MS)
         throw new RuleError('turn-timer-not-supported');
