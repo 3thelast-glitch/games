@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { BaseState, Seat } from '../../../packages/core/src/game.ts';
+import type { BaseState, Difficulty, Seat } from '../../../packages/core/src/game.ts';
 import type { MatchResult, PublicPlayer } from '../../../packages/core/src/protocol.ts';
 import {
   bankTimeControl,
@@ -12,6 +12,7 @@ import {
   deriveChessPlan,
   formatChessEvaluation,
   chessMoveNotation,
+  chessSquareName,
   summarizeChessReviews,
   type ChessMoveReview,
   type ChessStrategicMetric,
@@ -26,6 +27,7 @@ import {
   type ChessRepertoire,
 } from '../../../packages/games/chess/opening.ts';
 import { ChessPieceIcon } from '../../../packages/games/chess/pieces.tsx';
+import type { ChessGuidanceSuggestion } from '../../../packages/games/chess/guidance.ts';
 import type {
   ChessAiSessionConfig,
   ChessTrainingFocus,
@@ -59,6 +61,7 @@ export interface MatchPageProps {
   chessReviews?: ChessMoveReview[];
   chessRepertoire?: ChessRepertoire;
   chessAi?: ChessAiSessionConfig;
+  difficulty?: Difficulty;
   onChessRepertoireChange?: (repertoire: ChessRepertoire) => void;
   onMove: (move: unknown) => void;
   onUndo: () => void;
@@ -136,6 +139,9 @@ export function MatchPage(p: MatchPageProps) {
     [resultOpen, setResultOpen] = useState(true),
     [rulesOpen, setRulesOpen] = useState(false),
     [showChessGuidance, setShowChessGuidance] = useState(true),
+    [beginnerGuidance, setBeginnerGuidance] = useState<ChessGuidanceSuggestion | null>(null),
+    [guidanceLoading, setGuidanceLoading] = useState(false),
+    [guidanceReveal, setGuidanceReveal] = useState<'cue' | 'piece' | 'move'>('cue'),
     [chessAssistantTab, setChessAssistantTab] = useState<
       'coach' | 'analysis' | 'opening' | 'repertoire'
     >(p.mode === 'ai' ? 'coach' : 'analysis');
@@ -143,6 +149,66 @@ export function MatchPage(p: MatchPageProps) {
     setResultOpen(true);
     setConfirmation(null);
   }, [p.id, p.result?.reason]);
+
+  useEffect(() => {
+    setBeginnerGuidance(null);
+    setGuidanceLoading(false);
+    const level = p.chessAi?.guidance;
+    setGuidanceReveal(level === 'full' ? 'move' : 'cue');
+    if (
+      p.state.gameId !== 'chess' ||
+      p.mode !== 'ai' ||
+      !!p.result ||
+      p.state.turn !== p.self ||
+      !level ||
+      level === 'test'
+    )
+      return;
+
+    const state = structuredClone(p.state);
+    const requestId = crypto.randomUUID();
+    const worker = new Worker(new URL('./chess-guidance.worker.ts', import.meta.url), {
+      type: 'module',
+    });
+    let active = true;
+    setGuidanceLoading(true);
+
+    worker.onmessage = (event) => {
+      if (!active || event.data.requestId !== requestId) return;
+      setGuidanceLoading(false);
+      if (
+        event.data.matchId === p.id &&
+        event.data.ply === state.ply &&
+        event.data.suggestion
+      )
+        setBeginnerGuidance(event.data.suggestion as ChessGuidanceSuggestion);
+      worker.terminate();
+    };
+    worker.onerror = () => {
+      if (active) setGuidanceLoading(false);
+      worker.terminate();
+    };
+    worker.postMessage({
+      requestId,
+      matchId: p.id,
+      state,
+      difficulty: p.difficulty ?? 'medium',
+      style: p.chessAi?.style,
+    });
+    return () => {
+      active = false;
+      worker.terminate();
+    };
+  }, [
+    p.id,
+    p.state,
+    p.mode,
+    p.self,
+    p.result,
+    p.difficulty,
+    p.chessAi?.guidance,
+    p.chessAi?.style,
+  ]);
   const timeControl = p.timeControl ?? bankTimeControl(600000),
     untimed = timeControl.mode === 'none',
     view = gameViews[p.state.gameId],
@@ -214,8 +280,15 @@ export function MatchPage(p: MatchPageProps) {
     p.state.gameId === 'chess' && p.state.ply > 0 && (lastChessReview?.ply ?? 0) < p.state.ply;
   const chessReviewSummary =
     p.state.gameId === 'chess' ? summarizeChessReviews(chessReviews) : null;
+  const chessTestAttempt =
+    p.state.gameId === 'chess' &&
+    p.mode === 'ai' &&
+    p.chessAi?.guidance === 'test' &&
+    !p.result;
   const chessAnalysisVisible =
-    p.state.gameId === 'chess' && (p.mode !== 'online' || !p.ranked || !!p.result);
+    p.state.gameId === 'chess' &&
+    (p.mode !== 'online' || !p.ranked || !!p.result) &&
+    !chessTestAttempt;
   const latestEvaluation =
     lastChessReview?.evaluationAfter ?? lastChessReview?.evaluationBefore ?? null;
   const latestStrategy = lastChessReview?.strategicAfter ?? null;
@@ -227,8 +300,13 @@ export function MatchPage(p: MatchPageProps) {
     p.chessRepertoire && chessOpening
       ? chessOpeningMatchesRepertoire(chessOpening, p.chessRepertoire)
       : null;
-  const chessPlan = chessAnalysisVisible ? deriveChessPlan(lastChessReview) : null;
+  const chessPlan =
+    chessAnalysisVisible && !(p.mode === 'ai' && !p.result)
+      ? deriveChessPlan(lastChessReview)
+      : null;
   const visibleChessPlan = showChessGuidance ? chessPlan : null;
+  const currentGuidance =
+    beginnerGuidance?.positionPly === p.state.ply ? beginnerGuidance : null;
   const chessCoachActive =
     p.state.gameId === 'chess' && p.mode === 'ai' && !!p.chessAi?.coach && !p.result;
   const coachMetric = p.chessAi ? trainingMetric[p.chessAi.focus] : undefined;
@@ -296,6 +374,8 @@ export function MatchPage(p: MatchPageProps) {
             t,
             mode: p.mode,
             chessPlan: p.state.gameId === 'chess' ? visibleChessPlan : null,
+            chessGuidance: p.state.gameId === 'chess' ? currentGuidance : null,
+            chessGuidanceReveal: guidanceReveal,
           })}
           {panel(bottomSeat)}
         </div>
@@ -401,6 +481,74 @@ export function MatchPage(p: MatchPageProps) {
               <p>{t(`${p.state.gameId}Rules`)}</p>
             </section>
           ) : null}
+          {p.state.gameId === 'chess' && p.mode === 'ai' && p.chessAi && !p.result && (
+            <section className="panel chess-beginner-guidance">
+              <div className="chess-guidance-header">
+                <div>
+                  <span className="eyebrow">{t('chessBeginnerGuidance')}</span>
+                  <strong>{t(`chessGuidanceLevel_${p.chessAi.guidance}`)}</strong>
+                </div>
+                <span className="chess-guidance-level-badge">
+                  {t(`chessGuidanceLevel_${p.chessAi.guidance}`)}
+                </span>
+              </div>
+              {p.chessAi.guidance === 'test' ? (
+                <div className="chess-guidance-test-note">
+                  <Icon name="lock" size={18} />
+                  <p>{t('chessGuidanceTestDesc')}</p>
+                </div>
+              ) : p.state.turn !== p.self ? (
+                <p className="small-muted">{t('chessGuidanceWaitTurn')}</p>
+              ) : guidanceLoading ? (
+                <div className="chess-guidance-loading" role="status">
+                  <span className="spinner" />
+                  {t('chessGuidanceAnalyzing')}
+                </div>
+              ) : currentGuidance ? (
+                <>
+                  {p.chessAi.guidance === 'light' && guidanceReveal === 'cue' && (
+                    <div className="chess-guidance-cue">
+                      <strong>{t(`chessGuidanceReason_${currentGuidance.reason}`)}</strong>
+                      <p>{t('chessGuidanceLightCue')}</p>
+                    </div>
+                  )}
+                  {(p.chessAi.guidance === 'full' || guidanceReveal !== 'cue') && (
+                    <div className="chess-guidance-instruction">
+                      <span>{t('chessGuidanceInstruction')}</span>
+                      <strong>
+                        {t(`chess${currentGuidance.piece[0].toUpperCase()}${currentGuidance.piece.slice(1)}`)}
+                        {' · '}
+                        <bdi dir="ltr">
+                          {chessSquareName(currentGuidance.move.from)} → {chessSquareName(currentGuidance.move.to)}
+                        </bdi>
+                      </strong>
+                      <p>{t(`chessGuidanceReason_${currentGuidance.reason}`)}</p>
+                    </div>
+                  )}
+                  {p.chessAi.guidance === 'light' && guidanceReveal !== 'move' && (
+                    <button
+                      className="button secondary full chess-guidance-hint"
+                      onClick={() =>
+                        setGuidanceReveal((value) => (value === 'cue' ? 'piece' : 'move'))
+                      }
+                    >
+                      {t(guidanceReveal === 'cue' ? 'chessGuidanceRevealPiece' : 'chessGuidanceRevealMove')}
+                    </button>
+                  )}
+                  {p.chessAi.guidance === 'light' && guidanceReveal === 'move' && (
+                    <button
+                      className="text-button"
+                      onClick={() => setGuidanceReveal('cue')}
+                    >
+                      {t('chessGuidanceResetHint')}
+                    </button>
+                  )}
+                </>
+              ) : (
+                <p className="small-muted">{t('chessGuidanceUnavailable')}</p>
+              )}
+            </section>
+          )}
           {chessAnalysisVisible && p.state.gameId === 'chess' && (
             <section className="panel chess-assistant-shell">
               <div className="chess-assistant-header">
