@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import type { Profile, PublicPlayer } from '../../../packages/core/src/protocol.ts';
 import type { Difficulty, PlayerCount, Seat } from '../../../packages/core/src/game.ts';
 import type { TurnTimerSeconds } from '../../../packages/core/src/timing.ts';
+import type { ChessGuidanceLevel } from '../../../packages/games/chess/guidance.ts';
 import {
   CHESS_AI_STYLES,
   CHESS_TRAINING_FOCUS,
@@ -209,8 +210,8 @@ export function ModeDialog({
     [chessMinutes, setChessMinutes] = useState<ChessAiSessionConfig['minutes']>(
       DEFAULT_CHESS_AI_SESSION.minutes,
     ),
-    [chessGuidance, setChessGuidance] = useState<ChessAiSessionConfig['guidance']>(
-      DEFAULT_CHESS_AI_SESSION.guidance,
+    [chessGuidance, setChessGuidance] = useState<ChessGuidanceLevel>(
+      DEFAULT_CHESS_AI_SESSION.guidance ?? 'full',
     ),
     [code, setCode] = useState('');
   return (
