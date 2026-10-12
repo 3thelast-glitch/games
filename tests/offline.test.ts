@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { OfflineMatch } from '../packages/core/src/offline.ts';
 import { games } from '../packages/games/registry.ts';
+import { noTimeControl } from '../packages/core/src/timing.ts';
 test('local undo restores the board and clock snapshot, AI undo is rejected', () => {
   let time = 1000;
   const match = new OfflineMatch(games.get('quoridor'), 'local', () => time);
@@ -24,4 +25,23 @@ test('offline timeout prevents a late move and result cannot change after resign
   assert.equal(match.current.result?.winner, 1);
   match.finish(0, 'resignation');
   assert.equal(match.current.result?.reason, 'timeout');
+});
+
+
+test('untimed offline matches never expire from elapsed clock time', () => {
+  let time = 0;
+  const match = new OfflineMatch(
+    games.get('chess'),
+    'ai',
+    () => time,
+    2,
+    noTimeControl(),
+  );
+  assert.equal(match.current.timeControl?.mode, 'none');
+  assert.deepEqual(match.current.clocks, [0, 0]);
+
+  time = 24 * 60 * 60 * 1000;
+  match.tick();
+  assert.equal(match.current.result, null);
+  assert.equal(match.current.state.ply, 0);
 });
