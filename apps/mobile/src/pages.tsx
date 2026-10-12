@@ -2,6 +2,12 @@ import { useEffect, useState, type FormEvent } from 'react';
 import type { Profile, PublicPlayer } from '../../../packages/core/src/protocol.ts';
 import type { Difficulty, PlayerCount, Seat } from '../../../packages/core/src/game.ts';
 import type { TurnTimerSeconds } from '../../../packages/core/src/timing.ts';
+import {
+  CHESS_BOT_STYLES,
+  CHESS_COACH_FOCUS,
+  DEFAULT_CHESS_AI_CONFIG,
+  type ChessAiConfig,
+} from '../../../packages/games/chess/bot.ts';
 import { RANKS } from '../../../packages/core/src/ranking.ts';
 import { Avatar, avatars, Empty, GameArt, Icon, Modal, formatTime } from './components.tsx';
 import { gameInfo, upcoming } from './gameViews.tsx';
@@ -179,6 +185,7 @@ export function ModeDialog({
     playerCount: PlayerCount,
     turnSeconds: TurnTimerSeconds | null,
     code?: string,
+    chessAi?: ChessAiConfig,
   ) => void;
   guest: boolean;
   onSignIn: () => void;
@@ -192,7 +199,8 @@ export function ModeDialog({
     [turnSeconds, setTurnSeconds] = useState<TurnTimerSeconds | null>(
       gameId === 'digitalGame' ? 60 : null,
     ),
-    [code, setCode] = useState('');
+    [code, setCode] = useState(''),
+    [chessAi, setChessAi] = useState<ChessAiConfig>(DEFAULT_CHESS_AI_CONFIG);
   return (
     <Modal title={t('chooseMode')} onClose={onClose}>
       <div className="mode-game">
@@ -281,6 +289,56 @@ export function ModeDialog({
           </div>
         </fieldset>
       )}
+      {gameId === 'chess' && mode === 'ai' && (
+        <div className="chess-ai-setup">
+          <fieldset>
+            <legend>{t('chessAiTime')}</legend>
+            <div className="segmented">
+              {([3, 5, 10, 15, 30] as const).map((minutes) => (
+                <button
+                  key={minutes}
+                  aria-pressed={chessAi.minutes === minutes}
+                  onClick={() => setChessAi({ ...chessAi, minutes })}
+                >
+                  {minutes}m
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>{t('chessBotStyle')}</legend>
+            <div className="chess-option-grid">
+              {CHESS_BOT_STYLES.map((style) => (
+                <button
+                  key={style}
+                  className={chessAi.style === style ? 'selected' : ''}
+                  aria-pressed={chessAi.style === style}
+                  onClick={() => setChessAi({ ...chessAi, style })}
+                >
+                  <strong>{t(`chessBotStyle_${style}`)}</strong>
+                  <small>{t(`chessBotStyleDesc_${style}`)}</small>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>{t('chessCoachMode')}</legend>
+            <div className="chess-option-grid coach">
+              {CHESS_COACH_FOCUS.map((coach) => (
+                <button
+                  key={coach}
+                  className={chessAi.coach === coach ? 'selected' : ''}
+                  aria-pressed={chessAi.coach === coach}
+                  onClick={() => setChessAi({ ...chessAi, coach })}
+                >
+                  <strong>{t(`chessCoach_${coach}`)}</strong>
+                  <small>{t(`chessCoachDesc_${coach}`)}</small>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        </div>
+      )}
       {mode === 'online' && (
         <>
           <div className="segmented">
@@ -347,7 +405,15 @@ export function ModeDialog({
           className="button primary full"
           disabled={busy || (ranked && guest && mode === 'online')}
           onClick={() =>
-            onStart(mode, difficulty, ranked, mode === 'ai' ? 2 : playerCount, turnSeconds)
+            onStart(
+              mode,
+              difficulty,
+              ranked,
+              mode === 'ai' ? 2 : playerCount,
+              turnSeconds,
+              undefined,
+              gameId === 'chess' && mode === 'ai' ? chessAi : undefined,
+            )
           }
         >
           {t(mode === 'online' ? 'quickMatch' : 'start')}
