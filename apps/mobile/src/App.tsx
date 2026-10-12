@@ -20,6 +20,10 @@ import {
   DEFAULT_CHESS_REPERTOIRE,
   type ChessRepertoire,
 } from '../../../packages/games/chess/opening.ts';
+import {
+  DEFAULT_CHESS_AI_CONFIG,
+  type ChessAiConfig,
+} from '../../../packages/games/chess/bot.ts';
 import type { ChessMove, ChessState } from '../../../packages/games/chess/state.ts';
 import { Avatar, Icon, Logo, Modal, NoticeContext } from './components.tsx';
 import {
@@ -50,12 +54,14 @@ interface OfflineSession {
   id: string;
   controller: OfflineMatch;
   difficulty: Difficulty;
+  chessAi?: ChessAiConfig;
 }
 interface SavedOffline {
   id: string;
   gameId: string;
   mode: 'local' | 'ai';
   difficulty: Difficulty;
+  chessAi?: ChessAiConfig;
   current: OfflineSnapshot;
   history: OfflineSnapshot[];
 }
@@ -268,6 +274,7 @@ function ArenaApp({
       gameId: session.controller.game.id,
       mode: session.controller.mode,
       difficulty: session.difficulty,
+      chessAi: session.chessAi,
       current: session.controller.current,
       history: session.controller.history.slice(-200),
     } satisfies SavedOffline);
@@ -430,6 +437,7 @@ function ArenaApp({
             id: saved.id,
             controller,
             difficulty: saved.difficulty,
+            chessAi: saved.chessAi ?? (saved.gameId === 'chess' ? DEFAULT_CHESS_AI_CONFIG : undefined),
           };
           offlineRef.current = session;
           setOffline(session);
@@ -541,6 +549,7 @@ function ArenaApp({
     worker.postMessage({
       state: aiState,
       difficulty: offline.difficulty,
+      chessStyle: offline.chessAi?.style,
       requestId,
     });
     return () => {
@@ -561,6 +570,7 @@ function ArenaApp({
     difficulty: Difficulty,
     playerCount: PlayerCount = 2,
     timeControl: TimeControl = bankTimeControl(600000),
+    chessAi?: ChessAiConfig,
   ) => {
     const session = {
       id: crypto.randomUUID(),
@@ -572,6 +582,9 @@ function ArenaApp({
         timeControl,
       ),
       difficulty,
+      ...(gameId === 'chess' && mode === 'ai'
+        ? { chessAi: chessAi ?? DEFAULT_CHESS_AI_CONFIG }
+        : {}),
     };
     offlineRef.current = session;
     setOffline(session);
@@ -591,6 +604,7 @@ function ArenaApp({
     playerCount: PlayerCount,
     turnSeconds: TurnTimerSeconds | null,
     code?: string,
+    chessAi?: ChessAiConfig,
   ) => {
     if (!choice) return;
     try {
@@ -605,7 +619,10 @@ function ArenaApp({
             ? turnTimeControl(turnSeconds ?? 60)
             : choice.gameId === 'reversi' && turnSeconds !== null
               ? turnTimeControl(turnSeconds)
-              : bankTimeControl(600000),
+              : choice.gameId === 'chess' && mode === 'ai'
+                ? bankTimeControl((chessAi?.minutes ?? 10) * 60000)
+                : bankTimeControl(600000),
+          chessAi,
         );
         return;
       }
@@ -957,6 +974,7 @@ function ArenaApp({
                 emote={emote}
                 chessReviews={current.gameId === 'chess' ? chessReviews : []}
                 chessRepertoire={chessRepertoire}
+                chessAi={offline?.controller.mode === 'ai' ? offline.chessAi : undefined}
                 onChessRepertoireChange={(next) => {
                   setChessRepertoire(next);
                   void storage.set('chess-repertoire', next);
@@ -987,6 +1005,7 @@ function ArenaApp({
                     offline!.difficulty,
                     (offline!.controller.current.state.playerCount ?? 2) as PlayerCount,
                     offline!.controller.current.timeControl ?? bankTimeControl(600000),
+                    offline!.chessAi,
                   )
                 }
                 onResign={() => {
@@ -1022,6 +1041,8 @@ function ArenaApp({
                       offline!.controller.mode,
                       offline!.difficulty,
                       (offline!.controller.current.state.playerCount ?? 2) as PlayerCount,
+                      offline!.controller.current.timeControl ?? bankTimeControl(600000),
+                      offline!.chessAi,
                     );
                 }}
                 onHome={goHome}
