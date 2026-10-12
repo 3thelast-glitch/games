@@ -44,8 +44,8 @@ test('SAN covers castling, promotion, capture and checkmate suffixes', () => {
   const promotion = chessFromFen('7k/4P3/8/8/8/8/8/K7 w - - 0 1');
   assert.equal(chessMoveToSan(promotion, { from: 12, to: 4, promotion: 'queen' }), 'e8=Q+');
 
-  const mate = chessFromFen('k7/2K5/3Q4/8/8/8/8/8 w - - 0 1');
-  assert.equal(chessMoveToSan(mate, { from: 19, to: 11 }), 'Qd7#');
+  const mate = chessFromFen('k1KQ4/8/8/8/8/8/8/8 w - - 0 1');
+  assert.equal(chessMoveToSan(mate, { from: 3, to: 24 }), 'Qa5#');
 });
 
 test('PGN export uses SAN, standard tags, Unicode names, escaping, and result', () => {
