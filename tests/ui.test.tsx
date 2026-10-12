@@ -506,7 +506,7 @@ test('chess AI setup exposes time, real difficulty, personas, and training focus
     style: 'aggressive',
     coach: true,
     focus: 'tactics',
-    minutes: 5,
+    minutes: null,
   });
 });
 
