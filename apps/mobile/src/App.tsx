@@ -21,6 +21,7 @@ import {
   type ChessRepertoire,
 } from '../../../packages/games/chess/opening.ts';
 import type { ChessMove, ChessState } from '../../../packages/games/chess/state.ts';
+import type { ChessAiSessionConfig } from '../../../packages/games/chess/training.ts';
 import { Avatar, Icon, Logo, Modal, NoticeContext } from './components.tsx';
 import {
   HomePage,
@@ -50,12 +51,14 @@ interface OfflineSession {
   id: string;
   controller: OfflineMatch;
   difficulty: Difficulty;
+  chessAi?: ChessAiSessionConfig;
 }
 interface SavedOffline {
   id: string;
   gameId: string;
   mode: 'local' | 'ai';
   difficulty: Difficulty;
+  chessAi?: ChessAiSessionConfig;
   current: OfflineSnapshot;
   history: OfflineSnapshot[];
 }
@@ -268,6 +271,7 @@ function ArenaApp({
       gameId: session.controller.game.id,
       mode: session.controller.mode,
       difficulty: session.difficulty,
+      chessAi: session.chessAi,
       current: session.controller.current,
       history: session.controller.history.slice(-200),
     } satisfies SavedOffline);
@@ -430,6 +434,7 @@ function ArenaApp({
             id: saved.id,
             controller,
             difficulty: saved.difficulty,
+            chessAi: saved.chessAi,
           };
           offlineRef.current = session;
           setOffline(session);
@@ -541,6 +546,7 @@ function ArenaApp({
     worker.postMessage({
       state: aiState,
       difficulty: offline.difficulty,
+      chessStyle: offline.chessAi?.style,
       requestId,
     });
     return () => {
@@ -561,6 +567,7 @@ function ArenaApp({
     difficulty: Difficulty,
     playerCount: PlayerCount = 2,
     timeControl: TimeControl = bankTimeControl(600000),
+    chessAi?: ChessAiSessionConfig,
   ) => {
     const session = {
       id: crypto.randomUUID(),
@@ -572,6 +579,7 @@ function ArenaApp({
         timeControl,
       ),
       difficulty,
+      chessAi,
     };
     offlineRef.current = session;
     setOffline(session);
@@ -591,6 +599,7 @@ function ArenaApp({
     playerCount: PlayerCount,
     turnSeconds: TurnTimerSeconds | null,
     code?: string,
+    chessAi?: ChessAiSessionConfig,
   ) => {
     if (!choice) return;
     try {
@@ -605,7 +614,10 @@ function ArenaApp({
             ? turnTimeControl(turnSeconds ?? 60)
             : choice.gameId === 'reversi' && turnSeconds !== null
               ? turnTimeControl(turnSeconds)
-              : bankTimeControl(600000),
+              : choice.gameId === 'chess' && mode === 'ai' && chessAi
+                ? bankTimeControl(chessAi.minutes * 60_000)
+                : bankTimeControl(600000),
+          choice.gameId === 'chess' && mode === 'ai' ? chessAi : undefined,
         );
         return;
       }
@@ -767,7 +779,11 @@ function ArenaApp({
       index === 0
         ? profile?.name ?? t('player1')
         : offline?.controller.mode === 'ai' && index === 1
-          ? `${t('aiName')} · ${t(offline.difficulty)}`
+          ? `${t('aiName')} · ${t(offline.difficulty)}${
+              offline.controller.current.state.gameId === 'chess' && offline.chessAi
+                ? ` · ${t(`chessBotStyle_${offline.chessAi.style}`)}`
+                : ''
+            }`
           : t(`player${index + 1}`),
     avatar: index === 0 ? profile?.avatar ?? 'orbit' : ['comet', 'hex', 'crown'][index - 1] ?? 'moon',
     rating: 1000,
@@ -957,6 +973,7 @@ function ArenaApp({
                 emote={emote}
                 chessReviews={current.gameId === 'chess' ? chessReviews : []}
                 chessRepertoire={chessRepertoire}
+                chessAi={offline?.controller.current.state.gameId === 'chess' ? offline.chessAi : undefined}
                 onChessRepertoireChange={(next) => {
                   setChessRepertoire(next);
                   void storage.set('chess-repertoire', next);

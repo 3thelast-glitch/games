@@ -13,13 +13,16 @@ import { createChess } from '../packages/games/chess/state.ts';
 const moveKey = (move: { from: number; to: number; promotion?: string }) =>
   `${move.from}-${move.to}-${move.promotion ?? ''}`;
 
-test('Chess AI has one dedicated expert route instead of shared difficulty behavior', () => {
+test('Chess AI exposes real search levels and persona-aware expert routing', () => {
   const worker = readFileSync('apps/mobile/src/ai.worker.ts', 'utf8');
   const css = readFileSync('apps/mobile/src/chess.css', 'utf8');
-  assert.match(worker, /state\.gameId === 'chess'/);
-  assert.match(worker, /chooseChessExpertMove\(state as ChessState\)/);
-  assert.match(css, /fixed AI strength: the dedicated expert engine/);
-  assert.match(css, /mode-card:nth-child\(2\)\.selected/);
+  assert.match(worker, /difficulty === 'easy'/);
+  assert.match(worker, /budgetMs: 180, maxDepth: 3/);
+  assert.match(worker, /budgetMs: 850, maxDepth: 4/);
+  assert.match(worker, /budgetMs: 3200, maxDepth: 6/);
+  assert.match(worker, /style: chessStyle \?\? 'balanced'/);
+  assert.doesNotMatch(css, /fixed AI strength/);
+  assert.doesNotMatch(css, /mode-card:nth-child\(2\)\.selected/);
 });
 
 test('Chess expert opening repertoire includes the requested first-move families', () => {
@@ -366,6 +369,36 @@ test('Chess expert finds the immediate checkmate in the Fools Mate pattern', () 
   const final = applyChess(state, move!);
   assert.equal(final.winner, 1);
   assert.equal(final.inCheck, true);
+});
+
+test('Chess expert accepts every configured playing persona and remains legal', () => {
+  let state = createChess();
+  state = applyChess(state, { from: 52, to: 36 }); // e4
+  state = applyChess(state, { from: 10, to: 26 }); // ...c5
+  state = applyChess(state, { from: 62, to: 45 }); // Nf3
+
+  const legal = chessLegalMoves(state);
+  for (const style of [
+    'balanced',
+    'aggressive',
+    'tactical',
+    'positional',
+    'defensive',
+    'gambit',
+    'endgame',
+  ] as const) {
+    const move = chooseChessExpertMove(state, {
+      useBook: false,
+      style,
+      budgetMs: 120,
+      maxDepth: 2,
+    });
+    assert.ok(move, style);
+    assert.ok(
+      legal.some((candidate) => moveKey(candidate) === moveKey(move!)),
+      style,
+    );
+  }
 });
 
 test('Chess expert always returns a legal move under a short bounded search', () => {

@@ -11,6 +11,7 @@ import {
   type ChessPieceType,
   type ChessState,
 } from './state.ts';
+import type { ChessAiStyle } from './training.ts';
 import {
   chessEvaluationWhitePercent,
   chessMoveAccuracy,
@@ -33,6 +34,8 @@ export interface ChessExpertOptions {
   useBook?: boolean;
   /** Injectable randomness for opening variation selection. Defaults to Math.random. */
   random?: () => number;
+  /** Playing personality used to prefer near-equal moves with a matching character. */
+  style?: ChessAiStyle;
 }
 
 const MATE = 10_000_000;
@@ -1129,6 +1132,75 @@ function openingBook(state: ChessState, random: () => number): ChessMove | null 
   // Sound generic central response for uncommon first moves.
   return pickBookMove(legal, [{ from: 12, to: 28 }], random);
 }
+function styleMoveBias(
+  position: ChessState,
+  move: ChessMove,
+  style: ChessAiStyle,
+  player: Player,
+): number {
+  if (style === 'balanced') return 0;
+  const piece = position.board[move.from];
+  if (!piece) return 0;
+  const captured = capturedPiece(position, move);
+  const child = advanceSearchState(position, move);
+  const destinationCenter = centerScore(rowOf(move.to), colOf(move.to));
+  const fromRow = rowOf(move.from);
+  const toRow = rowOf(move.to);
+  const advance = player === 0 ? fromRow - toRow : toRow - fromRow;
+  const isCastle = piece.type === 'king' && Math.abs(move.to - move.from) === 2;
+  const developsMinor =
+    (piece.type === 'knight' || piece.type === 'bishop') &&
+    ((player === 0 && fromRow >= 7) || (player === 1 && fromRow <= 0));
+
+  switch (style) {
+    case 'aggressive':
+      return (
+        (child.inCheck ? 34 : 0) +
+        (captured ? Math.min(28, PIECE_VALUE[captured.type] / 20) : 0) +
+        Math.max(0, advance) * 4 +
+        destinationCenter * 3
+      );
+    case 'tactical':
+      return (
+        (child.inCheck ? 46 : 0) +
+        (captured ? 32 + Math.min(30, PIECE_VALUE[captured.type] / 18) : 0) +
+        (move.promotion ? 40 : 0)
+      );
+    case 'positional':
+      return destinationCenter * 8 + (developsMinor ? 24 : 0) + (isCastle ? 18 : 0);
+    case 'defensive':
+      return (
+        (isCastle ? 42 : 0) +
+        (piece.type === 'king' && !isCastle ? -10 : 0) +
+        (captured ? 10 : 0) +
+        (child.inCheck ? 8 : 0)
+      );
+    case 'gambit':
+      return (
+        (piece.type === 'pawn' ? Math.max(0, advance) * 10 : 0) +
+        (child.inCheck ? 38 : 0) +
+        destinationCenter * 5 +
+        (captured ? 16 : 0)
+      );
+    case 'endgame': {
+      const nonPawnMaterial = child.board.reduce(
+        (sum, next) =>
+          sum +
+          (next && next.type !== 'king' && next.type !== 'pawn'
+            ? PIECE_VALUE[next.type]
+            : 0),
+        0,
+      );
+      const endgame = nonPawnMaterial <= 2600;
+      return (
+        (captured ? 22 : 0) +
+        (endgame && piece.type === 'king' ? destinationCenter * 12 : 0) +
+        (piece.type === 'pawn' ? Math.max(0, advance) * 6 : 0)
+      );
+    }
+  }
+}
+
 export function chooseChessExpertMove(
   state: ChessState,
   options: ChessExpertOptions = {},
@@ -1143,6 +1215,7 @@ export function chooseChessExpertMove(
   }
 
   const now = options.now ?? Date.now;
+  const style = options.style ?? 'balanced';
   const deadline = now() + (options.budgetMs ?? 6500);
   const maxDepth = Math.max(2, Math.min(8, options.maxDepth ?? 7));
   const root = state.turn;
@@ -1355,7 +1428,8 @@ export function chooseChessExpertMove(
     try {
       for (const move of ordered) {
         const child = advanceSearchState(state, move);
-        const score = search(child, depth - 1, -INF, INF, 1);
+        const searchScore = search(child, depth - 1, -INF, INF, 1);
+        const score = searchScore + styleMoveBias(state, move, style, root);
         if (score > iterationScore) {
           iterationScore = score;
           iterationBest = move;

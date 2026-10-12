@@ -2,6 +2,12 @@ import { useEffect, useState, type FormEvent } from 'react';
 import type { Profile, PublicPlayer } from '../../../packages/core/src/protocol.ts';
 import type { Difficulty, PlayerCount, Seat } from '../../../packages/core/src/game.ts';
 import type { TurnTimerSeconds } from '../../../packages/core/src/timing.ts';
+import {
+  CHESS_AI_STYLES,
+  CHESS_TRAINING_FOCUS,
+  DEFAULT_CHESS_AI_SESSION,
+  type ChessAiSessionConfig,
+} from '../../../packages/games/chess/training.ts';
 import { RANKS } from '../../../packages/core/src/ranking.ts';
 import { Avatar, avatars, Empty, GameArt, Icon, Modal, formatTime } from './components.tsx';
 import { gameInfo, upcoming } from './gameViews.tsx';
@@ -179,6 +185,7 @@ export function ModeDialog({
     playerCount: PlayerCount,
     turnSeconds: TurnTimerSeconds | null,
     code?: string,
+    chessAi?: ChessAiSessionConfig,
   ) => void;
   guest: boolean;
   onSignIn: () => void;
@@ -191,6 +198,16 @@ export function ModeDialog({
     [playerCount, setPlayerCount] = useState<PlayerCount>(2),
     [turnSeconds, setTurnSeconds] = useState<TurnTimerSeconds | null>(
       gameId === 'digitalGame' ? 60 : null,
+    ),
+    [chessStyle, setChessStyle] = useState<ChessAiSessionConfig['style']>(
+      DEFAULT_CHESS_AI_SESSION.style,
+    ),
+    [chessCoach, setChessCoach] = useState(DEFAULT_CHESS_AI_SESSION.coach),
+    [chessFocus, setChessFocus] = useState<ChessAiSessionConfig['focus']>(
+      DEFAULT_CHESS_AI_SESSION.focus,
+    ),
+    [chessMinutes, setChessMinutes] = useState<ChessAiSessionConfig['minutes']>(
+      DEFAULT_CHESS_AI_SESSION.minutes,
     ),
     [code, setCode] = useState('');
   return (
@@ -281,6 +298,68 @@ export function ModeDialog({
           </div>
         </fieldset>
       )}
+      {gameId === 'chess' && mode === 'ai' && (
+        <div className="chess-ai-setup">
+          <fieldset>
+            <legend>{t('chessMatchTime')}</legend>
+            <div className="segmented chess-time-segmented">
+              {([3, 5, 10, 15] as const).map((minutes) => (
+                <button
+                  key={minutes}
+                  aria-pressed={chessMinutes === minutes}
+                  onClick={() => setChessMinutes(minutes)}
+                >
+                  {minutes} {t('minutes')}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset>
+            <legend>{t('chessBotStyle')}</legend>
+            <div className="chess-ai-style-grid">
+              {CHESS_AI_STYLES.map((style) => (
+                <button
+                  key={style}
+                  className={chessStyle === style ? 'selected' : ''}
+                  aria-pressed={chessStyle === style}
+                  onClick={() => setChessStyle(style)}
+                >
+                  <strong>{t(`chessBotStyle_${style}`)}</strong>
+                  <small>{t(`chessBotStyleDesc_${style}`)}</small>
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset className="chess-coach-setup">
+            <legend>{t('chessCoachMode')}</legend>
+            <label className="toggle-row">
+              <span>
+                <strong>{t('chessCoachEnable')}</strong>
+                <small>{t('chessCoachEnableDesc')}</small>
+              </span>
+              <input
+                type="checkbox"
+                checked={chessCoach}
+                onChange={(event) => setChessCoach(event.target.checked)}
+              />
+            </label>
+            {chessCoach && (
+              <div className="chess-training-focus-grid">
+                {CHESS_TRAINING_FOCUS.map((focus) => (
+                  <button
+                    key={focus}
+                    aria-pressed={chessFocus === focus}
+                    className={chessFocus === focus ? 'selected' : ''}
+                    onClick={() => setChessFocus(focus)}
+                  >
+                    {t(`chessTrainingFocus_${focus}`)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </fieldset>
+        </div>
+      )}
       {mode === 'online' && (
         <>
           <div className="segmented">
@@ -306,7 +385,17 @@ export function ModeDialog({
           <button
             className="button primary"
             disabled={busy}
-            onClick={() => onStart(mode, difficulty, false, playerCount, turnSeconds)}
+            onClick={() =>
+              onStart(
+                mode,
+                difficulty,
+                false,
+                playerCount,
+                turnSeconds,
+                undefined,
+                undefined,
+              )
+            }
           >
             <Icon name="lock" />
             {t('createRoom')}
@@ -314,7 +403,15 @@ export function ModeDialog({
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              onStart(mode, difficulty, false, playerCount, turnSeconds, code);
+              onStart(
+                mode,
+                difficulty,
+                false,
+                playerCount,
+                turnSeconds,
+                code,
+                undefined,
+              );
             }}
           >
             <label>
@@ -347,7 +444,17 @@ export function ModeDialog({
           className="button primary full"
           disabled={busy || (ranked && guest && mode === 'online')}
           onClick={() =>
-            onStart(mode, difficulty, ranked, mode === 'ai' ? 2 : playerCount, turnSeconds)
+            onStart(
+              mode,
+              difficulty,
+              ranked,
+              mode === 'ai' ? 2 : playerCount,
+              turnSeconds,
+              undefined,
+              gameId === 'chess' && mode === 'ai'
+                ? { style: chessStyle, coach: chessCoach, focus: chessFocus, minutes: chessMinutes }
+                : undefined,
+            )
           }
         >
           {t(mode === 'online' ? 'quickMatch' : 'start')}
