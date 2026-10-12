@@ -371,11 +371,11 @@ const mateSeeds: Record<'mate1' | 'mate2' | 'mate3', PuzzleSeed[]> = {
     line: line as string[],
   })),
   mate3: [
-    ['f7', 'h5', 'b8', ['f7e7', 'b8a8', 'h5d5', 'a8b8', 'd5b7']],
-    ['f7', 'f1', 'b8', ['f7e7', 'b8a8', 'f1b5', 'a8a7', 'b5b7']],
-    ['d6', 'd2', 'b8', ['d6d7', 'b8a8', 'd2b4', 'a8a7', 'b4b7']],
-    ['d6', 'd1', 'b8', ['d6d7', 'b8a8', 'd1b3', 'a8a7', 'b3b7']],
-    ['e6', 'e2', 'b8', ['e6d7', 'b8a8', 'e2b5', 'a8a7', 'b5b7']],
+    ['d6', 'd1', 'b8', ['d6c6', 'b8a8', 'd1b3', 'a8a7', 'b3b7']],
+    ['d6', 'd2', 'b8', ['d6c6', 'b8a8', 'd2b4', 'a8a7', 'b4b7']],
+    ['d6', 'd3', 'b8', ['d6c6', 'b8a8', 'd3b5', 'a8a7', 'b5b7']],
+    ['d6', 'd4', 'b8', ['d6c6', 'b8a8', 'd4d7', 'a8b8', 'd7b7']],
+    ['d6', 'e1', 'b8', ['d6c6', 'b8a8', 'e1b4', 'a8a7', 'b4b7']],
   ].map(([wk, wq, bk, line]) => ({
     turn: 'w' as const,
     pieces: [
