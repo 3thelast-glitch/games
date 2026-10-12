@@ -11,6 +11,7 @@ import {
   type ChessPieceType,
   type ChessState,
 } from './state.ts';
+import type { ChessBotStyle } from './bot.ts';
 import {
   chessEvaluationWhitePercent,
   chessMoveAccuracy,
@@ -33,6 +34,8 @@ export interface ChessExpertOptions {
   useBook?: boolean;
   /** Injectable randomness for opening variation selection. Defaults to Math.random. */
   random?: () => number;
+  /** Strategic personality used to bias near-equal root choices. */
+  style?: ChessBotStyle;
 }
 
 const MATE = 10_000_000;
@@ -1129,6 +1132,40 @@ function openingBook(state: ChessState, random: () => number): ChessMove | null 
   // Sound generic central response for uncommon first moves.
   return pickBookMove(legal, [{ from: 12, to: 28 }], random);
 }
+function chessBotStyleBonus(
+  state: ChessState,
+  player: Player,
+  style: ChessBotStyle | undefined,
+): number {
+  if (!style || style === 'balanced') return 0;
+  const profile = analyzeChessStrategicPosition(state);
+  const own = player === 0 ? profile.white : profile.black;
+  const foe = player === 0 ? profile.black : profile.white;
+  const delta = (metric: keyof ChessStrategicScores) => own[metric] - foe[metric];
+
+  switch (style) {
+    case 'tactical':
+      return delta('initiative') * 1.5 + delta('pieceActivity') * 0.8;
+    case 'aggressive':
+      return delta('initiative') * 1.3 + delta('space') * 0.9 + delta('kingSafety') * 0.25;
+    case 'positional':
+      return (
+        delta('centerControl') * 0.9 +
+        delta('pawnStructure') * 1.0 +
+        delta('pieceActivity') * 0.7 +
+        delta('space') * 0.6
+      );
+    case 'defensive':
+      return delta('kingSafety') * 1.4 + delta('material') * 0.8 + delta('pawnStructure') * 0.7;
+    case 'gambit':
+      return delta('initiative') * 1.8 + delta('development') * 1.0 + delta('space') * 0.8 - delta('material') * 0.2;
+    case 'endgame':
+      return delta('endgame') * 1.5 + delta('passedPawns') * 1.1 + delta('material') * 0.5;
+    default:
+      return 0;
+  }
+}
+
 export function chooseChessExpertMove(
   state: ChessState,
   options: ChessExpertOptions = {},
@@ -1355,7 +1392,9 @@ export function chooseChessExpertMove(
     try {
       for (const move of ordered) {
         const child = advanceSearchState(state, move);
-        const score = search(child, depth - 1, -INF, INF, 1);
+        const score =
+          search(child, depth - 1, -INF, INF, 1) +
+          chessBotStyleBonus(child, root, options.style);
         if (score > iterationScore) {
           iterationScore = score;
           iterationBest = move;
