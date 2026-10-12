@@ -175,6 +175,7 @@ export function ModeDialog({
   guest,
   onSignIn,
   busy,
+  onChessTrainer,
 }: {
   gameId: string;
   initialMode?: PlayMode;
@@ -191,6 +192,7 @@ export function ModeDialog({
   guest: boolean;
   onSignIn: () => void;
   busy: boolean;
+  onChessTrainer?: () => void;
 }) {
   const { t } = useI18n();
   const [mode, setMode] = useState<PlayMode>(initialMode ?? 'local'),
@@ -224,6 +226,19 @@ export function ModeDialog({
           <p>{t('chooseModeDesc')}</p>
         </div>
       </div>
+      {gameId === 'chess' && (
+        <button
+          className="button secondary full chess-trainer-entry"
+          type="button"
+          onClick={onChessTrainer}
+        >
+          <Icon name="trophy" />
+          <span>
+            <strong>{t('chessTacticalTrainer')}</strong>
+            <small>{t('chessTrainerEntryDesc')}</small>
+          </span>
+        </button>
+      )}
       <div className="mode-grid">
         {(['local', 'ai', 'online', 'private'] as PlayMode[]).map((item, i) => (
           <button
