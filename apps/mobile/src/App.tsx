@@ -22,7 +22,10 @@ import {
   type ChessRepertoire,
 } from '../../../packages/games/chess/opening.ts';
 import type { ChessMove, ChessState } from '../../../packages/games/chess/state.ts';
-import type { ChessAiSessionConfig } from '../../../packages/games/chess/training.ts';
+import {
+  normalizeChessAiSessionConfig,
+  type ChessAiSessionConfig,
+} from '../../../packages/games/chess/training.ts';
 import { Avatar, Icon, Logo, Modal, NoticeContext } from './components.tsx';
 import {
   HomePage,
@@ -435,7 +438,10 @@ function ArenaApp({
             id: saved.id,
             controller,
             difficulty: saved.difficulty,
-            chessAi: saved.chessAi,
+            chessAi:
+              saved.gameId === 'chess' && saved.mode === 'ai'
+                ? normalizeChessAiSessionConfig(saved.chessAi)
+                : saved.chessAi,
           };
           offlineRef.current = session;
           setOffline(session);
@@ -580,7 +586,10 @@ function ArenaApp({
         timeControl,
       ),
       difficulty,
-      chessAi,
+      chessAi:
+        gameId === 'chess' && mode === 'ai'
+          ? normalizeChessAiSessionConfig(chessAi)
+          : chessAi,
     };
     offlineRef.current = session;
     setOffline(session);
@@ -977,6 +986,7 @@ function ArenaApp({
                 chessReviews={current.gameId === 'chess' ? chessReviews : []}
                 chessRepertoire={chessRepertoire}
                 chessAi={offline?.controller.current.state.gameId === 'chess' ? offline.chessAi : undefined}
+                difficulty={offline?.difficulty}
                 onChessRepertoireChange={(next) => {
                   setChessRepertoire(next);
                   void storage.set('chess-repertoire', next);
@@ -1007,6 +1017,7 @@ function ArenaApp({
                     offline!.difficulty,
                     (offline!.controller.current.state.playerCount ?? 2) as PlayerCount,
                     offline!.controller.current.timeControl ?? bankTimeControl(600000),
+                    offline!.chessAi,
                   )
                 }
                 onResign={() => {
@@ -1042,6 +1053,8 @@ function ArenaApp({
                       offline!.controller.mode,
                       offline!.difficulty,
                       (offline!.controller.current.state.playerCount ?? 2) as PlayerCount,
+                      offline!.controller.current.timeControl ?? bankTimeControl(600000),
+                      offline!.chessAi,
                     );
                 }}
                 onHome={goHome}
