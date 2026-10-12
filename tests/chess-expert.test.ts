@@ -13,13 +13,15 @@ import { createChess } from '../packages/games/chess/state.ts';
 const moveKey = (move: { from: number; to: number; promotion?: string }) =>
   `${move.from}-${move.to}-${move.promotion ?? ''}`;
 
-test('Chess AI has one dedicated expert route instead of shared difficulty behavior', () => {
+test('Chess AI uses dedicated expert search with real levels and personalities', () => {
   const worker = readFileSync('apps/mobile/src/ai.worker.ts', 'utf8');
-  const css = readFileSync('apps/mobile/src/chess.css', 'utf8');
   assert.match(worker, /state\.gameId === 'chess'/);
-  assert.match(worker, /chooseChessExpertMove\(state as ChessState\)/);
-  assert.match(css, /fixed AI strength: the dedicated expert engine/);
-  assert.match(css, /mode-card:nth-child\(2\)\.selected/);
+  assert.match(worker, /chooseChessExpertMove\(state as ChessState,/);
+  assert.match(worker, /difficulty === 'easy'/);
+  assert.match(worker, /budgetMs: 250, maxDepth: 3/);
+  assert.match(worker, /budgetMs: 1200, maxDepth: 5/);
+  assert.match(worker, /budgetMs: 5000, maxDepth: 7/);
+  assert.match(worker, /style: chessStyle \?\? 'balanced'/);
 });
 
 test('Chess expert opening repertoire includes the requested first-move families', () => {
