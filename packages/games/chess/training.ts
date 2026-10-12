@@ -53,3 +53,17 @@ export const CHESS_TRAINING_FOCUS: readonly ChessTrainingFocus[] = [
   'endgame',
   'positional',
 ] as const;
+
+
+export function normalizeChessAiSessionConfig(
+  value: Partial<ChessAiSessionConfig> | null | undefined,
+): ChessAiSessionConfig {
+  return {
+    ...DEFAULT_CHESS_AI_SESSION,
+    ...(value ?? {}),
+    guidance:
+      value?.guidance === 'full' || value?.guidance === 'light' || value?.guidance === 'test'
+        ? value.guidance
+        : DEFAULT_CHESS_AI_SESSION.guidance,
+  };
+}
