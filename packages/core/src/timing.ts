@@ -9,9 +9,11 @@ export type TurnTimerMs = (typeof TURN_TIMER_MS)[number];
 export const CLASSIC_DIGITAL_TURN_MS: TurnTimerMs = 60000;
 
 export type TimeControl =
+  | { mode: 'none' }
   | { mode: 'bank'; initialMs: number }
   | { mode: 'turn'; turnMs: TurnTimerMs };
 
+export const noTimeControl = (): TimeControl => ({ mode: 'none' });
 export const bankTimeControl = (initialMs: number): TimeControl => ({ mode: 'bank', initialMs });
 export const turnTimeControl = (seconds: TurnTimerSeconds): TimeControl => ({
   mode: 'turn',
@@ -25,7 +27,8 @@ export const isTurnTimerMs = (value: number): value is TurnTimerMs =>
   (TURN_TIMER_MS as readonly number[]).includes(value);
 
 export function createClocks(control: TimeControl, count: number): number[] {
-  const initial = control.mode === 'bank' ? control.initialMs : control.turnMs;
+  const initial =
+    control.mode === 'none' ? 0 : control.mode === 'bank' ? control.initialMs : control.turnMs;
   return Array.from({ length: count }, () => initial);
 }
 
@@ -37,6 +40,7 @@ export function remainingTimeMs(
   turnStartedAt: number,
   now: number,
 ): number {
+  if (control.mode === 'none') return 0;
   const base = control.mode === 'turn' ? control.turnMs : (clocks[seat] ?? 0);
   if (seat !== activeSeat) return control.mode === 'turn' ? control.turnMs : Math.max(0, base);
   return Math.max(0, base - Math.max(0, now - turnStartedAt));
@@ -49,6 +53,7 @@ export function chargeClock(
   turnStartedAt: number,
   now: number,
 ): number[] {
+  if (control.mode === 'none') return [...clocks];
   const next = [...clocks];
   next[activeSeat] = remainingTimeMs(control, clocks, activeSeat, activeSeat, turnStartedAt, now);
   return next;
@@ -73,6 +78,7 @@ export function timeoutAt(
   activeSeat: Seat,
   turnStartedAt: number,
 ): number {
+  if (control.mode === 'none') return Number.POSITIVE_INFINITY;
   const budget = control.mode === 'turn' ? control.turnMs : Math.max(0, clocks[activeSeat] ?? 0);
   return turnStartedAt + budget;
 }
