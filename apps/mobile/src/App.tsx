@@ -3,6 +3,7 @@ import type { Difficulty, PlayerCount, Seat } from '../../../packages/core/src/g
 import { OfflineMatch, type OfflineSnapshot } from '../../../packages/core/src/offline.ts';
 import {
   bankTimeControl,
+  noTimeControl,
   turnTimeControl,
   type TimeControl,
   type TurnTimerSeconds,
@@ -615,7 +616,9 @@ function ArenaApp({
             : choice.gameId === 'reversi' && turnSeconds !== null
               ? turnTimeControl(turnSeconds)
               : choice.gameId === 'chess' && mode === 'ai' && chessAi
-                ? bankTimeControl(chessAi.minutes * 60_000)
+                ? chessAi.minutes === null
+                  ? noTimeControl()
+                  : bankTimeControl(chessAi.minutes * 60_000)
                 : bankTimeControl(600000),
           choice.gameId === 'chess' && mode === 'ai' ? chessAi : undefined,
         );
