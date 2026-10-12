@@ -26,6 +26,10 @@ import {
   type ChessRepertoire,
 } from '../../../packages/games/chess/opening.ts';
 import { ChessPieceIcon } from '../../../packages/games/chess/pieces.tsx';
+import type {
+  ChessAiSessionConfig,
+  ChessTrainingFocus,
+} from '../../../packages/games/chess/training.ts';
 import { useI18n } from './i18n.tsx';
 export interface MatchPageProps {
   id: string;
@@ -54,6 +58,7 @@ export interface MatchPageProps {
   emote: { player: Seat; value: string } | null;
   chessReviews?: ChessMoveReview[];
   chessRepertoire?: ChessRepertoire;
+  chessAi?: ChessAiSessionConfig;
   onChessRepertoireChange?: (repertoire: ChessRepertoire) => void;
   onMove: (move: unknown) => void;
   onUndo: () => void;
@@ -113,13 +118,27 @@ function StrategicIndicators({
   );
 }
 
+const trainingMetric: Partial<
+  Record<ChessTrainingFocus, ChessStrategicMetric>
+> = {
+  development: 'development',
+  center: 'centerControl',
+  kingSafety: 'kingSafety',
+  tactics: 'initiative',
+  endgame: 'endgame',
+  positional: 'pieceActivity',
+};
+
 export function MatchPage(p: MatchPageProps) {
   const { t, lang } = useI18n();
   const [confirmation, setConfirmation] = useState<'restart' | 'resign' | 'draw' | null>(null),
     [emotesOpen, setEmotesOpen] = useState(false),
     [resultOpen, setResultOpen] = useState(true),
     [rulesOpen, setRulesOpen] = useState(false),
-    [showChessGuidance, setShowChessGuidance] = useState(true);
+    [showChessGuidance, setShowChessGuidance] = useState(true),
+    [chessAssistantTab, setChessAssistantTab] = useState<
+      'coach' | 'analysis' | 'opening' | 'repertoire'
+    >(p.mode === 'ai' ? 'coach' : 'analysis');
   useEffect(() => {
     setResultOpen(true);
     setConfirmation(null);
@@ -207,6 +226,11 @@ export function MatchPage(p: MatchPageProps) {
       : null;
   const chessPlan = chessAnalysisVisible ? deriveChessPlan(lastChessReview) : null;
   const visibleChessPlan = showChessGuidance ? chessPlan : null;
+  const chessCoachActive =
+    p.state.gameId === 'chess' && p.mode === 'ai' && !!p.chessAi?.coach && !p.result;
+  const coachMetric = p.chessAi ? trainingMetric[p.chessAi.focus] : undefined;
+  const coachScore =
+    coachMetric && latestStrategy ? latestStrategy.white[coachMetric] : null;
   const opponents = p.players
     .map((_, index) => index as Seat)
     .filter((seat) => seat !== p.self);
@@ -374,7 +398,36 @@ export function MatchPage(p: MatchPageProps) {
               <p>{t(`${p.state.gameId}Rules`)}</p>
             </section>
           ) : null}
-          {chessAnalysisVisible && (
+          {chessAnalysisVisible && p.state.gameId === 'chess' && (
+            <section className="panel chess-assistant-shell">
+              <div className="chess-assistant-header">
+                <div>
+                  <span className="eyebrow">{t('chessAssistant')}</span>
+                  <strong>{t('chessAssistantDesc')}</strong>
+                </div>
+                {p.mode === 'ai' && p.chessAi && (
+                  <span className="chess-ai-persona-badge">
+                    {t(`chessBotStyle_${p.chessAi.style}`)}
+                  </span>
+                )}
+              </div>
+              <div className="chess-assistant-tabs" role="tablist" aria-label={t('chessAssistant')}>
+                {(['coach', 'analysis', 'opening', 'repertoire'] as const).map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    role="tab"
+                    aria-selected={chessAssistantTab === tab}
+                    className={chessAssistantTab === tab ? 'active' : ''}
+                    onClick={() => setChessAssistantTab(tab)}
+                  >
+                    {t(`chessAssistantTab_${tab}`)}
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
+          {chessAnalysisVisible && chessAssistantTab === 'analysis' && (
             <section className="panel chess-evaluation-panel" aria-label={t('chessEvaluation')}>
               <div className="chess-evaluation-head">
                 <div>
@@ -399,7 +452,7 @@ export function MatchPage(p: MatchPageProps) {
               </div>
             </section>
           )}
-          {chessAnalysisVisible && p.state.gameId === 'chess' && (
+          {chessAnalysisVisible && p.state.gameId === 'chess' && chessAssistantTab === 'opening' && (
             <section className="panel chess-opening-explorer">
               <div className="chess-review-heading">
                 <div>
@@ -451,7 +504,10 @@ export function MatchPage(p: MatchPageProps) {
               )}
             </section>
           )}
-          {chessAnalysisVisible && p.state.gameId === 'chess' && p.chessRepertoire && (
+          {chessAnalysisVisible &&
+            p.state.gameId === 'chess' &&
+            chessAssistantTab === 'repertoire' &&
+            p.chessRepertoire && (
             <section className="panel chess-repertoire-panel">
               <div className="chess-review-heading">
                 <div>
@@ -499,7 +555,33 @@ export function MatchPage(p: MatchPageProps) {
               </div>
             </section>
           )}
-          {chessAnalysisVisible && chessPlan && !p.result && (
+          {chessCoachActive && chessAssistantTab === 'coach' && p.chessAi && (
+            <section className="panel chess-coach-panel">
+              <div className="chess-coach-title">
+                <div>
+                  <span className="eyebrow">{t('chessCoachMode')}</span>
+                  <h3>{t(`chessTrainingFocus_${p.chessAi.focus}`)}</h3>
+                </div>
+                {coachScore !== null && (
+                  <strong className="chess-coach-score">{coachScore}/100</strong>
+                )}
+              </div>
+              <p>{t(`chessTrainingLesson_${p.chessAi.focus}`)}</p>
+              <div className="chess-coach-objective">
+                <Icon name="target" size={18} />
+                <span>{t(`chessTrainingGoal_${p.chessAi.focus}`)}</span>
+              </div>
+              {lastChessReview && lastChessReview.player === 0 && (
+                <div className={`chess-coach-feedback grade-${lastChessReview.grade}`}>
+                  <strong>{t(`chessGrade_${lastChessReview.grade}`)}</strong>
+                  <span>
+                    {lastChessReview.accuracy}% · {t('chessAccuracy')}
+                  </span>
+                </div>
+              )}
+            </section>
+          )}
+          {chessAnalysisVisible && chessAssistantTab === 'coach' && chessPlan && !p.result && (
             <section className="panel chess-plan-panel">
               <div className="chess-plan-head">
                 <div>
@@ -524,7 +606,7 @@ export function MatchPage(p: MatchPageProps) {
               <p className="small-muted">{t(`chessPlanDesc_${chessPlan.kind}`)}</p>
             </section>
           )}
-          {chessAnalysisVisible && latestStrategy && !p.result && (
+          {chessAnalysisVisible && chessAssistantTab === 'analysis' && latestStrategy && !p.result && (
             <section className="panel chess-strategy-panel">
               <div className="chess-review-heading">
                 <div>
@@ -535,7 +617,7 @@ export function MatchPage(p: MatchPageProps) {
               <StrategicIndicators snapshot={latestStrategy} t={t} compact />
             </section>
           )}
-          {chessAnalysisVisible && (
+          {chessAnalysisVisible && chessAssistantTab === 'analysis' && (
             <section
               className={`panel chess-move-review-panel ${
                 localChessTabletop && lastChessReview?.player === 1
