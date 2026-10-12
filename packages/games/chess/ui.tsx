@@ -4,6 +4,7 @@ import type { BoardProps } from '../shared/ui.tsx';
 import { ChessPieceIcon } from './pieces.tsx';
 import { chessLegalMoves, isChessInCheck } from './rules.ts';
 import type { ChessPlanHint } from './review.ts';
+import type { ChessGuidanceSuggestion } from './guidance.ts';
 import type { ChessMove, ChessPromotion, ChessState } from './state.ts';
 const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
 const promotions: ChessPromotion[] = ['queen', 'rook', 'bishop', 'knight'];
@@ -11,9 +12,20 @@ const promotions: ChessPromotion[] = ['queen', 'rook', 'bishop', 'knight'];
 type ChessBoardProps = BoardProps<ChessState, ChessMove> & {
   mode?: 'local' | 'ai' | 'online';
   plan?: ChessPlanHint | null;
+  guidance?: ChessGuidanceSuggestion | null;
+  guidanceReveal?: 'cue' | 'piece' | 'move';
 };
 
-export function ChessBoard({ state, disabled, onMove, t, mode, plan }: ChessBoardProps) {
+export function ChessBoard({
+  state,
+  disabled,
+  onMove,
+  t,
+  mode,
+  plan,
+  guidance,
+  guidanceReveal = 'cue',
+}: ChessBoardProps) {
   const [selection, setSelection] = useState<number | null>(null);
   const arrowId = useId().replace(/:/g, '');
   const tabletop = mode === 'local';
@@ -26,6 +38,18 @@ export function ChessBoard({ state, disabled, onMove, t, mode, plan }: ChessBoar
   const moves = useMemo(() => chessLegalMoves(state), [state]);
   const selectedMoves = selection === null ? [] : moves.filter((move) => move.from === selection);
   const targetSet = new Set(selectedMoves.map((move) => move.to));
+  const guidancePiece =
+    guidance && guidance.positionPly === state.ply && guidanceReveal !== 'cue'
+      ? guidance.move.from
+      : -1;
+  const guidanceTargets =
+    guidance && guidance.positionPly === state.ply && guidanceReveal === 'move'
+      ? new Set(guidance.legalDestinations)
+      : new Set<number>();
+  const guidanceCaptures =
+    guidance && guidance.positionPly === state.ply && guidanceReveal === 'move'
+      ? new Set(guidance.captureDestinations)
+      : new Set<number>();
   const checkedKing = state.inCheck
     ? state.board.findIndex((piece) => piece?.owner === state.turn && piece.type === 'king')
     : -1;
@@ -60,12 +84,14 @@ export function ChessBoard({ state, disabled, onMove, t, mode, plan }: ChessBoar
             const target = targetSet.has(index);
             const selectable = piece?.owner === state.turn && moves.some((move) => move.from === index);
             const last = state.lastMove?.from === index || state.lastMove?.to === index;
+            const recommendedPiece = guidancePiece === index;
+            const recommendedTarget = guidanceTargets.has(index);
             const label = `${files[col]}${8 - row}: ${piece ? `${t(piece.owner === 0 ? 'chessWhite' : 'chessBlack')} ${t(`chess${piece.type[0].toUpperCase()}${piece.type.slice(1)}`)}` : t('emptyCell')}`;
             return (
               <button
                 key={index}
                 role="gridcell"
-                className={`chess-cell ${light ? 'chess-light' : 'chess-dark'} ${selection === index ? 'selected-cell' : ''} ${target ? 'legal-cell' : ''} ${last ? 'last-cell' : ''} ${checkedKing === index ? 'chess-check-cell' : ''}`}
+                className={`chess-cell ${light ? 'chess-light' : 'chess-dark'} ${selection === index ? 'selected-cell' : ''} ${target ? 'legal-cell' : ''} ${last ? 'last-cell' : ''} ${checkedKing === index ? 'chess-check-cell' : ''} ${recommendedPiece ? 'chess-guidance-piece' : ''} ${recommendedTarget ? 'chess-guidance-target' : ''}`}
                 aria-label={label}
                 aria-pressed={selection === index}
                 disabled={locked || (!selectable && !target)}
@@ -79,6 +105,12 @@ export function ChessBoard({ state, disabled, onMove, t, mode, plan }: ChessBoar
                   </span>
                 )}
                 {target && <span className={piece ? 'chess-capture-ring' : 'target-dot'} aria-hidden="true" />}
+                {recommendedTarget && !target && (
+                  <span
+                    className={guidanceCaptures.has(index) ? 'chess-guidance-capture' : 'chess-guidance-dot'}
+                    aria-hidden="true"
+                  />
+                )}
                 {row === 7 && <span className="chess-file" aria-hidden="true">{files[col]}</span>}
                 {col === 0 && <span className="chess-rank" aria-hidden="true">{8 - row}</span>}
                 {tabletop && row === 0 && (
@@ -91,7 +123,7 @@ export function ChessBoard({ state, disabled, onMove, t, mode, plan }: ChessBoar
             );
           })}
         </div>
-        {plan && (
+        {(plan || (guidance && guidance.positionPly === state.ply && guidanceReveal === 'move')) && (
           <svg
             className="chess-plan-overlay"
             viewBox="0 0 100 100"
@@ -111,15 +143,15 @@ export function ChessBoard({ state, disabled, onMove, t, mode, plan }: ChessBoar
               </marker>
             </defs>
             <line
-              x1={(plan.from % 8 + 0.5) * 12.5}
-              y1={(Math.floor(plan.from / 8) + 0.5) * 12.5}
-              x2={(plan.to % 8 + 0.5) * 12.5}
-              y2={(Math.floor(plan.to / 8) + 0.5) * 12.5}
+              x1={((guidance && guidance.positionPly === state.ply && guidanceReveal === 'move' ? guidance.move.from : plan!.from) % 8 + 0.5) * 12.5}
+              y1={(Math.floor((guidance && guidance.positionPly === state.ply && guidanceReveal === 'move' ? guidance.move.from : plan!.from) / 8) + 0.5) * 12.5}
+              x2={((guidance && guidance.positionPly === state.ply && guidanceReveal === 'move' ? guidance.move.to : plan!.to) % 8 + 0.5) * 12.5}
+              y2={(Math.floor((guidance && guidance.positionPly === state.ply && guidanceReveal === 'move' ? guidance.move.to : plan!.to) / 8) + 0.5) * 12.5}
               markerEnd={`url(#chess-plan-arrow-${arrowId})`}
             />
             <circle
-              cx={(plan.from % 8 + 0.5) * 12.5}
-              cy={(Math.floor(plan.from / 8) + 0.5) * 12.5}
+              cx={((guidance && guidance.positionPly === state.ply && guidanceReveal === 'move' ? guidance.move.from : plan!.from) % 8 + 0.5) * 12.5}
+              cy={(Math.floor((guidance && guidance.positionPly === state.ply && guidanceReveal === 'move' ? guidance.move.from : plan!.from) / 8) + 0.5) * 12.5}
               r="1.25"
             />
           </svg>
