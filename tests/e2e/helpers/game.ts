@@ -48,6 +48,14 @@ export async function openLocalGame(page: Page, gameId: GameId, locale: LocaleCa
   await expect(page.locator('.match-page')).toBeVisible();
   await expect(page.locator(gameRootSelectors[gameId])).toBeVisible();
 
+  if (gameId === 'navalBattle') {
+    await expect
+      .poll(() => page.evaluate(() => Math.round(window.scrollY)), {
+        message: 'Naval Battle should open at the top before private fleet reveal',
+      })
+      .toBe(0);
+  }
+
   if (gameId === 'dominoes') {
     const reveal = page.locator('.domino-handoff .button');
     if (await reveal.count()) await reveal.click();
