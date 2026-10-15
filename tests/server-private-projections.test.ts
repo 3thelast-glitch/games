@@ -36,6 +36,8 @@ for (const gameId of ['dominoes', 'digitalGame', 'navalBattle'] as const) {
         const full = match.state as DigitalGameState & { serverOnlyFutureSecret?: string };
         // A future private engine field must never be auto-spread to client projections.
         full.serverOnlyFutureSecret = 'never-send-this';
+        const visibleTile = full.racks[0][0];
+        (full.tiles[visibleTile] as typeof full.tiles[string] & { serverTileSecret?: string }).serverTileSecret = 'not-even-on-owned-tiles';
         const alice = service.forUser(match, a.id).state as DigitalGameState;
         const bob = service.forUser(match, b.id).state as DigitalGameState;
         assert.equal(alice.viewerSeat, 0);
@@ -46,6 +48,7 @@ for (const gameId of ['dominoes', 'digitalGame', 'navalBattle'] as const) {
         assert.equal(bob.seed, 0);
         assert.equal('serverOnlyFutureSecret' in alice, false);
         assert.equal('serverOnlyFutureSecret' in bob, false);
+        assert.equal('serverTileSecret' in alice.tiles[visibleTile], false);
         assert.equal(alice.racks[1].length, full.racks[1].length);
         assert.ok(alice.racks[1].every((id) => id.startsWith('hidden-rack-1-')));
         assert.ok(alice.drawPool.every((id) => id.startsWith('hidden-draw-')));
