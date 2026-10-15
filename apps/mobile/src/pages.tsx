@@ -15,6 +15,7 @@ import { gameInfo, upcoming } from './gameViews.tsx';
 import { useI18n } from './i18n.tsx';
 import type { Settings } from './platform.ts';
 import { api } from './network.ts';
+import { practiceSummary } from './practice.ts';
 export type PlayMode = 'local' | 'ai' | 'online' | 'private' | 'lan';
 export interface LocalHistory {
   id: string;
@@ -702,6 +703,7 @@ export function ProfilePage({
   onRemoveFriend: (id: string) => void;
 }) {
   const { t, lang } = useI18n();
+  const practice = practiceSummary(localHistory);
   const [editing, setEditing] = useState(false),
     [name, setName] = useState(profile?.name ?? ''),
     [avatar, setAvatar] = useState(profile?.avatar ?? 'orbit'),
@@ -751,6 +753,42 @@ export function ProfilePage({
           </div>
         ))}
       </div>
+      {localHistory.length > 0 && (
+        <section className="panel practice-profile" aria-label={t('practiceStatsTitle')}>
+          <div className="section-heading">
+            <div>
+              <h2>{t('practiceStatsTitle')}</h2>
+              <p className="small-muted">{t('practiceStatsScope')}</p>
+            </div>
+          </div>
+          <div className="stats-grid">
+            {([
+              ['practiceAiMatches', practice.aiMatches],
+              ['practiceAiWins', practice.aiWins],
+              ['practiceAiLosses', practice.aiLosses],
+              ['practiceAiDraws', practice.aiDraws],
+              ['practiceLocalMatches', practice.localMatches],
+            ] as const).map(([label, value]) => (
+              <div className="stat-card" key={label}>
+                <strong>{value}</strong>
+                <span>{t(label)}</span>
+              </div>
+            ))}
+          </div>
+          {practice.byGame.length > 0 && (
+            <div className="practice-game-list">
+              <h3>{t('practiceByGame')}</h3>
+              {practice.byGame.map((entry) => (
+                <div className="practice-game-row" key={entry.gameId}>
+                  <strong>{t(entry.gameId)}</strong>
+                  <span>{entry.aiMatches} {t('practiceAiMatches')}</span>
+                  <small>{entry.aiWins} {t('practiceShortWins')} · {entry.aiDraws} {t('practiceShortDraws')} · {entry.aiLosses} {t('practiceShortLosses')}</small>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
       <div className="profile-columns">
         <section className="panel">
           <h2>{t('ranking')}</h2>

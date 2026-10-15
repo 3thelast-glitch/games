@@ -11,6 +11,7 @@ import './dominoes.css';
 import './naval-battle.css';
 import './lan.css';
 import './academy.css';
+import './practice.css';
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
