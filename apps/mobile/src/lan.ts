@@ -310,7 +310,10 @@ export class ReversiLanController {
       this.patch({ status: 'connected', snapshot: message.snapshot, error: null });
     } else if (message.type === 'error') {
       if (message.snapshot) this.patch({ snapshot: message.snapshot });
-      this.patch({ error: message.code });
+      this.patch({
+        error: message.code,
+        ...(this.view.status === 'connecting' ? { status: 'error' as const } : {}),
+      });
     }
   }
 
