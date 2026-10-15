@@ -15,7 +15,7 @@ import { gameInfo, upcoming } from './gameViews.tsx';
 import { useI18n } from './i18n.tsx';
 import type { Settings } from './platform.ts';
 import { api } from './network.ts';
-export type PlayMode = 'local' | 'ai' | 'online' | 'private';
+export type PlayMode = 'local' | 'ai' | 'online' | 'private' | 'lan';
 export interface LocalHistory {
   id: string;
   gameId: string;
@@ -255,14 +255,14 @@ export function ModeDialog({
         </button>
       )}
       <div className="mode-grid">
-        {(['local', 'ai', 'online', 'private'] as PlayMode[]).map((item, i) => (
+        {([...(['local', 'ai', 'online', 'private'] as PlayMode[]), ...(gameId === 'reversi' ? ['lan' as PlayMode] : [])]).map((item, i) => (
           <button
             key={item}
             className={`mode-card ${mode === item ? 'selected' : ''}`}
             onClick={() => setMode(item)}
             aria-pressed={mode === item}
           >
-            <Icon name={['people', 'ai', 'globe', 'lock'][i]} />
+            <Icon name={['people', 'ai', 'globe', 'lock', 'globe'][i]} />
             <strong>{t(item)}</strong>
             <small>{t(`${item}Desc`)}</small>
             {mode === item && (
@@ -519,7 +519,7 @@ export function ModeDialog({
             )
           }
         >
-          {t(mode === 'online' ? 'quickMatch' : 'start')}
+          {t(mode === 'online' ? 'quickMatch' : mode === 'lan' ? 'lanOpen' : 'start')}
           <Icon name="arrow" />
         </button>
       )}
