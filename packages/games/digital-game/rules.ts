@@ -565,7 +565,17 @@ export function evaluateDigital(state: DigitalGameState, player: Seat): number {
 export function projectDigitalState(state: DigitalGameState, viewer: Seat): DigitalGameState {
   const playerCount = countOf(state);
   const visible = new Set<string>([...(state.racks[viewer] ?? []), ...state.table.flatMap((meld) => meld.tiles)]);
-  const tiles = Object.fromEntries(Object.entries(state.tiles).filter(([id]) => visible.has(id)));
+  const tiles = Object.fromEntries(
+    Object.entries(state.tiles)
+      .filter(([id]) => visible.has(id))
+      .map(([id, tile]) => [id, {
+        id: tile.id,
+        value: tile.value,
+        color: tile.color,
+        copyIndex: tile.copyIndex,
+        isJoker: tile.isJoker,
+      }]),
+  );
   const racks = state.racks.map((rack, index) => index === viewer ? [...rack] : Array.from({ length: state.rackCounts[index] }, (_, item) => `hidden-rack-${index}-${item}`));
   // Explicit projection allowlist: never spread authoritative state into online messages.
   // Future private engine fields cannot accidentally leak through this boundary.
@@ -576,7 +586,7 @@ export function projectDigitalState(state: DigitalGameState, viewer: Seat): Digi
     racks,
     rackCounts: [...state.rackCounts],
     drawPool: Array.from({ length: state.drawPool.length }, (_, index) => `hidden-draw-${index}`),
-    table: state.table.map((meld) => ({ ...meld, tiles: [...meld.tiles] })),
+    table: state.table.map((meld) => ({ id: meld.id, type: meld.type, tiles: [...meld.tiles] })),
     hasCompletedInitialMeld: [...state.hasCompletedInitialMeld],
     scores: [...state.scores],
     seed: 0,
