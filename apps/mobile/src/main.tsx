@@ -10,6 +10,7 @@ import './dots-and-boxes.css';
 import './dominoes.css';
 import './naval-battle.css';
 import './lan.css';
+import './academy.css';
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
