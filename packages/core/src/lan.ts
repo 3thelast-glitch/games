@@ -251,7 +251,15 @@ export class LanAuthority {
   }
   disconnect(token: string) {
     const session = this.sessions.get(token);
-    if (session?.connected) { session.connected = false; session.disconnectedAt = this.now() }
+    if (session?.connected) {
+      if (this.status === 'lobby' && token !== this.hostToken) {
+        this.sessions.delete(token);
+        this.sessions.get(this.hostToken)!.ready = false;
+      } else {
+        session.connected = false;
+        session.disconnectedAt = this.now();
+      }
+    }
     return this.snapshot();
   }
   leave(token: string, explicit = false) {
