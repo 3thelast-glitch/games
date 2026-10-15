@@ -1138,7 +1138,7 @@ export function SettingsPage({
           <h3>{t('lan')}</h3>
           <p>{t('lanDesc')}</p>
         </div>
-        <span className="outline-pill">{t('comingSoon')}</span>
+        <span className="outline-pill">{t('lanReversiOnly')}</span>
       </section>
       <footer className="app-footer">
         <strong>{t('about')}</strong>
