@@ -6,6 +6,7 @@ import {
   appendAcceptedChessMove,
   createChessMoveJournal,
   reconstructChessJournal,
+  rewindChessMoveJournal,
 } from '../packages/games/chess/journal.ts';
 import { chessMoveToSan, chessFromFen, chessToFen } from '../packages/games/chess/notation.ts';
 import { exportChessPgn } from '../packages/games/chess/pgn.ts';
@@ -67,4 +68,31 @@ test('PGN export uses SAN, standard tags, Unicode names, escaping, and result', 
   assert.match(pgn, /\[White "نواف \\"A\\""\]/);
   assert.match(pgn, /1\. e4 e5 2\. Nf3 \*/);
   assert.doesNotMatch(pgn, /e2–e4/);
+});
+test('undo truncates the journal, allowing a different legal branch with exact replay', () => {
+  const initial = createChess();
+  const white = { from: 52, to: 36 }; // e4
+  const black = { from: 12, to: 28 }; // e5
+  const different = { from: 10, to: 26 }; // c5
+  const afterWhite = applyChess(initial, white);
+  const afterBlack = applyChess(afterWhite, black);
+  let journal = createChessMoveJournal('undo-game', initial);
+  journal = appendAcceptedChessMove(journal, initial, white, afterWhite, 1000);
+  journal = appendAcceptedChessMove(journal, afterWhite, black, afterBlack, 2000);
+  journal = rewindChessMoveJournal(journal, afterWhite);
+  assert.equal(journal.entries.length, 1);
+  const afterDifferent = applyChess(afterWhite, different);
+  journal = appendAcceptedChessMove(journal, afterWhite, different, afterDifferent, 3000);
+  assert.deepEqual(journal.entries.map((entry) => entry.san), ['e4', 'c5']);
+  assert.equal(chessToFen(reconstructChessJournal(journal)), chessToFen(afterDifferent));
+});
+
+test('rewind of incomplete legacy journal does not fabricate earlier moves', () => {
+  const initial = createChess();
+  const advanced = applyChess(initial, { from: 52, to: 36 });
+  const legacy = { ...createChessMoveJournal('legacy', advanced), incomplete: true };
+  const rewound = rewindChessMoveJournal(legacy, initial);
+  assert.equal(rewound.incomplete, true);
+  assert.equal(rewound.entries.length, 0);
+  assert.equal(chessToFen(reconstructChessJournal(rewound)), chessToFen(initial));
 });
