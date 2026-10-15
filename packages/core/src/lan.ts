@@ -30,6 +30,7 @@ export const lanClientMessageSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('move'), matchId: id, actionId: id, expectedRevision: z.number().int().nonnegative(), move }).strict(),
   z.object({ type: z.literal('sync'), matchId: id.optional() }).strict(),
   z.object({ type: z.literal('rematch'), matchId: id }).strict(),
+  z.object({ type: z.literal('resign'), matchId: id }).strict(),
   z.object({ type: z.literal('leave') }).strict(),
   z.object({ type: z.literal('ping'), nonce: z.string().max(80).optional() }).strict(),
 ]);
@@ -233,6 +234,14 @@ export class LanAuthority {
       return { type: 'snapshot', snapshot: this.snapshot() };
     }
     if (message.type === 'rematch') return this.rematch(session, message.matchId);
+    if (message.type === 'resign') {
+      if (this.status !== 'playing' || message.matchId !== this.matchId)
+        return { type: 'error', code: 'match-not-active', snapshot: this.snapshot() };
+      this.status = 'finished';
+      this.result = { winner: opponent(session.seat), reason: 'resignation' };
+      this.revision++;
+      return { type: 'snapshot', snapshot: this.snapshot() };
+    }
     return this.play(session, message);
   }
   hostReady(ready: boolean) { return this.handle(this.hostToken, { type: 'ready', ready }) }
