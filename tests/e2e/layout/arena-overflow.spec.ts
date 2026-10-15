@@ -17,7 +17,7 @@ for (const locale of [
       try {
         const page = await context.newPage();
         await page.goto('/');
-        await page.locator('.mobile-nav button').nth(1).click();
+        await page.locator(width <= 700 ? '.mobile-nav button' : '.sidebar nav button').nth(1).click();
         await expect(page.locator('html')).toHaveAttribute('dir', locale.dir);
         const scroll = page.locator('.arena-game-scroll');
         await expect(scroll).toBeVisible();
