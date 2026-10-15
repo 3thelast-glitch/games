@@ -1472,15 +1472,47 @@ input[type='checkbox'] {
   color: #77859d;
   max-width: 330px;
 }
+/* Keep intrinsic game-filter width inside a deliberate horizontal scroller in RTL and LTR. */
+.arena-page {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+.arena-page .page-heading h1 {
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
+}
 .leaderboard-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  gap: 14px;
+  min-inline-size: 0;
+  max-inline-size: 100%;
   margin-bottom: 20px;
+}
+.arena-game-scroll {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  padding-bottom: 5px;
+}
+.arena-game-scroll > .segmented {
+  display: inline-flex;
+  min-inline-size: 100%;
+  inline-size: max-content;
+  max-inline-size: none;
+}
+.arena-game-scroll .segmented > button {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 .period-tabs {
   display: flex;
+  flex-wrap: wrap;
+  min-inline-size: 0;
+  max-inline-size: 100%;
   gap: 7px;
 }
 .period-tabs button {
@@ -1613,6 +1645,35 @@ td:first-child {
   font-size: 9px;
   color: #637891;
   margin-top: 8px;
+}
+@media (max-width: 520px) {
+  .arena-page .period-tabs {
+    justify-content: flex-start;
+  }
+  .arena-page .period-tabs button {
+    min-height: 40px;
+    padding: 9px 10px;
+    white-space: nowrap;
+  }
+  .arena-page .leaderboard-panel {
+    min-inline-size: 0;
+  }
+  .arena-page .table-wrap {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+    overflow-x: auto;
+  }
+  .arena-page .rank-ladder > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .arena-page .rank-ladder article {
+    min-inline-size: 0;
+  }
+  .arena-page .rank-ladder strong,
+  .arena-page .rank-ladder small {
+    max-inline-size: 100%;
+    overflow-wrap: anywhere;
+  }
 }
 .settings-page {
   max-width: 800px;

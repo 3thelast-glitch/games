@@ -971,19 +971,21 @@ export function LeaderboardPage({
     };
   }, [game, period]);
   return (
-    <div className="page-enter">
+    <div className="page-enter arena-page">
       <div className="page-heading">
         <span className="eyebrow">{t('rankingsEyebrow')}</span>
         <h1>{t('leaderboards')}</h1>
         <p>{t('leaderboardDesc')}</p>
       </div>
       <div className="leaderboard-controls">
-        <div className="segmented">
-          {gameInfo.map((g) => (
-            <button key={g.id} onClick={() => setGame(g.id)} aria-pressed={game === g.id}>
-              {t(g.id)}
-            </button>
-          ))}
+        <div className="arena-game-scroll" role="group" aria-label={t('library')} tabIndex={0}>
+          <div className="segmented">
+            {gameInfo.map((g) => (
+              <button key={g.id} onClick={() => setGame(g.id)} aria-pressed={game === g.id}>
+                {t(g.id)}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="period-tabs">
           {['global', 'weekly', 'monthly', 'friends'].map((p) => (
