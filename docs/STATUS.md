@@ -13,6 +13,10 @@ This is a functional implementation under active development. It is not yet a pu
 | Nine Men’s Morris | Placement, reserve handling, protected captures, sliding/flying, re-formed/double mills, blocked/two-piece wins and repetition |
 | Digital Game | Classic numbered-tile engine, server-side hidden-state projection, variable player counts, timer behavior, multiplayer synchronization and concurrency regression coverage |
 | Reversi | Standard 8×8 opening, Black first, all eight capture directions, multi-direction flips, strict move parsing, automatic forced pass, terminal no-move/full-board detection, disc-count wins/draws and deterministic immutable updates |
+| Chess | Full registered game with expert AI, opening/repertoire and move-analysis features; beginner guidance and offline tactical trainer merged in PR #71 / #72 |
+| Dots and Boxes | Registered rules and UI with board size choices, box claiming and extra-turn logic |
+| Dominoes | Registered draw-dominoes engine, projected opponent hand, AI and UI tests |
+| Naval Battle | Registered fleet engine, ship privacy projection, tactical 3-of-6 abilities and responsive UI tests |
 | AI | Legal output on shared difficulty levels, UI-free engine and worker integration, including Reversi legal-move regression coverage |
 | Server authority | Authenticated membership, current turn, strict message schemas, server clocks, illegal-move rejection, forged-seat tests and authoritative execution of registered game engines |
 | Reliability | Duplicate/reused command IDs, revision/write-version handling, disconnect deadlines, restart recovery, persisted sessions/state, result settlement and client outbox recovery |
@@ -54,6 +58,6 @@ The repository test runner discovers all `*.test.ts` and `*.test.tsx` files unde
 
 ## Planned expansion
 
-LAN multiplayer, Chess and Mancala remain planned additions. **Reversi is implemented and playable**, not a Coming Soon entry. The engine/view registries provide the extension points described in [architecture](ARCHITECTURE.md).
+**Mancala remains planned.** Chess, Dots and Boxes, Dominoes and Naval Battle are registered and playable. Reversi native LAN networking exists in code but is not wired into the standard play-mode dialog or physically tested on two devices. General LAN rollout and public backend deployment remain open delivery tasks. The engine/view registries provide the extension points described in [architecture](ARCHITECTURE.md).
 
 For Reversi-specific behavior, see [English rules](reversi.md) and [Arabic rules](reversi.ar.md).

@@ -2,7 +2,7 @@
 
 <p align="center"><img src="docs/brand/naqla-lockup.png" alt="NAQLA | نقلة" width="480" /></p>
 
-A modular, bilingual strategy game platform for the web, Android and iOS. Version **0.1.0** is a functional implementation with eight registered games: Abalone, Quoridor, Checkers, Gomoku, Nine Men’s Morris, Connect Four, Digital Game and Reversi, plus local play, shared AI levels and an authoritative multiplayer server.
+A modular, bilingual strategy game platform for the web, Android and iOS. Version **0.1.0** is a functional implementation with **12 registered games**: Abalone, Quoridor, Checkers, Gomoku, Nine Men’s Morris, Connect Four, Digital Game, Reversi, Chess, Dots and Boxes, Dominoes and Naval Battle, plus local play, shared AI levels and an authoritative multiplayer server.
 
 [دليل التشغيل بالعربية](README.ar.md) · [Architecture](docs/ARCHITECTURE.md) · [Deployment](docs/DEPLOYMENT.md) · [Delivery status](docs/STATUS.md)
 
@@ -37,6 +37,10 @@ The built server serves the app and API at `http://localhost:8787`. `GET /api/he
 - Connect Four (7×6): gravity, full-column rejection, four-in-a-row in all directions, winning highlights and full-board draws.
 - Digital Game: the project’s Classic numbered-tile rules engine, including hidden-rack projection, multiplayer turn handling and server-authoritative online state.
 - Reversi (8×8): standard four-disc opening with Black first, legal bracketing in all eight directions, multi-direction flips, automatic forced passes, terminal no-move detection and final disc-count scoring with draws.
+- Chess: standard rules, AI skill levels and selectable personalities, analysis and opening exploration, beginner move guidance and an offline tactical puzzle trainer.
+- Dots and Boxes: selectable board sizes, box ownership scoring, and an extra turn when completing a box.
+- Dominoes: two-player Draw Dominoes with a double-six set, boneyard, blocked-round scoring, opponent-hand privacy and game-aware AI.
+- Naval Battle: fleet placement, secret opposing fleet, hit/miss/sunk outcomes, AI targeting and tactical 3-of-6 abilities.
 - Local play, shared AI, quick match and private-room flows are provided through the same game registry. Ranked quick matches require a registered account; guests can play casual online matches.
 - Easy random legal play, medium positional evaluation and hard bounded alpha-beta search, running outside the UI thread.
 - Optional guest/email accounts, provider adapters for Google and Apple, editable profiles, avatar choices, favorites, match history and friend codes.
@@ -54,6 +58,7 @@ The built server serves the app and API at `http://localhost:8787`. `GET /api/he
 | `packages/games/quoridor`                                               | Quoridor state, pure rules, AI entry point and board UI                                  |
 | `packages/games/checkers`, `gomoku`, `nine-mens-morris`, `connect-four` | Independent classic state/rules/AI/UI modules                                            |
 | `packages/games/digital-game`, `reversi`                                | Digital Game and Reversi state/rules/AI/UI modules                                      |
+| `packages/games/chess`, `dots-and-boxes`, `dominoes`, `naval-battle` | Chess, Dots and Boxes, Dominoes and Naval Battle engines, AI and UI modules |
 | `packages/games/shared`                                                 | Line evaluation, win detection and shared board primitives                               |
 | `packages/games/registry.ts`                                            | Register available rules engines                                                         |
 | `apps/server/src`                                                       | Authentication, SQLite persistence, authoritative matches and matchmaking                |
@@ -84,7 +89,7 @@ Set `VITE_SERVER_URL` to your deployed **HTTPS** server origin before building a
 
 This is source code and an automatically verified build, not a deployed production service. Google/Apple need your credentials and provider configuration. Public hosting, domain/TLS, native signing, device testing and store submission remain external setup steps. Email verification, password recovery, background push notifications and account deletion remain separate product work.
 
-LAN, Chess and Mancala are still shown as planned additions; Reversi is now implemented and playable.
+Chess, Dots and Boxes, Dominoes and Naval Battle are playable. A Reversi native LAN transport exists but is not yet exposed through the normal mode-selection UI or verified on two physical devices. Mancala remains planned.
 
 Read [delivery status](docs/STATUS.md) for tested behavior and open release checks before public launch. Source repository: [3thelast-glitch/games](https://github.com/3thelast-glitch/games).
 
