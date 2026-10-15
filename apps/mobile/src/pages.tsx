@@ -176,6 +176,7 @@ export function ModeDialog({
   onSignIn,
   busy,
   onChessTrainer,
+  onChessArchive,
 }: {
   gameId: string;
   initialMode?: PlayMode;
@@ -193,6 +194,7 @@ export function ModeDialog({
   onSignIn: () => void;
   busy: boolean;
   onChessTrainer?: () => void;
+  onChessArchive?: () => void;
 }) {
   const { t } = useI18n();
   const [mode, setMode] = useState<PlayMode>(initialMode ?? 'local'),
@@ -236,6 +238,19 @@ export function ModeDialog({
           <span>
             <strong>{t('chessTacticalTrainer')}</strong>
             <small>{t('chessTrainerEntryDesc')}</small>
+          </span>
+        </button>
+      )}
+      {gameId === 'chess' && (
+        <button
+          className="button secondary full chess-trainer-entry"
+          type="button"
+          onClick={onChessArchive}
+        >
+          <Icon name="clock" />
+          <span>
+            <strong>{t('chessSavedGames')}</strong>
+            <small>{t('chessArchiveEntryDesc')}</small>
           </span>
         </button>
       )}

@@ -19,8 +19,15 @@ import { games } from '../../../packages/games/registry.ts';
 import type { ChessMoveReview } from '../../../packages/games/chess/review.ts';
 import {
   DEFAULT_CHESS_REPERTOIRE,
+  detectChessOpening,
   type ChessRepertoire,
 } from '../../../packages/games/chess/opening.ts';
+import {
+  appendAcceptedChessMove,
+  createChessMoveJournal,
+  rewindChessMoveJournal,
+  type ChessMoveJournal,
+} from '../../../packages/games/chess/journal.ts';
 import type { ChessMove, ChessState } from '../../../packages/games/chess/state.ts';
 import {
   normalizeChessAiSessionConfig,
@@ -40,6 +47,12 @@ import {
 } from './pages.tsx';
 import { MatchPage } from './MatchPage.tsx';
 import { ChessTrainerPage } from './ChessTrainerPage.tsx';
+import { ChessArchivePage } from './ChessArchivePage.tsx';
+import {
+  archiveAnalysisStatus,
+  chessArchive,
+  type ChessArchiveRecord,
+} from './chessArchive.ts';
 import { I18n, useI18n } from './i18n.tsx';
 import { api, connection, serverURL } from './network.ts';
 import {
@@ -51,12 +64,20 @@ import {
   storage,
   type Settings,
 } from './platform.ts';
-type Page = 'library' | 'arena' | 'profile' | 'settings' | 'match' | 'chessTrainer';
+type Page =
+  | 'library'
+  | 'arena'
+  | 'profile'
+  | 'settings'
+  | 'match'
+  | 'chessTrainer'
+  | 'chessArchive';
 interface OfflineSession {
   id: string;
   controller: OfflineMatch;
   difficulty: Difficulty;
   chessAi?: ChessAiSessionConfig;
+  chessJournal?: ChessMoveJournal;
 }
 interface SavedOffline {
   id: string;
@@ -64,6 +85,7 @@ interface SavedOffline {
   mode: 'local' | 'ai';
   difficulty: Difficulty;
   chessAi?: ChessAiSessionConfig;
+  chessJournal?: ChessMoveJournal;
   current: OfflineSnapshot;
   history: OfflineSnapshot[];
 }
@@ -136,8 +158,11 @@ function ArenaApp({
       { matchId: string; state: ChessState; move: ChessMove }[]
     >([]),
     rankedChessReviewFlushed = useRef(new Set<string>()),
+    chessReviewsRef = useRef<ChessMoveReview[]>([]),
+    archiveWriteQueue = useRef<Promise<void>>(Promise.resolve()),
     serverOffset = useRef(0);
   settingsRef.current = settings;
+  chessReviewsRef.current = chessReviews;
   useEffect(() => {
     void storage
       .get<ChessRepertoire>('chess-repertoire', DEFAULT_CHESS_REPERTOIRE)
@@ -277,15 +302,69 @@ function ArenaApp({
       mode: session.controller.mode,
       difficulty: session.difficulty,
       chessAi: session.chessAi,
+      chessJournal: session.chessJournal,
       current: session.controller.current,
       history: session.controller.history.slice(-200),
     } satisfies SavedOffline);
   }, []);
+  const persistChessArchive = useCallback(
+    async (session: OfflineSession) => {
+      const current = session.controller.current;
+      if (current.state.gameId !== 'chess' || !session.chessJournal) return;
+      const opening = detectChessOpening(session.chessJournal.entries.map((entry) => entry.move));
+      const reviews = chessReviewsRef.current;
+      const record: ChessArchiveRecord = {
+        schemaVersion: 1,
+        id: session.id,
+        createdAt: current.createdAt,
+        updatedAt: Date.now(),
+        finishedAt: current.endedAt,
+        result: current.result,
+        whiteName: profileRef.current?.name ?? 'Player 1',
+        blackName:
+          session.controller.mode === 'ai'
+            ? `NAQLA · ${session.chessAi?.style ?? 'balanced'}`
+            : 'Player 2',
+        mode: session.controller.mode,
+        difficulty: session.difficulty,
+        bot: session.controller.mode === 'ai' ? session.chessAi : undefined,
+        timeControl: current.timeControl ?? session.controller.timeControl,
+        journal: session.chessJournal,
+        ...(opening
+          ? {
+              opening: {
+                id: opening.id,
+                eco: opening.eco,
+                nameEn: opening.nameEn,
+                nameAr: opening.nameAr,
+              },
+            }
+          : {}),
+        assistanceUsed:
+          session.controller.mode === 'ai' &&
+          !!session.chessAi &&
+          (session.chessAi.guidance !== 'test' || session.chessAi.coach),
+        analysisStatus: archiveAnalysisStatus(session.chessJournal, reviews),
+        analysisVersion: 1,
+        reviews: [...reviews],
+      };
+      await chessArchive.put(record);
+    },
+    [],
+  );
+
   const syncOffline = useCallback(() => {
     const session = offlineRef.current;
     if (!session) return;
     render((n) => n + 1);
     saveOffline(session);
+    if (session.controller.current.state.gameId === 'chess') {
+      // Serialize writes so a slower earlier IndexedDB operation cannot overwrite a newer ply.
+      archiveWriteQueue.current = archiveWriteQueue.current
+        .catch(() => {})
+        .then(() => persistChessArchive(session));
+      void archiveWriteQueue.current.catch(() => notify('chessArchiveSaveFailed'));
+    }
     const { result, endedAt, createdAt, state } = session.controller.current;
     if (result && !finished.current.has(session.id)) {
       finished.current.add(session.id);
@@ -305,7 +384,7 @@ function ArenaApp({
       if (result.winner !== null && (session.controller.mode === 'local' || result.winner === 0))
         feedback(settingsRef.current, 'win');
     }
-  }, [saveOffline]);
+  }, [notify, persistChessArchive, saveOffline]);
   const exchangeOAuth = useCallback(
     async (code: string) => {
       setBusy(true);
@@ -443,6 +522,14 @@ function ArenaApp({
               saved.gameId === 'chess' && saved.mode === 'ai'
                 ? normalizeChessAiSessionConfig(saved.chessAi)
                 : saved.chessAi,
+            chessJournal:
+              saved.gameId === 'chess'
+                ? saved.chessJournal ??
+                  {
+                    ...createChessMoveJournal(saved.id, saved.current.state as ChessState),
+                    incomplete: saved.current.state.ply > 0,
+                  }
+                : undefined,
           };
           offlineRef.current = session;
           setOffline(session);
@@ -531,8 +618,19 @@ function ArenaApp({
               ? (structuredClone(currentSession.controller.current.state) as ChessState)
               : null;
           currentSession.controller.move(event.data.move);
-          if (before)
+          if (before) {
+            const after = currentSession.controller.current.state as ChessState;
+            if (currentSession.chessJournal)
+              currentSession.chessJournal = appendAcceptedChessMove(
+                currentSession.chessJournal,
+                before,
+                event.data.move as ChessMove,
+                after,
+                Date.now(),
+                currentSession.controller.current.clocks,
+              );
             queueChessReview(sessionId, before, event.data.move as ChessMove);
+          }
           feedback(settingsRef.current);
           syncOffline();
         } catch (e) {
@@ -577,20 +675,26 @@ function ArenaApp({
     timeControl: TimeControl = bankTimeControl(600000),
     chessAi?: ChessAiSessionConfig,
   ) => {
-    const session = {
-      id: crypto.randomUUID(),
-      controller: new OfflineMatch(
-        games.get(gameId),
-        mode,
-        Date.now,
-        mode === 'ai' ? 2 : playerCount,
-        timeControl,
-      ),
+    const id = crypto.randomUUID();
+    const controller = new OfflineMatch(
+      games.get(gameId),
+      mode,
+      Date.now,
+      mode === 'ai' ? 2 : playerCount,
+      timeControl,
+    );
+    const session: OfflineSession = {
+      id,
+      controller,
       difficulty,
       chessAi:
         gameId === 'chess' && mode === 'ai'
           ? normalizeChessAiSessionConfig(chessAi)
           : chessAi,
+      chessJournal:
+        gameId === 'chess'
+          ? createChessMoveJournal(id, controller.current.state as ChessState)
+          : undefined,
     };
     offlineRef.current = session;
     setOffline(session);
@@ -711,7 +815,19 @@ function ArenaApp({
           ? (structuredClone(local.controller.current.state) as ChessState)
           : null;
       local.controller.move(move);
-      if (before) queueChessReview(local.id, before, move as ChessMove);
+      if (before) {
+        const after = local.controller.current.state as ChessState;
+        if (local.chessJournal)
+          local.chessJournal = appendAcceptedChessMove(
+            local.chessJournal,
+            before,
+            move as ChessMove,
+            after,
+            Date.now(),
+            local.controller.current.clocks,
+          );
+        queueChessReview(local.id, before, move as ChessMove);
+      }
       feedback(settings);
       syncOffline();
     } catch (e) {
@@ -929,6 +1045,9 @@ function ArenaApp({
             {page === 'chessTrainer' && (
               <ChessTrainerPage onBack={() => setPage('library')} />
             )}
+            {page === 'chessArchive' && (
+              <ChessArchivePage onBack={() => setPage('library')} />
+            )}
             {page === 'settings' && (
               <SettingsPage
                 settings={settings}
@@ -1000,8 +1119,10 @@ function ArenaApp({
                   try {
                     offline!.controller.undo();
                     if (offline!.controller.current.state.gameId === 'chess') {
-                      const ply = offline!.controller.current.state.ply;
-                      setChessReviews((previous) => previous.filter((review) => review.ply <= ply));
+                      const state = offline!.controller.current.state as ChessState;
+                      if (offline!.chessJournal)
+                        offline!.chessJournal = rewindChessMoveJournal(offline!.chessJournal, state);
+                      setChessReviews((previous) => previous.filter((review) => review.ply <= state.ply));
                     }
                     finished.current.delete(offline!.id);
                     setLocalHistory((previous) => {
@@ -1115,6 +1236,10 @@ function ArenaApp({
             onChessTrainer={() => {
               setChoice(null);
               setPage('chessTrainer');
+            }}
+            onChessArchive={() => {
+              setChoice(null);
+              setPage('chessArchive');
             }}
             onSignIn={() => {
               setChoice(null);
