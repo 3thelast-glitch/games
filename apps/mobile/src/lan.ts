@@ -52,6 +52,7 @@ export class ReversiLanController {
   private guestTarget: { host: string; port: number; roomId: string; roomName: string } | null = null;
   private hostConnectionTokens = new Map<string, string>();
   private reconnectAbort = 0;
+  private tickTimer: ReturnType<typeof setInterval> | null = null;
   private view: LanView = {
     role: null,
     status: 'idle',
@@ -73,7 +74,7 @@ export class ReversiLanController {
   subscribe(listener: Listener) {
     this.listeners.add(listener);
     listener(this.view);
-    return () => this.listeners.delete(listener);
+    return () => { this.listeners.delete(listener); };
   }
 
   async createHost(options: { name: string; roomName?: string; turnSeconds: TurnTimerSeconds | null }) {
@@ -103,6 +104,14 @@ export class ReversiLanController {
         endpoint: formatEndpoint(result.host, result.port),
         snapshot: this.authority.snapshot(),
       });
+      this.tickTimer = setInterval(() => {
+        const authority = this.authority;
+        if (!authority) return;
+        const before = this.view.snapshot;
+        const after = authority.tick();
+        if (before?.revision !== after.revision || before.status !== after.status)
+          void this.broadcastSnapshot();
+      }, 500);
     } catch (error) {
       this.patch({ status: 'error', error: errorCode(error) });
       throw error;
@@ -158,6 +167,17 @@ export class ReversiLanController {
     await this.sendGuest(message);
   }
 
+  async resign() {
+    const matchId = this.view.snapshot?.matchId;
+    if (!matchId) throw new Error('match-not-started');
+    if (this.view.role === 'host') {
+      if (!this.authority) throw new Error('lan-host-not-running');
+      await this.publishHostReply(this.authority.handle(this.authority.hostToken, { type: 'resign', matchId }));
+    } else {
+      await this.sendGuest({ type: 'resign', matchId });
+    }
+  }
+
   async rematch() {
     const matchId = this.view.snapshot?.matchId;
     if (!matchId) throw new Error('match-not-started');
@@ -191,12 +211,15 @@ export class ReversiLanController {
   private async joinTarget(target: { host: string; port: number; roomId: string; roomName: string }, name: string) {
     if (!this.available) throw new Error('lan-native-only');
     await this.ensureNativeListeners();
-    await requireLanNative().stopDiscovery().catch(() => {});
+    // On iOS the discovered host is a Bonjour service token, not an IP address.
+    // Resolve/connect while its discovery mapping is still available.
     this.guestTarget = target;
     this.patch({ role: 'guest', status: 'connecting', endpoint: formatEndpoint(target.host, target.port), error: null });
     try {
-      const { connectionId } = await requireLanNative().connect({ host: target.host, port: target.port });
+      const native = requireLanNative();
+      const { connectionId } = await native.connect({ host: target.host, port: target.port });
       this.guestConnectionId = connectionId;
+      await native.stopDiscovery().catch(() => {});
       await this.sendRaw(connectionId, {
         type: 'hello',
         protocolVersion: LAN_PROTOCOL_VERSION,
@@ -264,9 +287,13 @@ export class ReversiLanController {
         reply = this.authority.handle(token, raw);
       }
       if (reply.type === 'snapshot') await this.publishHostReply(reply);
-      else {
+      else if (reply.type === 'welcome') {
         await this.sendRaw(connectionId, reply);
-        this.patch({ snapshot: this.authority.snapshot() });
+        await this.broadcastSnapshot();
+        await this.updateAdvertisement();
+      } else {
+        // Errors and pongs are replies to the sender, not broadcasts or host-only notices.
+        await this.sendRaw(connectionId, reply);
       }
       return;
     }
@@ -286,7 +313,10 @@ export class ReversiLanController {
       this.patch({ status: 'connected', snapshot: message.snapshot, error: null });
     } else if (message.type === 'error') {
       if (message.snapshot) this.patch({ snapshot: message.snapshot });
-      this.patch({ error: message.code });
+      this.patch({
+        error: message.code,
+        ...(this.view.status === 'connecting' ? { status: 'error' as const } : {}),
+      });
     }
   }
 
@@ -296,7 +326,8 @@ export class ReversiLanController {
       this.hostConnectionTokens.delete(connectionId);
       if (token && this.authority) {
         this.authority.disconnect(token);
-        this.patch({ snapshot: this.authority.snapshot() });
+        await this.broadcastSnapshot();
+        await this.updateAdvertisement();
       }
       return;
     }
@@ -329,6 +360,14 @@ export class ReversiLanController {
       delay = Math.min(5_000, delay * 2);
     }
     if (generation === this.reconnectAbort) this.patch({ status: 'error', error: 'lan-reconnect-expired' });
+  }
+
+  private async updateAdvertisement() {
+    if (!this.authority || !this.available) return;
+    const port = Number(this.view.endpoint?.match(/:(\d+)$/)?.[1] ?? LAN_DEFAULT_PORT);
+    await requireLanNative().updateHost({
+      metadata: lanMetadata(this.authority.advertisement(port)),
+    }).catch(() => {});
   }
 
   private async publishHostReply(reply: LanServerMessage) {
@@ -366,6 +405,10 @@ export class ReversiLanController {
 
   private async reset() {
     this.reconnectAbort++;
+    if (this.tickTimer) {
+      clearInterval(this.tickTimer);
+      this.tickTimer = null;
+    }
     if (this.available) {
       await requireLanNative().stopDiscovery().catch(() => {});
       await requireLanNative().stopHost().catch(() => {});

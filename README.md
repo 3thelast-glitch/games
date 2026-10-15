@@ -89,7 +89,7 @@ Set `VITE_SERVER_URL` to your deployed **HTTPS** server origin before building a
 
 This is source code and an automatically verified build, not a deployed production service. Google/Apple need your credentials and provider configuration. Public hosting, domain/TLS, native signing, device testing and store submission remain external setup steps. Email verification, password recovery, background push notifications and account deletion remain separate product work.
 
-Chess, Dots and Boxes, Dominoes and Naval Battle are playable. A Reversi native LAN transport exists but is not yet exposed through the normal mode-selection UI or verified on two physical devices. Mancala remains planned.
+Chess, Dots and Boxes, Dominoes and Naval Battle are playable. Reversi now offers a native LAN mode with room hosting, discovery, manual joining, ready state and matches; it still requires two-real-device network testing before release. Other games do not yet expose LAN, and Mancala remains planned.
 
 Read [delivery status](docs/STATUS.md) for tested behavior and open release checks before public launch. Source repository: [3thelast-glitch/games](https://github.com/3thelast-glitch/games).
 

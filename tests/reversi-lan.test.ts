@@ -163,3 +163,31 @@ test('LAN rematch uses a fresh epoch and swaps Black/White seats', () => {
   assert.equal(rematch.revision, 0);
   assert.equal(rematch.state?.ply, 0);
 });
+
+test('LAN resign settles the game on the host without accepting opponent commands', () => {
+  const host = authority();
+  const guest = start(host);
+  const matchId = host.snapshot().matchId!;
+  const resigned = host.handle(guest.resumeToken, { type: 'resign', matchId });
+  assert.equal(resigned.type, 'snapshot');
+  const snapshot = host.snapshot();
+  assert.equal(snapshot.status, 'finished');
+  assert.deepEqual(snapshot.result, { winner: 0, reason: 'resignation' });
+  assert.equal(host.handle(host.hostToken, {
+    type: 'move', matchId, actionId: 'action-after-resign-1', expectedRevision: snapshot.revision,
+    move: { row: 2, col: 3 },
+  }).type, 'error');
+});
+
+test('LAN disconnecting a guest in the lobby frees the room for another player', () => {
+  const host = authority();
+  const first = joinGuest(host);
+  host.hostReady(true);
+  host.disconnect(first.resumeToken);
+  assert.equal(host.snapshot().players.length, 1);
+  assert.equal(host.advertisement(8765).occupancy, 1);
+  assert.equal(host.snapshot().players[0].ready, false);
+  const second = joinGuest(host);
+  assert.notEqual(second.resumeToken, first.resumeToken);
+  assert.equal(host.snapshot().players.length, 2);
+});

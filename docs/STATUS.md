@@ -58,6 +58,6 @@ The repository test runner discovers all `*.test.ts` and `*.test.tsx` files unde
 
 ## Planned expansion
 
-**Mancala remains planned.** Chess, Dots and Boxes, Dominoes and Naval Battle are registered and playable. Reversi native LAN networking exists in code but is not wired into the standard play-mode dialog or physically tested on two devices. General LAN rollout and public backend deployment remain open delivery tasks. The engine/view registries provide the extension points described in [architecture](ARCHITECTURE.md).
+**Mancala remains planned.** Chess, Dots and Boxes, Dominoes and Naval Battle are registered and playable. Reversi native LAN room hosting, discovery and match controls are connected to the mode dialog in PR #79; two-real-device testing and Android/iOS interoperability still remain open. General LAN rollout and public HTTPS Online backend deployment are separate acceptance gates. The engine/view registries provide the extension points described in [architecture](ARCHITECTURE.md).
 
 For Reversi-specific behavior, see [English rules](reversi.md) and [Arabic rules](reversi.ar.md).

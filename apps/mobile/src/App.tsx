@@ -48,13 +48,15 @@ import {
 import { MatchPage } from './MatchPage.tsx';
 import { ChessTrainerPage } from './ChessTrainerPage.tsx';
 import { ChessArchivePage } from './ChessArchivePage.tsx';
+import { LanPage } from './LanPage.tsx';
+import { lan } from './lan.ts';
 import {
   archiveAnalysisStatus,
   chessArchive,
   type ChessArchiveRecord,
 } from './chessArchive.ts';
 import { I18n, useI18n } from './i18n.tsx';
-import { api, connection, serverURL } from './network.ts';
+import { api, connection, onlineServerConfigured, serverURL } from './network.ts';
 import {
   defaults,
   feedback,
@@ -71,7 +73,8 @@ type Page =
   | 'settings'
   | 'match'
   | 'chessTrainer'
-  | 'chessArchive';
+  | 'chessArchive'
+  | 'lan';
 interface OfflineSession {
   id: string;
   controller: OfflineMatch;
@@ -137,6 +140,7 @@ function ArenaApp({
     [authOpen, setAuthOpen] = useState(false),
     [providers, setProviders] = useState({ google: false, apple: false }),
     [choice, setChoice] = useState<{ gameId: string; mode?: PlayMode } | null>(null),
+    [lanTurnSeconds, setLanTurnSeconds] = useState<TurnTimerSeconds | null>(null),
     [rules, setRules] = useState<string | null>(null),
     [lobby, setLobby] = useState<Extract<ServerMessage, { type: 'room' | 'queued' }> | null>(null),
     [emote, setEmote] = useState<{ player: Seat; value: string } | null>(null),
@@ -719,6 +723,14 @@ function ArenaApp({
     if (!choice) return;
     try {
       if (onlineRef.current && !onlineRef.current.result) throw new Error('already-in-match');
+      if (mode === 'lan') {
+        if (choice.gameId !== 'reversi') throw new Error('lan-game-not-supported');
+        if (!lan.available) throw new Error('lan-native-only');
+        setLanTurnSeconds(turnSeconds);
+        setChoice(null);
+        setPage('lan');
+        return;
+      }
       if (mode === 'local' || mode === 'ai') {
         startOffline(
           choice.gameId,
@@ -738,6 +750,7 @@ function ArenaApp({
         );
         return;
       }
+      if (!onlineServerConfigured) throw new Error('online-server-not-configured');
       setBusy(true);
       await ensureToken();
       await connection.waitReady();
@@ -918,6 +931,10 @@ function ArenaApp({
     rating: 1000,
     rank: 'Silver',
   }));
+  const navigate = (destination: Page) => {
+    if (page === 'lan' && destination !== 'lan') void lan.leave().catch(notify);
+    setPage(destination);
+  };
   const navigation: { id: Page; icon: string; label: string }[] = [
     { id: 'library', icon: 'library', label: 'library' },
     { id: 'arena', icon: 'trophy', label: 'arena' },
@@ -928,9 +945,9 @@ function ArenaApp({
   const matchNow = online ? clock + serverOffset.current : clock;
   return (
     <NoticeContext.Provider value={notice}>
-      <div className={`app-shell ${page === 'match' ? 'in-match' : ''}`}>
+      <div className={`app-shell ${page === 'match' || page === 'lan' ? 'in-match' : ''}`}>
         <aside className="sidebar">
-          <button className="brand-button" onClick={() => setPage('library')}>
+          <button className="brand-button" onClick={() => navigate('library')}>
             <Logo />
           </button>
           <span className="nav-label">{t('navMotto')}</span>
@@ -939,7 +956,7 @@ function ArenaApp({
               <button
                 key={item.id}
                 className={page === item.id ? 'active' : ''}
-                onClick={() => setPage(item.id)}
+                onClick={() => navigate(item.id)}
               >
                 <Icon name={item.icon} />
                 <span>{t(item.label)}</span>
@@ -953,7 +970,7 @@ function ArenaApp({
               <strong>{t('playYourWay')}</strong>
               <p>{t('noAccount')}</p>
             </div>
-            <button className="sidebar-account" onClick={() => setPage('profile')}>
+            <button className="sidebar-account" onClick={() => navigate('profile')}>
               <Avatar name={profile?.name} avatar={profile?.avatar} />
               <span>
                 <strong>{profile?.name ?? t('guest')}</strong>
@@ -967,7 +984,7 @@ function ArenaApp({
         </aside>
         <div className="main-shell">
           <header className="topbar">
-            <button className="mobile-brand brand-button" onClick={() => setPage('library')}>
+            <button className="mobile-brand brand-button" onClick={() => navigate('library')}>
               <Logo />
             </button>
             <span className="topbar-title">
@@ -1047,6 +1064,13 @@ function ArenaApp({
             )}
             {page === 'chessArchive' && (
               <ChessArchivePage onBack={() => setPage('library')} />
+            )}
+            {page === 'lan' && (
+              <LanPage
+                playerName={profile?.name ?? t('player1')}
+                turnSeconds={lanTurnSeconds}
+                onExit={() => setPage('library')}
+              />
             )}
             {page === 'settings' && (
               <SettingsPage
@@ -1209,7 +1233,7 @@ function ArenaApp({
             <button
               key={item.id}
               className={page === item.id ? 'active' : ''}
-              onClick={() => setPage(item.id)}
+              onClick={() => navigate(item.id)}
             >
               <Icon name={item.icon} />
               <span>{t(item.label)}</span>

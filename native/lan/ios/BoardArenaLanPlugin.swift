@@ -325,8 +325,9 @@ public class BoardArenaLanPlugin: CAPPlugin, CAPBridgedPlugin {
     private func stopDiscoveryInternal() {
         browser?.cancel()
         browser = nil
-        endpointTokens.removeAll()
-        discoveredEndpoints.removeAll()
+        // Keep resolved service endpoints for the ongoing connection's 60s resume window.
+        // A new discovery pass refreshes the mapping; removing it here breaks reconnects
+        // because the JS controller still holds the service token, not a raw IP address.
     }
 
     private func publishDiscoveryResults(_ results: Set<NWBrowser.Result>) {
