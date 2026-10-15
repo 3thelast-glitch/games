@@ -48,6 +48,8 @@ import {
 import { MatchPage } from './MatchPage.tsx';
 import { ChessTrainerPage } from './ChessTrainerPage.tsx';
 import { ChessArchivePage } from './ChessArchivePage.tsx';
+import { LanPage } from './LanPage.tsx';
+import { lan } from './lan.ts';
 import {
   archiveAnalysisStatus,
   chessArchive,
@@ -71,7 +73,8 @@ type Page =
   | 'settings'
   | 'match'
   | 'chessTrainer'
-  | 'chessArchive';
+  | 'chessArchive'
+  | 'lan';
 interface OfflineSession {
   id: string;
   controller: OfflineMatch;
@@ -137,6 +140,7 @@ function ArenaApp({
     [authOpen, setAuthOpen] = useState(false),
     [providers, setProviders] = useState({ google: false, apple: false }),
     [choice, setChoice] = useState<{ gameId: string; mode?: PlayMode } | null>(null),
+    [lanTurnSeconds, setLanTurnSeconds] = useState<TurnTimerSeconds | null>(null),
     [rules, setRules] = useState<string | null>(null),
     [lobby, setLobby] = useState<Extract<ServerMessage, { type: 'room' | 'queued' }> | null>(null),
     [emote, setEmote] = useState<{ player: Seat; value: string } | null>(null),
@@ -719,6 +723,14 @@ function ArenaApp({
     if (!choice) return;
     try {
       if (onlineRef.current && !onlineRef.current.result) throw new Error('already-in-match');
+      if (mode === 'lan') {
+        if (choice.gameId !== 'reversi') throw new Error('lan-game-not-supported');
+        if (!lan.available) throw new Error('lan-native-only');
+        setLanTurnSeconds(turnSeconds);
+        setChoice(null);
+        setPage('lan');
+        return;
+      }
       if (mode === 'local' || mode === 'ai') {
         startOffline(
           choice.gameId,
@@ -928,7 +940,7 @@ function ArenaApp({
   const matchNow = online ? clock + serverOffset.current : clock;
   return (
     <NoticeContext.Provider value={notice}>
-      <div className={`app-shell ${page === 'match' ? 'in-match' : ''}`}>
+      <div className={`app-shell ${page === 'match' || page === 'lan' ? 'in-match' : ''}`}>
         <aside className="sidebar">
           <button className="brand-button" onClick={() => setPage('library')}>
             <Logo />
@@ -1047,6 +1059,13 @@ function ArenaApp({
             )}
             {page === 'chessArchive' && (
               <ChessArchivePage onBack={() => setPage('library')} />
+            )}
+            {page === 'lan' && (
+              <LanPage
+                playerName={profile?.name ?? t('player1')}
+                turnSeconds={lanTurnSeconds}
+                onExit={() => setPage('library')}
+              />
             )}
             {page === 'settings' && (
               <SettingsPage
