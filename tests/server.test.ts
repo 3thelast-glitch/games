@@ -620,3 +620,89 @@ test('online Checkers automatic draw is terminal and recorded as a draw', () => 
     store.close();
   }
 });
+
+test('failed final join never pollutes an unfinished multiplayer room', () => {
+  const { store, a, b, outsider, service } = setup();
+  try {
+    const lobby = new Lobby(service);
+    const room = lobby.createRoom(a.id, 'digitalGame', 3);
+    const first = lobby.joinRoomResult(b.id, room.code);
+    assert.equal(first.match, null);
+    assert.deepEqual(room.members, [a.id, b.id]);
+
+    // A member starts a match by another path while their former room remains listed.
+    const fourth = store.createUser('Fourth player');
+    service.create('connectFour', [b.id, fourth.id]);
+    assert.throws(() => lobby.joinRoomResult(outsider.id, room.code), /already-in-match/);
+    assert.deepEqual(room.members, [a.id, b.id], 'joining user must not occupy a seat on failure');
+    assert.deepEqual(lobby.rooms.get(room.code)?.members, [a.id, b.id]);
+    assert.throws(() => lobby.joinRoomResult(outsider.id, room.code), /already-in-match/);
+    assert.equal(room.members.length, 2);
+  } finally {
+    store.close();
+  }
+});
+
+test('websocket abuse limits are per authenticated account, even on the same IP', async () => {
+  const store = new Store();
+  const app = createArenaServer({ store, env: {}, allowedOrigins: ['http://localhost'] });
+  const alice = store.createUser('Alice');
+  const bob = store.createUser('Bob');
+  await new Promise<void>((resolve) => app.server.listen(0, '127.0.0.1', resolve));
+  const port = (app.server.address() as { port: number }).port;
+  const connections: WebSocket[] = [];
+  const connect = async (id: string) => {
+    const ws = new WebSocket(`ws://127.0.0.1:${port}/ws`, { origin: 'http://localhost' });
+    connections.push(ws);
+    await new Promise<void>((resolve, reject) => {
+      ws.once('open', () => resolve());
+      ws.once('error', reject);
+    });
+    const next = () => new Promise<ServerMessage>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        ws.off('message', onMessage);
+        reject(new Error('WebSocket security test timed out'));
+      }, 3000);
+      function onMessage(data: WebSocket.RawData) {
+        clearTimeout(timer);
+        ws.off('message', onMessage);
+        resolve(JSON.parse(data.toString()) as ServerMessage);
+      }
+      ws.on('message', onMessage);
+    });
+    const ready = next();
+    ws.send(JSON.stringify({ type: 'auth', token: store.newSession(id), version: 3 }));
+    assert.equal((await ready).type, 'ready');
+    return { ws, next };
+  };
+  try {
+    const a = await connect(alice.id);
+    for (let i = 0; i < 10; i++) {
+      const reply = a.next();
+      a.ws.send(JSON.stringify({ type: 'create-room', gameId: 'quoridor' }));
+      assert.equal((await reply).type, 'room');
+    }
+    const exceeded = a.next();
+    a.ws.send(JSON.stringify({ type: 'create-room', gameId: 'quoridor' }));
+    assert.deepEqual(await exceeded, { type: 'error', code: 'rate-limited' });
+
+    // A different authenticated player behind the same NAT/proxy remains usable.
+    const b = await connect(bob.id);
+    const independent = b.next();
+    b.ws.send(JSON.stringify({ type: 'create-room', gameId: 'quoridor' }));
+    assert.equal((await independent).type, 'room');
+
+    for (let i = 0; i < 20; i++) {
+      const reply = b.next();
+      b.ws.send(JSON.stringify({ type: 'join-room', code: 'AAAAAA' }));
+      assert.deepEqual(await reply, { type: 'error', code: 'room-not-found' });
+    }
+    const limit = b.next();
+    b.ws.send(JSON.stringify({ type: 'join-room', code: 'AAAAAA' }));
+    assert.deepEqual(await limit, { type: 'error', code: 'rate-limited' });
+  } finally {
+    connections.forEach((ws) => ws.terminate());
+    await app.close();
+    store.close();
+  }
+});
