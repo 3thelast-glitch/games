@@ -39,6 +39,7 @@ import {
   type LocalHistory,
 } from './pages.tsx';
 import { MatchPage } from './MatchPage.tsx';
+import { ChessTrainerPage } from './ChessTrainerPage.tsx';
 import { I18n, useI18n } from './i18n.tsx';
 import { api, connection, serverURL } from './network.ts';
 import {
@@ -50,7 +51,7 @@ import {
   storage,
   type Settings,
 } from './platform.ts';
-type Page = 'library' | 'arena' | 'profile' | 'settings' | 'match';
+type Page = 'library' | 'arena' | 'profile' | 'settings' | 'match' | 'chessTrainer';
 interface OfflineSession {
   id: string;
   controller: OfflineMatch;
@@ -925,6 +926,9 @@ function ArenaApp({
               />
             )}
             {page === 'arena' && <LeaderboardPage ensureToken={ensureToken} onError={notify} />}
+            {page === 'chessTrainer' && (
+              <ChessTrainerPage onBack={() => setPage('library')} />
+            )}
             {page === 'settings' && (
               <SettingsPage
                 settings={settings}
@@ -1108,6 +1112,10 @@ function ArenaApp({
             busy={busy}
             onClose={() => setChoice(null)}
             onStart={(...args) => void start(...args)}
+            onChessTrainer={() => {
+              setChoice(null);
+              setPage('chessTrainer');
+            }}
             onSignIn={() => {
               setChoice(null);
               setAuthOpen(true);

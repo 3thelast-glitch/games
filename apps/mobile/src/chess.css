@@ -1192,3 +1192,140 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+.chess-trainer-entry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.chess-trainer-entry > span {
+  display: grid;
+  gap: 2px;
+  text-align: start;
+}
+.chess-trainer-entry small {
+  color: var(--muted);
+  font-weight: 400;
+}
+.chess-trainer-page {
+  display: grid;
+  gap: 16px;
+}
+.chess-trainer-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+.chess-trainer-heading > div {
+  min-width: 0;
+}
+.chess-trainer-controls {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) minmax(180px, .8fr);
+  gap: 10px;
+  align-items: end;
+}
+.chess-trainer-controls > div {
+  display: grid;
+  gap: 5px;
+}
+.chess-trainer-controls label {
+  color: var(--muted);
+  font-size: .75rem;
+}
+.chess-trainer-controls select {
+  min-width: 0;
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid #ffffff1c;
+  border-radius: 10px;
+  background: #101816;
+  color: var(--text);
+  font: inherit;
+}
+.chess-trainer-score {
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: #ffffff06;
+}
+.chess-trainer-score span,
+.chess-trainer-score small {
+  color: var(--muted);
+  font-size: .7rem;
+}
+.chess-trainer-score strong {
+  font-size: 1.15rem;
+}
+.chess-trainer-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(270px, 360px);
+  gap: 16px;
+  align-items: start;
+}
+.chess-trainer-board,
+.chess-trainer-side {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.chess-puzzle-task h2 {
+  margin: 4px 0;
+}
+.chess-puzzle-task p,
+.chess-trainer-explanation p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.chess-trainer-actions {
+  display: grid;
+  gap: 7px;
+}
+.chess-solution-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 9px;
+}
+.chess-solution-line span {
+  padding: 5px 7px;
+  border-radius: 7px;
+  background: #ffffff08;
+  font-variant-numeric: tabular-nums;
+}
+.chess-trainer-progress {
+  display: grid;
+  gap: 5px;
+}
+.chess-trainer-progress span {
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+@media (max-width: 900px) {
+  .chess-trainer-layout {
+    grid-template-columns: 1fr;
+  }
+  .chess-trainer-side {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .chess-trainer-explanation,
+  .chess-trainer-progress {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 620px) {
+  .chess-trainer-controls {
+    grid-template-columns: 1fr;
+  }
+  .chess-trainer-side {
+    grid-template-columns: 1fr;
+  }
+  .chess-trainer-explanation,
+  .chess-trainer-progress {
+    grid-column: auto;
+  }
+}
