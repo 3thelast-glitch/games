@@ -494,6 +494,8 @@ test('chess AI setup exposes time, real difficulty, personas, and training focus
   assert.ok(view.getByRole('button', { name: 'No time limit' }));
   assert.ok(view.getByText('Bot playing style'));
   assert.ok(view.getByText('Training coach'));
+  assert.ok(view.getByText('Beginner guidance'));
+  assert.ok(view.getByRole('button', { name: /Full guidance/i }));
   fireEvent.click(view.getByRole('button', { name: 'No time limit' }));
   fireEvent.click(view.getByRole('button', { name: /Aggressive/i }));
   fireEvent.click(view.getByRole('button', { name: 'Tactical play' }));
@@ -507,6 +509,7 @@ test('chess AI setup exposes time, real difficulty, personas, and training focus
     coach: true,
     focus: 'tactics',
     minutes: null,
+    guidance: 'full',
   });
 });
 

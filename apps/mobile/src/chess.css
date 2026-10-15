@@ -1070,3 +1070,125 @@
 @media (prefers-reduced-motion: reduce) {
   .chess-piece, .chess-promotion, .chess-plan-overlay line { transition: none !important; }
 }
+
+
+.chess-guidance-level-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.chess-guidance-level-grid button {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #ffffff18;
+  border-radius: 12px;
+  background: #ffffff06;
+  color: var(--text);
+  text-align: start;
+}
+.chess-guidance-level-grid button.selected,
+.chess-guidance-level-grid button[aria-pressed='true'] {
+  border-color: #43e7b077;
+  background: #43e7b011;
+}
+.chess-guidance-level-grid small {
+  color: var(--muted);
+  line-height: 1.35;
+}
+.chess-beginner-guidance {
+  display: grid;
+  gap: 10px;
+  border-color: #43e7b033;
+}
+.chess-guidance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.chess-guidance-header > div {
+  display: grid;
+  gap: 3px;
+}
+.chess-guidance-level-badge {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border-radius: 999px;
+  border: 1px solid #43e7b044;
+  background: #43e7b010;
+  color: #a6efd4;
+  font-size: .7rem;
+}
+.chess-guidance-loading,
+.chess-guidance-test-note {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+}
+.chess-guidance-test-note p,
+.chess-guidance-cue p,
+.chess-guidance-instruction p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.chess-guidance-cue,
+.chess-guidance-instruction {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 11px;
+  background: #ffffff06;
+}
+.chess-guidance-instruction > strong {
+  font-size: .96rem;
+}
+.chess-cell.chess-guidance-piece::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  z-index: 4;
+  border: 2px solid #43e7b0;
+  border-radius: 9px;
+  box-shadow: 0 0 0 2px #0d151288;
+  pointer-events: none;
+}
+.chess-cell.chess-guidance-target::before {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  z-index: 3;
+  border: 1px dashed #43e7b088;
+  border-radius: 8px;
+  pointer-events: none;
+}
+.chess-guidance-dot,
+.chess-guidance-capture {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+}
+.chess-guidance-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #43e7b0;
+  box-shadow: 0 0 0 3px #0d151288;
+}
+.chess-guidance-capture {
+  inset: 10%;
+  border: 3px solid #43e7b0;
+  border-radius: 50%;
+}
+.chess-beginner-guidance + .chess-assistant-shell {
+  margin-top: 0;
+}
+
+@media (max-width: 620px) {
+  .chess-guidance-level-grid {
+    grid-template-columns: 1fr;
+  }
+}

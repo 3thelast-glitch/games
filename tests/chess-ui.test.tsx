@@ -95,6 +95,56 @@ test('Chess UI renders a non-interactive strategic plan arrow over the board', (
   assert.ok(overlay?.querySelector('marker'));
 });
 
+test('Chess beginner guidance highlights the recommended piece, legal targets, captures and arrow', () => {
+  const guidance = {
+    positionPly: 0,
+    move: { from: 52, to: 36 },
+    piece: 'pawn' as const,
+    legalDestinations: [44, 36],
+    captureDestinations: [],
+    reason: 'center' as const,
+  };
+  const view = render(
+    <ChessBoard
+      state={createChess()}
+      disabled={false}
+      onMove={() => {}}
+      t={t}
+      mode="ai"
+      guidance={guidance}
+      guidanceReveal="move"
+    />,
+  );
+
+  assert.ok(view.container.querySelector('.chess-cell.chess-guidance-piece'));
+  assert.equal(view.container.querySelectorAll('.chess-cell.chess-guidance-target').length, 2);
+  assert.equal(view.container.querySelectorAll('.chess-guidance-dot').length, 2);
+  assert.ok(view.container.querySelector('.chess-plan-overlay'));
+});
+
+test('Chess light guidance can reveal only the recommended piece without destinations', () => {
+  const view = render(
+    <ChessBoard
+      state={createChess()}
+      disabled={false}
+      onMove={() => {}}
+      t={t}
+      guidance={{
+        positionPly: 0,
+        move: { from: 62, to: 45 },
+        piece: 'knight',
+        legalDestinations: [45, 47],
+        captureDestinations: [],
+        reason: 'development',
+      }}
+      guidanceReveal="piece"
+    />,
+  );
+  assert.equal(view.container.querySelectorAll('.chess-guidance-piece').length, 1);
+  assert.equal(view.container.querySelectorAll('.chess-guidance-target').length, 0);
+  assert.equal(view.container.querySelector('.chess-plan-overlay'), null);
+});
+
 test('Chess UI locks every square when the match layer disables input', () => {
   const view = render(
     <ChessBoard state={createChess()} disabled={true} onMove={() => assert.fail('move emitted')} t={t} />,
