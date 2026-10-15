@@ -10,6 +10,11 @@ const configured = (import.meta.env?.VITE_SERVER_URL ?? '').replace(/\/$/, '');
 if (configured && !/^https?:\/\//.test(configured))
   throw new Error('VITE_SERVER_URL must be an HTTP(S) origin');
 export const serverURL = configured || location.origin;
+/** Native builds without a configured public endpoint must not pretend localhost hosts Online. */
+export const onlineServerConfigured = !location.protocol.startsWith('capacitor') &&
+  !location.protocol.startsWith('file') && !location.href.startsWith('https://localhost')
+  ? true
+  : !!configured;
 export async function api<T>(
   path: string,
   token: string | null = null,
