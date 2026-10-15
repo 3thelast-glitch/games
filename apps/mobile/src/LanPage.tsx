@@ -8,7 +8,6 @@ import { lan, type LanView } from './lan.ts';
 import { manualLanTarget } from './lan-native.ts';
 import { useI18n } from './i18n.tsx';
 import { formatTime } from './components.tsx';
-import './lan.css';
 
 type Props = {
   playerName: string;
