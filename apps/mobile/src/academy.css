@@ -1,0 +1,21 @@
+.academy-panel { min-inline-size: 0; display: grid; gap: 0.75rem; }
+.academy-header { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.academy-header h2 { margin: 0.1rem 0 0; font-size: 1.1rem; }
+.academy-progress { min-width: 3.1rem; text-align: center; border: 1px solid rgba(54,211,180,.35); color: #73ecd4; border-radius: 999px; padding: 0.4rem 0.55rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.academy-toggle { width: 100%; min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; border: 1px solid rgba(153,191,208,.3); border-radius: 12px; padding: 0.65rem 0.9rem; color: inherit; background: rgba(101,137,161,.09); cursor: pointer; font-weight: 700; }
+.academy-toggle:focus-visible { outline: 3px solid #62d8d1; outline-offset: 2px; }
+.academy-toggle > span { font-size: 1.2rem; }
+.academy-lessons { display: grid; gap: 0.85rem; min-width: 0; }
+.academy-lessons ol { margin: 0; padding-inline-start: 0; display: grid; gap: 0.55rem; list-style: none; }
+.academy-lessons li { padding: 0.75rem; border: 1px solid rgba(153,191,208,.17); border-radius: 12px; min-width: 0; background: rgba(50,84,105,.1); }
+.academy-lessons li.current { border-color: rgba(68,215,193,.65); background: rgba(16,146,126,.12); }
+.academy-step-head { display: flex; align-items: center; justify-content: space-between; gap: 0.7rem; }
+.academy-step-head strong { font-size: 0.9rem; }
+.academy-step-head span { display: grid; place-items: center; flex: 0 0 1.5rem; height: 1.5rem; border-radius: 50%; background: rgba(68,215,193,.12); font-weight: 700; }
+.academy-lessons li p, .academy-review p, .academy-final-review p { line-height: 1.65; margin: 0.45rem 0 0; overflow-wrap: anywhere; }
+.academy-lessons > small { opacity: .75; line-height: 1.45; }
+.academy-review, .academy-final-review { padding: 0.8rem; border-radius: 12px; background: rgba(68,215,193,.07); border: 1px solid rgba(68,215,193,.23); }
+.academy-final-review { margin-block: 0.8rem; }
+@media (prefers-reduced-motion: reduce) {
+  .academy-panel * { scroll-behavior: auto; }
+}

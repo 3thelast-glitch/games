@@ -33,6 +33,8 @@ import type {
   ChessTrainingFocus,
 } from '../../../packages/games/chess/training.ts';
 import { useI18n } from './i18n.tsx';
+import { AcademyPanel } from './AcademyPanel.tsx';
+import { academyLessons } from './academy.ts';
 export interface MatchPageProps {
   id: string;
   state: BaseState;
@@ -385,6 +387,14 @@ export function MatchPage(p: MatchPageProps) {
           {panel(bottomSeat)}
         </div>
         <aside className="match-side">
+          {p.mode !== 'online' && academyLessons[p.state.gameId] && (
+            <AcademyPanel
+              key={p.state.gameId}
+              gameId={p.state.gameId}
+              ply={p.state.ply}
+              finished={!!p.result}
+            />
+          )}
           <section className="panel match-controls">
             <h2>{t('arena')}</h2>
             <div className="match-action-grid">
@@ -957,6 +967,12 @@ export function MatchPage(p: MatchPageProps) {
                 </strong>
               </div>
             </div>
+            {p.mode !== 'online' && academyLessons[p.state.gameId] && (
+              <div className="academy-final-review">
+                <strong>{t('academyReflect')}</strong>
+                <p>{academyLessons[p.state.gameId][lang].review}</p>
+              </div>
+            )}
             {p.state.gameId === 'chess' && chessReviewSummary && (
               <section className="chess-final-review">
                 <div className="chess-final-review-head">
