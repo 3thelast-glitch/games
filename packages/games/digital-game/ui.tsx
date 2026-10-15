@@ -32,9 +32,8 @@ export function DigitalGameBoard({ state, disabled, onMove, t, mode }: DigitalGa
   const [selected, setSelected] = useState<string[]>([]);
 
   useEffect(() => {
-    const seat = state.viewerSeat ?? state.turn;
     setWorkingTable(cloneTable(state.table));
-    setWorkingRack([...(state.racks[seat] ?? [])]);
+    setWorkingRack([...(state.racks[visibleSeat] ?? [])]);
     setSelected([]);
   }, [state.ply, state.turn, visibleSeat]);
 
