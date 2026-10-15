@@ -85,6 +85,20 @@ export function appendAcceptedChessMove(
   return { ...journal, entries: [...journal.entries, entry] };
 }
 
+/** Keep the replay journal aligned with the authoritative offline state after Undo. */
+export function rewindChessMoveJournal(
+  journal: ChessMoveJournal,
+  current: ChessState,
+): ChessMoveJournal {
+  const entries = journal.entries.filter((entry) => entry.ply <= current.ply);
+  const lastFen = entries.at(-1)?.afterFen ?? journal.initialFen;
+  if (chessPosition(chessFromFen(lastFen)) !== chessPosition(current)) {
+    // Legacy resumed games might not have a full history. Never invent earlier moves.
+    return { ...createChessMoveJournal(journal.matchId, current), incomplete: true };
+  }
+  return { ...journal, entries };
+}
+
 export function reconstructChessJournal(
   journal: ChessMoveJournal,
   ply = journal.entries.length,
