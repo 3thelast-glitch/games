@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ReversiBoard } from '../../../packages/games/reversi/ui.tsx';
 import type { ReversiState } from '../../../packages/games/reversi/state.ts';
+import type { Seat } from '../../../packages/core/src/game.ts';
 import { remainingTimeMs } from '../../../packages/core/src/timing.ts';
 import type { TurnTimerSeconds } from '../../../packages/core/src/timing.ts';
 import { lan, type LanView } from './lan.ts';
@@ -82,7 +83,7 @@ export function LanPage({ playerName, turnSeconds, onExit }: Props) {
   const playable = snapshot?.status === 'playing' && !!snapshot.state && me === snapshot.state.turn &&
     opponent?.connected && view.status !== 'reconnecting' && view.status !== 'error' && !pending;
   const winner = snapshot?.result?.winner;
-  const seconds = (seat: number) => snapshot && snapshot.turnStartedAt !== null && snapshot.state
+  const seconds = (seat: Seat) => snapshot && snapshot.turnStartedAt !== null && snapshot.state
     ? remainingTimeMs(snapshot.timeControl, snapshot.clockMs, snapshot.state.turn, seat, snapshot.turnStartedAt, now)
     : 0;
 
