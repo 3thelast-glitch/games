@@ -7,6 +7,8 @@ import type { ChessAiStyle } from '../../../packages/games/chess/training.ts';
 import { chooseDominoMove } from '../../../packages/games/dominoes/ai.ts';
 import type { DominoesState } from '../../../packages/games/dominoes/state.ts';
 import { chooseNavalMove } from '../../../packages/games/naval-battle/ai.ts';
+import { chooseConnectFourExpertMove } from '../../../packages/games/connect-four/expert.ts';
+import type { ConnectFourState } from '../../../packages/games/connect-four/state.ts';
 import type { NavalBattleState } from '../../../packages/games/naval-battle/state.ts';
 
 self.onmessage = (
@@ -33,6 +35,8 @@ self.onmessage = (
               ...chessLevel,
               style: chessStyle ?? 'balanced',
             })
+          : state.gameId === 'connectFour'
+            ? chooseConnectFourExpertMove(state as ConnectFourState, difficulty)
           : state.gameId === 'dominoes'
             ? chooseDominoMove(state as DominoesState, difficulty)
             : state.gameId === 'navalBattle'
