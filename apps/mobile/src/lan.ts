@@ -74,7 +74,7 @@ export class ReversiLanController {
   subscribe(listener: Listener) {
     this.listeners.add(listener);
     listener(this.view);
-    return () => this.listeners.delete(listener);
+    return () => { this.listeners.delete(listener); };
   }
 
   async createHost(options: { name: string; roomName?: string; turnSeconds: TurnTimerSeconds | null }) {
