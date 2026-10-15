@@ -56,7 +56,7 @@ import {
   type ChessArchiveRecord,
 } from './chessArchive.ts';
 import { I18n, useI18n } from './i18n.tsx';
-import { api, connection, serverURL } from './network.ts';
+import { api, connection, onlineServerConfigured, serverURL } from './network.ts';
 import {
   defaults,
   feedback,
@@ -750,6 +750,7 @@ function ArenaApp({
         );
         return;
       }
+      if (!onlineServerConfigured) throw new Error('online-server-not-configured');
       setBusy(true);
       await ensureToken();
       await connection.waitReady();
