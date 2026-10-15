@@ -725,3 +725,39 @@ for (const id of ['checkers', 'gomoku', 'nineMensMorris', 'connectFour', 'revers
     assert.ok(view.getByText('The same position occurred three times.'));
   });
 }
+
+test('offline AI and local matches offer optional academy, never ranked or casual online', () => {
+  const view = render(
+    <I18n lang="en"><MatchPage {...matchProps('ai')} /></I18n>,
+  );
+  const panel = view.container.querySelector('[data-testid="academy-panel"]');
+  assert.ok(panel);
+  assert.ok(view.getByRole('button', { name: /Explore strategy/ }));
+  fireEvent.click(view.getByRole('button', { name: /Explore strategy/ }));
+  assert.ok(view.getByText(/Plan a direct route to the opposite side/));
+  assert.equal(view.getByRole('button', { name: /Hide strategy/ }).getAttribute('aria-expanded'), 'true');
+  view.rerender(<I18n lang="en"><MatchPage {...matchProps('online')} /></I18n>);
+  assert.equal(view.container.querySelector('[data-testid="academy-panel"]'), null);
+  view.rerender(<I18n lang="en"><MatchPage {...matchProps('local')} /></I18n>);
+  assert.ok(view.container.querySelector('[data-testid="academy-panel"]'));
+});
+
+test('academy offers Arabic strategy and saves reached practice milestones on this device', () => {
+  const state = createQuoridor();
+  window.localStorage.removeItem('naqla:academy:v1:quoridor');
+  const props = { ...matchProps('ai'), state };
+  const view = render(<I18n lang="ar"><MatchPage {...props} /></I18n>);
+  fireEvent.click(view.getByRole('button', { name: /استكشف الاستراتيجية/ }));
+  assert.ok(view.getByText(/خطط لأقصر طريق إلى الجهة المقابلة/));
+  assert.match(view.container.querySelector('.academy-progress')?.textContent ?? '', /0\/3/);
+  view.rerender(
+    <I18n lang="ar">
+      <MatchPage {...props} state={{ ...state, ply: 5 }} />
+    </I18n>,
+  );
+  assert.match(view.container.querySelector('.academy-progress')?.textContent ?? '', /2\/3/);
+  assert.equal(window.localStorage.getItem('naqla:academy:v1:quoridor'), '2');
+  view.rerender(<I18n lang="ar"><MatchPage {...props} state={state} /></I18n>);
+  assert.match(view.container.querySelector('.academy-progress')?.textContent ?? '', /2\/3/);
+  window.localStorage.removeItem('naqla:academy:v1:quoridor');
+});
