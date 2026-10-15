@@ -69,10 +69,13 @@ async function withStore<T>(
   try {
     return await new Promise<T>((resolve, reject) => {
       const transaction = db.transaction(STORE, mode);
-      const request = run(transaction.objectStore(STORE));
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error ?? new Error('archive-request-failed'));
+      let result: T;
+      transaction.oncomplete = () => resolve(result);
       transaction.onerror = () => reject(transaction.error ?? new Error('archive-transaction-failed'));
+      transaction.onabort = () => reject(transaction.error ?? new Error('archive-transaction-aborted'));
+      const request = run(transaction.objectStore(STORE));
+      request.onsuccess = () => { result = request.result; };
+      request.onerror = () => reject(request.error ?? new Error('archive-request-failed'));
     });
   } finally {
     db.close();
