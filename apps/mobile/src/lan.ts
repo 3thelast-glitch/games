@@ -211,12 +211,15 @@ export class ReversiLanController {
   private async joinTarget(target: { host: string; port: number; roomId: string; roomName: string }, name: string) {
     if (!this.available) throw new Error('lan-native-only');
     await this.ensureNativeListeners();
-    await requireLanNative().stopDiscovery().catch(() => {});
+    // On iOS the discovered host is a Bonjour service token, not an IP address.
+    // Resolve/connect while its discovery mapping is still available.
     this.guestTarget = target;
     this.patch({ role: 'guest', status: 'connecting', endpoint: formatEndpoint(target.host, target.port), error: null });
     try {
-      const { connectionId } = await requireLanNative().connect({ host: target.host, port: target.port });
+      const native = requireLanNative();
+      const { connectionId } = await native.connect({ host: target.host, port: target.port });
       this.guestConnectionId = connectionId;
+      await native.stopDiscovery().catch(() => {});
       await this.sendRaw(connectionId, {
         type: 'hello',
         protocolVersion: LAN_PROTOCOL_VERSION,
