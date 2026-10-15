@@ -1,0 +1,13 @@
+.practice-profile { display: grid; gap: 1rem; min-width: 0; margin-block: 1.2rem; }
+.practice-profile .section-heading { margin: 0; }
+.practice-profile .section-heading h2 { margin: 0 0 .35rem; }
+.practice-profile .stats-grid { min-width: 0; }
+.practice-game-list { display: grid; gap: .65rem; min-width: 0; }
+.practice-game-list h3 { margin: .5rem 0; font-size: 1rem; }
+.practice-game-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .25rem 1rem; padding: .75rem; border: 1px solid rgba(144,192,204,.17); border-radius: 12px; }
+.practice-game-row strong { min-width: 0; overflow-wrap: anywhere; }
+.practice-game-row small { grid-column: 1 / -1; opacity: .8; }
+@media (max-width: 420px) {
+  .practice-profile .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .practice-game-row { grid-template-columns: minmax(0, 1fr); }
+}
