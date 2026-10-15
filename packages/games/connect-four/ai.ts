@@ -1,9 +1,10 @@
-import { chooseMove, type AIOptions } from '../../core/src/ai.ts';
-import { asPlugin, type Difficulty } from '../../core/src/game.ts';
-import { connectFourEngine } from './rules.ts';
-import type { ConnectFourState, ConnectFourMove } from './state.ts';
+import { type AIOptions } from '../../core/src/ai.ts';
+import type { Difficulty } from '../../core/src/game.ts';
+import type { ConnectFourState } from './state.ts';
+import { chooseConnectFourExpertMove } from './expert.ts';
+
 export const connectFourAI = (
   state: ConnectFourState,
   difficulty: Difficulty,
   options?: AIOptions,
-) => chooseMove(asPlugin(connectFourEngine), state, difficulty, options) as ConnectFourMove | null;
+) => chooseConnectFourExpertMove(state, difficulty, options);
