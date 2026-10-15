@@ -608,6 +608,7 @@
 }
 
 .naval-legend i {
+  position: relative;
   width: 9px;
   aspect-ratio: 1;
   display: inline-block;

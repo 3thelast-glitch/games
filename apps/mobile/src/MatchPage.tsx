@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import type { BaseState, Difficulty, Seat } from '../../../packages/core/src/game.ts';
 import type { MatchResult, PublicPlayer } from '../../../packages/core/src/protocol.ts';
 import {
@@ -145,6 +145,11 @@ export function MatchPage(p: MatchPageProps) {
     [chessAssistantTab, setChessAssistantTab] = useState<
       'coach' | 'analysis' | 'opening' | 'repertoire'
     >(p.mode === 'ai' ? 'coach' : 'analysis');
+  useLayoutEffect(() => {
+    // New matches start at the top instead of inheriting the scrolled library position.
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [p.id]);
   useEffect(() => {
     setResultOpen(true);
     setConfirmation(null);
