@@ -931,6 +931,10 @@ function ArenaApp({
     rating: 1000,
     rank: 'Silver',
   }));
+  const navigate = (destination: Page) => {
+    if (page === 'lan' && destination !== 'lan') void lan.leave().catch(notify);
+    setPage(destination);
+  };
   const navigation: { id: Page; icon: string; label: string }[] = [
     { id: 'library', icon: 'library', label: 'library' },
     { id: 'arena', icon: 'trophy', label: 'arena' },
@@ -943,7 +947,7 @@ function ArenaApp({
     <NoticeContext.Provider value={notice}>
       <div className={`app-shell ${page === 'match' || page === 'lan' ? 'in-match' : ''}`}>
         <aside className="sidebar">
-          <button className="brand-button" onClick={() => setPage('library')}>
+          <button className="brand-button" onClick={() => navigate('library')}>
             <Logo />
           </button>
           <span className="nav-label">{t('navMotto')}</span>
@@ -952,7 +956,7 @@ function ArenaApp({
               <button
                 key={item.id}
                 className={page === item.id ? 'active' : ''}
-                onClick={() => setPage(item.id)}
+                onClick={() => navigate(item.id)}
               >
                 <Icon name={item.icon} />
                 <span>{t(item.label)}</span>
@@ -966,7 +970,7 @@ function ArenaApp({
               <strong>{t('playYourWay')}</strong>
               <p>{t('noAccount')}</p>
             </div>
-            <button className="sidebar-account" onClick={() => setPage('profile')}>
+            <button className="sidebar-account" onClick={() => navigate('profile')}>
               <Avatar name={profile?.name} avatar={profile?.avatar} />
               <span>
                 <strong>{profile?.name ?? t('guest')}</strong>
@@ -980,7 +984,7 @@ function ArenaApp({
         </aside>
         <div className="main-shell">
           <header className="topbar">
-            <button className="mobile-brand brand-button" onClick={() => setPage('library')}>
+            <button className="mobile-brand brand-button" onClick={() => navigate('library')}>
               <Logo />
             </button>
             <span className="topbar-title">
@@ -1229,7 +1233,7 @@ function ArenaApp({
             <button
               key={item.id}
               className={page === item.id ? 'active' : ''}
-              onClick={() => setPage(item.id)}
+              onClick={() => navigate(item.id)}
             >
               <Icon name={item.icon} />
               <span>{t(item.label)}</span>
