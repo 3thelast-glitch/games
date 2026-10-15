@@ -25,6 +25,7 @@ import {
 import {
   appendAcceptedChessMove,
   createChessMoveJournal,
+  rewindChessMoveJournal,
   type ChessMoveJournal,
 } from '../../../packages/games/chess/journal.ts';
 import type { ChessMove, ChessState } from '../../../packages/games/chess/state.ts';
@@ -158,6 +159,7 @@ function ArenaApp({
     >([]),
     rankedChessReviewFlushed = useRef(new Set<string>()),
     chessReviewsRef = useRef<ChessMoveReview[]>([]),
+    archiveWriteQueue = useRef<Promise<void>>(Promise.resolve()),
     serverOffset = useRef(0);
   settingsRef.current = settings;
   chessReviewsRef.current = chessReviews;
@@ -356,8 +358,13 @@ function ArenaApp({
     if (!session) return;
     render((n) => n + 1);
     saveOffline(session);
-    if (session.controller.current.state.gameId === 'chess')
-      void persistChessArchive(session).catch(() => notify('chessArchiveSaveFailed'));
+    if (session.controller.current.state.gameId === 'chess') {
+      // Serialize writes so a slower earlier IndexedDB operation cannot overwrite a newer ply.
+      archiveWriteQueue.current = archiveWriteQueue.current
+        .catch(() => {})
+        .then(() => persistChessArchive(session));
+      void archiveWriteQueue.current.catch(() => notify('chessArchiveSaveFailed'));
+    }
     const { result, endedAt, createdAt, state } = session.controller.current;
     if (result && !finished.current.has(session.id)) {
       finished.current.add(session.id);
@@ -1112,8 +1119,10 @@ function ArenaApp({
                   try {
                     offline!.controller.undo();
                     if (offline!.controller.current.state.gameId === 'chess') {
-                      const ply = offline!.controller.current.state.ply;
-                      setChessReviews((previous) => previous.filter((review) => review.ply <= ply));
+                      const state = offline!.controller.current.state as ChessState;
+                      if (offline!.chessJournal)
+                        offline!.chessJournal = rewindChessMoveJournal(offline!.chessJournal, state);
+                      setChessReviews((previous) => previous.filter((review) => review.ply <= state.ply));
                     }
                     finished.current.delete(offline!.id);
                     setLocalHistory((previous) => {
