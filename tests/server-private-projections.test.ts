@@ -33,7 +33,9 @@ for (const gameId of ['dominoes', 'digitalGame', 'navalBattle'] as const) {
         for (const id of [...full.hands[1], ...full.boneyard])
           assert.equal(JSON.stringify(alice).includes(JSON.stringify(id)), false);
       } else if (gameId === 'digitalGame') {
-        const full = match.state as DigitalGameState;
+        const full = match.state as DigitalGameState & { serverOnlyFutureSecret?: string };
+        // A future private engine field must never be auto-spread to client projections.
+        full.serverOnlyFutureSecret = 'never-send-this';
         const alice = service.forUser(match, a.id).state as DigitalGameState;
         const bob = service.forUser(match, b.id).state as DigitalGameState;
         assert.equal(alice.viewerSeat, 0);
@@ -42,6 +44,8 @@ for (const gameId of ['dominoes', 'digitalGame', 'navalBattle'] as const) {
         assert.deepEqual(bob.racks[1], full.racks[1]);
         assert.equal(alice.seed, 0);
         assert.equal(bob.seed, 0);
+        assert.equal('serverOnlyFutureSecret' in alice, false);
+        assert.equal('serverOnlyFutureSecret' in bob, false);
         assert.equal(alice.racks[1].length, full.racks[1].length);
         assert.ok(alice.racks[1].every((id) => id.startsWith('hidden-rack-1-')));
         assert.ok(alice.drawPool.every((id) => id.startsWith('hidden-draw-')));
