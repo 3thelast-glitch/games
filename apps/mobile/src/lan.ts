@@ -107,9 +107,9 @@ export class ReversiLanController {
       this.tickTimer = setInterval(() => {
         const authority = this.authority;
         if (!authority) return;
-        const before = authority.snapshot();
+        const before = this.view.snapshot;
         const after = authority.tick();
-        if (before.revision !== after.revision || before.status !== after.status)
+        if (before?.revision !== after.revision || before.status !== after.status)
           void this.broadcastSnapshot();
       }, 500);
     } catch (error) {
