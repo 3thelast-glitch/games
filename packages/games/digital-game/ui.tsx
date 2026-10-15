@@ -11,6 +11,7 @@ export interface DigitalGameBoardProps {
   disabled: boolean;
   onMove: (move: ClassicDigitalGameMove) => void;
   t: (key: string) => string;
+  mode?: 'local' | 'ai' | 'online';
 }
 
 const cloneTable = (table: DigitalMeld[]) =>
@@ -20,8 +21,10 @@ function tableFingerprint(table: DigitalMeld[]) {
   return JSON.stringify(table.map((meld) => ({ id: meld.id, tiles: meld.tiles })));
 }
 
-export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoardProps) {
-  const visibleSeat = state.viewerSeat ?? state.turn;
+export function DigitalGameBoard({ state, disabled, onMove, t, mode }: DigitalGameBoardProps) {
+  // AI matches always show the human's rack, including while the bot thinks.
+  // Online projections keep their authoritative viewer seat; local pass-and-play follows the turn.
+  const visibleSeat = state.viewerSeat ?? (mode === 'ai' ? 0 : state.turn);
   const currentRackVisible = (state.racks[visibleSeat] ?? []).every((id) => !!state.tiles[id]);
   const canEdit = !disabled && visibleSeat === state.turn;
   const [workingTable, setWorkingTable] = useState<DigitalMeld[]>(() => cloneTable(state.table));
@@ -29,9 +32,8 @@ export function DigitalGameBoard({ state, disabled, onMove, t }: DigitalGameBoar
   const [selected, setSelected] = useState<string[]>([]);
 
   useEffect(() => {
-    const seat = state.viewerSeat ?? state.turn;
     setWorkingTable(cloneTable(state.table));
-    setWorkingRack([...(state.racks[seat] ?? [])]);
+    setWorkingRack([...(state.racks[visibleSeat] ?? [])]);
     setSelected([]);
   }, [state.ply, state.turn, visibleSeat]);
 
