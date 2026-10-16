@@ -100,6 +100,26 @@ export class AuthService {
     if (!valid || !user) throw new RuleError('invalid-credentials');
     return user;
   }
+  /**
+   * A password change requires the current secret, uses a compare-and-swap
+   * update to reject concurrent changes, and invalidates every device.
+   */
+  async changePassword(userId: string, currentPassword: string, nextPassword: string): Promise<void> {
+    const user = this.store.user(userId);
+    if (user.provider !== 'email' || !user.password)
+      throw new RuleError('password-not-supported');
+    if (!(await checkPassword(currentPassword, user.password)))
+      throw new RuleError('invalid-credentials');
+    if (await checkPassword(nextPassword, user.password))
+      throw new RuleError('password-unchanged');
+    const nextHash = await hashPassword(nextPassword);
+    const result = this.store.db
+      .prepare('UPDATE users SET password=? WHERE id=? AND password=?')
+      .run(nextHash, userId, user.password);
+    if (result.changes !== 1) throw new RuleError('credentials-changed');
+    this.store.logoutAll(userId);
+  }
+
   start(provider: 'google' | 'apple', challenge: string, native: boolean): string {
     const config = this.provider(provider),
       state = randomBytes(32).toString('base64url'),
