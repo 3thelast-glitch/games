@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { isIP } from 'node:net';
 
-function required(name) {
-  const value = process.env[name]?.trim();
+function required(name, env) {
+  const value = env[name]?.trim();
   if (!value) throw new Error(`Missing release setting: ${name}`);
   return value;
 }
@@ -34,32 +35,26 @@ function identity(config) {
 
 /** Runs before any expensive native release build. Does NOT test server availability. */
 export function checkAndroidRelease(env = process.env) {
-  const currentEnv = process.env;
-  try {
-    process.env = env;
-    const origin = releaseOrigin(required('VITE_SERVER_URL'));
-    const confirmedId = required('NAQLA_RELEASE_APP_ID');
-    const actualId = identity(readFileSync('capacitor.config.ts', 'utf8'));
-    if (confirmedId !== actualId)
-      throw new Error('NAQLA_RELEASE_APP_ID differs from capacitor.config.ts; review Android/iOS OAuth identities before release');
-    if (!/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){1,}$/.test(actualId))
-      throw new Error('Invalid Android application ID in capacitor.config.ts');
-    const versionCode = required('NAQLA_ANDROID_VERSION_CODE');
-    if (!/^[1-9][0-9]*$/.test(versionCode) || Number(versionCode) > 2100000000)
-      throw new Error('NAQLA_ANDROID_VERSION_CODE must be a positive Play-compatible integer');
-    const packageVersion = JSON.parse(readFileSync('package.json', 'utf8')).version;
-    if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(packageVersion))
-      throw new Error('package.json version must be a valid numeric SemVer for an Android release');
-    const keystore = required('NAQLA_RELEASE_KEYSTORE_PATH');
-    if (!existsSync(keystore)) throw new Error('Signing keystore file does not exist');
-    for (const key of ['NAQLA_RELEASE_KEY_ALIAS','NAQLA_RELEASE_STORE_PASSWORD','NAQLA_RELEASE_KEY_PASSWORD'])
-      required(key);
-    if (required('NAQLA_RELEASE_TRACK') !== 'internal')
-      throw new Error('Only the internal test track is supported; no public release can be created by this workflow');
-    return { origin, appId: actualId, versionCode: Number(versionCode), versionName: packageVersion };
-  } finally {
-    process.env = currentEnv;
-  }
+  const origin = releaseOrigin(required('VITE_SERVER_URL', env));
+  const confirmedId = required('NAQLA_RELEASE_APP_ID', env);
+  const actualId = identity(readFileSync('capacitor.config.ts', 'utf8'));
+  if (confirmedId !== actualId)
+    throw new Error('NAQLA_RELEASE_APP_ID differs from capacitor.config.ts; review Android/iOS OAuth identities before release');
+  if (!/^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*){1,}$/.test(actualId))
+    throw new Error('Invalid Android application ID in capacitor.config.ts');
+  const versionCode = required('NAQLA_ANDROID_VERSION_CODE', env);
+  if (!/^[1-9][0-9]*$/.test(versionCode) || Number(versionCode) > 2100000000)
+    throw new Error('NAQLA_ANDROID_VERSION_CODE must be a positive Play-compatible integer');
+  const packageVersion = JSON.parse(readFileSync('package.json', 'utf8')).version;
+  if (!/^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$/.test(packageVersion))
+    throw new Error('package.json version must be a valid numeric SemVer for an Android release');
+  const keystore = required('NAQLA_RELEASE_KEYSTORE_PATH', env);
+  if (!existsSync(keystore)) throw new Error('Signing keystore file does not exist');
+  for (const key of ['NAQLA_RELEASE_KEY_ALIAS','NAQLA_RELEASE_STORE_PASSWORD','NAQLA_RELEASE_KEY_PASSWORD'])
+    required(key, env);
+  if (required('NAQLA_RELEASE_TRACK', env) !== 'internal')
+    throw new Error('Only the internal test track is supported; no public release can be created by this workflow');
+  return { origin, appId: actualId, versionCode: Number(versionCode), versionName: packageVersion };
 }
 
 if (process.argv[1]?.endsWith('/release-gate.mjs') || process.argv[1] === 'scripts/release-gate.mjs') {
