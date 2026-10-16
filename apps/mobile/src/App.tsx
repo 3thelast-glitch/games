@@ -181,12 +181,14 @@ function ArenaApp({
   }, []);
   useEffect(() => {
     const url = new URL(window.location.href);
-    const reset = url.searchParams.get('resetPassword');
-    const verify = url.searchParams.get('verifyEmail');
+    const fragment = new URLSearchParams(url.hash.slice(1));
+    const reset = fragment.get('resetPassword');
+    const verify = fragment.get('verifyEmail');
     if (!reset && !verify) return;
-    url.searchParams.delete('resetPassword');
-    url.searchParams.delete('verifyEmail');
-    // Remove single-use secrets from the address bar and browser history immediately.
+    fragment.delete('resetPassword');
+    fragment.delete('verifyEmail');
+    // Remove single-use secrets from browser history before network activity.
+    url.hash = fragment.toString();
     window.history.replaceState(null, '', url.pathname + url.search + url.hash);
     if (verify) {
       void api('/api/auth/email/verification/complete', null, { token: verify })
