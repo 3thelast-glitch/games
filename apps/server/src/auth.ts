@@ -3,6 +3,7 @@ import { promisify } from 'node:util';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { RuleError } from '../../../packages/core/src/game.ts';
 import { Store, digest, type User } from './store.ts';
+import { emailReady, emailActionURL, sendAccountEmail, type EmailSender } from './email.ts';
 const scrypt = promisify(scryptCallback);
 export const pkce = (value: string) => createHash('sha256').update(value).digest('base64url');
 export async function hashPassword(password: string): Promise<string> {
@@ -36,7 +37,91 @@ export class AuthService {
   constructor(
     readonly store: Store,
     readonly env: NodeJS.ProcessEnv = process.env,
+    private readonly sendEmail: EmailSender = (to, subject, body) => sendAccountEmail(env, to, subject, body),
   ) {}
+  get canSendAccountEmail() {
+    return emailReady(this.env);
+  }
+
+  private async sendToken(user: User, purpose: 'password-reset' | 'email-verify'): Promise<void> {
+    if (!this.canSendAccountEmail) throw new RuleError('email-not-configured');
+    if (!user.email) return;
+    const token = randomBytes(32).toString('base64url');
+    const hash = digest(token);
+    const expires = Date.now() + (purpose === 'password-reset' ? 15 : 60) * 60000;
+    this.store.transaction(() => {
+      this.store.db.prepare('DELETE FROM account_tokens WHERE user_id=? AND purpose=?')
+        .run(user.id, purpose);
+      this.store.db.prepare('INSERT INTO account_tokens(hash,user_id,purpose,expires_at) VALUES(?,?,?,?)')
+        .run(hash, user.id, purpose, expires);
+    });
+    const link = emailActionURL(this.env, purpose === 'password-reset' ? 'resetPassword' : 'verifyEmail', token);
+    const subject = purpose === 'password-reset' ? 'NAQLA password reset' : 'Verify your NAQLA email';
+    const message = purpose === 'password-reset'
+      ? `Use this link to reset your NAQLA password (valid for 15 minutes):\n${link}\nIf you did not request this, ignore this message.`
+      : `Confirm your NAQLA email address within 60 minutes:\n${link}\nIf you did not request this, ignore this message.`;
+    try {
+      await this.sendEmail(user.email, subject, message);
+    } catch {
+      this.store.db.prepare('DELETE FROM account_tokens WHERE hash=?').run(hash);
+      // A generic delivery error prevents exposing provider response or recipient details.
+      throw new RuleError('email-delivery-failed');
+    }
+  }
+
+  /** Always returns the same response for existing and unknown addresses. */
+  async requestPasswordReset(email: string): Promise<void> {
+    if (!this.canSendAccountEmail) throw new RuleError('email-not-configured');
+    const user = this.store.identity('email', email);
+    if (!user?.password || !user.email) return;
+    try {
+      await this.sendToken(user, 'password-reset');
+    } catch {
+      // Do not expose account existence through a mail provider outage.
+      console.error('Account email delivery failed');
+    }
+  }
+
+  /** Returns user ID for the caller to close all open sockets. */
+  async resetPassword(token: string, nextPassword: string): Promise<string> {
+    if (!/^[A-Za-z0-9_-]{43}$/.test(token)) throw new RuleError('invalid-account-token');
+    // Compute outside SQLite's write transaction to avoid locking during scrypt.
+    const nextHash = await hashPassword(nextPassword);
+    return this.store.transaction(() => {
+      const record = this.store.db.prepare(
+        "SELECT user_id FROM account_tokens WHERE hash=? AND purpose='password-reset' AND expires_at>?"
+      ).get(digest(token), Date.now()) as { user_id: string } | undefined;
+      if (!record) throw new RuleError('invalid-account-token');
+      const user = this.store.user(record.user_id);
+      if (user.provider !== 'email' || !user.password) throw new RuleError('invalid-account-token');
+      this.store.db.prepare('UPDATE users SET password=? WHERE id=?').run(nextHash, user.id);
+      this.store.db.prepare('DELETE FROM account_tokens WHERE user_id=?').run(user.id);
+      this.store.logoutAll(user.id);
+      return user.id;
+    });
+  }
+
+  async requestEmailVerification(userId: string): Promise<void> {
+    const user = this.store.user(userId);
+    if (user.provider !== 'email' || !user.email) throw new RuleError('email-verification-not-supported');
+    if (user.email_verified_at !== null) return;
+    await this.sendToken(user, 'email-verify');
+  }
+
+  verifyEmail(token: string): void {
+    if (!/^[A-Za-z0-9_-]{43}$/.test(token)) throw new RuleError('invalid-account-token');
+    this.store.transaction(() => {
+      const row = this.store.db.prepare(
+        "SELECT user_id FROM account_tokens WHERE hash=? AND purpose='email-verify' AND expires_at>?"
+      ).get(digest(token), Date.now()) as { user_id: string } | undefined;
+      if (!row) throw new RuleError('invalid-account-token');
+      this.store.db.prepare('UPDATE users SET email_verified_at=? WHERE id=?')
+        .run(Date.now(), row.user_id);
+      this.store.db.prepare("DELETE FROM account_tokens WHERE user_id=? AND purpose='email-verify'")
+        .run(row.user_id);
+    });
+  }
+
   private provider(name: string): Provider {
     const config =
       name === 'google'
@@ -64,6 +149,7 @@ export class AuthService {
   }
   capabilities() {
     return {
+      emailRecovery: this.canSendAccountEmail,
       google: !!(
         this.env.GOOGLE_CLIENT_ID &&
         this.env.GOOGLE_CLIENT_SECRET &&
