@@ -18,12 +18,12 @@ restart/redeploy. Never use it to store valuable or irreplaceable player data.
   explicit: OAuth-only and guest identities cannot use this endpoint.
 - The readiness endpoint checks SQLite queryability; this is **not** a full
   disk-write or restore readiness test.
-- Both endpoints are server-side only until the web/mobile UI is completed.
-  The user must sign in again after changing password.
+- Both endpoints now have bilingual account settings controls. A successful password
+  change or global sign-out clears the local session and requires fresh sign-in.
 
-**Open account work:** verified email delivery, email confirmation, secure
-single-use password reset, sensitive-action UI in Arabic and English, guest
-conversion review, deletion and match-history retention policy (issue #91).
+**Open account work:** real transactional email provider/domain activation and
+full delivery QA; guest conversion review; account deletion and match-history
+retention policy (issue #91).
 Do not present account self-service as fully completed.
 
 ## Live monitoring (prepared)
