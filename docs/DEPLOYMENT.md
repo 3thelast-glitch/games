@@ -42,7 +42,7 @@ arena.example.com {
 
 The service trusts the socket IP, not arbitrary forwarded headers. Its built-in rate limits therefore share the proxy IP when deployed behind a proxy. For a larger public installation, implement a trusted-proxy boundary and per-client limits before raising traffic. This template does not claim load-tested capacity.
 
-Back up SQLite with its online backup mechanism or stop the server before copying the database. Do not copy only the main database file while WAL writes are active. Retain the database across deployments; deleting it deletes users, sessions, ratings and matches. A schema migration system beyond initial table creation is not included yet.
+Use the versioned SQLite schema migration checks and **encrypted live database backup / verified restore CLI** documented in [Phase 6 database operations](OPERATIONS_PHASE6.md). Do not copy only the main SQLite database file while WAL writes are active. Preserve databases and encryption keys separately across deployments; deleting the volume loses users, sessions, ratings and matches. Automatic backup schedules, remote replication and a production-tested restore procedure are not yet configured.
 
 ## Google sign-in
 

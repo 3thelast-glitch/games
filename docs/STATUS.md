@@ -44,7 +44,7 @@ The repository test runner discovers all `*.test.ts` and `*.test.tsx` files unde
 | Android release | Manual signed internal AAB pipeline is configured (PR #93), but keystore/environment owner setup, real HTTPS backend, Play internal-track upload and physical-device checks remain outstanding; see [Phase 5](RELEASE_PHASE5.md) |
 | iOS release | Build/sign using Xcode on macOS and verify on physical iOS devices |
 | Device QA | Repeat accessibility, performance, touch, Arabic/RTL and native audio/haptics checks on representative real devices |
-| Operations | Configure monitoring, backups/migrations, capacity testing and abuse/collusion controls before public ranked deployment |
+| Operations | Versioned SQLite migrations and an encrypted manual backup + verified restore CLI are prepared (Phase 6), but scheduled/offsite backups, a production restore drill, monitoring, capacity and abuse/collusion testing remain required; see [operations](OPERATIONS_PHASE6.md) |
 
 ## Product choices relevant to the current game set
 
