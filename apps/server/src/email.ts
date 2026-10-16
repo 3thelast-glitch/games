@@ -20,7 +20,8 @@ export function emailReady(env: NodeJS.ProcessEnv): boolean {
 export function emailActionURL(env: NodeJS.ProcessEnv, action: 'verifyEmail' | 'resetPassword', token: string): string {
   if (!emailReady(env)) throw new RuleError('email-not-configured');
   const url = new URL(env.APP_URL!);
-  url.searchParams.set(action, token);
+  // URL fragments are not sent to the server or included in HTTP access logs.
+  url.hash = new URLSearchParams({ [action]: token }).toString();
   return url.toString();
 }
 
