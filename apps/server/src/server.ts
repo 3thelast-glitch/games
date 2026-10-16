@@ -258,7 +258,12 @@ export function createArenaServer(options: ServerOptions = {}) {
         if (!limits.allow(`reset-request:${ip}`, 12, 3600000) ||
             !limits.allow(`reset-email:${data.email}`, 3, 3600000))
           return json(res, 429, { error: 'rate-limited' });
-        await auth.requestPasswordReset(data.email);
+        if (!auth.canSendAccountEmail) throw new RuleError('email-not-configured');
+        // Return a generic response without waiting for the email provider.
+        // Otherwise known addresses would be detectable through request latency.
+        void auth.requestPasswordReset(data.email).catch(() => {
+          console.error('Password reset dispatch failed');
+        });
         return json(res, 200, { ok: true });
       }
       if (url.pathname === '/api/auth/password/reset/complete' && req.method === 'POST') {
