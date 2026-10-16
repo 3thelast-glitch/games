@@ -6,6 +6,7 @@ import { eloChange, periodStart, rankFor } from '../../../packages/core/src/rank
 import { RuleError } from '../../../packages/core/src/game.ts';
 import type { Profile, PublicPlayer, HistoryEntry } from '../../../packages/core/src/protocol.ts';
 import type { StoredMatch } from './matches.ts';
+import { migrateDatabase } from './migrations.ts';
 
 export const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 
@@ -38,23 +39,12 @@ export class Store {
   constructor(path: string = ':memory:') {
     if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
     this.db = new DatabaseSync(path);
-    this.db.exec(`PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;
-      CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,name TEXT NOT NULL,avatar TEXT NOT NULL,guest INTEGER NOT NULL,provider TEXT NOT NULL,subject TEXT NOT NULL,email TEXT,password TEXT,favorites TEXT NOT NULL DEFAULT '[]',friend_code TEXT NOT NULL UNIQUE,created_at INTEGER NOT NULL, UNIQUE(provider,subject));
-      CREATE TABLE IF NOT EXISTS sessions(hash TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),expires_at INTEGER NOT NULL);
-      CREATE TABLE IF NOT EXISTS ratings(user_id TEXT NOT NULL REFERENCES users(id),game_id TEXT NOT NULL,rating INTEGER NOT NULL DEFAULT 1000,played INTEGER NOT NULL DEFAULT 0,PRIMARY KEY(user_id,game_id));
-      CREATE TABLE IF NOT EXISTS matches(id TEXT PRIMARY KEY,body TEXT NOT NULL,finished INTEGER NOT NULL DEFAULT 0);
-      CREATE TABLE IF NOT EXISTS results(match_id TEXT NOT NULL REFERENCES matches(id),user_id TEXT NOT NULL REFERENCES users(id),game_id TEXT NOT NULL,opponent TEXT NOT NULL,result TEXT NOT NULL,reason TEXT NOT NULL,duration_ms INTEGER NOT NULL,delta INTEGER NOT NULL,ranked INTEGER NOT NULL,ended_at INTEGER NOT NULL,opponents_json TEXT NOT NULL DEFAULT '[]',player_count INTEGER NOT NULL DEFAULT 2,PRIMARY KEY(match_id,user_id));
-      CREATE INDEX IF NOT EXISTS results_period ON results(game_id,ended_at);
-      CREATE TABLE IF NOT EXISTS friends(user_id TEXT NOT NULL REFERENCES users(id),friend_id TEXT NOT NULL REFERENCES users(id),PRIMARY KEY(user_id,friend_id));
-      CREATE TABLE IF NOT EXISTS oauth_flows(state TEXT PRIMARY KEY,body TEXT NOT NULL,expires_at INTEGER NOT NULL);
-      CREATE TABLE IF NOT EXISTS auth_codes(hash TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id),challenge TEXT NOT NULL,expires_at INTEGER NOT NULL);`);
-    const resultColumns = new Set(
-      (this.db.prepare('PRAGMA table_info(results)').all() as { name: string }[]).map((column) => column.name),
-    );
-    if (!resultColumns.has('opponents_json'))
-      this.db.exec("ALTER TABLE results ADD COLUMN opponents_json TEXT NOT NULL DEFAULT '[]'");
-    if (!resultColumns.has('player_count'))
-      this.db.exec('ALTER TABLE results ADD COLUMN player_count INTEGER NOT NULL DEFAULT 2');
+    try {
+      migrateDatabase(this.db);
+    } catch (error) {
+      this.db.close();
+      throw error;
+    }
   }
 
   transaction<T>(fn: () => T): T {
