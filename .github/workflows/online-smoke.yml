@@ -1,0 +1,33 @@
+name: Online HTTPS/WSS Smoke
+on:
+  workflow_dispatch:
+    inputs:
+      server_url:
+        description: Real HTTPS staging origin
+        required: true
+        type: string
+      mutating:
+        description: Create four guest accounts and two matches (STAGING ONLY)
+        required: true
+        default: false
+        type: boolean
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      NAQLA_SERVER_URL: ${{ inputs.server_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Read-only HTTPS/WSS verification
+        run: node scripts/online-smoke.mjs
+      - name: Stage-only two-account verification
+        if: ${{ inputs.mutating }}
+        run: node scripts/online-smoke.mjs --mutating

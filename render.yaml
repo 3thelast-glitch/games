@@ -1,0 +1,29 @@
+# Apply this Blueprint only after reviewing the PAID service and disk costs.
+# NAQLA uses SQLite: a free ephemeral filesystem is not safe for accounts/matches.
+services:
+  - type: web
+    name: naqla-online
+    runtime: docker
+    region: frankfurt
+    plan: starter
+    autoDeployTrigger: 'off'
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: '8787'
+      - key: DATABASE_PATH
+        value: /app/data/board-arena.db
+      - key: PUBLIC_SERVER_URL
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+    disk:
+      name: naqla-sqlite
+      mountPath: /app/data
+      sizeGB: 5
