@@ -209,11 +209,20 @@ export class Lobby {
     if (!room || room.expiresAt <= this.matches.options.now()) throw new RuleError('room-not-found');
     if (room.owner === userId) throw new RuleError('cannot-play-yourself');
     this.eligible(userId, room.gameId);
-    if (!room.members.includes(userId)) room.members.push(userId);
+    // Evaluate a prospective membership without mutating the room. A failed match
+    // creation (for example, an existing game for another member) must not leave
+    // an extra seat occupying a still-advertised room.
+    const members = room.members.includes(userId) ? room.members : [...room.members, userId];
+    if (members.length > room.playerCount) throw new RuleError('room-full');
+    if (members.length < room.playerCount) {
+      room.members = members;
+      this.queue = this.queue.filter((q) => q.userId !== userId);
+      return { room, match: null };
+    }
+    const match = this.group(room.gameId, members, false, room.turnSeconds);
+    // Commit the room and queue changes only after the authoritative match exists.
+    room.members = members;
     this.queue = this.queue.filter((q) => q.userId !== userId);
-    if (room.members.length < room.playerCount) return { room, match: null };
-    if (room.members.length > room.playerCount) throw new RuleError('room-full');
-    const match = this.group(room.gameId, room.members, false, room.turnSeconds);
     this.rooms.delete(code);
     return { room, match };
   }

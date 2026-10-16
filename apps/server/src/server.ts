@@ -396,6 +396,7 @@ export function createArenaServer(options: ServerOptions = {}) {
         store.authenticate(tokenBySocket.get(ws)!);
         if (message.type === 'ping') return send(ws, { type: 'pong', serverNow: Date.now() });
         if (message.type === 'queue') {
+          if (!limits.allow(`queue:${userId}`, 24, 60000)) throw new RuleError('rate-limited');
           const match = lobby.enqueue(
             userId,
             message.gameId,
@@ -420,6 +421,9 @@ export function createArenaServer(options: ServerOptions = {}) {
           return send(ws, { type: 'cancelled' });
         }
         if (message.type === 'create-room') {
+          // Per-account protection: a single user must not flood private room allocation.
+          if (!limits.allow(`create-room:${userId}`, 10, 60000))
+            throw new RuleError('rate-limited');
           const room = lobby.createRoom(
             userId,
             message.gameId,
@@ -430,17 +434,25 @@ export function createArenaServer(options: ServerOptions = {}) {
           return;
         }
         if (message.type === 'join-room') {
+          // Limit code guessing independently of the general WebSocket message budget.
+          if (!limits.allow(`join-room:${userId}`, 20, 60000))
+            throw new RuleError('rate-limited');
           const joined = lobby.joinRoomResult(userId, message.code);
           if (joined.match) broadcast(joined.match);
           else broadcastRoom(joined.room);
           return;
         }
-        if (message.type === 'resume')
+        if (message.type === 'resume') {
+          if (!limits.allow(`resume:${userId}`, 30, 60000))
+            throw new RuleError('rate-limited');
           return send(ws, {
             type: 'match',
             match: matches.forUser(matches.get(message.matchId, userId), userId),
           });
+        }
         if (message.type === 'rematch') {
+          if (!limits.allow(`rematch:${userId}`, 12, 60000))
+            throw new RuleError('rate-limited');
           const match = matches.rematch(userId, message.matchId);
           broadcast(match);
           for (const p of match.players)
