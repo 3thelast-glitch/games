@@ -1,0 +1,22 @@
+name: NAQLA Backup and Account Regression
+on:
+  schedule:
+    - cron: '41 4 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Verify portable backup tooling is syntactically valid
+        run: bash -n ops/backup-to-s3.sh
+      - name: Test AES-GCM WAL backup, recovery and account/session boundaries
+        run: node --import tsx --test tests/db-operations.test.ts tests/account-operations.test.ts
