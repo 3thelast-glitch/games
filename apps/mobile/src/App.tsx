@@ -41,6 +41,7 @@ import {
   SettingsPage,
   ModeDialog,
   AuthDialog,
+  PasswordResetDialog,
   WaitingDialog,
   type PlayMode,
   type LocalHistory,
@@ -138,7 +139,8 @@ function ArenaApp({
     [clock, setClock] = useState(Date.now()),
     [, render] = useState(0),
     [authOpen, setAuthOpen] = useState(false),
-    [providers, setProviders] = useState({ google: false, apple: false }),
+    [passwordResetToken, setPasswordResetToken] = useState<string | null>(null),
+    [providers, setProviders] = useState({ google: false, apple: false, emailRecovery: false }),
     [choice, setChoice] = useState<{ gameId: string; mode?: PlayMode } | null>(null),
     [lanTurnSeconds, setLanTurnSeconds] = useState<TurnTimerSeconds | null>(null),
     [rules, setRules] = useState<string | null>(null),
@@ -177,6 +179,23 @@ function ArenaApp({
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setNotice(''), 6500);
   }, []);
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const reset = url.searchParams.get('resetPassword');
+    const verify = url.searchParams.get('verifyEmail');
+    if (!reset && !verify) return;
+    url.searchParams.delete('resetPassword');
+    url.searchParams.delete('verifyEmail');
+    // Remove single-use secrets from the address bar and browser history immediately.
+    window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    if (verify) {
+      void api('/api/auth/email/verification/complete', null, { token: verify })
+        .then(() => notify(t('emailVerifiedSuccessfully')))
+        .catch(notify);
+    } else if (reset) {
+      setPasswordResetToken(reset);
+    }
+  }, [notify, t]);
   const queueChessReview = useCallback(
     (matchId: string, state: ChessState, move: ChessMove) => {
       if (state.gameId !== 'chess') return;
@@ -1288,6 +1307,10 @@ function ArenaApp({
                 .catch(() => notify(code));
             }}
           />
+        )}
+        {passwordResetToken && (
+          <PasswordResetDialog token={passwordResetToken}
+            onClose={() => { setPasswordResetToken(null); setAuthOpen(true); }} />
         )}
         {authOpen && (
           <AuthDialog
