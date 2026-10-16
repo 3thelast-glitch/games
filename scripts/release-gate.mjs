@@ -18,7 +18,7 @@ function releaseOrigin(value) {
       hostname.endsWith('.localhost') || hostname.endsWith('.local') ||
       hostname.endsWith('.internal') || hostname.endsWith('.test') ||
       hostname.endsWith('.invalid') || hostname === 'example.com' ||
-      hostname.endsWith('.example.com') || /^\[?[0-9a-f:.]+\]?$/.test(hostname) ||
+      hostname.endsWith('.example.com') || isIP(hostname.replace(/^\[|\]$/g, '')) !== 0 ||
       !hostname.includes('.')) {
     throw new Error('VITE_SERVER_URL must be a public DNS HTTPS origin without credentials, paths or placeholders');
   }
@@ -40,13 +40,13 @@ export function checkAndroidRelease(env = process.env) {
   const actualId = identity(readFileSync('capacitor.config.ts', 'utf8'));
   if (confirmedId !== actualId)
     throw new Error('NAQLA_RELEASE_APP_ID differs from capacitor.config.ts; review Android/iOS OAuth identities before release');
-  if (!/^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*){1,}$/.test(actualId))
+  if (!/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){1,}$/.test(actualId))
     throw new Error('Invalid Android application ID in capacitor.config.ts');
   const versionCode = required('NAQLA_ANDROID_VERSION_CODE', env);
   if (!/^[1-9][0-9]*$/.test(versionCode) || Number(versionCode) > 2100000000)
     throw new Error('NAQLA_ANDROID_VERSION_CODE must be a positive Play-compatible integer');
   const packageVersion = JSON.parse(readFileSync('package.json', 'utf8')).version;
-  if (!/^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$/.test(packageVersion))
+  if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(packageVersion))
     throw new Error('package.json version must be a valid numeric SemVer for an Android release');
   const keystore = required('NAQLA_RELEASE_KEYSTORE_PATH', env);
   if (!existsSync(keystore)) throw new Error('Signing keystore file does not exist');
