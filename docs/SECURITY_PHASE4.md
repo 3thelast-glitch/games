@@ -40,3 +40,12 @@ Require: green `Validate NAQLA`, GitHub Actions Android debug build and iOS simu
 - External penetration test: **not performed**
 - Encrypted backup restore test: **not performed**
 - Production deployment: **not performed**
+
+## Account and recovery changes awaiting deployment validation
+
+Schema v3 introduces hashed, single-use recovery and verification tokens,
+with expiring links, generic reset-request replies, throttling, session
+revocation after reset, and configurable server-side transactional email.
+See `docs/OPERATIONS_ACTIVATION.md`. These changes must undergo CI,
+delivery-domain tests and actual host backup/restore before production sign-off.
+Self-service account deletion and privacy-law/retention review remain open.
