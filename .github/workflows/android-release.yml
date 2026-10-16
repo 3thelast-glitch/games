@@ -1,0 +1,113 @@
+name: Android Signed AAB — Internal Testing
+# Deliberately manual and NEVER uploads to Google Play or creates a public release.
+on:
+  workflow_dispatch:
+    inputs:
+      server_url:
+        description: Public HTTPS server origin configured and tested for staging/internal release
+        required: true
+        type: string
+      app_id:
+        description: Confirm exact application ID currently in capacitor.config.ts
+        required: true
+        type: string
+      version_code:
+        description: Unique, increasing Play Console version code (positive integer)
+        required: true
+        type: number
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-internal-aab-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  signed-internal-aab:
+    runs-on: ubuntu-latest
+    environment: android-internal-release
+    timeout-minutes: 40
+    env:
+      VITE_SERVER_URL: ${{ inputs.server_url }}
+      NAQLA_RELEASE_APP_ID: ${{ inputs.app_id }}
+      NAQLA_ANDROID_VERSION_CODE: ${{ inputs.version_code }}
+      NAQLA_RELEASE_TRACK: internal
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+      - run: npm ci
+      - run: npm audit --audit-level=moderate
+      - run: npm test
+      - name: Generate native Android project against release backend
+        run: npm run mobile:android
+      - name: Restore private upload keystore to temporary runner path
+        env:
+          NAQLA_UPLOAD_KEYSTORE_BASE64: ${{ secrets.NAQLA_UPLOAD_KEYSTORE_BASE64 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$NAQLA_UPLOAD_KEYSTORE_BASE64" ]]; then
+            echo 'Android upload keystore secret is missing' >&2
+            exit 1
+          fi
+          umask 077
+          printf '%s' "$NAQLA_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/naqla-upload.jks"
+          if [[ ! -s "$RUNNER_TEMP/naqla-upload.jks" ]]; then
+            echo 'Android upload keystore is invalid or empty' >&2
+            exit 1
+          fi
+          echo "NAQLA_RELEASE_KEYSTORE_PATH=$RUNNER_TEMP/naqla-upload.jks" >> "$GITHUB_ENV"
+      - name: Release configuration and identity gate
+        env:
+          NAQLA_RELEASE_KEY_ALIAS: ${{ secrets.NAQLA_UPLOAD_KEY_ALIAS }}
+          NAQLA_RELEASE_STORE_PASSWORD: ${{ secrets.NAQLA_UPLOAD_STORE_PASSWORD }}
+          NAQLA_RELEASE_KEY_PASSWORD: ${{ secrets.NAQLA_UPLOAD_KEY_PASSWORD }}
+        run: node scripts/release-gate.mjs
+      - name: Apply ephemeral release signing and version
+        env:
+          NAQLA_RELEASE_KEY_ALIAS: ${{ secrets.NAQLA_UPLOAD_KEY_ALIAS }}
+          NAQLA_RELEASE_STORE_PASSWORD: ${{ secrets.NAQLA_UPLOAD_STORE_PASSWORD }}
+          NAQLA_RELEASE_KEY_PASSWORD: ${{ secrets.NAQLA_UPLOAD_KEY_PASSWORD }}
+        run: node scripts/configure-android-release.mjs
+      - name: Assemble signed AAB
+        working-directory: android
+        env:
+          NAQLA_RELEASE_KEY_ALIAS: ${{ secrets.NAQLA_UPLOAD_KEY_ALIAS }}
+          NAQLA_RELEASE_STORE_PASSWORD: ${{ secrets.NAQLA_UPLOAD_STORE_PASSWORD }}
+          NAQLA_RELEASE_KEY_PASSWORD: ${{ secrets.NAQLA_UPLOAD_KEY_PASSWORD }}
+        run: ./gradlew bundleRelease --no-daemon
+      - name: Verify bundle signature and record reproducible digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          aab=android/app/build/outputs/bundle/release/app-release.aab
+          test -s "$aab"
+          jarsigner -verify "$aab"
+          sha256sum "$aab" > "$RUNNER_TEMP/NAQLA-android-internal.sha256"
+          # Keep checksum beside the artifact, but never distribute signing keys.
+          cp "$RUNNER_TEMP/NAQLA-android-internal.sha256" android/app/build/outputs/bundle/release/NAQLA-android-internal.sha256
+      - uses: actions/upload-artifact@v7
+        with:
+          name: NAQLA-signed-internal-AAB
+          path: |
+            android/app/build/outputs/bundle/release/app-release.aab
+            android/app/build/outputs/bundle/release/NAQLA-android-internal.sha256
+          if-no-files-found: error
+          retention-days: 7
+      - name: Clean signing material
+        if: always()
+        shell: bash
+        run: |
+          rm -f "$RUNNER_TEMP/naqla-upload.jks"

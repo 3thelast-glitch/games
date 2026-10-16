@@ -41,7 +41,7 @@ The repository test runner discovers all `*.test.ts` and `*.test.tsx` files unde
 | --- | --- |
 | Public online play | Deploy a persistent server, configure domain/TLS and allowed origins, then build clients with its HTTPS URL |
 | Google/Apple | Supply provider credentials/configuration and test genuine sign-in, consent and deep-link returns |
-| Android release | Build/sign against the intended production backend and test on physical devices before store distribution |
+| Android release | Manual signed internal AAB pipeline is configured (PR #93), but keystore/environment owner setup, real HTTPS backend, Play internal-track upload and physical-device checks remain outstanding; see [Phase 5](RELEASE_PHASE5.md) |
 | iOS release | Build/sign using Xcode on macOS and verify on physical iOS devices |
 | Device QA | Repeat accessibility, performance, touch, Arabic/RTL and native audio/haptics checks on representative real devices |
 | Operations | Configure monitoring, backups/migrations, capacity testing and abuse/collusion controls before public ranked deployment |

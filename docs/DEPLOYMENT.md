@@ -85,7 +85,7 @@ cd android
 ./gradlew assembleDebug
 ```
 
-The debug APK is at `android/app/build/outputs/apk/debug/app-debug.apk`. On Windows use `gradlew.bat`. Release signing and Play Store upload are separate steps using your signing identity.
+The debug APK is at `android/app/build/outputs/apk/debug/app-debug.apk`. On Windows use `gradlew.bat`. Release signing and Play Store upload are separate steps using your signing identity. A guarded **manual signed AAB** build for Play's internal testing track is now defined in `.github/workflows/android-release.yml`, with keystore secrets stored in the `android-internal-release` GitHub Environment. It never publishes to Google Play automatically. See [Phase 5 release gate](RELEASE_PHASE5.md) for exact setup and acceptance criteria.
 
 After pushing the repository, the manual **Build Android APK** GitHub Actions workflow can compile and upload a debug APK artifact. Its `server_url` input is optional; leaving it empty produces an app for local/AI testing. The workflow is supplied in `3thelast-glitch/games`; an Android build must be started manually from Actions.
 
