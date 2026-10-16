@@ -31,6 +31,7 @@ export interface User {
   favorites: string;
   friend_code: string;
   created_at: number;
+  email_verified_at: number | null;
 }
 
 export class Store {
@@ -158,7 +159,7 @@ export class Store {
   }
 
   cleanup(now = Date.now()) {
-    for (const table of ['sessions', 'oauth_flows', 'auth_codes'])
+    for (const table of ['sessions', 'oauth_flows', 'auth_codes', 'account_tokens'])
       this.db.prepare(`DELETE FROM ${table} WHERE expires_at<=?`).run(now);
   }
 
