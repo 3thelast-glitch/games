@@ -4,6 +4,7 @@ services:
   - type: web
     name: naqla-online
     runtime: docker
+    region: frankfurt
     plan: starter
     autoDeployTrigger: 'off'
     healthCheckPath: /api/health
