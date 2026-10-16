@@ -917,20 +917,39 @@ function ArenaApp({
       setBusy(false);
     }
   };
+  const clearAuthenticatedSession = async () => {
+    connection.stop();
+    tokenRef.current = null;
+    setToken(null);
+    setProfile(null);
+    setOnline(null);
+    onlineRef.current = null;
+    await storage.remove('token');
+  };
   const logout = async () => {
     try {
       if (tokenRef.current) await api('/api/auth/logout', tokenRef.current, {});
     } catch (e) {
       notify(e);
     } finally {
-      connection.stop();
-      tokenRef.current = null;
-      setToken(null);
-      setProfile(null);
-      setOnline(null);
-      onlineRef.current = null;
-      await storage.remove('token');
+      await clearAuthenticatedSession();
     }
+  };
+  const logoutAll = async () => {
+    if (!tokenRef.current) throw new Error('unauthorized');
+    await api('/api/auth/logout-all', tokenRef.current, {});
+    await clearAuthenticatedSession();
+    notify(t('sessionsRevoked'));
+  };
+  const changeAccountPassword = async (currentPassword: string, nextPassword: string) => {
+    if (!tokenRef.current) throw new Error('unauthorized');
+    await api('/api/auth/password/change', tokenRef.current, { currentPassword, nextPassword });
+    await clearAuthenticatedSession();
+    notify(t('passwordResetComplete'));
+  };
+  const requestVerifyEmail = async () => {
+    if (!tokenRef.current) throw new Error('unauthorized');
+    await api('/api/auth/email/verification/request', tokenRef.current, {});
   };
   const isOnline = !!online;
   const current = online?.state ?? offline?.controller.current.state;
@@ -1100,6 +1119,10 @@ function ArenaApp({
                 profile={profile}
                 onAuth={() => setAuthOpen(true)}
                 onLogout={() => void logout()}
+                onLogoutAll={logoutAll}
+                onChangePassword={changeAccountPassword}
+                onVerifyEmail={requestVerifyEmail}
+                canEmailRecovery={providers.emailRecovery}
               />
             )}
             {page === 'match' && current && (online || local) && (
