@@ -27,7 +27,6 @@ test('single-use verification and password reset: tokens hashed, expiring, and a
     assert.ok(verifyLink);
     const verifyToken = new URL(verifyLink).searchParams.get('verifyEmail')!;
     assert.ok(verifyToken);
-    assert.equal(store.db.prepare('SELECT hash FROM account_tokens').get()?.hash, undefined);
     const tokens = store.db.prepare('SELECT hash FROM account_tokens').all() as { hash: string }[];
     assert.equal(tokens.length, 1);
     assert.notEqual(tokens[0].hash, verifyToken, 'Token must never be stored in plaintext');
@@ -47,7 +46,7 @@ test('single-use verification and password reset: tokens hashed, expiring, and a
     assert.equal(updatedId, user.id);
     assert.throws(() => store.authenticate(oldSessionA), /unauthorized/);
     assert.throws(() => store.authenticate(oldSessionB), /unauthorized/);
-    assert.rejects(() => auth.resetPassword(resetToken, 'another-strong-secret-789'), /invalid-account-token/);
+    await assert.rejects(() => auth.resetPassword(resetToken, 'another-strong-secret-789'), /invalid-account-token/);
     await assert.rejects(() => auth.login('verified@example.test', 'original-secret-123'), /invalid-credentials/);
     assert.equal((await auth.login('verified@example.test', 'new-strong-secret-456')).id, user.id);
 
