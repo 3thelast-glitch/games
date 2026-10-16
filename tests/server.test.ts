@@ -333,7 +333,7 @@ test('OAuth exchange requires a bound verifier, is single use and providers are 
   const store = new Store(),
     auth = new AuthService(store, {});
   try {
-    assert.deepEqual(auth.capabilities(), { google: false, apple: false });
+    assert.deepEqual(auth.capabilities(), { emailRecovery: false, google: false, apple: false });
     assert.throws(() => auth.start('google', 'x'.repeat(43), false), /provider-not-configured/);
     const user = store.createUser('Alice'),
       code = 'a'.repeat(43),
