@@ -148,8 +148,11 @@ export function createArenaServer(options: ServerOptions = {}) {
     // Trust the socket address. Configure a dedicated authenticated proxy before honoring forwarded headers.
     if (!limits.allow(`http:${ip}`, 600, 60000)) return json(res, 429, { error: 'rate-limited' });
     try {
-      if (url.pathname === '/api/health')
+      if (url.pathname === '/api/health' && req.method === 'GET') {
+        // A running HTTP listener alone does not prove the database is readable.
+        store.db.prepare('SELECT 1 AS ready').get();
         return json(res, 200, { ok: true, protocol: PROTOCOL_VERSION, games: games.ids() });
+      }
       if (url.pathname === '/api/auth/providers' && req.method === 'GET')
         return json(res, 200, auth.capabilities());
       if (url.pathname.startsWith('/api/auth/') && !limits.allow(`auth:${ip}`, 80, 60000))
@@ -237,6 +240,24 @@ export function createArenaServer(options: ServerOptions = {}) {
         );
         res.writeHead(302, { Location: redirect });
         return res.end();
+      }
+      if (url.pathname === '/api/auth/logout-all' && req.method === 'POST') {
+        const user = userOf(req);
+        store.logoutAll(user.id);
+        for (const ws of sockets.get(user.id) ?? []) ws.close(4001, 'All sessions revoked');
+        return json(res, 200, { ok: true });
+      }
+      if (url.pathname === '/api/auth/password/change' && req.method === 'POST') {
+        const user = userOf(req);
+        const data = z.object({
+          currentPassword: z.string().min(1).max(128),
+          nextPassword: passwordSchema,
+        }).strict().parse(await body(req));
+        if (!limits.allow(`password-change:${user.id}`, 5, 3600000))
+          return json(res, 429, { error: 'rate-limited' });
+        await auth.changePassword(user.id, data.currentPassword, data.nextPassword);
+        for (const ws of sockets.get(user.id) ?? []) ws.close(4001, 'Password changed');
+        return json(res, 200, { ok: true, sessionsRevoked: true });
       }
       if (url.pathname === '/api/auth/logout' && req.method === 'POST') {
         const user = userOf(req);

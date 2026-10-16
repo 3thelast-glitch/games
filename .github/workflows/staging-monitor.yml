@@ -1,0 +1,48 @@
+name: NAQLA Staging Availability Monitor
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  live-health:
+    if: github.repository == '3thelast-glitch/games'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      NAQLA_SERVER_URL: https://naqla-staging-20261016.onrender.com
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Verify HTTPS, protocol and WSS without creating users
+        id: probe
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            if node scripts/online-smoke.mjs; then
+              echo "Healthy on attempt $attempt"
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then sleep 45; fi
+          done
+          exit 1
+      - name: Open one incident for failed monitoring
+        if: ${{ failure() && steps.probe.outcome == 'failure' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          title='NAQLA staging HTTPS/WSS is failing'
+          existing="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --limit 100             --json title,number --jq '.[] | select(.title == "NAQLA staging HTTPS/WSS is failing") | .number' | head -n 1)"
+          if [ -z "$existing" ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title"               --body "The read-only HTTPS /api/health + WSS smoke probe failed three attempts. Investigate Render service, database, TLS and deployment. Workflow run: $RUN_URL. This issue requires human verification and closure."
+          else
+            echo "Existing open incident #$existing; not duplicating."
+          fi

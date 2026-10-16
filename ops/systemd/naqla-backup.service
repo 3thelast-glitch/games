@@ -1,0 +1,15 @@
+[Unit]
+Description=NAQLA encrypted SQLite offsite backup with remote restore round-trip
+RequiresMountsFor=/srv/naqla/data
+
+[Service]
+Type=oneshot
+User=naqla
+Group=naqla
+WorkingDirectory=/srv/naqla
+EnvironmentFile=/etc/naqla/backup.env
+ExecStart=/usr/bin/bash /srv/naqla/ops/backup-to-s3.sh
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/srv/naqla/data

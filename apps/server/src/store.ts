@@ -152,6 +152,11 @@ export class Store {
     this.db.prepare('DELETE FROM sessions WHERE hash=?').run(digest(token));
   }
 
+  /** Revokes all devices for a user; callers must also close live sockets. */
+  logoutAll(userId: string) {
+    this.db.prepare('DELETE FROM sessions WHERE user_id=?').run(userId);
+  }
+
   cleanup(now = Date.now()) {
     for (const table of ['sessions', 'oauth_flows', 'auth_codes'])
       this.db.prepare(`DELETE FROM ${table} WHERE expires_at<=?`).run(now);
