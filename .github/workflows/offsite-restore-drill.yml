@@ -1,0 +1,101 @@
+name: NAQLA Independent Offsite Restore Drill
+on:
+  workflow_dispatch:
+    inputs:
+      object_key:
+        description: Exact .naqla encrypted object key already present in private S3 bucket
+        required: true
+        type: string
+      expected_users_min:
+        description: Minimum restored users expected (provide known baseline, default 1)
+        required: true
+        default: '1'
+        type: string
+      expected_matches_min:
+        description: Minimum restored matches expected (provide known baseline, default 1)
+        required: true
+        default: '1'
+        type: string
+permissions:
+  contents: read
+jobs:
+  offsite-recovery:
+    if: github.repository == '3thelast-glitch/games'
+    runs-on: ubuntu-latest
+    environment: naqla-recovery
+    timeout-minutes: 20
+    concurrency:
+      group: naqla-offsite-recovery
+      cancel-in-progress: false
+    env:
+      NAQLA_BACKUP_S3_BUCKET: ${{ secrets.NAQLA_BACKUP_S3_BUCKET }}
+      NAQLA_BACKUP_KEY_HEX: ${{ secrets.NAQLA_BACKUP_KEY_HEX }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ vars.AWS_REGION }}
+      NAQLA_BACKUP_OBJECT_KEY: ${{ inputs.object_key }}
+      EXPECTED_USERS_MIN: ${{ inputs.expected_users_min }}
+      EXPECTED_MATCHES_MIN: ${{ inputs.expected_matches_min }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Download actual encrypted offsite snapshot and verify fresh isolated restore
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          : "${NAQLA_BACKUP_S3_BUCKET:?Configure private S3 bucket environment secret}"
+          : "${NAQLA_BACKUP_KEY_HEX:?Configure encryption-key environment secret}"
+          : "${AWS_ACCESS_KEY_ID:?Configure read-only object access}"
+          : "${AWS_SECRET_ACCESS_KEY:?Configure read-only object access}"
+          : "${AWS_DEFAULT_REGION:?Configure AWS_REGION environment variable}"
+          [[ "${NAQLA_BACKUP_KEY_HEX}" =~ ^[0-9a-fA-F]{64}$ ]] || exit 2
+          [[ "${NAQLA_BACKUP_OBJECT_KEY}" =~ ^[A-Za-z0-9/_-]+[A-Za-z0-9_.-]*\.naqla$ ]] || exit 2
+          [[ "${EXPECTED_USERS_MIN}" =~ ^[0-9]{1,8}$ && "${EXPECTED_MATCHES_MIN}" =~ ^[0-9]{1,8}$ ]] || exit 2
+          command -v aws >/dev/null
+          mkdir -p "$RUNNER_TEMP/naqla-recovery"
+          chmod 700 "$RUNNER_TEMP/naqla-recovery"
+          trap 'rm -rf -- "$RUNNER_TEMP/naqla-recovery"' EXIT
+          aws s3 cp "s3://${NAQLA_BACKUP_S3_BUCKET}/${NAQLA_BACKUP_OBJECT_KEY}"             "$RUNNER_TEMP/naqla-recovery/snapshot.naqla" --only-show-errors
+          node scripts/db-backup.mjs restore             "$RUNNER_TEMP/naqla-recovery/snapshot.naqla"             "$RUNNER_TEMP/naqla-recovery/restored.db"
+          node --import tsx --input-type=module - "$RUNNER_TEMP/naqla-recovery/restored.db" <<'JS'
+          import { DatabaseSync } from 'node:sqlite';
+          import { Store } from './apps/server/src/store.ts';
+          import { createArenaServer } from './apps/server/src/server.ts';
+          import assert from 'node:assert/strict';
+          const path = process.argv[2];
+          const db = new DatabaseSync(path, { readOnly: true });
+          let stats = {};
+          try {
+            assert.equal(db.prepare('PRAGMA integrity_check').get().integrity_check, 'ok');
+            assert.equal(db.prepare('PRAGMA foreign_key_check').all().length, 0);
+            for (const table of ['users', 'sessions', 'matches', 'ratings', 'results']) {
+              stats[table] = Number(db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n);
+            }
+            assert.ok(stats.users >= Number(process.env.EXPECTED_USERS_MIN), 'Restored user count below expected baseline');
+            assert.ok(stats.matches >= Number(process.env.EXPECTED_MATCHES_MIN), 'Restored match count below expected baseline');
+          } finally { db.close(); }
+          const store = new Store(path);
+          const app = createArenaServer({ store });
+          try {
+            app.server.listen(0, '127.0.0.1');
+            await new Promise((resolve) => app.server.once('listening', resolve));
+            const addr = app.server.address();
+            if (!addr || typeof addr === 'string') throw new Error('Invalid restored server address');
+            const health = await fetch(`http://127.0.0.1:${addr.port}/api/health`);
+            assert.equal(health.status, 200);
+            assert.equal((await health.json()).ok, true);
+            const user = store.db.prepare('SELECT id FROM users LIMIT 1').get();
+            if (user) {
+              const p = store.profile(user.id, ['chess']);
+              assert.equal(p.id, user.id);
+            }
+          } finally { await app.close(); store.close(); }
+          console.log('PASS independent-runner actual offsite restore and authenticated-data compatibility');
+          console.log('Non-sensitive table counts:', JSON.stringify(stats));
+          JS
+          echo 'PASS remote object retrieved, authenticated/decrypted, restored, and application booted on isolated runner'
