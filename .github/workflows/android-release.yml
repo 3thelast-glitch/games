@@ -33,10 +33,6 @@ jobs:
       NAQLA_RELEASE_APP_ID: ${{ inputs.app_id }}
       NAQLA_ANDROID_VERSION_CODE: ${{ inputs.version_code }}
       NAQLA_RELEASE_TRACK: internal
-      NAQLA_RELEASE_KEY_ALIAS: ${{ secrets.NAQLA_UPLOAD_KEY_ALIAS }}
-      NAQLA_RELEASE_STORE_PASSWORD: ${{ secrets.NAQLA_UPLOAD_STORE_PASSWORD }}
-      NAQLA_RELEASE_KEY_PASSWORD: ${{ secrets.NAQLA_UPLOAD_KEY_PASSWORD }}
-      NAQLA_UPLOAD_KEYSTORE_BASE64: ${{ secrets.NAQLA_UPLOAD_KEYSTORE_BASE64 }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -51,7 +47,14 @@ jobs:
         uses: android-actions/setup-android@v4
         with:
           packages: platform-tools
+      - run: npm ci
+      - run: npm audit --audit-level=moderate
+      - run: npm test
+      - name: Generate native Android project against release backend
+        run: npm run mobile:android
       - name: Restore private upload keystore to temporary runner path
+        env:
+          NAQLA_UPLOAD_KEYSTORE_BASE64: ${{ secrets.NAQLA_UPLOAD_KEYSTORE_BASE64 }}
         shell: bash
         run: |
           set -euo pipefail
@@ -67,16 +70,23 @@ jobs:
           fi
           echo "NAQLA_RELEASE_KEYSTORE_PATH=$RUNNER_TEMP/naqla-upload.jks" >> "$GITHUB_ENV"
       - name: Release configuration and identity gate
+        env:
+          NAQLA_RELEASE_KEY_ALIAS: ${{ secrets.NAQLA_UPLOAD_KEY_ALIAS }}
+          NAQLA_RELEASE_STORE_PASSWORD: ${{ secrets.NAQLA_UPLOAD_STORE_PASSWORD }}
+          NAQLA_RELEASE_KEY_PASSWORD: ${{ secrets.NAQLA_UPLOAD_KEY_PASSWORD }}
         run: node scripts/release-gate.mjs
-      - run: npm ci
-      - run: npm audit --audit-level=moderate
-      - run: npm test
-      - name: Generate native Android project against release backend
-        run: npm run mobile:android
       - name: Apply ephemeral release signing and version
+        env:
+          NAQLA_RELEASE_KEY_ALIAS: ${{ secrets.NAQLA_UPLOAD_KEY_ALIAS }}
+          NAQLA_RELEASE_STORE_PASSWORD: ${{ secrets.NAQLA_UPLOAD_STORE_PASSWORD }}
+          NAQLA_RELEASE_KEY_PASSWORD: ${{ secrets.NAQLA_UPLOAD_KEY_PASSWORD }}
         run: node scripts/configure-android-release.mjs
       - name: Assemble signed AAB
         working-directory: android
+        env:
+          NAQLA_RELEASE_KEY_ALIAS: ${{ secrets.NAQLA_UPLOAD_KEY_ALIAS }}
+          NAQLA_RELEASE_STORE_PASSWORD: ${{ secrets.NAQLA_UPLOAD_STORE_PASSWORD }}
+          NAQLA_RELEASE_KEY_PASSWORD: ${{ secrets.NAQLA_UPLOAD_KEY_PASSWORD }}
         run: ./gradlew bundleRelease --no-daemon
       - name: Verify bundle signature and record reproducible digest
         shell: bash
