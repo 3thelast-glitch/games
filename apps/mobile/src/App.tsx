@@ -41,6 +41,7 @@ import {
   SettingsPage,
   ModeDialog,
   AuthDialog,
+  PasswordResetDialog,
   WaitingDialog,
   type PlayMode,
   type LocalHistory,
@@ -138,7 +139,8 @@ function ArenaApp({
     [clock, setClock] = useState(Date.now()),
     [, render] = useState(0),
     [authOpen, setAuthOpen] = useState(false),
-    [providers, setProviders] = useState({ google: false, apple: false }),
+    [passwordResetToken, setPasswordResetToken] = useState<string | null>(null),
+    [providers, setProviders] = useState({ google: false, apple: false, emailRecovery: false }),
     [choice, setChoice] = useState<{ gameId: string; mode?: PlayMode } | null>(null),
     [lanTurnSeconds, setLanTurnSeconds] = useState<TurnTimerSeconds | null>(null),
     [rules, setRules] = useState<string | null>(null),
@@ -177,6 +179,25 @@ function ArenaApp({
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setNotice(''), 6500);
   }, []);
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const fragment = new URLSearchParams(url.hash.slice(1));
+    const reset = fragment.get('resetPassword');
+    const verify = fragment.get('verifyEmail');
+    if (!reset && !verify) return;
+    fragment.delete('resetPassword');
+    fragment.delete('verifyEmail');
+    // Remove single-use secrets from browser history before network activity.
+    url.hash = fragment.toString();
+    window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    if (verify) {
+      void api('/api/auth/email/verification/complete', null, { token: verify })
+        .then(() => notify(t('emailVerifiedSuccessfully')))
+        .catch(notify);
+    } else if (reset) {
+      setPasswordResetToken(reset);
+    }
+  }, [notify, t]);
   const queueChessReview = useCallback(
     (matchId: string, state: ChessState, move: ChessMove) => {
       if (state.gameId !== 'chess') return;
@@ -896,20 +917,39 @@ function ArenaApp({
       setBusy(false);
     }
   };
+  const clearAuthenticatedSession = async () => {
+    connection.stop();
+    tokenRef.current = null;
+    setToken(null);
+    setProfile(null);
+    setOnline(null);
+    onlineRef.current = null;
+    await storage.remove('token');
+  };
   const logout = async () => {
     try {
       if (tokenRef.current) await api('/api/auth/logout', tokenRef.current, {});
     } catch (e) {
       notify(e);
     } finally {
-      connection.stop();
-      tokenRef.current = null;
-      setToken(null);
-      setProfile(null);
-      setOnline(null);
-      onlineRef.current = null;
-      await storage.remove('token');
+      await clearAuthenticatedSession();
     }
+  };
+  const logoutAll = async () => {
+    if (!tokenRef.current) throw new Error('unauthorized');
+    await api('/api/auth/logout-all', tokenRef.current, {});
+    await clearAuthenticatedSession();
+    notify(t('sessionsRevoked'));
+  };
+  const changeAccountPassword = async (currentPassword: string, nextPassword: string) => {
+    if (!tokenRef.current) throw new Error('unauthorized');
+    await api('/api/auth/password/change', tokenRef.current, { currentPassword, nextPassword });
+    await clearAuthenticatedSession();
+    notify(t('passwordResetComplete'));
+  };
+  const requestVerifyEmail = async () => {
+    if (!tokenRef.current) throw new Error('unauthorized');
+    await api('/api/auth/email/verification/request', tokenRef.current, {});
   };
   const isOnline = !!online;
   const current = online?.state ?? offline?.controller.current.state;
@@ -1079,6 +1119,10 @@ function ArenaApp({
                 profile={profile}
                 onAuth={() => setAuthOpen(true)}
                 onLogout={() => void logout()}
+                onLogoutAll={logoutAll}
+                onChangePassword={changeAccountPassword}
+                onVerifyEmail={requestVerifyEmail}
+                canEmailRecovery={providers.emailRecovery}
               />
             )}
             {page === 'match' && current && (online || local) && (
@@ -1288,6 +1332,10 @@ function ArenaApp({
                 .catch(() => notify(code));
             }}
           />
+        )}
+        {passwordResetToken && (
+          <PasswordResetDialog token={passwordResetToken}
+            onClose={() => { setPasswordResetToken(null); setAuthOpen(true); }} />
         )}
         {authOpen && (
           <AuthDialog

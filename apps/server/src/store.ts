@@ -31,6 +31,7 @@ export interface User {
   favorites: string;
   friend_code: string;
   created_at: number;
+  email_verified_at: number | null;
 }
 
 export class Store {
@@ -158,7 +159,7 @@ export class Store {
   }
 
   cleanup(now = Date.now()) {
-    for (const table of ['sessions', 'oauth_flows', 'auth_codes'])
+    for (const table of ['sessions', 'oauth_flows', 'auth_codes', 'account_tokens'])
       this.db.prepare(`DELETE FROM ${table} WHERE expires_at<=?`).run(now);
   }
 
@@ -351,6 +352,8 @@ export class Store {
       name: user.name,
       avatar: user.avatar,
       guest: !!user.guest,
+      accountProvider: user.provider,
+      emailVerified: user.provider === 'email' ? user.email_verified_at !== null : null,
       level: 1 + Math.floor((stats.total * 30 + (stats.wins || 0) * 50) / 500),
       totalMatches: stats.total,
       wins: stats.wins || 0,

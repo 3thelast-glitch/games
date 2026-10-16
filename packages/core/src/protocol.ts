@@ -119,6 +119,8 @@ export interface Profile {
   name: string;
   avatar: string;
   guest: boolean;
+  accountProvider?: string;
+  emailVerified?: boolean | null;
   level: number;
   totalMatches: number;
   wins: number;

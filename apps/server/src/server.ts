@@ -185,6 +185,12 @@ export function createArenaServer(options: ServerOptions = {}) {
           data.name,
           guest?.guest ? guest.id : undefined,
         );
+        // Email verification is opt-in and never blocks account registration on a
+        // provider outage. Tokens are delivered only through the configured sender.
+        if (auth.canSendAccountEmail) {
+          try { await auth.requestEmailVerification(user.id); }
+          catch { console.error('Registration verification email could not be delivered'); }
+        }
         return json(res, 201, {
           token: store.newSession(user.id),
           profile: store.profile(user.id, games.ids()),
@@ -245,6 +251,44 @@ export function createArenaServer(options: ServerOptions = {}) {
         const user = userOf(req);
         store.logoutAll(user.id);
         for (const ws of sockets.get(user.id) ?? []) ws.close(4001, 'All sessions revoked');
+        return json(res, 200, { ok: true });
+      }
+      if (url.pathname === '/api/auth/password/reset/request' && req.method === 'POST') {
+        const data = z.object({ email: emailSchema }).strict().parse(await body(req));
+        if (!limits.allow(`reset-request:${ip}`, 12, 3600000) ||
+            !limits.allow(`reset-email:${data.email}`, 3, 3600000))
+          return json(res, 429, { error: 'rate-limited' });
+        if (!auth.canSendAccountEmail) throw new RuleError('email-not-configured');
+        // Return a generic response without waiting for the email provider.
+        // Otherwise known addresses would be detectable through request latency.
+        void auth.requestPasswordReset(data.email).catch(() => {
+          console.error('Password reset dispatch failed');
+        });
+        return json(res, 200, { ok: true });
+      }
+      if (url.pathname === '/api/auth/password/reset/complete' && req.method === 'POST') {
+        const data = z.object({
+          token: z.string().max(256),
+          nextPassword: passwordSchema,
+        }).strict().parse(await body(req));
+        if (!limits.allow(`reset-complete:${ip}`, 12, 3600000))
+          return json(res, 429, { error: 'rate-limited' });
+        const userId = await auth.resetPassword(data.token, data.nextPassword);
+        for (const ws of sockets.get(userId) ?? []) ws.close(4001, 'Password reset');
+        return json(res, 200, { ok: true });
+      }
+      if (url.pathname === '/api/auth/email/verification/request' && req.method === 'POST') {
+        const user = userOf(req);
+        if (!limits.allow(`verify-email:${user.id}`, 3, 3600000))
+          return json(res, 429, { error: 'rate-limited' });
+        await auth.requestEmailVerification(user.id);
+        return json(res, 200, { ok: true });
+      }
+      if (url.pathname === '/api/auth/email/verification/complete' && req.method === 'POST') {
+        const data = z.object({ token: z.string().max(256) }).strict().parse(await body(req));
+        if (!limits.allow(`verify-complete:${ip}`, 15, 3600000))
+          return json(res, 429, { error: 'rate-limited' });
+        auth.verifyEmail(data.token);
         return json(res, 200, { ok: true });
       }
       if (url.pathname === '/api/auth/password/change' && req.method === 'POST') {
