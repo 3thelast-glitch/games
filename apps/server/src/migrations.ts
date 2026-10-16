@@ -1,6 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /**
  * Explicit, monotonic SQLite schema changes. Legacy databases created before
@@ -36,6 +36,25 @@ const migrations: ReadonlyArray<{ version: number; up: (db: DatabaseSync) => voi
         db.exec('ALTER TABLE results ADD COLUMN player_count INTEGER NOT NULL DEFAULT 2');
     },
   },
+  {
+    version: 3,
+    up(db) {
+      const columns = new Set(
+        (db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map((column) => column.name),
+      );
+      if (!columns.has('email_verified_at'))
+        db.exec('ALTER TABLE users ADD COLUMN email_verified_at INTEGER');
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS account_tokens (
+          hash TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+          purpose TEXT NOT NULL CHECK(purpose IN ('password-reset', 'email-verify')),
+          expires_at INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS account_tokens_expires ON account_tokens(expires_at);
+      `);
+    },
+  },
 ];
 
 function schemaVersion(db: DatabaseSync): number {
@@ -50,13 +69,17 @@ function assertSchema(db: DatabaseSync) {
     (db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as { name: string }[])
       .map((row) => row.name),
   );
-  for (const table of ['users','sessions','ratings','matches','results','friends','oauth_flows','auth_codes'])
+  for (const table of ['users','sessions','ratings','matches','results','friends','oauth_flows','auth_codes', 'account_tokens'])
     if (!tables.has(table)) throw new Error(`SQLite schema missing table: ${table}`);
   const columns = new Set(
     (db.prepare('PRAGMA table_info(results)').all() as { name: string }[]).map((row) => row.name),
   );
   for (const column of ['opponents_json', 'player_count'])
     if (!columns.has(column)) throw new Error(`SQLite results table missing column: ${column}`);
+  const userColumns = new Set(
+    (db.prepare('PRAGMA table_info(users)').all() as { name: string }[]).map((row) => row.name),
+  );
+  if (!userColumns.has('email_verified_at')) throw new Error('SQLite users missing email verification column');
 }
 
 export function migrateDatabase(db: DatabaseSync): void {
