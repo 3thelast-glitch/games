@@ -28,7 +28,9 @@ function assertDb(file) {
     const broken = db.prepare('PRAGMA foreign_key_check').all();
     if (broken.length) throw new Error('Backup SQLite foreign key check failed');
     const version = db.prepare('PRAGMA user_version').get()?.user_version;
-    if (version !== 2) throw new Error(`Unsupported backup schema version: ${version}`);
+    // Historical v2 snapshots remain restorable; v3 adds single-use account tokens.
+    if (version !== 2 && version !== 3)
+      throw new Error(`Unsupported backup schema version: ${version}`);
   } finally {
     db.close();
   }
