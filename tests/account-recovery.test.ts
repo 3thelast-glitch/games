@@ -25,7 +25,7 @@ test('single-use verification and password reset: tokens hashed, expiring, and a
     assert.equal(messages.length, 1);
     const verifyLink = messages[0].text.match(/https:\/\/\S+/)?.[0];
     assert.ok(verifyLink);
-    const verifyToken = new URL(verifyLink).searchParams.get('verifyEmail')!;
+    const verifyToken = new URLSearchParams(new URL(verifyLink).hash.slice(1)).get('verifyEmail')!;
     assert.ok(verifyToken);
     const tokens = store.db.prepare('SELECT hash FROM account_tokens').all() as { hash: string }[];
     assert.equal(tokens.length, 1);
@@ -40,7 +40,7 @@ test('single-use verification and password reset: tokens hashed, expiring, and a
     assert.equal(messages.length, 2);
     const resetLink = messages[1].text.match(/https:\/\/\S+/)?.[0];
     assert.ok(resetLink);
-    const resetToken = new URL(resetLink).searchParams.get('resetPassword')!;
+    const resetToken = new URLSearchParams(new URL(resetLink).hash.slice(1)).get('resetPassword')!;
     assert.ok(resetToken);
     const updatedId = await auth.resetPassword(resetToken, 'new-strong-secret-456');
     assert.equal(updatedId, user.id);
@@ -51,7 +51,7 @@ test('single-use verification and password reset: tokens hashed, expiring, and a
     assert.equal((await auth.login('verified@example.test', 'new-strong-secret-456')).id, user.id);
 
     await auth.requestPasswordReset('verified@example.test');
-    const expired = new URL(messages.at(-1)!.text.match(/https:\/\/\S+/)![0]).searchParams.get('resetPassword')!;
+    const expired = new URLSearchParams(new URL(messages.at(-1)!.text.match(/https:\/\/\S+/)![0]).hash.slice(1)).get('resetPassword')!;
     store.db.prepare("UPDATE account_tokens SET expires_at=0 WHERE purpose='password-reset'").run();
     await assert.rejects(() => auth.resetPassword(expired, 'will-not-be-set-789'), /invalid-account-token/);
   } finally { store.close(); }
