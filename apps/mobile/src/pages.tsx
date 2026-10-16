@@ -1170,14 +1170,26 @@ export function SettingsPage({
   profile,
   onAuth,
   onLogout,
+  onLogoutAll,
+  onChangePassword,
+  onVerifyEmail,
+  canEmailRecovery = false,
 }: {
   settings: Settings;
   onChange: (patch: Partial<Settings>) => void;
   profile: Profile | null;
   onAuth: () => void;
   onLogout: () => void;
+  onLogoutAll?: () => Promise<void>;
+  onChangePassword?: (current: string, next: string) => Promise<void>;
+  onVerifyEmail?: () => Promise<void>;
+  canEmailRecovery?: boolean;
 }) {
   const { t } = useI18n();
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [securityBusy, setSecurityBusy] = useState(false);
+  const [securityMessage, setSecurityMessage] = useState('');
   return (
     <div className="page-enter settings-page">
       <div className="page-heading">
@@ -1235,6 +1247,65 @@ export function SettingsPage({
             {t(profile && !profile.guest ? 'signOut' : 'signIn')}
           </button>
         </div>
+        {profile && !profile.guest && (
+          <div className="form-stack">
+            {onLogoutAll && (
+              <button type="button" className="button secondary" disabled={securityBusy}
+                onClick={async () => {
+                  setSecurityBusy(true);
+                  setSecurityMessage('');
+                  try { await onLogoutAll(); }
+                  catch (error) { setSecurityMessage(error instanceof Error ? error.message : String(error)); }
+                  finally { setSecurityBusy(false); }
+                }}>
+                {t('signOutAllDevices')}
+              </button>
+            )}
+            {profile.accountProvider === 'email' && (
+              <>
+                <small role="status">{t(profile.emailVerified ? 'emailVerified' : 'emailNotVerified')}</small>
+                {!profile.emailVerified && canEmailRecovery && onVerifyEmail && (
+                  <button className="button secondary" type="button" disabled={securityBusy}
+                    onClick={async () => {
+                      setSecurityBusy(true);
+                      setSecurityMessage('');
+                      try { await onVerifyEmail(); setSecurityMessage(t('verificationEmailSent')); }
+                      catch (error) { setSecurityMessage(error instanceof Error ? error.message : String(error)); }
+                      finally { setSecurityBusy(false); }
+                    }}>
+                    {t('sendVerificationEmail')}
+                  </button>
+                )}
+                {onChangePassword && (
+                  <form className="form-stack" onSubmit={async (event) => {
+                    event.preventDefault();
+                    setSecurityBusy(true);
+                    setSecurityMessage('');
+                    try {
+                      await onChangePassword(currentPassword, newPassword);
+                      setCurrentPassword('');
+                      setNewPassword('');
+                      setSecurityMessage(t('passwordResetComplete'));
+                    } catch (error) {
+                      setSecurityMessage(error instanceof Error ? error.message : String(error));
+                    } finally { setSecurityBusy(false); }
+                  }}>
+                    <label>{t('currentPassword')}
+                      <input type="password" required value={currentPassword} minLength={1} maxLength={128}
+                        autoComplete="current-password" onChange={(event) => setCurrentPassword(event.target.value)} />
+                    </label>
+                    <label>{t('newPassword')}
+                      <input type="password" required value={newPassword} minLength={12} maxLength={128}
+                        autoComplete="new-password" onChange={(event) => setNewPassword(event.target.value)} />
+                    </label>
+                    <button className="button secondary" disabled={securityBusy}>{t('changePassword')}</button>
+                  </form>
+                )}
+              </>
+            )}
+            {securityMessage && <p role="status" className="small-muted">{securityMessage}</p>}
+          </div>
+        )}
       </section>
       <section className="panel lan-panel">
         <Icon name="globe" />
