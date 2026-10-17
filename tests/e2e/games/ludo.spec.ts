@@ -28,3 +28,21 @@ for (const [name, size, cells, pawns] of [
     });
   }
 }
+
+test('Ludo Grand Arabic keeps board topology while reversing the surrounding UI',async ({browser})=>{
+  const context=await browser.newContext({locale:'ar-SA',viewport:{width:360,height:800}});
+  try{
+    const page=await context.newPage();
+    await page.goto('/');
+    await expect(page.locator('html')).toHaveAttribute('lang','ar');
+    await page.locator('.game-card.ludo .play-button').click();
+    await page.locator('.ludo-variants button').nth(3).click();
+    await page.locator('.ludo-options button').nth(1).click();
+    await page.locator('.ludo-start').click();
+    await expect(page.locator('.ludo-page')).toHaveAttribute('dir','rtl');
+    await expect(page.locator('.ludo-board [data-ludo-cell]')).toHaveCount(130);
+    await expect(page.locator('.ludo-board [data-ludo-token]')).toHaveCount(40);
+    await expect(page.locator('.ludo-player-strip > span')).toHaveCount(10);
+    await expect(page.locator('.ludo-board')).toHaveAttribute('style',/direction: ltr/);
+  }finally{await context.close();}
+});
