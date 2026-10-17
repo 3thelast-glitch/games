@@ -5,6 +5,7 @@ import { BackroomBillCover } from './BackroomBillArt.tsx';
 import { ArithmeticaCover } from './ArithmeticaArt.tsx';
 import { SurvivalBuilderCover } from './SurvivalBuilderArt.tsx';
 import { TowerDefenseCover } from './TowerDestinyArt.tsx';
+import { GasStationCover } from './GasStationArt.tsx';
 import { createContext, useContext, useEffect, useId, useRef, type ReactNode } from 'react';
 import { useI18n } from './i18n.tsx';
 import { HEXES, createAbalone, hexKey } from '../../../packages/games/abalone/state.ts';
@@ -516,6 +517,8 @@ export function GameArt({ game, compact = false }: { game: string; compact?: boo
         <SurvivalBuilderCover />
       ) : game === 'towerDestiny' ? (
         <TowerDefenseCover />
+      ) : game === 'gasStation' ? (
+        <GasStationCover />
       ) : game === 'dotsAndBoxes' ? (
         <DotsAndBoxesArt id={id} />
       ) : game === 'dominoes' ? (
