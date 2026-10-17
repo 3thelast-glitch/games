@@ -16,6 +16,7 @@ export const survivalBuilderEn: Record<string,string> = {
  survivalBuilderUpgrade:'Upgrade speed',
  survivalBuilderSpeed:'Production speed',
  survivalBuilderCollect:'Collect',
+ survivalBuilderSell:'Sell five surplus units of',
  survivalBuilderBamboo:'Bamboo',
  survivalBuilderWood:'Wood',
  survivalBuilderClay:'Clay',
