@@ -1,10 +1,12 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import { chessEn, chessAr } from './chess-i18n.ts';
 import { navalBattleEn, navalBattleAr } from './naval-battle-i18n.ts';
+import { ludoEn, ludoAr } from './ludo-i18n.ts';
 export type Language = 'en' | 'ar';
 const en: Record<string, string> = {
   ...chessEn,
   ...navalBattleEn,
+  ...ludoEn,
   moveNumber: 'Move',
   practiceStatsTitle: 'Offline practice',
   practiceStatsScope: 'Based on up to 100 recent completed matches saved on this device. Not lifetime totals or ranked Elo.',
@@ -468,6 +470,7 @@ const en: Record<string, string> = {
 const ar: Record<string, string> = {
   ...chessAr,
   ...navalBattleAr,
+  ...ludoAr,
   moveNumber: 'الحركة',
   practiceStatsTitle: 'التدريب دون إنترنت',
   practiceStatsScope: 'البيانات من آخر 100 مباراة مكتملة ومحفوظة على هذا الجهاز؛ ليست إجماليًا مدى الحياة ولا تؤثر في تصنيف Online.',
