@@ -113,10 +113,10 @@ export function moveWorm(state: WormState, direction: Direction): WormState {
 export function restoreWorm(value: unknown): WormState | null {
   if (!value || typeof value !== 'object') return null;
   const state = value as Partial<WormState>;
-  if (!Number.isInteger(state.level) || (state.level ?? 0) < 1 || (state.level ?? 0) > 30
+  if (typeof state.level !== 'number' || !Number.isInteger(state.level) || (state.level ?? 0) < 1 || (state.level ?? 0) > 30
       || !Array.isArray(state.body) || state.body.length < 2 || state.body.length > 10
       || typeof state.eaten !== 'boolean' || !['playing', 'lost', 'won'].includes(state.phase ?? '')
-      || !Number.isSafeInteger(state.moves) || (state.moves ?? -1) < 0) return null;
+      || typeof state.moves !== 'number' || !Number.isSafeInteger(state.moves) || (state.moves ?? -1) < 0) return null;
   const board = wormLevel(state.level!);
   if (!state.body.every(p => p && Number.isInteger(p.x) && Number.isInteger(p.y)
     && p.x >= 0 && p.x < board.width && p.y >= 0 && p.y < board.height)) return null;
