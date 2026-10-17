@@ -96,7 +96,7 @@ test('Car servicing consumes fuel only on completion, gives XP and coins',()=>{
  assert.equal(interactCar(s,car.id),true);
  assert.equal(car.status,'servicing');
  const fuel=s.fuel,coin=s.cash;
- for(let i=0;i<10;i++)tickGas(s,.8);
+ for(let i=0;i<6;i++)tickGas(s,.8);
  assert.equal(car.status,'done');
  assert.equal(s.fuel,fuel-car.needs);
  assert.ok(s.cash>coin);
