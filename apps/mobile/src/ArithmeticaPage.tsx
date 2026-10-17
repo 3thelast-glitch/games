@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  answerMathRun, beginMathRun, defaultMathRecord, INITIAL_TIME_MS,
-  makeQuestion, MAX_TIME_MS, pauseMathRun, readMathRecord,
+  answerMathRun, beginMathRun, defaultMathRecord,
+  MAX_TIME_MS, pauseMathRun, readMathRecord,
   SAVE_KEY, startMathRun, summarizeMathRun, tickMathRun,
   type MathRecord, type MathRun,
 } from '../../../packages/games/arithmetica/engine.ts';
