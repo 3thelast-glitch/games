@@ -1,0 +1,64 @@
+/* ArithmeticA-inspired original chalk/wood UI — no external fonts or sprites. */
+.arithmetica-page{max-width:1300px;margin:0 auto;padding:clamp(10px,2vw,27px);color:#f2f2ed}
+.arithmetica-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px}
+.arithmetica-heading .eyebrow{font-size:10px;letter-spacing:.15em;color:#d7af78}
+.arithmetica-heading h1{font-size:clamp(26px,4vw,43px);margin:6px 0}
+.arithmetica-heading p{color:#adbac8;font-size:13px;line-height:1.7;max-width:600px}
+.arithmetica-layout{display:grid;grid-template-columns:minmax(0,820px) minmax(250px,310px);gap:clamp(14px,2vw,25px);align-items:start;justify-content:center}
+.arithmetica-wood{background:repeating-linear-gradient(5deg,#a96e2c 0,#c78b43 7px,#d9a256 12px,#c0853d 19px,#b77831 25px);padding:clamp(10px,2vw,20px);border:2px solid #d7a05b;border-radius:3px;box-shadow:inset 0 0 0 3px #7e491d,inset 0 0 0 6px #edb66a,0 18px 46px #0009;position:relative;overflow:hidden;min-width:0}
+.arithmetica-wood::before{content:"";pointer-events:none;position:absolute;inset:1px;border:2px solid #f4c17d66;box-shadow:inset 0 0 3px #381b10}
+.arithmetica-blackboard{aspect-ratio:1.17;position:relative;display:flex;flex-direction:column;background:radial-gradient(ellipse at 45% 46%,#303334,#232727 72%,#1b1e1f);border:4px solid #413122;box-shadow:inset 0 0 28px #0009,inset 0 0 4px 2px #83857b3b;color:#f6f7f2;overflow:hidden;isolation:isolate;direction:ltr}
+.arithmetica-chalk-noise{pointer-events:none;position:absolute;inset:0;z-index:0;opacity:.28;background-image:radial-gradient(#fff9 0.8px,transparent 1.15px),radial-gradient(#d9dddb45 .7px,transparent 1.2px),repeating-linear-gradient(91deg,transparent 0 52px,#ffffff06 54px 57px,transparent 59px 107px);background-size:7px 11px,17px 16px,100% 100%;filter:blur(.6px)}
+.arithmetica-blackboard>*:not(.arithmetica-chalk-noise){position:relative;z-index:1}
+.arithmetica-board-header{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:clamp(11px,3%,25px) clamp(12px,3%,28px) 0}
+.arithmetica-blackboard,.arithmetica-answer{font-family:"Chalkboard SE","Comic Sans MS","Segoe Print","Comic Neue",cursive}
+.arithmetica-level{color:#eceeec;font-size:clamp(17px,3.8vw,30px);letter-spacing:.035em;text-shadow:1px 1px 2px #fff5,-1px -1px 1px #dedede2d;white-space:nowrap;font-weight:800}
+.arithmetica-time{height:clamp(21px,3.5vw,33px);flex:0 1 50%;min-width:115px;max-width:360px;border:4px solid #ececec;border-radius:6px;background:#454849;box-shadow:0 0 0 2px #7477793d,inset 0 0 8px #1317187a;overflow:hidden;padding:2px}
+.arithmetica-time-fill{height:100%;border-radius:1px;background:repeating-linear-gradient(0deg,#ededed,#f9f9f9 3px,#e0e1dd 6px);transition:width .045s linear;box-shadow:0 0 7px #fff5}
+.arithmetica-stars{display:flex;justify-content:flex-end;gap:clamp(3px,1.5vw,16px);padding:clamp(8px,2%,19px) clamp(12px,3%,29px) 0;font-family:"Segoe Print",cursive;font-size:clamp(22px,5vw,45px);line-height:1;color:#c0b477;text-shadow:1px 1px #ccc49566}
+.arithmetica-stars .earned{color:#f1e394;text-shadow:0 0 7px #ebd88f70}
+.arithmetica-question{flex:1;min-height:80px;display:flex;gap:clamp(5px,1.6vw,16px);justify-content:center;align-items:center;padding:5px 11px 0;color:#fbfbf7;font-weight:900;font-size:clamp(36px,8vw,82px);line-height:1.12;text-shadow:1px 1px #fff6,-1px -1px #fff2;letter-spacing:.005em;white-space:nowrap}
+.arithmetica-operation{font-weight:900}
+.arithmetica-question.correct{animation:arithmetica-right .24s ease-out}
+.arithmetica-question.wrong{animation:arithmetica-wrong .24s ease-out}
+@keyframes arithmetica-right{50%{color:#bcf2d1}}
+@keyframes arithmetica-wrong{50%{color:#f1aa9e}}
+.arithmetica-answer-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;justify-content:center;gap:clamp(20px,8%,96px);padding:0 14% clamp(23px,7%,65px)}
+.arithmetica-answer{border:2px solid #63686a;box-shadow:inset 2px 2px 10px #92959621,0 4px 7px #0003;background:#515455;border-radius:50%;aspect-ratio:1;min-height:0;min-width:0;max-width:130px;width:100%;justify-self:center;cursor:pointer;color:#f8f9f8;font-size:clamp(27px,5.4vw,57px);font-weight:850;touch-action:manipulation}
+.arithmetica-answer:hover:not(:disabled){background:#666b6b;border-color:#999e9e;transform:scale(1.025)}
+.arithmetica-answer:active:not(:disabled){transform:scale(.95);background:#757b79}
+.arithmetica-answer:disabled{cursor:default;opacity:.8}
+.arithmetica-chalk-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 clamp(12px,3%,28px) 15px;font-size:clamp(11px,1.8vw,17px);color:#b8babb}
+.arithmetica-chalk-footer b{color:#f4f2e6}
+.arithmetica-overlay{position:absolute!important;z-index:8!important;inset:0;background:#1b1e1eea;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(9px,2vw,18px);padding:20px;text-align:center;color:#f7f6ed;backdrop-filter:blur(3px)}
+.arithmetica-overlay-icon{font-size:clamp(24px,4vw,58px);color:#ddce8c}
+.arithmetica-overlay h2{font-size:clamp(23px,4vw,43px);font-family:"Chalkboard SE","Comic Sans MS",cursive}
+.arithmetica-overlay p{font-size:clamp(11px,1.8vw,16px);line-height:1.7;max-width:330px;color:#d3d5cb}
+.arithmetica-overlay button{min-width:160px;border:2px solid #efe6ba;border-radius:8px;background:#e8dfbe;color:#212628;font-weight:900;font-size:15px;min-height:47px;padding:10px 22px;cursor:pointer}
+.arithmetica-overlay button:hover{background:#faf6e5}
+.arithmetica-result-stats{display:flex;gap:clamp(8px,2vw,24px);align-items:center;justify-content:center}
+.arithmetica-result-stats span{display:flex;flex-direction:column;gap:4px;font-size:11px;color:#c3bc9b}
+.arithmetica-result-stats b{font-size:21px;color:#fff}
+.arithmetica-sidebar{display:flex;flex-direction:column;gap:18px;border:1px solid #4d5660;padding:clamp(16px,2vw,24px);border-radius:16px;background:linear-gradient(140deg,#232a30,#171d23);box-shadow:0 10px 30px #0005}
+.arithmetica-info strong{font-size:16px;color:#f5dca5}
+.arithmetica-info p,.arithmetica-help-expanded{font-size:12px;line-height:1.8;color:#adbbc7;margin-top:10px}
+.arithmetica-stats{display:grid;gap:8px}
+.arithmetica-stats span{display:flex;justify-content:space-between;gap:12px;align-items:center;border-radius:9px;border:1px solid #3d4850;padding:11px 13px;background:#2b343b;font-size:12px;color:#bdc6cb}
+.arithmetica-stats b{font-size:18px;color:#fff5db}
+.arithmetica-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.arithmetica-actions button{border-radius:9px;border:1px solid #858780;padding:9px;min-height:46px;font-size:12px;font-weight:800;background:#50554f;color:#f3f4ec;cursor:pointer}
+.arithmetica-actions button:hover:not(:disabled){background:#636b61}
+.arithmetica-actions button:disabled{opacity:.35;cursor:not-allowed}
+.arithmetica-offline{padding-top:12px;border-top:1px solid #41484d;color:#91a5b5;font-size:11px;line-height:1.65}
+.arithmetica-page button:focus-visible{outline:3px solid #fff1ae;outline-offset:4px}
+.game-card.arithmetica{border-color:#84643e}
+.game-card.arithmetica:hover{border-color:#c6a16a}
+.arithmetica .card-art-wrap{background:#a77b44}
+.game-art.arithmetica>.art-halo,.game-art.arithmetica>.art-orbit{display:none}
+.game-art.arithmetica>svg{width:100%;height:100%;max-height:none;transform:none;filter:none;display:block}
+.arithmetica .game-tag{color:#e4bd85}
+.arithmetica .play-button{background:#d5ae70;color:#2d2117}
+.arithmetica .play-button:hover{background:#f3c989}
+@media(max-width:900px){.arithmetica-layout{grid-template-columns:minmax(0,1fr)}.arithmetica-wood,.arithmetica-sidebar{max-width:760px;width:100%;margin:0 auto}}
+@media(max-width:500px){.arithmetica-page{padding:7px}.arithmetica-heading{gap:7px}.arithmetica-heading .button{font-size:11px;padding:8px}.arithmetica-wood{padding:9px}.arithmetica-blackboard{aspect-ratio:1/1.06}.arithmetica-board-header{padding:11px 12px 0}.arithmetica-question{font-size:clamp(33px,8.6vw,51px)}.arithmetica-answer-grid{padding:0 13% 24px;gap:13%}.arithmetica-answer{max-width:100px;font-size:clamp(27px,8vw,42px)}.arithmetica-stars{gap:6px;font-size:clamp(20px,6vw,29px)}.arithmetica-time{min-width:88px;height:25px}.arithmetica-sidebar{padding:16px}}
+@media(prefers-reduced-motion:reduce){.arithmetica-page *{animation:none!important;transition:none!important}}

@@ -78,6 +78,7 @@ export const gameInfo = [
   { id: 'appleWorm', duration: '5–10', icon: '🍎', tag: 'appleWormTag', description: 'appleWormDesc' },
   { id: 'basketballLine', duration: '2–8', icon: '🏀', tag: 'basketballLineTag', description: 'basketballLineDesc' },
   { id: 'backroomBill', duration: '8–20', icon: '🟨', tag: 'backroomBillTag', description: 'backroomBillDesc' },
+  { id: 'arithmetica', duration: '2–5', icon: '➗', tag: 'arithmeticaTag', description: 'arithmeticaDesc' },
   ...[
     { id: 'checkers', duration: '10–20', icon: '◉' },
     { id: 'gomoku', duration: '5–15', icon: '✣' },
