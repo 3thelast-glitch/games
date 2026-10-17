@@ -103,7 +103,7 @@ function Board({ state, legal, onChoose, zoom, center }:{
       const p=points['c:'+i]!;
       const entry=i%13===0;
       const safe=isSafe(sides,i);
-      return <g key={'c'+i}>
+      return <g key={'c'+i} data-ludo-cell={i}>
         <circle cx={p.x} cy={p.y} r={layout.radius} fill={entry?COLORS[i/13]:'#F3EBDD'} stroke={safe?'#D0AF65':'#6C7785'} strokeWidth={safe?4:1.4} />
         {safe && <text x={p.x} y={p.y+layout.radius*.34} textAnchor="middle" fontSize={layout.radius*1.2} fill="#182237">✦</text>}
       </g>;
@@ -122,7 +122,7 @@ function Board({ state, legal, onChoose, zoom, center }:{
       const x=point.x+(inStack?(offset%3-1)*layout.radius*.35:0);
       const y=point.y+(inStack?(Math.floor(offset/3)-.5)*layout.radius*.35:0);
       const selectable=legal.includes(token.id);
-      return <g key={token.id} className={selectable?'ludo-legal-pawn':''}>
+      return <g key={token.id} data-ludo-token={token.id} className={selectable?'ludo-legal-pawn':''}>
         {selectable && <circle cx={x} cy={y} r={layout.radius*.96+7} fill="none" stroke="#83DBFF" strokeWidth="4" />}
         <circle cx={x} cy={y+4} r={layout.radius*.83} fill="#020611" opacity=".5" />
         <circle cx={x} cy={y} r={layout.radius*.78} fill={COLORS[token.seat]} stroke="#fff" strokeWidth="2.5" />
