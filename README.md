@@ -2,7 +2,7 @@
 
 <p align="center"><img src="docs/brand/naqla-lockup.png" alt="NAQLA | نقلة" width="480" /></p>
 
-A modular, bilingual strategy game platform for the web, Android and iOS. Version **0.1.0** is a functional implementation with **12 registered multiplayer-compatible games**: Abalone, Quoridor, Checkers, Gomoku, Nine Men’s Morris, Connect Four, Digital Game, Reversi, Chess, Dots and Boxes, Dominoes and Naval Battle, **plus offline Ludo for 4/6/8/10 players** (premium square/radial boards with 4/4/2/1 pawns per player), plus local play, shared AI levels and an authoritative multiplayer server.
+A modular, bilingual strategy game platform for the web, Android and iOS. Version **0.1.0** is a functional implementation with **12 registered multiplayer-compatible games**: Abalone, Quoridor, Checkers, Gomoku, Nine Men’s Morris, Connect Four, Digital Game, Reversi, Chess, Dots and Boxes, Dominoes and Naval Battle, **plus offline Ludo for 4/6/8/10 players** (premium square/radial boards with 4/4/2/1 pawns per player), **and Apple Worm-inspired solo puzzles** with 30 original offline levels, plus local play, shared AI levels and an authoritative multiplayer server.
 
 [دليل التشغيل بالعربية](README.ar.md) · [Architecture](docs/ARCHITECTURE.md) · [Deployment](docs/DEPLOYMENT.md) · [Delivery status](docs/STATUS.md)
 
@@ -41,6 +41,7 @@ The built server serves the app and API at `http://localhost:8787`. `GET /api/he
 - Dots and Boxes: selectable board sizes, box ownership scoring, and an extra turn when completing a box.
 - Dominoes: two-player Draw Dominoes with a double-six set, boneyard, blocked-round scoring, opponent-hand privacy and game-aware AI.
 - Naval Battle: fleet placement, secret opposing fleet, hit/miss/sunk outcomes, AI targeting and tactical 3-of-6 abilities.
+- Apple Worm-inspired offline puzzle adventure: 30 original levels, deterministic gravity and growth rules, undo/restart, hints, touch/keyboard controls and per-device progress saving. This standalone solo game is not part of server matchmaking.
 - Local play, shared AI, quick match and private-room flows are provided through the same game registry. Ranked quick matches require a registered account; guests can play casual online matches.
 - Easy random legal play, medium positional evaluation and hard bounded alpha-beta search, running outside the UI thread.
 - Optional guest/email accounts, provider adapters for Google and Apple, editable profiles, avatar choices, favorites, match history and friend codes.
