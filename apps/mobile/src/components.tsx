@@ -2,6 +2,7 @@ import { ClassicArt } from './ClassicArt.tsx';
 import { AppleWormCover } from './AppleWormArt.tsx';
 import { BasketballLineCover } from './BasketballLineArt.tsx';
 import { BackroomBillCover } from './BackroomBillArt.tsx';
+import { ArithmeticaCover } from './ArithmeticaArt.tsx';
 import { createContext, useContext, useEffect, useId, useRef, type ReactNode } from 'react';
 import { useI18n } from './i18n.tsx';
 import { HEXES, createAbalone, hexKey } from '../../../packages/games/abalone/state.ts';
@@ -507,6 +508,8 @@ export function GameArt({ game, compact = false }: { game: string; compact?: boo
         <BasketballLineCover />
       ) : game === 'backroomBill' ? (
         <BackroomBillCover />
+      ) : game === 'arithmetica' ? (
+        <ArithmeticaCover />
       ) : game === 'dotsAndBoxes' ? (
         <DotsAndBoxesArt id={id} />
       ) : game === 'dominoes' ? (
