@@ -56,6 +56,7 @@ import { BasketballLinePage } from './BasketballLinePage.tsx';
 import { BackroomBillPage } from './BackroomBillPage.tsx';
 import { ArithmeticaPage } from './ArithmeticaPage.tsx';
 import { SurvivalBuilderPage } from './SurvivalBuilderPage.tsx';
+import { TowerDestinyPage } from './TowerDestinyPage.tsx';
 import { lan } from './lan.ts';
 import {
   archiveAnalysisStatus,
@@ -87,7 +88,8 @@ type Page =
   | 'basketballLine'
   | 'backroomBill'
   | 'arithmetica'
-  | 'survivalBuilder';
+  | 'survivalBuilder'
+  | 'towerDestiny';
 interface OfflineSession {
   id: string;
   controller: OfflineMatch;
@@ -1074,7 +1076,7 @@ function ArenaApp({
           <main className={`main-content ${page === 'match' ? 'match-content' : ''}`}>
             {page === 'library' && (
               <HomePage
-                onChoose={(gameId, mode) => gameId === 'ludo' ? setPage('ludo') : gameId === 'appleWorm' ? setPage('appleWorm') : gameId === 'basketballLine' ? setPage('basketballLine') : gameId === 'backroomBill' ? setPage('backroomBill') : gameId === 'arithmetica' ? setPage('arithmetica') : gameId === 'survivalBuilder' ? setPage('survivalBuilder') : setChoice({ gameId, mode })}
+                onChoose={(gameId, mode) => gameId === 'ludo' ? setPage('ludo') : gameId === 'appleWorm' ? setPage('appleWorm') : gameId === 'basketballLine' ? setPage('basketballLine') : gameId === 'backroomBill' ? setPage('backroomBill') : gameId === 'arithmetica' ? setPage('arithmetica') : gameId === 'survivalBuilder' ? setPage('survivalBuilder') : gameId === 'towerDestiny' ? setPage('towerDestiny') : setChoice({ gameId, mode })}
                 onRules={setRules}
                 profile={profile}
                 onFavorite={(id) =>
@@ -1096,6 +1098,7 @@ function ArenaApp({
             {page === 'backroomBill' && <BackroomBillPage onExit={() => setPage('library')} settings={settings} />}
             {page === 'arithmetica' && <ArithmeticaPage onExit={() => setPage('library')} settings={settings} />}
             {page === 'survivalBuilder' && <SurvivalBuilderPage onExit={() => setPage('library')} settings={settings} />}
+            {page === 'towerDestiny' && <TowerDestinyPage onExit={() => setPage('library')} settings={settings} />}
             {page === 'profile' && (
               <ProfilePage
                 profile={profile}
