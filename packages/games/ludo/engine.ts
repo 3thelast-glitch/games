@@ -14,7 +14,7 @@ export type LudoMove = {
   finishes: boolean;
 };
 export interface LudoState {
-  schemaVersion: 1;
+  schemaVersion: 2;
   seatCount: SeatCount;
   profile: LudoProfile;
   controllers: Controller[];
@@ -28,6 +28,11 @@ export interface LudoState {
   lastEvent: string;
 }
 const SUPPORTED = [4, 6, 8, 10];
+/** 4/6 seats use four pawns, 8 seats use two, 10 seats use one. */
+export const tokensPerSeat = (count: SeatCount): number => {
+  assertSeatCount(count);
+  return count <= 6 ? 4 : count === 8 ? 2 : 1;
+};
 export const circuitSize = (count: SeatCount) => 13 * count;
 export const finishProgress = (count: SeatCount) => circuitSize(count) + 4;
 export function assertSeatCount(value: number): asserts value is SeatCount {
@@ -64,10 +69,10 @@ export function createLudo(
   if (!Number.isInteger(startSeat) || startSeat < 0 || startSeat >= count)
     throw new RangeError('invalid-start-seat');
   return {
-    schemaVersion: 1, seatCount: count, profile, controllers: [...controllers],
-    tokens: Array.from({ length: count * 4 }, (_, i) => ({
-      id: String(Math.floor(i / 4)) + ':' + (i % 4),
-      seat: Math.floor(i / 4), slot: i % 4, progress: -1,
+    schemaVersion: 2, seatCount: count, profile, controllers: [...controllers],
+    tokens: Array.from({ length: count * tokensPerSeat(count) }, (_, i) => ({
+      id: String(Math.floor(i / tokensPerSeat(count))) + ':' + (i % tokensPerSeat(count)),
+      seat: Math.floor(i / tokensPerSeat(count)), slot: i % tokensPerSeat(count), progress: -1,
     })),
     placements: [], activeSeat: startSeat, phase: 'roll', die: null,
     sixes: 0, revision: 0, lastEvent: 'started',
@@ -145,10 +150,10 @@ export function moveLudo(state: LudoState, tokenId: string): LudoState {
       }
     }
   }
-  const goal = state.profile === 'fast' ? 2 : 4;
+  const goal = Math.min(tokensPerSeat(state.seatCount), state.profile === 'fast' ? 2 : 4);
   if (move.finishes && tokens.filter(t => t.seat === token.seat && t.progress === finishProgress(state.seatCount)).length >= goal) {
     rank(next, token.seat, 'completed');
-    if (state.profile === 'fast')
+    if (goal < tokensPerSeat(state.seatCount))
       for (const unused of tokens) if (unused.seat === token.seat && unused.progress < finishProgress(state.seatCount)) unused.progress = -2;
   }
   const bonus = state.die === 6 || captures > 0 || move.finishes;
@@ -167,16 +172,17 @@ export function resignLudo(state: LudoState, seat: number): LudoState {
   return settle(next, false, 'resigned');
 }
 export function validateLudo(state: LudoState): void {
-  if (!state || state.schemaVersion !== 1) fail('invalid-save');
+  if (!state || state.schemaVersion !== 2) fail('invalid-save');
   assertSeatCount(state.seatCount);
   if (state.profile !== 'classic' && state.profile !== 'fast') fail('invalid-profile');
   if (!Array.isArray(state.controllers) || state.controllers.length !== state.seatCount ||
     state.controllers.some(x => x !== 'human' && x !== 'ai')) fail('invalid-controllers');
-  if (!Array.isArray(state.tokens) || state.tokens.length !== state.seatCount * 4) fail('invalid-tokens');
+  const slots = tokensPerSeat(state.seatCount);
+  if (!Array.isArray(state.tokens) || state.tokens.length !== state.seatCount * slots) fail('invalid-tokens');
   const F = finishProgress(state.seatCount);
   for (let i = 0; i < state.tokens.length; i++) {
     const t = state.tokens[i]!;
-    if (t.id !== Math.floor(i / 4) + ':' + (i % 4) || t.seat !== Math.floor(i / 4) || t.slot !== i % 4 ||
+    if (t.id !== Math.floor(i / slots) + ':' + (i % slots) || t.seat !== Math.floor(i / slots) || t.slot !== i % slots ||
       !Number.isInteger(t.progress) || t.progress < -2 || t.progress > F) fail('invalid-token');
   }
   if (!Number.isInteger(state.activeSeat) || state.activeSeat < 0 || state.activeSeat >= state.seatCount) fail('invalid-active-seat');
@@ -193,6 +199,23 @@ export function validateLudo(state: LudoState): void {
   if (state.phase !== 'finished' && state.placements.some(p => p.seat === state.activeSeat)) fail('invalid-active-seat');
   if (state.phase === 'finished' && state.placements.length !== state.seatCount) fail('incomplete-results');
 }
+
+/** Old four/six-player sessions keep their original token IDs and progress. */
+export function restoreLudo(source: unknown): LudoState {
+  if (!source || typeof source !== 'object') fail('invalid-save');
+  const saved = source as LudoState & { schemaVersion: number };
+  if (saved.schemaVersion === 1) {
+    // Eight/ten-player legacy saves had four pawns per seat. Trimming them would
+    // silently change an in-progress match; leave those saves untouched instead.
+    if (saved.seatCount !== 4 && saved.seatCount !== 6) fail('legacy-board-requires-new-match');
+    const migrated = { ...saved, schemaVersion: 2 as const };
+    validateLudo(migrated);
+    return migrated;
+  }
+  validateLudo(saved);
+  return saved;
+}
+
 export function chooseAiToken(state: LudoState, difficulty: 'easy' | 'medium' | 'hard', random: () => number): string {
   const moves = legalMoves(state);
   if (!moves.length) fail('no-legal-moves');
@@ -201,7 +224,7 @@ export function chooseAiToken(state: LudoState, difficulty: 'easy' | 'medium' | 
     const F = finishProgress(state.seatCount);
     const target = state.tokens.find(t => t.id === move.tokenId)!;
     const safe = move.destination.startsWith('c:') && isSafe(state.seatCount, Number(move.destination.slice(2)));
-    const completed = move.finishes && state.tokens.filter(t => t.seat === target.seat && t.progress === F).length + 1 >= (state.profile === 'fast' ? 2 : 4);
+    const completed = move.finishes && state.tokens.filter(t => t.seat === target.seat && t.progress === F).length + 1 >= Math.min(tokensPerSeat(state.seatCount), state.profile === 'fast' ? 2 : 4);
     let value = (completed ? 1000 : 0) + (move.finishes ? 120 : 0) + move.captures * 35 + (safe ? 10 : 0) + (move.from === -1 ? 8 : 0) + (move.to >= circuitSize(state.seatCount) - 1 ? 15 : 0) + (move.to - Math.max(0, move.from)) * 12 / F;
     if (difficulty === 'hard' && move.destination.startsWith('c:') && !safe) {
       const targetIndex = Number(move.destination.slice(2));
