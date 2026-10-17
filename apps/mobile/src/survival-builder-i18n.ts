@@ -63,6 +63,7 @@ export const survivalBuilderAr: Record<string,string> = {
  survivalBuilderUpgrade:'ترقية السرعة',
  survivalBuilderSpeed:'سرعة الإنتاج',
  survivalBuilderCollect:'جمع',
+ survivalBuilderSell:'بيع خمس وحدات زائدة من',
  survivalBuilderBamboo:'خيزران',
  survivalBuilderWood:'خشب',
  survivalBuilderClay:'طين',
