@@ -108,7 +108,9 @@ test('Basketball Line ends when basketball goes out of bounds or time limit pass
   timeout.phase='running';timeout.elapsed=19;
   assert.equal(stepRound(timeout),'lost');
   assert.equal(timeout.message,'time');
-  assert.throws(()=>stepRound(makeRound(2),.1), /Invalid/);
+  const invalid=makeRound(2);
+  invalid.phase='running';
+  assert.throws(()=>stepRound(invalid,.1), /Invalid/);
 });
 
 test('Basketball Line validates save contents without trusting malformed local data', () => {
