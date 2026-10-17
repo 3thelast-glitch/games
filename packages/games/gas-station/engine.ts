@@ -126,7 +126,7 @@ export function buyStaff(s:State,job:StaffJob):boolean{
  const workplace:Record<StaffJob,Facility>={fuel:'pump',cashier:'shop',mechanic:'garage',wash:'wash'};
  if(!canFacility(s,workplace[job]))return false;
  s.cash-=workerCost(s);
- s.staff.push({id:s.nextId++,job,level:1});s.notice='gasHired';return true;
+ s.staff.push({id:s.nextId++,job,level:1});s.notice='gasNoticeHired';return true;
 }
 export function dismissStaff(s:State,id:number):boolean{
  const index=s.staff.findIndex(x=>x.id===id);
@@ -185,7 +185,7 @@ export function interactCar(s:State,id:number):boolean{
 export function startRace(s:State):boolean{
  if(s.event.active||s.level<5)return false;
  s.event={active:true,time:80,remaining:3,completed:0,goal:3};
- s.notice='gasRaceStart';return true;
+ s.notice='gasNoticeRaceStart';return true;
 }
 export function claimMission(s:State,key:Mission):boolean{
  if(!Object.hasOwn(MISSIONS,key)||s.claimed.includes(key)||s.missions[key]<MISSIONS[key].target)return false;
@@ -292,7 +292,7 @@ export function tickGas(s:State,dt:number):State{
  return s;
 }
 export function applyOfflineEarnings(s:State,nowMs:number,savedAtMs:number):number{
- if(!Number.isFinite(nowMs)||!Number.isFinite(savedAtMs)||nowMs<=savedAtMs)return 0;
+ if(!Number.isFinite(nowMs)||!Number.isFinite(savedAtMs)||savedAtMs<=0||nowMs<=savedAtMs)return 0;
  const time=Math.min(8*3600,(nowMs-savedAtMs)/1000);
  const workers=s.staff.length;
  const facilities=FACILITIES.reduce((n,k)=>n+(s.facilities[k]>0?1:0),0);
