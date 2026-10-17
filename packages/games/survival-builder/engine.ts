@@ -128,7 +128,7 @@ export function tickIsland(s:IslandState,dt:number):IslandState{
     w.phase-=cycles;
     for(let i=0;i<cycles;i++){
       if(w.job==='brick'){
-        if(s.inventory.clay<2||carried(s)>=bagCapacity(s))continue;
+        if(s.inventory.clay<2)continue;
         s.inventory.clay-=2;s.inventory.brick+=1;
       }else{
         if(carried(s)>=bagCapacity(s))break;
