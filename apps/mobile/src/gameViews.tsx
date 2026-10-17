@@ -80,6 +80,7 @@ export const gameInfo = [
   { id: 'backroomBill', duration: '8–20', icon: '🟨', tag: 'backroomBillTag', description: 'backroomBillDesc' },
   { id: 'arithmetica', duration: '2–5', icon: '➗', tag: 'arithmeticaTag', description: 'arithmeticaDesc' },
   { id: 'survivalBuilder', duration: '15–30', icon: '🏝️', tag: 'survivalBuilderTag', description: 'survivalBuilderDesc' },
+  { id: 'towerDestiny', duration: '5–12', icon: '🏰', tag: 'towerDestinyTag', description: 'towerDestinyDesc' },
   ...[
     { id: 'checkers', duration: '10–20', icon: '◉' },
     { id: 'gomoku', duration: '5–15', icon: '✣' },
