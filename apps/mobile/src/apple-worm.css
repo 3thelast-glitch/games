@@ -46,3 +46,26 @@
 @media(max-width:600px){.worm-page{padding:8px}.worm-header{align-items:flex-start}.worm-header .button{font-size:11px;padding:10px;min-width:90px}.worm-stage{border-radius:15px}.worm-stage-top{padding:8px 10px;font-size:12px}.worm-board{max-height:60dvh}.worm-panel{border-radius:16px}.worm-level-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.worm-result{inset:auto 8px 8px;padding:15px}.worm-result .button{min-height:40px}.worm-pad{grid-template-columns:repeat(3,65px);grid-template-rows:repeat(2,59px)}}
 @media(prefers-reduced-motion:reduce){.worm-portal-ready{animation:none}}
 :root[data-reduce-motion='true'] .worm-portal-ready{animation:none}
+
+
+/* Faithful visual direction: flat sky/rays, solid earth faces and one continuous
+   green character. Keep the native NAQLA controls, but do not tilt the artwork. */
+.game-card.appleWorm{border-color:#38667e}
+.game-card.appleWorm:hover{border-color:#74b4dc}
+.appleWorm .card-art-wrap{background:#75aaef;border-bottom-color:#395d71}
+.game-art.appleWorm .art-orbit,.game-art.appleWorm .art-halo{display:none}
+.game-art.appleWorm>svg{
+  width:100%;height:100%;max-height:none;display:block;flex:none;
+  transform:none;filter:none;object-fit:cover;
+}
+.appleWorm .game-tag{color:#88dca0}
+.appleWorm .play-button{background:#7fd77e;color:#112c18}
+.appleWorm .play-button:hover{background:#9bef97}
+.worm-stage{border-color:#5d87a8;border-radius:17px;background:#6e9df1}
+.worm-board{filter:none}
+.worm-portal-ready{animation:none;filter:none}
+.worm-objective{align-items:center}
+@media(max-width:600px){
+  .worm-stage{border-radius:11px}
+  .game-art.appleWorm>svg{height:100%}
+}
