@@ -51,7 +51,8 @@ export function newIsland():IslandState{
 }
 export const workerCost=(s:IslandState)=>55+Math.max(0,s.workers.length-4)*45;
 export const upgradeCost=(s:IslandState)=>65+Math.round((s.productivity-1)*150);
-export const bagCapacity=(s:IslandState)=>180+Math.max(0,s.totalBuilt)*35;
+export const bagCapacity=(s:IslandState)=>Math.max(180+Math.max(0,s.totalBuilt)*35,
+  MATERIALS.reduce((sum,key)=>sum+blueprintFor(s.island).requirements[key],0)+25);
 export const carried=(s:IslandState)=>MATERIALS.reduce((v,key)=>v+s.inventory[key],0);
 export const remaining=(s:IslandState,key:Material)=>Math.max(0,blueprintFor(s.island).requirements[key]-s.inventory[key]);
 export const readyToBuild=(s:IslandState)=>s.phase==='collecting'&&
