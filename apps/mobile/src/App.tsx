@@ -50,6 +50,7 @@ import { MatchPage } from './MatchPage.tsx';
 import { ChessTrainerPage } from './ChessTrainerPage.tsx';
 import { ChessArchivePage } from './ChessArchivePage.tsx';
 import { LanPage } from './LanPage.tsx';
+import { LudoPage } from './LudoPage.tsx';
 import { lan } from './lan.ts';
 import {
   archiveAnalysisStatus,
@@ -75,7 +76,8 @@ type Page =
   | 'match'
   | 'chessTrainer'
   | 'chessArchive'
-  | 'lan';
+  | 'lan'
+  | 'ludo';
 interface OfflineSession {
   id: string;
   controller: OfflineMatch;
@@ -1062,7 +1064,7 @@ function ArenaApp({
           <main className={`main-content ${page === 'match' ? 'match-content' : ''}`}>
             {page === 'library' && (
               <HomePage
-                onChoose={(gameId, mode) => setChoice({ gameId, mode })}
+                onChoose={(gameId, mode) => gameId === 'ludo' ? setPage('ludo') : setChoice({ gameId, mode })}
                 onRules={setRules}
                 profile={profile}
                 onFavorite={(id) =>
@@ -1078,6 +1080,7 @@ function ArenaApp({
                 onResume={() => setPage('match')}
               />
             )}
+            {page === 'ludo' && <LudoPage onExit={() => setPage('library')} />}
             {page === 'profile' && (
               <ProfilePage
                 profile={profile}

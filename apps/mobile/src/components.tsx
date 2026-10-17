@@ -487,7 +487,18 @@ export function GameArt({ game, compact = false }: { game: string; compact?: boo
   return (
     <div className={`game-art ${game} ${compact ? 'compact' : ''}`} aria-hidden="true">
       <div className="art-halo" />
-      {game === 'dotsAndBoxes' ? (
+      {game === 'ludo' ? (
+        <svg viewBox="0 0 480 444">
+          <rect x="80" y="50" width="320" height="320" rx="28" fill="#151e33" stroke="#c8a76a" strokeWidth="8"/>
+          {[[105,75,'#D94356'],[265,75,'#3978E8'],[105,235,'#20A877'],[265,235,'#F1C44B']].map(([x,y,color],i)=><g key={i}>
+            <rect x={Number(x)} y={Number(y)} width="110" height="110" rx="18" fill={String(color)} fillOpacity=".8"/>
+            {[0,1,2,3].map(j=><circle key={j} cx={Number(x)+33+(j%2)*44} cy={Number(y)+33+Math.floor(j/2)*44} r="13" fill="#f3ebdd" stroke="#182237" strokeWidth="3"/>)}
+          </g>)}
+          <path d="M215 75h50v110h110v50H265v110h-50V235H105v-50h110Z" fill="#f3ebdd"/>
+          <path d="M215 185h50v50h-50Z" fill="#c8a76a"/>
+          <circle cx="240" cy="210" r="14" fill="#182237"/>
+        </svg>
+      ) : game === 'dotsAndBoxes' ? (
         <DotsAndBoxesArt id={id} />
       ) : game === 'dominoes' ? (
         <DominoesArt id={id} />

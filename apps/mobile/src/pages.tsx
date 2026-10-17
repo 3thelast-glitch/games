@@ -104,11 +104,11 @@ export function HomePage({
               <div className="game-meta">
                 <span>
                   <Icon name="people" size={16} />
-                  {t('players')}
+                  {game.id === 'ludo' ? '4 / 6 / 8 / 10' : t('players')}
                 </span>
                 <span>
                   <Icon name="clock" size={16} />
-                  {game.duration} {t('minutes')}
+                  {game.id === 'ludo' ? t('ludoLocal') : game.duration + ' ' + t('minutes')}
                 </span>
               </div>
               <button className="button play-button" onClick={() => onChoose(game.id)}>
@@ -1084,7 +1084,7 @@ export function LeaderboardPage({
       <div className="leaderboard-controls">
         <div className="arena-game-scroll" role="group" aria-label={t('library')} tabIndex={0}>
           <div className="segmented">
-            {gameInfo.map((g) => (
+            {gameInfo.filter((g) => g.id !== 'ludo').map((g) => (
               <button key={g.id} onClick={() => setGame(g.id)} aria-pressed={game === g.id}>
                 {t(g.id)}
               </button>
