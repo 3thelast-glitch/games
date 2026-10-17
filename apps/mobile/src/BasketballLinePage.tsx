@@ -27,7 +27,7 @@ const fresh = () => makeRound(1);
 export function BasketballLinePage({ onExit, settings }: {
   onExit: () => void; settings: Settings;
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const canvas = useRef<HTMLCanvasElement>(null);
   const game = useRef<BasketRound>(fresh());
   const drawing = useRef<Vec[] | null>(null);
@@ -159,7 +159,7 @@ export function BasketballLinePage({ onExit, settings }: {
   };
   if (!loaded) return <main className="basketball-page"><p>{t('loading')}</p></main>;
   return (
-    <main className="basketball-page page-enter" dir="ltr">
+    <main className="basketball-page page-enter" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
       <header className="basketball-heading">
         <div>
           <span className="eyebrow">NAQLA · ARCADE</span>
@@ -169,7 +169,7 @@ export function BasketballLinePage({ onExit, settings }: {
         <button type="button" className="button secondary" onClick={onExit}>{t('basketballLineBack')}</button>
       </header>
       <section className="basketball-layout">
-        <div className="basketball-machine">
+        <div className="basketball-machine" dir="ltr">
           <div className="basketball-hud" aria-live="polite">
             <div className="basketball-gems"><span aria-hidden="true">◆</span> {view.gems}</div>
             <div className="basketball-hud-middle">
