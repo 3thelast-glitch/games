@@ -118,7 +118,7 @@ export function SurvivalBuilderPage({onExit,settings}:{onExit:()=>void;settings:
           </div>
         </div>
         <div className="survival-builder-collect">
-          {MATERIALS.filter(m=>m!=='brick').map((key:Material)=>{
+          {MATERIALS.filter((m):m is Exclude<Material,'brick'>=>m!=='brick').map((key)=>{
             const icon:{[k:string]:string}={bamboo:'🎋',wood:'🪵',clay:'🟤',stone:'🪨'};
             return <button type="button" key={key} disabled={state.phase==='completed'}
               onClick={()=>mutate(s=>tapCollect(s,key))}
