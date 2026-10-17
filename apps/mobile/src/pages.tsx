@@ -104,7 +104,7 @@ export function HomePage({
               <div className="game-meta">
                 <span>
                   <Icon name="people" size={16} />
-                  {game.id === 'ludo' ? '4 / 6 / 8 / 10' : (game.id === 'appleWorm' || game.id === 'basketballLine') ? '1' : t('players')}
+                  {game.id === 'ludo' ? '4 / 6 / 8 / 10' : ['appleWorm','basketballLine','backroomBill'].includes(game.id) ? '1' : t('players')}
                 </span>
                 <span>
                   <Icon name="clock" size={16} />
