@@ -1,0 +1,87 @@
+/* Tower Destiny — original bright cartoon rolling-fortress defense */
+.tower-destiny-page{max-width:1360px;margin:0 auto;padding:clamp(8px,2vw,26px);color:#eef9f3}
+.tower-destiny-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:21px}
+.tower-destiny-heading .eyebrow{font-size:10px;color:#5dded7;letter-spacing:.17em;font-weight:850}
+.tower-destiny-heading h1{font-size:clamp(27px,4vw,43px);margin:7px 0;font-weight:900}
+.tower-destiny-heading p{color:#a7c6cb;font-size:13px;max-width:615px;line-height:1.8}
+.tower-destiny-layout{display:grid;grid-template-columns:minmax(0,520px) minmax(270px,350px);gap:clamp(13px,2.7vw,33px);align-items:start;justify-content:center}
+.tower-destiny-machine{background:#386f71;border:5px solid #3e5d62;border-radius:18px;overflow:hidden;box-shadow:0 22px 65px #0008;max-width:520px;width:100%;margin-inline:auto}
+.tower-destiny-hud{position:relative;z-index:3;background:linear-gradient(#266976,#214f60);display:flex;align-items:center;justify-content:space-between;gap:5px;padding:9px 12px;border-bottom:3px solid #aad8a8;color:#edffe9;font-size:11px;font-weight:800;min-height:44px;white-space:nowrap}
+.tower-destiny-hud b{font-size:16px;color:#ffeda7;padding-inline-start:4px}
+.tower-destiny-world{position:relative;isolation:isolate;overflow:hidden;background:#65dfcf}
+.tower-destiny-canvas{display:block;width:100%;height:auto;aspect-ratio:21/34;touch-action:none;user-select:none;-webkit-user-select:none;cursor:crosshair;max-height:min(69dvh,680px);object-fit:contain;overscroll-behavior:contain}
+.tower-destiny-vitals{position:absolute;left:10px;right:10px;top:11px;z-index:2;display:flex;align-items:center;gap:7px;padding:7px 9px;background:#173a47dd;border:1px solid #b8d6bc;border-radius:9px;color:#f8f6e2;font-size:10px;font-weight:900;pointer-events:none}
+.tower-destiny-vitals>div{background:#253b3e;flex:1;border:1px solid #afc9b7;border-radius:20px;height:12px;overflow:hidden}
+.tower-destiny-vitals>div>span{display:block;height:100%;background:linear-gradient(90deg,#78ca68,#bef18d);border-radius:20px;transition:width .12s}
+.tower-destiny-vitals b{font-size:10px;white-space:nowrap}
+.tower-destiny-stage-progress{position:absolute;bottom:10px;left:10px;right:10px;z-index:2;background:#113b4cce;border:1px solid #bed6ca;border-radius:8px;padding:5px 9px;display:flex;align-items:center;gap:7px;pointer-events:none;color:#ecffeb;font-size:10px;font-weight:850}
+.tower-destiny-stage-progress>div{flex:1;height:7px;border-radius:20px;overflow:hidden;background:#2f515d}
+.tower-destiny-stage-progress>div>span{display:block;height:100%;background:#ffdb68}
+.tower-destiny-overlay{position:absolute;z-index:8;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px;padding:22px;background:#122e3ee0;text-align:center;backdrop-filter:blur(2px);color:#fff9e8}
+.tower-destiny-overlay-icon{font-size:48px;line-height:1}
+.tower-destiny-overlay h2{font-weight:950;font-size:clamp(24px,5vw,36px);color:#ffe9a1}
+.tower-destiny-overlay p{font-size:12px;line-height:1.8;color:#d7f0e9;max-width:290px}
+.tower-destiny-overlay button{cursor:pointer;background:linear-gradient(#ffe17a,#f9aa39);border:3px solid #f8edb8;color:#38524a;border-radius:13px;font-weight:950;min-width:190px;min-height:51px;padding:9px 16px;box-shadow:0 4px 0 #996c35}
+.tower-destiny-overlay button:hover{filter:brightness(1.07)}
+.tower-destiny-prep-summary{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;font-size:12px;font-weight:900;color:#ffe9a1}
+.tower-destiny-prep-summary span{border:1px solid #d7c27f;background:#203d49;padding:6px 11px;border-radius:8px}
+.tower-destiny-energy{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#e5f1d8;padding:8px 12px;color:#315450;font-size:11px;font-weight:850;border-top:3px solid #b5d6ba}
+.tower-destiny-energy>div{flex:1;height:11px;border-radius:20px;overflow:hidden;background:#7fabad;border:1px solid #477e91}
+.tower-destiny-energy>div span{display:block;height:100%;background:linear-gradient(90deg,#78d5ff,#f5f2a0);border-radius:20px}
+.tower-destiny-energy>b{color:#275e69}
+.tower-destiny-specials{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;background:#e2eccb;padding:8px 7px}
+.tower-destiny-specials button{display:flex;flex-direction:column;align-items:center;gap:3px;justify-content:center;min-width:0;min-height:72px;background:linear-gradient(#fff9d2,#f3d99d);border:2px solid #bba66b;border-radius:10px;color:#375452;cursor:pointer;font-size:10px;padding:6px 3px;font-weight:900;box-shadow:0 2px 0 #938854}
+.tower-destiny-specials button span{font-size:21px}
+.tower-destiny-specials button small{font-size:9px;color:#5b8685}
+.tower-destiny-specials button:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+.tower-destiny-specials button:not(:disabled):active{transform:translateY(2px)}
+.tower-destiny-specials .tower-destiny-pause{background:#dbede8;font-size:11px}
+.tower-destiny-side{display:flex;flex-direction:column;gap:13px}
+.tower-destiny-card{background:linear-gradient(140deg,#193e4d,#102c3c);border:1px solid #577c82;border-radius:16px;padding:20px;box-shadow:0 15px 39px #0003}
+.tower-destiny-card h2{font-size:17px;margin:0 0 9px;color:#ffecad;font-weight:950}
+.tower-destiny-card>p{font-size:12px;line-height:1.7;color:#b6d4d7}
+.tower-destiny-floors{display:grid;gap:7px;margin-top:14px}
+.tower-destiny-floor{display:flex;align-items:center;gap:8px;border:1px solid #5a8190;border-radius:11px;background:#285268;padding:10px 7px}
+.tower-destiny-floor-icon{font-size:25px}
+.tower-destiny-floor-info{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0;font-size:12px;color:#f7e9c0}
+.tower-destiny-floor-info strong{font-size:12px;font-weight:900}
+.tower-destiny-floor-info small{font-size:10px;color:#c5d9cf}
+.tower-destiny-floor button{background:#d5e1c3;border:1px solid #9ba894;border-radius:7px;color:#2d625b;font-size:10px;font-weight:950;min-height:36px;min-width:72px;padding:3px 6px;cursor:pointer}
+.tower-destiny-floor button:disabled{opacity:.45;cursor:not-allowed}
+.tower-destiny-add-floor{margin-top:13px;padding-top:12px;border-top:1px solid #628086;display:grid;gap:8px}
+.tower-destiny-add-floor label{font-size:12px;color:#d4e3c2;font-weight:900}
+.tower-destiny-add-floor select{width:100%;background:#2d6070;color:#f6f3c9;min-height:38px;border:1px solid #8ca5ac;border-radius:8px;padding:7px;font-size:12px}
+.tower-destiny-add-floor button{min-height:47px;background:#e9c45e;color:#334f4f;border:2px solid #fae59b;border-radius:10px;font-weight:950;cursor:pointer}
+.tower-destiny-add-floor button:disabled{opacity:.4;cursor:not-allowed}
+.tower-destiny-upgrades{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.tower-destiny-upgrades button{display:flex;flex-direction:column;gap:5px;min-height:74px;align-items:center;justify-content:center;background:#2c6672;color:#f3eccc;border:1px solid #77a7a0;border-radius:9px;padding:8px 3px;cursor:pointer;font-size:11px}
+.tower-destiny-upgrades button strong{font-weight:950}
+.tower-destiny-upgrades button small{font-size:10px;color:#d5dfc4}
+.tower-destiny-upgrades button b{font-size:10px;color:#ffe98d}
+.tower-destiny-upgrades button:disabled{opacity:.44;cursor:not-allowed}
+.tower-destiny-help-toggle{border:1px solid #84c4b0;border-radius:9px;background:#326773;color:#ffedb4;padding:11px 13px;cursor:pointer;font-weight:900;width:100%}
+.tower-destiny-help{line-height:1.85!important;font-size:12px!important;color:#d9e6d3!important;margin-top:12px}
+.tower-destiny-offline{margin-top:13px;font-size:11px;color:#91b4b4!important;line-height:1.7!important}
+.game-card.towerDestiny{border-color:#368c8d}.game-card.towerDestiny:hover{border-color:#8de9cd}
+.towerDestiny .card-art-wrap{background:#46cbbd}
+.game-art.towerDestiny>.art-halo,.game-art.towerDestiny>.art-orbit{display:none}
+.game-art.towerDestiny>svg{width:100%;height:100%;max-height:none;transform:none;filter:none}
+.towerDestiny .game-tag{color:#7fe7d2}.towerDestiny .play-button{background:#53caac;color:#193e42}
+.towerDestiny .play-button:hover{background:#81e6c4}
+.tower-destiny-page button:focus-visible,.tower-destiny-page select:focus-visible{outline:3px solid #fae6a6;outline-offset:3px}
+@media(max-width:850px){.tower-destiny-layout{grid-template-columns:minmax(0,1fr)}.tower-destiny-side{max-width:510px;margin:0 auto;width:100%}}
+@media(max-width:480px){
+.tower-destiny-page{padding:7px}.tower-destiny-heading .button{font-size:10px;padding:9px}
+.tower-destiny-machine{border-width:3px;border-radius:11px;max-width:min(100%,48dvh)}
+.tower-destiny-canvas{max-height:none}
+.tower-destiny-hud{padding:7px 5px;font-size:9px;min-height:37px}
+.tower-destiny-hud b{font-size:12px;padding-inline-start:2px}
+.tower-destiny-vitals{top:7px;left:6px;right:6px;padding:4px 7px;font-size:9px}
+.tower-destiny-overlay{padding:14px;gap:10px}.tower-destiny-overlay-icon{font-size:33px}
+.tower-destiny-overlay h2{font-size:23px}.tower-destiny-overlay p{font-size:10px}
+.tower-destiny-specials{padding:6px 4px;gap:3px}
+.tower-destiny-specials button{min-height:62px;font-size:8px;padding:4px 2px}
+.tower-destiny-specials button span{font-size:18px}
+.tower-destiny-side{max-width:510px}
+}
+@media(prefers-reduced-motion:reduce){.tower-destiny-page *{transition:none!important;animation:none!important}}
