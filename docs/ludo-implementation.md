@@ -1,6 +1,6 @@
 # NAQLA Ludo — Offline implementation and remaining work
 
-This change adds an initial playable **offline Ludo** feature. It is intentionally not a full implementation of the attached 20-phase specification.
+This change adds an playable **offline Ludo** feature with premium square/radial boards. It is intentionally not a full implementation of the attached 20-phase specification.
 
 ## Architecture observed on main (2026-10-17)
 
@@ -12,11 +12,12 @@ This change adds an initial playable **offline Ludo** feature. It is intentional
 ## Delivered paths
 
 - `packages/games/ludo/engine.ts`: deterministic topology and turn resolution for exactly 4, 6, 8, or 10 players; Classic and Fast objectives; captures; safe cells; third-six penalty; ranking; resignation; simple AI; uniform local RNG sampler.
-- `apps/mobile/src/LudoPage.tsx`: local pass-and-play and one-human-versus-AI sessions; square/radial SVG board; legal token action tray; zoom/overview/focus; save/resume.
+- `apps/mobile/src/LudoPage.tsx`: local pass-and-play and one-human-versus-AI sessions; legal token action tray; zoom/overview/focus; versioned save/resume.
+- `apps/mobile/src/LudoBoard.tsx`: premium playable square 4-player board and radial 6/8/10-player boards, warm-gold frame, glossy pawn markers, colored lanes, star safe tiles, accessible keyboard-selectable pawns; rendered cells are mapped to rules-engine route IDs.
 - `apps/mobile/src/ludo.css`: responsive board and setup styling.
 - `apps/mobile/src/ludo-i18n.ts`: localized Arabic and English copy.
 - App/library integration: `apps/mobile/src/App.tsx`, `apps/mobile/src/gameViews.tsx`, `apps/mobile/src/components.tsx`, `apps/mobile/src/pages.tsx`, `apps/mobile/src/i18n.tsx`, `apps/mobile/src/main.tsx`.
-- Tests: `tests/ludo.test.ts`, `tests/e2e/games/ludo.spec.ts`.
+- Tests: `tests/ludo.test.ts`, `tests/e2e/games/ludo.spec.ts` (counts, saves, zoom, Arabic RTL and board shape).
 
 ## Rules and topology
 
@@ -24,10 +25,17 @@ This change adds an initial playable **offline Ludo** feature. It is intentional
 |---|---:|---:|---:|---:|
 | 4 | 52 | 57 | 16 | 8 |
 | 6 | 78 | 83 | 24 | 12 |
-| 8 | 104 | 109 | 32 | 16 |
-| 10 | 130 | 135 | 40 | 20 |
+| 8 | 104 | 109 | 16 (2 per player) | 16 |
+| 10 | 130 | 135 | 10 (1 per player) | 20 |
 
-Every player has four persistent tokens and the same route length. Each circuit has thirteen logical nodes per seat, with safe offsets 0 and 8. Five private approach nodes precede the player's own finish. Exact landing is mandatory. Releasing on a six consumes the roll; it does not move six extra steps. Unsafe capture returns the opposing token(s) to their original base slots. Bonus turns do not stack. Three consecutive sixes discard the third roll while keeping earlier committed moves. Fast mode ranks a participant after two finished tokens and withdraws the rest.
+The **4-player and 6-player boards have four pawns per player**, the **8-player board has two**, and the **10-player board has one**. Routes remain independent of pawn quota, so each seat retains an equally long circuit. Each circuit has thirteen logical nodes per seat, with safe offsets 0 and 8. Five private approach nodes precede the player's own finish. Exact landing is mandatory. Releasing on a six consumes the roll; it does not move six extra steps. Unsafe capture returns the opposing token(s) to their original base slots. Bonus turns do not stack. Three consecutive sixes discard the third roll while keeping earlier committed moves. Classic requires all allotted pawns to finish. Fast requires up to two pawns (the minimum of two and the available quota), and withdraws any unused pawns.
+
+## Legacy save compatibility
+
+- Saves created by the old renderer used schema version 1, with four pawns for every seat count. The redesign introduces schema version 2 and saves under `ludo-offline-v2`.
+- Four-player and six-player legacy sessions are migrated without changing their pawn IDs, turn or positions.
+- Eight-player and ten-player legacy sessions cannot be migrated without silently removing pieces. Their original `ludo-offline-v1` records are retained and a localized message asks for a fresh game. No in-progress match is silently truncated.
+- App test selectors: `data-ludo-board-variant`, `data-ludo-cell`, `data-ludo-base-slot`, and `data-ludo-token`.
 
 ## Supported modes and explicit gaps
 
