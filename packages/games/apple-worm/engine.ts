@@ -63,6 +63,14 @@ export function wormLevel(number: number): WormLevel {
   for (let x = 0; x < width; x++) if (!gaps.has(x)) blocks.push({ x, y: floor });
   if (variant === 3 || variant === 4) blocks.push({ x: 6, y: floor - 1 });
   if (variant === 5) blocks.push({ x: 3, y: floor - 1 });
+  // Curated extra climb positions. All 30 puzzles are BFS-verified by tests.
+  const climbs: Record<number, number[]> = {
+    7:[8], 8:[9], 9:[8], 10:[8], 11:[8], 12:[9],
+    13:[5,9], 14:[6,11], 15:[5,9], 16:[5,11], 17:[10,11], 18:[7,11],
+    19:[6,10,11], 20:[8,9,13], 21:[5,6,10], 22:[11,13], 23:[7,11], 24:[7,13],
+    25:[5,9,13], 26:[7,11,15], 27:[5,9,13], 28:[5,10], 29:[10], 30:[8,12,15],
+  };
+  for (const x of climbs[number] ?? []) blocks.push({ x, y: floor - 1 });
   // Raised end platforms add spatial planning without obstructing the teaching route.
   if (chapter >= 2 && variant === 3) blocks.push({ x: width - 4, y: floor - 1 });
   if (chapter >= 3 && variant === 4) blocks.push({ x: width - 4, y: floor - 1 });
