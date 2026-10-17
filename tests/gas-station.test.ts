@@ -32,7 +32,8 @@ test('Junk cleaning requires proximity and correct number of actions, then pays 
  for(let i=0;i<8;i++)tickGas(s,.8);
  assert.ok(isNear(s,item,72));
  const money=s.cash;
- for(let i=0;i<item.durability;i++)assert.equal(clearJunk(s,item.id),true);
+ const hits=item.durability;
+ for(let i=0;i<hits;i++)assert.equal(clearJunk(s,item.id),true);
  assert.equal(item.cleared,true);
  assert.ok(s.cash>money);
  const after=s.cash;
