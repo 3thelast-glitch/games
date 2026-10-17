@@ -21,8 +21,18 @@ for (const [name, size, cells, pawns] of [
       await expect(page.locator('.ludo-board [data-ludo-token]')).toHaveCount(pawns);
       await expect(page.locator('.ludo-player-strip > span')).toHaveCount(size);
       await expect(page.locator('.ludo-dice-line button')).toBeEnabled();
+      await expect(page.locator('.ludo-play')).toHaveAttribute('data-ludo-revision', '0');
       await page.locator('.ludo-dice-line button').click();
-      await expect(page.locator('.ludo-die')).not.toHaveText('?');
+      // On rolls 1–5 with every token at base, the move resolves immediately.
+      // A six leaves a selectable roll. Both outcomes are valid committed turns.
+      await expect(page.locator('.ludo-play')).toHaveAttribute('data-ludo-revision', '1');
+      const phase = await page.locator('.ludo-play').getAttribute('data-ludo-phase');
+      if (phase === 'move') {
+        await expect(page.locator('.ludo-die')).toHaveText('6');
+        await expect(page.locator('.ludo-tray button:not(:disabled)')).toHaveCount(4);
+      } else {
+        await expect(page.getByText('No legal move; play advanced automatically.')).toBeVisible();
+      }
       const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
       expect(overflow).toBeLessThanOrEqual(1);
     });
