@@ -60,7 +60,7 @@ function buildLayout(n: SeatCount): Layout {
   bases.forEach((base,seat) => offsets.forEach(([dx,dy],slot) => {
     nodes['base:'+seat+':'+slot]={x:base.x+dx!,y:base.y+dy!};
   }));
-  return {nodes,bases,radius:n===4?23:Math.min(16,450/C*3)};
+  return {nodes,bases,radius:n===4?23:Math.min(16,0.72*310*Math.sin(Math.PI/C))};
 }
 function tokenPosition(state: LudoState, token: LudoToken, nodes: Record<string,Point>): Point | null {
   if(token.progress === -2) return null;
