@@ -29,7 +29,7 @@ function Palm({x,y,scale=1}:{x:number;y:number;scale?:number}){
 function WorkerFigure({x,y,shirt='#3899b3',phase=0,small=false}:{
   x:number;y:number;shirt?:string;phase?:number;small?:boolean;
 }){
-  return <g transform={'translate('+x+' '+y+') scale('+(small?.74:1)+')'} aria-hidden="true">
+  return <g transform={'translate('+x+' '+y+') scale('+(small ? 0.74 : 1)+')'} aria-hidden="true">
     <ellipse cx="0" cy="9" rx="15" ry="8" fill="#1f644d" opacity=".24"/>
     <path d="M-5 3L-10 14M5 3L9 14" stroke="#4b505e" strokeWidth="6" strokeLinecap="round"/>
     <path d="M-8 -22L-13 -7M8 -22L13 -8" stroke="#bc8558" strokeWidth="5" strokeLinecap="round"/>
