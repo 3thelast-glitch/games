@@ -1,0 +1,83 @@
+/* Survival Builder — original sunny isometric island / casual idle construction. */
+.survival-builder-page{max-width:1510px;margin:0 auto;padding:clamp(10px,2vw,25px);color:#f2f7f2}
+.survival-builder-heading{display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:19px}
+.survival-builder-heading .eyebrow{font-size:10px;letter-spacing:.15em;color:#68d8ae;font-weight:800}
+.survival-builder-heading h1{font-size:clamp(27px,4vw,43px);margin:7px 0}
+.survival-builder-heading p{color:#b1c5ca;font-size:13px;line-height:1.65;max-width:600px}
+.survival-builder-layout{display:grid;grid-template-columns:minmax(0,900px) minmax(268px,335px);gap:clamp(11px,2vw,23px);align-items:start;justify-content:center}
+.survival-builder-game{min-width:0;background:#f5ecd3;border:3px solid #387c6a;border-radius:19px;overflow:hidden;color:#2b493c;box-shadow:0 19px 49px #0005}
+.survival-builder-hud{min-height:55px;background:#f8f9e8;display:flex;flex-wrap:wrap;gap:7px;align-items:center;justify-content:space-around;border-bottom:2px solid #90c4a2;padding:9px 11px;color:#557364;font-size:12px;font-weight:850}
+.survival-builder-hud span{display:flex;gap:6px;align-items:center}
+.survival-builder-hud b{color:#33684c;font-size:16px;white-space:nowrap}
+.survival-builder-landscape{position:relative;background:#12a5c0;overflow:hidden}
+.survival-island-scene{display:block;width:100%;height:auto;aspect-ratio:640/510;max-height:76dvh;user-select:none}
+.survival-harvest-site{cursor:pointer;touch-action:manipulation;outline:none}
+.survival-harvest-site:hover{filter:brightness(1.08) drop-shadow(0 0 7px #f9ff99)}
+.survival-harvest-site:focus-visible{filter:drop-shadow(0 0 11px #ffffff)}
+.survival-builder-goal{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:min(73%,430px);background:#fffef5f2;border:2px solid #b4bc9d;border-radius:14px;padding:7px 12px;box-shadow:0 6px 13px #0003;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 7px;pointer-events:none}
+.survival-builder-goal-name{grid-column:span 2;color:#3b5345;font-size:clamp(10px,1.5vw,14px);font-weight:900;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.survival-builder-progress{height:11px;background:#cbd4bf;border-radius:8px;overflow:hidden;border:1px solid #a8b5a1;align-self:center}
+.survival-builder-progress span{height:100%;display:block;background:linear-gradient(90deg,#62b669,#a2d76e);transition:width .2s linear}
+.survival-builder-goal-progress{font-size:12px;font-weight:900;color:#447952}
+.survival-builder-collect{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding:10px;background:#e8dcb7;border-top:2px solid #d4b978}
+.survival-builder-collect button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:86px;padding:6px 3px;background:linear-gradient(#fffff4,#ebeee0);border:2px solid #a5c2a3;border-radius:13px;color:#416b53;box-shadow:0 3px 0 #b1ac83;cursor:pointer}
+.survival-builder-collect button:hover:not(:disabled){background:#f1fff0;transform:translateY(-2px)}
+.survival-builder-collect button:active:not(:disabled){transform:translateY(1px);box-shadow:0 1px 0 #a5a17a}
+.survival-builder-collect button:disabled{cursor:not-allowed;opacity:.6}
+.survival-builder-collect button>span{font-size:25px;line-height:1}
+.survival-builder-collect button small{font-size:clamp(9px,1.5vw,12px);font-weight:850}
+.survival-builder-collect button strong{font-size:17px}
+.survival-builder-collect button em{font-size:9px;color:#7d8d70;font-weight:700;font-style:normal}
+.survival-builder-action-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#f6f0d8;border-top:1px solid #d0c49d;padding:12px 15px}
+.survival-builder-main-action{background:linear-gradient(#66bd75,#39935e);color:#fff;border:2px solid #24764c;border-radius:12px;min-height:49px;min-width:183px;padding:9px 17px;font-weight:950;font-size:15px;cursor:pointer;box-shadow:0 4px 0 #29784c;text-shadow:0 1px #173e31}
+.survival-builder-main-action:hover:not(:disabled){background:linear-gradient(#81d28c,#4caa68)}
+.survival-builder-main-action:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+.survival-builder-working{border-radius:11px;background:#3c8955;color:#fff;padding:12px 18px;font-weight:900}
+.survival-builder-working b{padding-inline-start:8px}
+.survival-builder-phase-hint{flex:1;font-size:11px;line-height:1.55;color:#66826e}
+.survival-builder-notice{color:#286a50;background:#e2f2c7;margin:0;padding:10px 15px;font-size:12px;font-weight:900;border-top:1px solid #9fcb98}
+.survival-builder-side{display:flex;flex-direction:column;gap:13px;min-width:0}
+.survival-builder-card{padding:clamp(15px,2vw,22px);background:linear-gradient(140deg,#263a34,#182c2b);border:1px solid #4e8370;border-radius:16px;box-shadow:0 10px 35px #0003}
+.survival-builder-card h2{font-size:16px;font-weight:950;color:#d3f1c6;margin:0 0 12px}
+.survival-builder-card>p{font-size:11px;line-height:1.7;color:#b0c5b9}
+.survival-builder-requirements{display:grid;gap:6px;margin-top:14px}
+.survival-builder-requirements>div{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;background:#34453d;border:1px solid #496858;border-radius:9px;color:#c3d3bc;font-size:12px}
+.survival-builder-requirements b,.survival-builder-requirements strong{color:#f8e8b9}
+.survival-builder-sell{margin-inline-start:auto;flex:none;background:#426d57;color:#e4ffcf;border:1px solid #90b585;border-radius:6px;min-height:29px;padding:4px 6px;font-weight:850;font-size:10px;cursor:pointer}
+.survival-builder-sell:hover{background:#508968}
+.survival-builder-requirements .survival-builder-ready{border-color:#54895a;background:#355740}
+.survival-builder-requirements .survival-builder-ready strong{color:#b6efb0}
+.survival-builder-reward{margin-top:13px;padding:10px;border-radius:10px;background:#9c793629;text-align:center;border:1px solid #b6924a85;color:#ffdc80;font-size:13px;font-weight:900}
+.survival-builder-workers{display:flex;flex-direction:column;gap:7px;max-height:330px;overflow-y:auto;overscroll-behavior:contain}
+.survival-builder-worker{display:flex;align-items:center;gap:7px;background:#34443e;border:1px solid #52695c;padding:7px;border-radius:10px}
+.survival-builder-helmet{font-size:24px}
+.survival-builder-worker label{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;color:#bfcdbd;font-size:10px;font-weight:850}
+.survival-builder-worker select{width:100%;min-width:0;border:1px solid #79988a;border-radius:7px;color:#f3f8f0;background:#3a5547;min-height:34px;font-size:12px;padding:5px}
+.survival-builder-worker small{font-size:10px;color:#dad6a5}
+.survival-builder-upgrades{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:13px}
+.survival-builder-upgrades button{border:1px solid #8fb787;background:#376f50;color:#fff0c9;border-radius:9px;font-size:11px;min-height:46px;padding:6px 9px;font-weight:900;cursor:pointer}
+.survival-builder-upgrades button:hover:not(:disabled){background:#438960}
+.survival-builder-upgrades button:disabled{opacity:.42;cursor:not-allowed}
+.survival-builder-level-note{font-size:11px!important;color:#9ee4b9!important;padding-top:8px}
+.survival-builder-tips p+p{border-top:1px solid #426756;padding-top:11px;margin-top:15px}
+.survival-builder-page button:focus-visible,.survival-builder-page select:focus-visible{outline:3px solid #ffe5a6;outline-offset:2px}
+.game-card.survivalBuilder{border-color:#3e867a}.game-card.survivalBuilder:hover{border-color:#72d6b3}
+.survivalBuilder .card-art-wrap{background:#19acc5}
+.game-art.survivalBuilder>.art-halo,.game-art.survivalBuilder>.art-orbit{display:none}
+.game-art.survivalBuilder>svg{width:100%;height:100%;max-height:none;transform:none;filter:none}
+.survivalBuilder .game-tag{color:#a1e8a5}
+.survivalBuilder .play-button{background:#65c481;color:#183c2a}
+.survivalBuilder .play-button:hover{background:#a4eda1}
+@media(max-width:1000px){.survival-builder-layout{grid-template-columns:minmax(0,1fr)}.survival-builder-game,.survival-builder-side{max-width:820px;margin:0 auto;width:100%}.survival-builder-side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.survival-builder-tips{grid-column:span 2}}
+@media(max-width:580px){
+.survival-builder-page{padding:7px}.survival-builder-heading .button{font-size:11px;padding:8px}.survival-builder-game{border:2px solid #387c6a;border-radius:12px}
+.survival-builder-hud{gap:4px;min-height:48px;padding:6px 5px;font-size:10px}
+.survival-builder-hud b{font-size:12px}.survival-builder-goal{top:6px;padding:5px 8px;min-width:0;width:70%}
+.survival-builder-goal-name{font-size:9px}.survival-builder-progress{height:7px}
+.survival-builder-collect{gap:4px;padding:7px 5px}.survival-builder-collect button{border-radius:8px;min-height:70px;border-width:1px;padding:3px 1px}
+.survival-builder-collect button>span{font-size:19px}.survival-builder-collect button small{font-size:8px}
+.survival-builder-collect button strong{font-size:12px}.survival-builder-collect button em{font-size:8px}
+.survival-builder-action-row{padding:9px}.survival-builder-main-action{min-width:142px;min-height:44px;font-size:12px}
+.survival-builder-phase-hint{font-size:10px}.survival-builder-side{display:flex}.survival-builder-tips{grid-column:auto}
+}
+@media(prefers-reduced-motion:reduce){.survival-builder-page *{animation:none!important;transition:none!important}}
