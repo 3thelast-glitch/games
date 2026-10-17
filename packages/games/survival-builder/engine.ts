@@ -85,8 +85,7 @@ export function upgradeWorkers(s:IslandState):boolean{
   return true;
 }
 export function refineBrick(s:IslandState):boolean{
-  if(s.phase==='completed'||s.inventory.clay<2||
-     carried(s)>=bagCapacity(s))return false;
+  if(s.phase==='completed'||s.inventory.clay<2)return false;
   s.inventory.clay-=2;s.inventory.brick+=1;return true;
 }
 export function sellSurplus(s:IslandState,key:Material,count=5):boolean{
