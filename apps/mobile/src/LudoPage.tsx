@@ -233,7 +233,7 @@ export function LudoPage({onExit}:{onExit:()=>void}) {
       <p className="small-muted">{t('ludoRules')}</p>
       <p className="ludo-offline-note">{t('ludoOnlineUnavailable')}</p>
       <button type="button" className="button primary ludo-start" onClick={start}>{t('start')}</button>
-    </div> : <div className="ludo-play">
+    </div> : <div className="ludo-play" data-ludo-revision={game.revision} data-ludo-phase={game.phase}>
       <div className="ludo-player-strip">
         {game.controllers.map((controller,s)=>{
           const place=game.placements.find(x=>x.seat===s);
