@@ -3,8 +3,8 @@ import { expect, test } from '@playwright/test';
 for (const [name, size, cells, pawns] of [
   ['Classic', 4, 52, 16],
   ['Hexa', 6, 78, 24],
-  ['Octa', 8, 104, 32],
-  ['Grand', 10, 130, 40],
+  ['Octa', 8, 104, 16],
+  ['Grand', 10, 130, 10],
 ] as const) {
   for (const viewport of [{width:320,height:568},{width:390,height:844}]) {
     test('Ludo '+name+' '+viewport.width+'px loads live offline board', async ({page})=>{
@@ -17,9 +17,16 @@ for (const [name, size, cells, pawns] of [
       await page.locator('.ludo-options button').filter({hasText:'Pass & play'}).click();
       await page.locator('.ludo-start').click();
       await expect(page.locator('.ludo-board')).toBeVisible();
+      await expect(page.locator('.ludo-board')).toHaveAttribute('data-ludo-board-variant',size===4?'square':'radial');
+      await expect(page.locator('.ludo-play')).toHaveAttribute('data-ludo-token-count',String(pawns));
+      await expect(page.locator('.ludo-board [data-ludo-base-slot]')).toHaveCount(pawns);
       await expect(page.locator('.ludo-board [data-ludo-cell]')).toHaveCount(cells);
       await expect(page.locator('.ludo-board [data-ludo-token]')).toHaveCount(pawns);
       await expect(page.locator('.ludo-player-strip > span')).toHaveCount(size);
+      await page.getByRole('button',{name:/Zoom in/i}).click();
+      await expect(page.locator('.ludo-board')).toHaveAttribute('viewBox',/\b7[0-9][0-9]\.\d+\b|\b7[0-9][0-9]\b/);
+      await page.getByRole('button',{name:/Full board/i}).click();
+      await expect(page.locator('.ludo-board')).toHaveAttribute('viewBox','0 0 1000 1000');
       await expect(page.locator('.ludo-dice-line button')).toBeEnabled();
       await expect(page.locator('.ludo-play')).toHaveAttribute('data-ludo-revision', '0');
       await page.locator('.ludo-dice-line button').click();
@@ -29,7 +36,7 @@ for (const [name, size, cells, pawns] of [
       const phase = await page.locator('.ludo-play').getAttribute('data-ludo-phase');
       if (phase === 'move') {
         await expect(page.locator('.ludo-die')).toHaveText('6');
-        await expect(page.locator('.ludo-tray button:not(:disabled)')).toHaveCount(4);
+        await expect(page.locator('.ludo-tray button:not(:disabled)')).toHaveCount(pawns/size);
       } else {
         await expect(page.getByText('No legal move; play advanced automatically.')).toBeVisible();
       }
@@ -51,7 +58,8 @@ test('Ludo Grand Arabic keeps board topology while reversing the surrounding UI'
     await page.locator('.ludo-start').click();
     await expect(page.locator('.ludo-page')).toHaveAttribute('dir','rtl');
     await expect(page.locator('.ludo-board [data-ludo-cell]')).toHaveCount(130);
-    await expect(page.locator('.ludo-board [data-ludo-token]')).toHaveCount(40);
+    await expect(page.locator('.ludo-board [data-ludo-token]')).toHaveCount(10);
+    await expect(page.locator('.ludo-board [data-ludo-base-slot]')).toHaveCount(10);
     await expect(page.locator('.ludo-player-strip > span')).toHaveCount(10);
     await expect(page.locator('.ludo-board')).toHaveAttribute('style',/direction: ltr/);
   }finally{await context.close();}
