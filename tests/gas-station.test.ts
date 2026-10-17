@@ -87,7 +87,7 @@ test('Technological upgrades increase limits and worker purchases require opened
 });
 test('Car servicing consumes fuel only on completion, gives XP and coins',()=>{
  const s=newGasStation();
- tickGas(s,3);
+ for(let i=0;i<4;i++)tickGas(s,.75);
  const car=s.cars.find(c=>c.facility==='pump')!;
  assert.ok(car);
  assert.equal(interactCar(s,car.id),false,'character is too far away initially');
@@ -129,7 +129,7 @@ test('Employees automatically fuel and serve, preserving server-free local econo
  assert.ok(s.fuel>=0);
 });
 test('Customers become impatient and can leave without illegitimate revenue',()=>{
- const s=newGasStation();tickGas(s,3);
+ const s=newGasStation();for(let i=0;i<4;i++)tickGas(s,.75);
  const car=s.cars[0]!;
  assert.ok(car);
  const cash=s.cash;car.patience=.01;
