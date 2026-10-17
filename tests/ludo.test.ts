@@ -3,16 +3,17 @@ import assert from 'node:assert/strict';
 import {
   circuitSize, createLudo, finishProgress, isSafe, legalMoves, moveLudo,
   nodeFor, resignLudo, rollLudo, routeFor, secureDie, validateLudo,
-  chooseAiToken, type SeatCount,
+  chooseAiToken, tokensPerSeat, restoreLudo, type SeatCount,
 } from '../packages/games/ludo/engine.ts';
 
 const counts: SeatCount[] = [4,6,8,10];
 
 for (const n of counts) {
+  const slots=tokensPerSeat(n);
   test('Ludo '+n+' players: topologies, base slots, rotation, safe nodes', () => {
     const state=createLudo(n);
     assert.equal(circuitSize(n),13*n);
-    assert.equal(state.tokens.length,4*n);
+    assert.equal(state.tokens.length,slots*n);
     assert.equal(routeFor(n,0).length,13*n+5);
     assert.equal(new Set(routeFor(n,0)).size,13*n+5);
     assert.equal(state.controllers.length,n);
@@ -29,7 +30,7 @@ for (const n of counts) {
         const relative=(index-13*s+13*n)%(13*n);
         assert.equal(relative,k);
       }
-      assert.equal(state.tokens.filter(t=>t.seat===s).length,4);
+      assert.equal(state.tokens.filter(t=>t.seat===s).length,slots);
     }
     assert.equal(Array.from({length:13*n},(_,i)=>isSafe(n,i)).filter(Boolean).length,n*2);
     validateLudo(state);
@@ -41,7 +42,7 @@ for (const n of counts) {
     assert.equal(after1.phase,'roll');
     const first=rollLudo(s,6);
     assert.equal(first.phase,'move');
-    assert.equal(legalMoves(first).length,4);
+    assert.equal(legalMoves(first).length,slots);
     assert.ok(legalMoves(first).every(m=>m.to===0));
     const moved=moveLudo(first,'0:0');
     assert.equal(moved.tokens[0]!.progress,0);
@@ -64,27 +65,29 @@ for (const n of counts) {
     const C=circuitSize(n),F=finishProgress(n);
     const s=createLudo(n);
     s.phase='move';s.die=1;
-    s.tokens[0]!.progress=12; // move to unsafe c:13
-    s.tokens[4]!.progress=0; // seat 1 at safe entry c:13
+    s.tokens[0]!.progress=12; // destination c:13 is the next player's protected entry
+    const enemyOne=s.tokens.find(t=>t.seat===1)!;
+    enemyOne.progress=0;
     assert.equal(legalMoves(s).find(x=>x.tokenId==='0:0')!.captures,0);
     let next=moveLudo(s,'0:0');
-    assert.equal(next.tokens[4]!.progress,0);
+    assert.equal(next.tokens.find(t=>t.id==='1:0')!.progress,0);
     const c=createLudo(n);
     c.phase='move';c.die=1;
-    c.tokens[0]!.progress=13; // move to c:14 (unsafe)
-    c.tokens[4]!.progress=1;  // seat 1 c:14
-    c.tokens[5]!.progress=1;
+    c.tokens[0]!.progress=13; // destination c:14 is unsafe
+    const firstEnemy=c.tokens.find(t=>t.seat===1)!;
+    const secondEnemy=c.tokens.find(t=>t.id===(slots>1?'1:1':'2:0'))!;
+    firstEnemy.progress=1;
+    secondEnemy.progress=(14-13*secondEnemy.seat+C)%C;
     assert.equal(legalMoves(c).find(x=>x.tokenId==='0:0')!.captures,2);
     next=moveLudo(c,'0:0');
-    assert.equal(next.tokens[4]!.progress,-1);
-    assert.equal(next.tokens[5]!.progress,-1);
+    assert.equal(next.tokens.find(t=>t.id===firstEnemy.id)!.progress,-1);
+    assert.equal(next.tokens.find(t=>t.id===secondEnemy.id)!.progress,-1);
     assert.equal(next.activeSeat,0);
     const finish=createLudo(n);
     finish.phase='move';finish.die=2;
-    finish.tokens[0]!.progress=F-2;
-    finish.tokens[1]!.progress=F;
-    finish.tokens[2]!.progress=F;
-    finish.tokens[3]!.progress=F;
+    const owned=finish.tokens.filter(t=>t.seat===0);
+    owned[0]!.progress=F-2;
+    for(const pawn of owned.slice(1)) pawn.progress=F;
     next=moveLudo(finish,'0:0');
     assert.equal(next.placements[0]?.seat,0);
     assert.equal(next.placements[0]?.rank,1);
@@ -96,13 +99,15 @@ for (const n of counts) {
     assert.equal(nodeFor(next,next.tokens[0]!),'finish:0');
   });
   test('Ludo '+n+' players: fast objective, resign and save round trip',()=>{
-    const F=finishProgress(n),s=createLudo(n,undefined,'fast');
-    s.phase='move';s.die=1;
-    s.tokens[0]!.progress=F-1;s.tokens[1]!.progress=F;
-    const done=moveLudo(s,'0:0');
+    const F=finishProgress(n),state=createLudo(n,undefined,'fast');
+    state.phase='move';state.die=1;
+    const owned=state.tokens.filter(t=>t.seat===0);
+    owned[0]!.progress=F-1;
+    if(slots>1) owned[1]!.progress=F;
+    const done=moveLudo(state,'0:0');
     assert.equal(done.placements[0]?.rank,1);
-    assert.equal(done.tokens[2]!.progress,-2);
-    assert.equal(done.tokens[3]!.progress,-2);
+    assert.equal(done.tokens[0]!.progress,F);
+    if(slots>2) assert.ok(done.tokens.filter(t=>t.seat===0).slice(2).every(t=>t.progress===-2));
     validateLudo(done);
     const resigned=resignLudo(done,1);
     assert.equal(resigned.placements.find(p=>p.seat===1)?.rank,n);
@@ -147,4 +152,20 @@ test('A resignation by an inactive seat does not replace the current die',()=>{
   assert.equal(next.die,6);
   assert.deepEqual(legalMoves(next),legalMoves(pending));
   validateLudo(next);
+});
+
+test('Ludo visual board variants use a valid pawn quota and preserve old four/six-player saves',()=>{
+  assert.deepEqual(counts.map(n=>tokensPerSeat(n)),[4,4,2,1]);
+  assert.deepEqual(counts.map(n=>createLudo(n).tokens.length),[16,24,16,10]);
+  for(const n of [4,6] as const){
+    const saved={...createLudo(n),schemaVersion:1};
+    const migrated=restoreLudo(saved);
+    assert.equal(migrated.schemaVersion,2);
+    assert.deepEqual(migrated.tokens,saved.tokens);
+    validateLudo(migrated);
+  }
+  const oldGrand={...createLudo(10),schemaVersion:1};
+  assert.throws(()=>restoreLudo(oldGrand),/legacy-board-requires-new-match/);
+  const saved=JSON.parse(JSON.stringify(createLudo(8)));
+  assert.equal(restoreLudo(saved).tokens.length,16);
 });
