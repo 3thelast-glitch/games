@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   bagCapacity, beginConstruction, blueprintFor, carried, finishIsland, hireWorker,
   JOBS, MAX_ISLANDS, MATERIALS, newIsland, readyToBuild, refineBrick,
-  remaining, sanitizeIsland, SURVIVAL_SAVE_KEY, tapCollect,
+  remaining, sanitizeIsland, sellSurplus, SURVIVAL_SAVE_KEY, tapCollect,
   tickIsland, upgradeCost, upgradeWorkers, workerCost, assignWorker,
   type IslandState, type Job, type Material,
 } from '../../../packages/games/survival-builder/engine.ts';
@@ -169,6 +169,9 @@ export function SurvivalBuilderPage({onExit,settings}:{onExit:()=>void;settings:
             {needs.filter(n=>n.count>0).map(n=><div key={n.key}
               className={n.missing===0?'survival-builder-ready':''}>
               <span>{t(materialKey(n.key))}</span>
+              {state.phase==='collecting'&&n.have>=n.count+5&&
+                <button type="button" className="survival-builder-sell" onClick={()=>mutate(s=>sellSurplus(s,n.key))}
+                  aria-label={t('survivalBuilderSell')+' '+t(materialKey(n.key))}>−5 🪙</button>}
               <strong>{state.phase==='collecting'?
                 Math.min(n.have,n.count)+' / '+n.count:
                 state.phase==='building'?'✓':'✓'}</strong>
