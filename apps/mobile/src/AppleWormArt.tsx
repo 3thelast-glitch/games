@@ -234,18 +234,18 @@ export function WormCharacter({ body, tile = 48, id }: {
 export function AppleWormCover() {
   const id = useId().replace(/:/g, '') + '-cover';
   const blocks: Point[] = [
-    ...Array.from({ length: 8 }, (_, x) => ({ x: x + 1, y: 7 })),
-    ...Array.from({ length: 4 }, (_, i) => ({ x: 1, y: i + 3 })),
-    ...Array.from({ length: 3 }, (_, i) => ({ x: 7, y: i + 4 })),
-    ...Array.from({ length: 3 }, (_, i) => ({ x: 8, y: i + 4 })),
-    { x: 6, y: 6 },
+    ...Array.from({ length: 8 }, (_, x) => ({ x: x + 1, y: 6 })),
+    ...Array.from({ length: 2 }, (_, i) => ({ x: 1, y: i + 4 })),
+    ...Array.from({ length: 2 }, (_, i) => ({ x: 7, y: i + 4 })),
+    ...Array.from({ length: 2 }, (_, i) => ({ x: 8, y: i + 4 })),
   ];
-  return <svg viewBox="0 0 480 444" role="presentation" xmlns="http://www.w3.org/2000/svg">
+  return <svg viewBox="0 0 480 444" preserveAspectRatio="xMidYMid slice"
+    role="presentation" xmlns="http://www.w3.org/2000/svg">
     <WormSky width={480} height={444} id={id}/>
     <WormTerrain blocks={blocks} tile={47}/>
-    <WormApple x={4.5} y={5.8} tile={47}/>
+    <WormApple x={4.5} y={4.7} tile={47}/>
     <WormPortal x={8.55} y={3.05} tile={47}/>
-    <WormCharacter body={[{ x: 3, y: 2 }, { x: 2, y: 2 }, { x: 1, y: 2 }]}
+    <WormCharacter body={[{ x: 3, y: 3 }, { x: 2, y: 3 }, { x: 1, y: 3 }]}
       tile={47} id={id}/>
   </svg>;
 }
