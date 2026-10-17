@@ -78,7 +78,7 @@ export function HomePage({
                 <span />
                 {t('available')}
               </span>
-              {!['appleWorm','basketballLine','backroomBill','arithmetica'].includes(game.id) && <button
+              {!['appleWorm','basketballLine','backroomBill','arithmetica','survivalBuilder'].includes(game.id) && <button
                 className={`favorite-button ${profile?.favorites.includes(game.id) ? 'is-favorite' : ''}`}
                 aria-label={`${t('favorites')}: ${t(game.id)}`}
                 aria-pressed={profile?.favorites.includes(game.id) ?? false}
@@ -104,11 +104,11 @@ export function HomePage({
               <div className="game-meta">
                 <span>
                   <Icon name="people" size={16} />
-                  {game.id === 'ludo' ? '4 / 6 / 8 / 10' : ['appleWorm','basketballLine','backroomBill','arithmetica'].includes(game.id) ? '1' : t('players')}
+                  {game.id === 'ludo' ? '4 / 6 / 8 / 10' : ['appleWorm','basketballLine','backroomBill','arithmetica','survivalBuilder'].includes(game.id) ? '1' : t('players')}
                 </span>
                 <span>
                   <Icon name="clock" size={16} />
-                  {['ludo', 'appleWorm', 'basketballLine', 'backroomBill', 'arithmetica'].includes(game.id) ? t('local') : game.duration + ' ' + t('minutes')}
+                  {['ludo', 'appleWorm', 'basketballLine', 'backroomBill', 'arithmetica', 'survivalBuilder'].includes(game.id) ? t('local') : game.duration + ' ' + t('minutes')}
                 </span>
               </div>
               <button className="button play-button" onClick={() => onChoose(game.id)}>
@@ -858,7 +858,7 @@ export function ProfilePage({
       <div className="profile-columns">
         <section className="panel">
           <h2>{t('ranking')}</h2>
-          {gameInfo.filter(g => !['ludo','appleWorm','basketballLine','backroomBill','arithmetica'].includes(g.id)).map((g) => (
+          {gameInfo.filter(g => !['ludo','appleWorm','basketballLine','backroomBill','arithmetica','survivalBuilder'].includes(g.id)).map((g) => (
             <div className="rating-row" key={g.id}>
               <span className={`game-glyph ${g.id}`}>{g.icon}</span>
               <div>
@@ -876,7 +876,7 @@ export function ProfilePage({
         </section>
         <section className="panel">
           <h2>{t('favorites')}</h2>
-          {gameInfo.filter(g => !['ludo','appleWorm','basketballLine','backroomBill','arithmetica'].includes(g.id)).map((g) => (
+          {gameInfo.filter(g => !['ludo','appleWorm','basketballLine','backroomBill','arithmetica','survivalBuilder'].includes(g.id)).map((g) => (
             <label className="favorite-row" key={g.id}>
               <span>{t(g.id)}</span>
               <input
@@ -1084,7 +1084,7 @@ export function LeaderboardPage({
       <div className="leaderboard-controls">
         <div className="arena-game-scroll" role="group" aria-label={t('library')} tabIndex={0}>
           <div className="segmented">
-            {gameInfo.filter(g => !['ludo','appleWorm','basketballLine','backroomBill','arithmetica'].includes(g.id)).map((g) => (
+            {gameInfo.filter(g => !['ludo','appleWorm','basketballLine','backroomBill','arithmetica','survivalBuilder'].includes(g.id)).map((g) => (
               <button key={g.id} onClick={() => setGame(g.id)} aria-pressed={game === g.id}>
                 {t(g.id)}
               </button>
