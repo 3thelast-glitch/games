@@ -104,11 +104,11 @@ export function HomePage({
               <div className="game-meta">
                 <span>
                   <Icon name="people" size={16} />
-                  {game.id === 'ludo' ? '4 / 6 / 8 / 10' : game.id === 'appleWorm' ? '1' : t('players')}
+                  {game.id === 'ludo' ? '4 / 6 / 8 / 10' : (game.id === 'appleWorm' || game.id === 'basketballLine') ? '1' : t('players')}
                 </span>
                 <span>
                   <Icon name="clock" size={16} />
-                  {game.id === 'ludo' || game.id === 'appleWorm' ? t('local') : game.duration + ' ' + t('minutes')}
+                  {['ludo', 'appleWorm', 'basketballLine'].includes(game.id) ? t('local') : game.duration + ' ' + t('minutes')}
                 </span>
               </div>
               <button className="button play-button" onClick={() => onChoose(game.id)}>
