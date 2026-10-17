@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   bagCapacity, beginConstruction, blueprintFor, carried, finishIsland, hireWorker,
   JOBS, MAX_ISLANDS, MATERIALS, newIsland, readyToBuild, refineBrick,
-  remaining, sanitizeIsland, sellSurplus, SURVIVAL_SAVE_KEY, tapCollect,
+  remaining, sanitizeIsland, SURVIVAL_SAVE_KEY, tapCollect,
   tickIsland, upgradeCost, upgradeWorkers, workerCost, assignWorker,
   type IslandState, type Job, type Material,
 } from '../../../packages/games/survival-builder/engine.ts';
@@ -23,7 +23,6 @@ export function SurvivalBuilderPage({onExit,settings}:{onExit:()=>void;settings:
   settingsRef.current=settings;
   const [state,setState]=useState<IslandState>(()=>copy(world.current));
   const [loaded,setLoaded]=useState(false);
-  const [selected,setSelected]=useState<Job>('builder');
   const [notice,setNotice]=useState<string|null>(null);
   const lastSave=useRef(0);
   const lastPaint=useRef(0);
@@ -60,7 +59,6 @@ export function SurvivalBuilderPage({onExit,settings}:{onExit:()=>void;settings:
       }
       frame=requestAnimationFrame(update);
     };
-    frame=requestAnimationFrame(update);
     const persist=()=>{if(document.visibilityState==='hidden')save();};
     document.addEventListener('visibilitychange',persist);
     frame=requestAnimationFrame(update);
