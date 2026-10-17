@@ -152,12 +152,26 @@ export function LudoPage({onExit}:{onExit:()=>void}) {
     void storage.get<LudoState|null>('ludo-offline-v1',null).then(saved=>{
       if(!alive) return;
       if(saved) {
-        try {validateLudo(saved);setGame(saved);} catch {setNotice('invalid-save');}
+        try {
+          validateLudo(saved);
+          setGame(saved);
+          setCount(saved.seatCount);
+          setProfile(saved.profile);
+          setMode(saved.controllers.every(c=>c==='human')?'local':'ai');
+        } catch {setNotice('invalid-save');}
       }
     }).finally(()=>{if(alive)setLoaded(true);});
     return ()=>{alive=false;};
   },[]);
   useEffect(()=>{ if(loaded) void storage.set('ludo-offline-v1',game); },[game,loaded]);
+  useEffect(()=>{
+    let live=true;
+    void storage.get<'easy'|'medium'|'hard'>('ludo-ai-level-v1','medium').then(level=>{
+      if(live && ['easy','medium','hard'].includes(level)) setDifficulty(level);
+    });
+    return ()=>{live=false;};
+  },[]);
+  useEffect(()=>{if(loaded) void storage.set('ludo-ai-level-v1',difficulty);},[loaded,difficulty]);
   useEffect(()=>{
     if(!game || game.phase==='finished' || game.controllers[game.activeSeat]!=='ai') return;
     const revision=game.revision;
