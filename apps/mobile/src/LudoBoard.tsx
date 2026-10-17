@@ -64,13 +64,6 @@ export function buildLudoLayout(count: SeatCount): LudoLayout {
   }
   return {nodes,bases,trackWidth:count===4?58:Math.max(12,2*Math.PI*310/circuitSize(count)-2)};
 }
-function ludoPolygon(n:number,r:number,offset=0):string {
-  return Array.from({length:n},(_,i)=>{
-    const a=-Math.PI/2+2*Math.PI*(i+offset)/n;
-    const p=polar(r,a);
-    return p.x.toFixed(2)+','+p.y.toFixed(2);
-  }).join(' ');
-}
 const sectorPoint=(r:number,a:number)=>{const p=polar(r,a);return p.x.toFixed(2)+','+p.y.toFixed(2);};
 function BoardBackdrop({count,layout}:{count:SeatCount;layout:LudoLayout}) {
   if (count===4) {
@@ -110,10 +103,6 @@ function BoardBackdrop({count,layout}:{count:SeatCount;layout:LudoLayout}) {
     {layout.bases.map((base,seat)=>{
       const a=-Math.PI/2+sectorSize*(seat+5/13);
       const left=a-sectorSize*.49,right=a+sectorSize*.49;
-      const points=[
-        sectorPoint(343,left),sectorPoint(459,left),sectorPoint(459,a),
-        sectorPoint(459,right),sectorPoint(343,right),
-      ].join(' ');
       return <g key={seat} data-ludo-base={seat}>
         <path d={`M ${sectorPoint(343,left)} L ${sectorPoint(459,left)} A 459 459 0 0 1 ${sectorPoint(459,right)} L ${sectorPoint(343,right)} A 343 343 0 0 0 ${sectorPoint(343,left)} Z`}
           fill={LUDO_COLORS[seat]} fillOpacity=".9" stroke="#fff2d1" strokeWidth="2"/>
