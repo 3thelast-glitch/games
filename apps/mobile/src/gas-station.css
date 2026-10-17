@@ -1,0 +1,104 @@
+/* Roadside Revival — original sunny 3D-isometric gas-station simulator UI */
+.gas-page{max-width:1540px;margin:0 auto;padding:clamp(8px,1.7vw,23px);color:#edf8f2}
+.gas-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:17px}
+.gas-heading .eyebrow{font-size:10px;color:#8bd7cf;font-weight:800;letter-spacing:.13em}
+.gas-heading h1{font-size:clamp(29px,4vw,44px);margin:5px 0}
+.gas-heading p{font-size:12px;color:#b7cad0;line-height:1.7;max-width:690px}
+.gas-layout{display:grid;grid-template-columns:minmax(0,950px) minmax(285px,360px);gap:clamp(11px,1.8vw,25px);align-items:start}
+.gas-game{min-width:0;background:#faf4e6;border:3px solid #bd9a79;border-radius:17px;overflow:hidden;box-shadow:0 17px 50px #0006;color:#315961}
+.gas-hud{display:flex;align-items:center;justify-content:space-around;flex-wrap:wrap;gap:8px;padding:9px;background:#fff5de;border-bottom:2px solid #dbc7a2;min-height:53px;font-size:12px;color:#5f6c67;font-weight:800}
+.gas-hud>span{white-space:nowrap;display:flex;gap:5px;align-items:center}
+.gas-hud b{font-size:16px;color:#456f69}
+.gas-map{position:relative;overflow:hidden;background:#e9bd8a;isolation:isolate}
+.gas-station-scene{display:block;width:100%;height:auto;aspect-ratio:3/2;max-height:75dvh;user-select:none;touch-action:manipulation;cursor:crosshair}
+.gas-interactable{cursor:pointer;outline:none;touch-action:manipulation}
+.gas-interactable:hover,.gas-interactable:focus-visible{filter:drop-shadow(0 0 8px #fff5b9) brightness(1.07)}
+.gas-map-missions{position:absolute;top:8px;left:8px;padding:8px 12px;border-radius:10px;background:#fffef0f2;border:2px solid #e4c590;color:#527369;box-shadow:0 4px 15px #69563e60;pointer-events:none;max-width:33%;font-size:clamp(8px,1.4vw,12px);line-height:1.4;display:flex;flex-direction:column;gap:3px}
+.gas-map-missions b{color:#c57a44;font-size:clamp(9px,1.5vw,13px)}
+.gas-map-tip{position:absolute;bottom:7px;left:9px;background:#fff8e6d9;border-radius:6px;padding:4px 8px;pointer-events:none;color:#486967;font-size:clamp(8px,1.2vw,11px)}
+.gas-race-banner{position:absolute;right:10px;top:11px;border-radius:12px;background:#c86759f2;border:2px solid #fff0cb;color:#fffad5;padding:8px 10px;font-size:12px;font-weight:900;box-shadow:0 5px 15px #0004}
+.gas-paused{position:absolute;z-index:10;inset:0;background:#173944e6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;color:#fff6d5}
+.gas-paused h2{font-weight:950;font-size:29px}.gas-paused button{border-radius:9px;background:#f7d68f;border:2px solid #fdf3bd;color:#315b56;cursor:pointer;min-height:44px;padding:10px 22px;font-weight:900}
+.gas-controlbar{display:flex;align-items:center;gap:13px;justify-content:space-between;background:#e9ebdc;border-top:2px solid #d0d1ba;padding:11px}
+.gas-dpad{flex:none;display:grid;grid-template-columns:repeat(3,34px);gap:2px}
+.gas-dpad button{min-width:0;min-height:31px;background:#f4f9ee;border:1px solid #97b2a3;color:#4e837f;border-radius:7px;font-size:13px;cursor:pointer;user-select:none;touch-action:none}
+.gas-dpad button:active{background:#9cd9c1}
+.gas-quick{display:flex;flex:1;flex-direction:column;gap:8px}
+.gas-supplies{display:flex;gap:12px;align-items:flex-start;justify-content:space-around}
+.gas-supplies>div{flex:1;min-width:0;font-size:10px;color:#52786a;display:flex;flex-wrap:wrap;gap:3px;align-items:center}
+.gas-supplies b{font-size:11px;color:#225c54}.gas-supplies progress{width:100%;height:8px;accent-color:#64ba90}
+.gas-actions{display:flex;gap:5px;flex-wrap:wrap}
+.gas-actions button{min-height:38px;flex:1;min-width:63px;padding:5px 8px;border-radius:9px;border:1px solid #9dbca5;background:#fffdf2;color:#346f63;font-size:11px;font-weight:900;cursor:pointer}
+.gas-actions button.gas-action{background:#48ac8e;color:#fff;border-color:#368d77;flex:2}
+.gas-toast{margin:0;padding:8px 12px;color:#326852;background:#f8e9c3;border-top:1px solid #d9c59b;font-size:12px;font-weight:850}
+.gas-sidebar{display:flex;flex-direction:column;gap:8px;min-width:0}
+.gas-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;background:#273d41;border:1px solid #567f7b;border-radius:13px;padding:5px}
+.gas-tabs button{border:0;border-radius:9px;background:#36565b;min-width:0;min-height:43px;color:#b8d2cc;font-size:clamp(9px,1vw,11px);font-weight:850;padding:4px 3px;cursor:pointer}
+.gas-tabs button.active{background:#70b797;color:#163f3f}
+.gas-panel{border:1px solid #517c78;background:linear-gradient(145deg,#1e3d48,#17343c);border-radius:15px;padding:clamp(13px,1.7vw,19px);display:flex;flex-direction:column;gap:10px;max-height:min(82dvh,830px);overflow-y:auto;overscroll-behavior:contain}
+.gas-panel h2{font-size:17px;font-weight:900;color:#e8ddb4}
+.gas-panel h3{font-size:13px;font-weight:900;color:#d1e7c7;margin-top:9px}
+.gas-panel>p{font-size:11px;line-height:1.65;color:#b6d0c6}
+.gas-queue{display:flex;flex-direction:column;gap:7px;max-height:260px;overflow-y:auto}
+.gas-empty{font-size:11px;color:#b8cbb5;padding:12px}
+.gas-order{display:flex;align-items:center;gap:7px;border-radius:10px;background:#345664;border:1px solid #4c7d83;padding:8px}
+.gas-order-icon{min-width:36px;width:36px;height:36px;display:grid;place-items:center;border-radius:9px}
+.gas-order-details{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.gas-order-details strong{font-size:11px;color:#e2f3d6}
+.gas-order-details small{font-size:10px;color:#c6d6d2}
+.gas-order-details progress{width:100%;height:6px;accent-color:#9de5ae}
+.gas-order>button{font-size:11px;border-radius:7px;border:1px solid #c8dfa9;background:#badb9c;color:#284b41;padding:7px 8px;min-height:34px;font-weight:900;cursor:pointer}
+.gas-order>button:disabled{opacity:.5}
+.gas-restock{display:grid;gap:8px}
+.gas-restock>div{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11px;color:#e1dfb9}
+.gas-restock>div>div{display:flex;gap:4px}
+.gas-restock button{background:#52796d;border:1px solid #85ae93;border-radius:7px;color:#f4f7e4;font-size:10px;min-width:38px;min-height:30px;cursor:pointer}
+.gas-statrow{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#2e515c;color:#cbdfd5;border:1px solid #4b7e84;padding:9px 11px;border-radius:9px;font-size:12px}
+.gas-statrow strong{font-size:14px;color:#f2e6ad}
+.gas-garage-steps{border:1px solid #c6b071;border-radius:10px;padding:10px;background:#4c543d}
+.gas-garage-steps p{font-size:11px;line-height:1.55;color:#e9e8cc}
+.gas-garage-steps button,.gas-race-card button{background:#e9c879;color:#3f584d;border:1px solid #fff0b6;border-radius:8px;padding:9px;margin-top:7px;cursor:pointer;font-weight:900;font-size:11px}
+.gas-shop-grid{display:flex;flex-direction:column;gap:7px}
+.gas-shop-option{display:flex;align-items:center;gap:7px;border:1px solid #567986;border-radius:10px;padding:8px;background:#305263}
+.gas-shop-icon{font-size:22px;flex:none}
+.gas-shop-option>div{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
+.gas-shop-option strong{font-size:11px;color:#e7f1d5}
+.gas-shop-option small{font-size:10px;color:#bcd3ca}
+.gas-shop-option button{flex:none;min-width:62px;min-height:36px;font-size:10px;font-weight:900;background:#ead48a;border:1px solid #f9e5b0;color:#42645a;border-radius:8px;cursor:pointer;padding:6px}
+.gas-shop-option button:disabled{opacity:.44;cursor:not-allowed}
+.gas-staff-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px;border-radius:9px;background:#315e60;font-size:11px}
+.gas-staff-row button{background:#b75a53;border:1px solid #f0a197;color:#fff9ec;border-radius:6px;min-height:30px;cursor:pointer}
+.gas-mission-grid{display:flex;flex-direction:column;gap:7px}
+.gas-mission{display:flex;align-items:center;gap:9px;padding:9px;background:#365e5e;border:1px solid #628b7e;border-radius:10px}
+.gas-mission>div{flex:1;display:flex;flex-direction:column;gap:5px;min-width:0}
+.gas-mission strong{font-size:11px;color:#f5ebc7}.gas-mission small{font-size:10px;color:#c5dacf}
+.gas-mission progress{width:100%;height:9px;accent-color:#d6c96c}
+.gas-mission button{background:#d9bd68;border:1px solid #eee09b;border-radius:8px;color:#456153;font-weight:900;font-size:10px;padding:7px;min-width:76px;min-height:39px;cursor:pointer}
+.gas-mission button:disabled{opacity:.5;cursor:default}
+.gas-race-card{background:#7c55508c;border:1px solid #bf9280;border-radius:11px;padding:10px}
+.gas-race-card p{font-size:11px;line-height:1.6;color:#f4ddc7}
+.gas-race-card button:disabled{opacity:.5;cursor:not-allowed}
+.gas-offline{font-size:10px;line-height:1.6;color:#86b1ad;padding:10px}
+.gas-page button:focus-visible{outline:3px solid #fae2a7;outline-offset:2px}
+.game-card.gasStation{border-color:#9c785e}
+.game-card.gasStation:hover{border-color:#f2bd7f}
+.gasStation .card-art-wrap{background:#edc598}
+.game-art.gasStation>.art-halo,.game-art.gasStation>.art-orbit{display:none}
+.game-art.gasStation>svg{width:100%;height:100%;max-height:none;transform:none;filter:none}
+.gasStation .game-tag{color:#f0cc99}
+.gasStation .play-button{background:#edbe78;color:#3e4438}
+.gasStation .play-button:hover{background:#f8d69b}
+@media(max-width:1150px){.gas-layout{grid-template-columns:minmax(0,1fr)}.gas-game,.gas-sidebar{width:100%;max-width:970px;margin:0 auto}.gas-panel{max-height:none}}
+@media(max-width:520px){
+.gas-page{padding:7px}.gas-heading{gap:7px}.gas-heading h1{font-size:27px}
+.gas-heading .button{font-size:10px;padding:8px}
+.gas-game{border-width:2px;border-radius:10px}.gas-hud{font-size:9px;padding:7px 4px;gap:4px;min-height:37px}
+.gas-hud b{font-size:11px}.gas-map-missions{padding:5px 6px;max-width:43%}
+.gas-map-tip{font-size:8px}.gas-race-banner{font-size:9px;padding:4px}
+.gas-controlbar{gap:6px;padding:7px 5px}.gas-dpad{grid-template-columns:repeat(3,30px)}
+.gas-dpad button{min-height:29px}.gas-supplies{gap:3px}
+.gas-supplies>div{font-size:8px}.gas-supplies b{font-size:8px}
+.gas-actions button{font-size:9px;min-width:55px;min-height:34px}
+.gas-sidebar{gap:5px}.gas-tabs button{font-size:9px;min-height:39px}
+}
+@media(prefers-reduced-motion:reduce){.gas-page *{transition:none!important;animation:none!important}}

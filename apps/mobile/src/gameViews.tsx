@@ -81,6 +81,7 @@ export const gameInfo = [
   { id: 'arithmetica', duration: '2–5', icon: '➗', tag: 'arithmeticaTag', description: 'arithmeticaDesc' },
   { id: 'survivalBuilder', duration: '15–30', icon: '🏝️', tag: 'survivalBuilderTag', description: 'survivalBuilderDesc' },
   { id: 'towerDestiny', duration: '5–12', icon: '🏰', tag: 'towerDestinyTag', description: 'towerDestinyDesc' },
+  { id: 'gasStation', duration: '10–30', icon: '⛽', tag: 'gasStationTag', description: 'gasStationDesc' },
   ...[
     { id: 'checkers', duration: '10–20', icon: '◉' },
     { id: 'gomoku', duration: '5–15', icon: '✣' },
