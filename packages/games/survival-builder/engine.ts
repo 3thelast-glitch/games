@@ -188,7 +188,7 @@ export function sanitizeIsland(raw:unknown):IslandState{
         clamp(obj.buildProgress,0,99.99):0,
     totalBuilt:Math.max(builtHistory.length,integer(obj.totalBuilt,0,MAX_ISLANDS,0)),
     builtHistory,elapsed:0,
-    nextWorkerId:Math.max(...workers.map(w=>w.id),integer(obj.nextWorkerId,1,99999,5))+1,
+    nextWorkerId:Math.max(...workers.map(w=>w.id+1),integer(obj.nextWorkerId,1,99999,5)),
     bestIsland:Math.max(island,bestIsland),bonus:integer(obj.bonus,0,1_000_000,0),
   };
 }
