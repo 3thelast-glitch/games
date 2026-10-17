@@ -78,14 +78,14 @@ export function HomePage({
                 <span />
                 {t('available')}
               </span>
-              <button
+              {game.id !== 'appleWorm' && <button
                 className={`favorite-button ${profile?.favorites.includes(game.id) ? 'is-favorite' : ''}`}
                 aria-label={`${t('favorites')}: ${t(game.id)}`}
                 aria-pressed={profile?.favorites.includes(game.id) ?? false}
                 onClick={() => onFavorite(game.id)}
               >
                 <Icon name="heart" size={18} />
-              </button>
+              </button>}
               <span className="art-number">{String(index + 1).padStart(2, '0')}</span>
             </div>
             <div className="game-card-body">
@@ -104,11 +104,11 @@ export function HomePage({
               <div className="game-meta">
                 <span>
                   <Icon name="people" size={16} />
-                  {game.id === 'ludo' ? '4 / 6 / 8 / 10' : t('players')}
+                  {game.id === 'ludo' ? '4 / 6 / 8 / 10' : game.id === 'appleWorm' ? '1' : t('players')}
                 </span>
                 <span>
                   <Icon name="clock" size={16} />
-                  {game.id === 'ludo' ? t('ludoLocal') : game.duration + ' ' + t('minutes')}
+                  {game.id === 'ludo' || game.id === 'appleWorm' ? t('local') : game.duration + ' ' + t('minutes')}
                 </span>
               </div>
               <button className="button play-button" onClick={() => onChoose(game.id)}>
