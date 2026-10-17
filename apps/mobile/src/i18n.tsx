@@ -7,6 +7,7 @@ import { basketballLineEn, basketballLineAr } from './basketball-line-i18n.ts';
 import { backroomBillEn, backroomBillAr } from './backroom-bill-i18n.ts';
 import { arithmeticaEn, arithmeticaAr } from './arithmetica-i18n.ts';
 import { survivalBuilderEn, survivalBuilderAr } from './survival-builder-i18n.ts';
+import { towerDestinyEn, towerDestinyAr } from './tower-destiny-i18n.ts';
 export type Language = 'en' | 'ar';
 const en: Record<string, string> = {
   ...chessEn,
@@ -17,6 +18,7 @@ const en: Record<string, string> = {
   ...backroomBillEn,
   ...arithmeticaEn,
   ...survivalBuilderEn,
+  ...towerDestinyEn,
   moveNumber: 'Move',
   practiceStatsTitle: 'Offline practice',
   practiceStatsScope: 'Based on up to 100 recent completed matches saved on this device. Not lifetime totals or ranked Elo.',
@@ -486,6 +488,7 @@ const ar: Record<string, string> = {
   ...backroomBillAr,
   ...arithmeticaAr,
   ...survivalBuilderAr,
+  ...towerDestinyAr,
   moveNumber: 'الحركة',
   practiceStatsTitle: 'التدريب دون إنترنت',
   practiceStatsScope: 'البيانات من آخر 100 مباراة مكتملة ومحفوظة على هذا الجهاز؛ ليست إجماليًا مدى الحياة ولا تؤثر في تصنيف Online.',
