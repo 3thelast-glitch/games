@@ -1,0 +1,81 @@
+/* Backroom Bill — original yellow wallpaper / overhead survival horror styling. */
+.backroom-page{max-width:1350px;margin:0 auto;padding:clamp(9px,2vw,27px);color:#eee9d6}
+.backroom-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:20px}
+.backroom-heading .eyebrow{color:#dbca86;font-size:10px;letter-spacing:1.7px;font-weight:750}
+.backroom-heading h1{font-size:clamp(27px,4vw,43px);margin:6px 0;color:#f5e9aa}
+.backroom-heading p{color:#9faba7;font-size:13px;line-height:1.7;max-width:550px}
+.backroom-layout{display:grid;grid-template-columns:minmax(0,850px) minmax(220px,295px);align-items:start;justify-content:center;gap:clamp(12px,2vw,25px)}
+.backroom-machine{background:#282c27;border:3px solid #756b45;border-radius:16px;overflow:hidden;box-shadow:0 18px 50px #0008}
+.backroom-hud{height:53px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 17px;background:linear-gradient(#363a32,#20251f);border-bottom:2px solid #847349;color:#c4b987;font-size:11px;font-weight:850;letter-spacing:.7px}
+.backroom-hud b{color:#fff2b5;font-size:18px;margin-inline-start:6px}
+.backroom-hearts{display:flex;gap:5px;direction:ltr;font-size:23px}
+.backroom-hearts span.live{color:#d76054;text-shadow:0 0 7px #d145455e}
+.backroom-hearts span.lost{color:#5d4b47}
+.backroom-stage{position:relative;overflow:hidden;isolation:isolate;background:#ceb96f}
+.backroom-canvas{display:block;width:100%;height:auto;aspect-ratio:6/5;touch-action:none;cursor:crosshair;user-select:none;-webkit-user-select:none;overscroll-behavior:contain}
+.backroom-map{position:absolute;z-index:4;top:12px;right:12px;width:clamp(93px,19%,166px);height:auto;aspect-ratio:1;background:#131819a9;border:2px solid #b8ac7b;border-radius:10px;box-shadow:0 4px 16px #0008;overflow:hidden;pointer-events:none}
+.backroom-map canvas{display:block;width:100%;height:100%}
+.backroom-game-note{position:absolute;bottom:9px;left:12px;color:#efe6b2;font-size:9px;letter-spacing:1.3px;background:#1c211fa6;border-radius:4px;padding:4px 8px;pointer-events:none}
+.backroom-event{position:absolute;z-index:5;bottom:10%;left:50%;transform:translateX(-50%);background:#272b23e8;border:1px solid #e7d591;border-radius:11px;padding:10px 15px;white-space:nowrap;color:#f4edba;font-size:12px;font-weight:900;box-shadow:0 7px 25px #0009;pointer-events:none}
+.backroom-overlay{position:absolute;z-index:10;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:22px;gap:14px;background:#0e1412d8;color:#f1ead3}
+.backroom-overlay h2{font-size:clamp(22px,4vw,40px);font-weight:950;letter-spacing:1px;color:#f2df8d}
+.backroom-overlay p{max-width:320px;color:#c0c6a9;font-size:13px;line-height:1.8}
+.backroom-overlay .backroom-symbol{font-size:60px;color:#e7d17d;line-height:1}
+.backroom-overlay button{border:1px solid #e2cb7d;border-radius:10px;background:#dec768;color:#1b251e;min-width:170px;min-height:46px;font-size:13px;font-weight:900;cursor:pointer;padding:10px 18px}
+.backroom-controls{display:flex;gap:9px;align-items:center;justify-content:space-between;background:#242b25;border-top:2px solid #8c7b4a;padding:11px}
+.backroom-stamina{flex:1;min-width:0;max-width:300px;display:flex;flex-direction:column;gap:5px}
+.backroom-stamina strong{font-size:10px;color:#c8bb8d}
+.backroom-stamina>div{height:12px;background:#141b19;border:1px solid #627265;border-radius:99px;overflow:hidden}
+.backroom-stamina>div>span{display:block;height:100%;background:linear-gradient(90deg,#648f6e,#bfe69b);border-radius:99px}
+.backroom-controls button{border:1px solid #8e8657;background:#464e39;color:#f4e9c4;border-radius:10px;min-height:46px;padding:7px 15px;font-size:12px;font-weight:850;cursor:pointer;touch-action:none}
+.backroom-controls button:active{background:#6c7953}
+.backroom-sprint{user-select:none;-webkit-user-select:none}
+.backroom-sprint span{font-size:17px;color:#c9f89b}
+.backroom-panel{background:linear-gradient(160deg,#262f29,#1b2421);border:1px solid #656b4b;border-radius:16px;box-shadow:0 10px 30px #0004;padding:clamp(15px,2vw,23px);display:flex;flex-direction:column;gap:19px}
+.backroom-panel-intro strong{font-size:16px;color:#f2dc8f}
+.backroom-panel-intro p{font-size:12px;line-height:1.8;color:#c1bfa2;margin-top:9px}
+.backroom-panel-stats{display:grid;gap:8px}
+.backroom-panel-stats span{border:1px solid #5b624c;border-radius:9px;background:#303b32;color:#cfcda5;font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px}
+.backroom-panel-stats b{color:#e7e7b3;font-size:16px}
+.backroom-panel-buttons{display:flex;flex-wrap:wrap;gap:8px}
+.backroom-panel-buttons button{flex:1;min-width:88px;min-height:43px;border-radius:9px;border:1px solid #7d885b;background:#3b4c3c;color:#ece5b4;padding:7px;font-size:11px;font-weight:850;cursor:pointer}
+.backroom-panel-buttons button:hover{background:#56674b}
+.backroom-floor-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;max-height:200px;overflow-y:auto}
+.backroom-floor-grid button{min-height:34px;border-radius:6px;border:1px solid #818057;background:#556047;color:#fff1ab;font-size:11px}
+.backroom-floor-grid button.selected{background:#c7b768;color:#21291e}
+.backroom-floor-grid button:disabled{opacity:.48}
+.backroom-entries{display:grid;gap:6px}
+.backroom-entries>div{display:flex;align-items:center;gap:11px;background:#303731;padding:9px;border-radius:9px;color:#f2edb5;font-size:12px}
+.backroom-compendium-glyph{width:30px;height:30px;display:grid;place-items:center;border-radius:8px;background:#444e40;border:1px solid #797e5c;font-size:20px}
+.backroom-saved{font-size:11px;line-height:1.7;color:#b1b799;border-top:1px solid #596049;padding-top:14px}
+.game-card.backroomBill{border-color:#696748}
+.game-card.backroomBill:hover{border-color:#ceb879}
+.backroomBill .card-art-wrap{background:#c7b176}
+.game-art.backroomBill>.art-halo,.game-art.backroomBill>.art-orbit{display:none}
+.game-art.backroomBill>svg{width:100%;height:100%;max-height:none;filter:none;transform:none}
+.backroomBill .game-tag{color:#e9d48a}
+.backroomBill .play-button{background:#dbc36d;color:#22281c}
+.backroomBill .play-button:hover{background:#f2da86}
+.backroom-page button:focus-visible,.backroom-canvas:focus-visible{outline:3px solid #e7dc92;outline-offset:2px}
+@media(max-width:940px){
+  .backroom-layout{grid-template-columns:minmax(0,1fr)}
+  .backroom-machine,.backroom-panel{max-width:760px;width:100%;margin:0 auto}
+}
+@media(max-width:480px){
+  .backroom-page{padding:7px}.backroom-heading{gap:8px}
+  .backroom-heading h1{font-size:28px}
+  .backroom-heading .button{font-size:11px;padding:9px}
+  .backroom-machine{border:2px solid #756b45;border-radius:10px}
+  .backroom-hud{padding:7px 9px;gap:5px;height:47px;font-size:9px}
+  .backroom-hud b{font-size:14px;margin-inline-start:3px}
+  .backroom-hearts{gap:1px;font-size:20px}
+  .backroom-map{top:8px;right:8px;width:92px}
+  .backroom-controls{padding:8px 6px;gap:5px}
+  .backroom-controls button{padding:6px 8px;min-height:45px;font-size:10px}
+  .backroom-panel{padding:14px}
+}
+@media(prefers-reduced-motion:reduce){
+  .backroom-page *, .backroom-page *::before, .backroom-page *::after{
+    animation:none!important;transition:none!important;
+  }
+}
