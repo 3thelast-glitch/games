@@ -132,10 +132,11 @@ export function BackroomBillPage({onExit,settings}:{onExit:()=>void;settings:Set
               if(message==='exit')feedback(settingsRef.current,'win');
               sync();
             }
-            if(room.phase==='escape'){
+            const updatedPhase: Room['phase'] = (game.current as Room).phase;
+            if(updatedPhase==='escape'){
               progress.current=recordRoomVictory(progress.current,room);
               save();sync();
-            }else if(room.phase==='dead'){
+            }else if(updatedPhase==='dead'){
               progress.current=recordRoomDefeat(progress.current,room);
               save();sync();
             }
