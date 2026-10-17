@@ -135,7 +135,7 @@ export function AppleWormPage({ onExit, settings }: { onExit: () => void; settin
     let active = true;
     void storage.get<SavedWorm | null>(SAVE_KEY, null).then(saved => {
       if (!active) return;
-      const progress = Number.isInteger(saved?.unlocked) ?
+      const progress = typeof saved?.unlocked === 'number' && Number.isInteger(saved.unlocked) ?
         Math.max(1, Math.min(WORM_LEVEL_COUNT, saved!.unlocked)) : 1;
       const resume = restoreWorm(saved?.state);
       if (resume && resume.level <= progress) {
