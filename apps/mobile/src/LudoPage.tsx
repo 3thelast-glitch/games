@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useI18n } from './i18n.tsx';
 import { storage } from './platform.ts';
+const secureByte = (target: Uint8Array): Uint8Array => {
+  target[0] = crypto.getRandomValues(new Uint8Array(1))[0]!;
+  return target;
+};
 import {
   chooseAiToken, circuitSize, createLudo, finishProgress, isSafe,
   legalMoves, moveLudo, nodeFor, resignLudo, rollLudo, secureDie, secureSeat,
@@ -84,7 +88,7 @@ function Board({ state, legal, onChoose, zoom, center }:{
     const a=-Math.PI/2+(i+.5)*2*Math.PI/sides;
     return (500+476*Math.cos(a))+','+(500+476*Math.sin(a));
   }).join(' ');
-  return <svg className="ludo-board" viewBox={bounds} role="img" aria-label={lang==='ar'?'لوحة لودو، اختر القطع من قائمة الحركات أسفلها':'Ludo board; select a token from the move tray below'} dir="ltr">
+  return <svg className="ludo-board" viewBox={bounds} role="img" aria-label={lang==='ar'?'لوحة لودو، اختر القطع من قائمة الحركات أسفلها':'Ludo board; select a token from the move tray below'} style={{direction:"ltr"}}>
     <defs>
       <radialGradient id="ludo-shell"><stop stopColor="#33425C"/><stop offset="1" stopColor="#101A31"/></radialGradient>
       <radialGradient id="ludo-center"><stop stopColor="#314462"/><stop offset="1" stopColor="#121B2E"/></radialGradient>
@@ -162,7 +166,7 @@ export function LudoPage({onExit}:{onExit:()=>void}) {
         if(!current || current.revision!==revision) return current;
         try {
           if(current.phase==='roll')
-            return rollLudo(current,secureDie(array=>crypto.getRandomValues(array)));
+            return rollLudo(current,secureDie(secureByte));
           return moveLudo(current,chooseAiToken(current,difficulty,Math.random));
         }catch{return current;}
       });
@@ -172,7 +176,7 @@ export function LudoPage({onExit}:{onExit:()=>void}) {
   const moves=game ? legalMoves(game):[];
   const start=()=>{
     const seats=Array.from({length:count},(_,i)=>mode==='local'||i===0?'human':'ai') as ('human'|'ai')[];
-    const startSeat=secureSeat(count,a=>crypto.getRandomValues(a));
+    const startSeat=secureSeat(count,secureByte);
     setGame(createLudo(count,seats,profile,startSeat));
     setZoom(1);setFocus({x:500,y:500});setNotice('');
   };
@@ -252,7 +256,7 @@ export function LudoPage({onExit}:{onExit:()=>void}) {
         <div className="ludo-dice-line">
           <div className="ludo-die" aria-label={t('ludoDice')}>{game.die??'?'}</div>
           <button className="button primary" disabled={game.phase!=='roll'||game.controllers[game.activeSeat]==='ai'}
-            onClick={()=>execute(()=>rollLudo(game,secureDie(a=>crypto.getRandomValues(a))))}>
+            onClick={()=>execute(()=>rollLudo(game,secureDie(secureByte)))}>
             {game.phase==='roll'?t('ludoRoll'):t('ludoChooseToken')}
           </button>
         </div>
