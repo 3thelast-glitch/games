@@ -100,7 +100,7 @@ export function TowerDestinyPage({onExit,settings}:{onExit:()=>void;settings:Set
   const retry=()=>{
     if(game.current.phase!=='lost')return;
     game.current=retryDefense(game.current);
-    pausedRef.current=false;setPaused(false);finished.current=false;
+    pausedRef.current=false;setPaused(false);
     save();sync();
   };
   const onPointerDown=(e:PointerEvent<HTMLCanvasElement>)=>{
