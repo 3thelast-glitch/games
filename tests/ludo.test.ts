@@ -138,3 +138,13 @@ test('Ludo complete ranking after withdrawals',()=>{
   assert.equal(state.placements.find(p=>p.seat===0)?.rank,1);
   validateLudo(state);
 });
+
+test('A resignation by an inactive seat does not replace the current die',()=>{
+  const pending=rollLudo(createLudo(6),6);
+  const next=resignLudo(pending,4);
+  assert.equal(next.activeSeat,pending.activeSeat);
+  assert.equal(next.phase,'move');
+  assert.equal(next.die,6);
+  assert.deepEqual(legalMoves(next),legalMoves(pending));
+  validateLudo(next);
+});
