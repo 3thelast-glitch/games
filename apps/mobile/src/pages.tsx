@@ -78,7 +78,7 @@ export function HomePage({
                 <span />
                 {t('available')}
               </span>
-              {game.id !== 'appleWorm' && <button
+              {!['appleWorm','basketballLine'].includes(game.id) && <button
                 className={`favorite-button ${profile?.favorites.includes(game.id) ? 'is-favorite' : ''}`}
                 aria-label={`${t('favorites')}: ${t(game.id)}`}
                 aria-pressed={profile?.favorites.includes(game.id) ?? false}
@@ -858,7 +858,7 @@ export function ProfilePage({
       <div className="profile-columns">
         <section className="panel">
           <h2>{t('ranking')}</h2>
-          {gameInfo.map((g) => (
+          {gameInfo.filter(g => !['ludo','appleWorm','basketballLine'].includes(g.id)).map((g) => (
             <div className="rating-row" key={g.id}>
               <span className={`game-glyph ${g.id}`}>{g.icon}</span>
               <div>
@@ -876,7 +876,7 @@ export function ProfilePage({
         </section>
         <section className="panel">
           <h2>{t('favorites')}</h2>
-          {gameInfo.map((g) => (
+          {gameInfo.filter(g => !['ludo','appleWorm','basketballLine'].includes(g.id)).map((g) => (
             <label className="favorite-row" key={g.id}>
               <span>{t(g.id)}</span>
               <input
@@ -1084,7 +1084,7 @@ export function LeaderboardPage({
       <div className="leaderboard-controls">
         <div className="arena-game-scroll" role="group" aria-label={t('library')} tabIndex={0}>
           <div className="segmented">
-            {gameInfo.filter((g) => g.id !== 'ludo').map((g) => (
+            {gameInfo.filter(g => !['ludo','appleWorm','basketballLine'].includes(g.id)).map((g) => (
               <button key={g.id} onClick={() => setGame(g.id)} aria-pressed={game === g.id}>
                 {t(g.id)}
               </button>
