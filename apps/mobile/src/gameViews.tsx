@@ -77,6 +77,7 @@ export const gameInfo = [
   { id: 'ludo', duration: '—', icon: '⚄', tag: 'ludoTag', description: 'ludoDesc' },
   { id: 'appleWorm', duration: '5–10', icon: '🍎', tag: 'appleWormTag', description: 'appleWormDesc' },
   { id: 'basketballLine', duration: '2–8', icon: '🏀', tag: 'basketballLineTag', description: 'basketballLineDesc' },
+  { id: 'backroomBill', duration: '8–20', icon: '🟨', tag: 'backroomBillTag', description: 'backroomBillDesc' },
   ...[
     { id: 'checkers', duration: '10–20', icon: '◉' },
     { id: 'gomoku', duration: '5–15', icon: '✣' },
