@@ -1,4 +1,5 @@
 import { ClassicArt } from './ClassicArt.tsx';
+import { AppleWormCover } from './AppleWormArt.tsx';
 import { createContext, useContext, useEffect, useId, useRef, type ReactNode } from 'react';
 import { useI18n } from './i18n.tsx';
 import { HEXES, createAbalone, hexKey } from '../../../packages/games/abalone/state.ts';
@@ -499,36 +500,7 @@ export function GameArt({ game, compact = false }: { game: string; compact?: boo
           <circle cx="240" cy="210" r="14" fill="#182237"/>
         </svg>
       ) : game === 'appleWorm' ? (
-        <svg viewBox="0 0 480 444" role="presentation">
-          <defs>
-            <linearGradient id={id + 'wormsky'} x2="0" y2="1">
-              <stop stopColor="#47a4ec" /><stop offset="1" stopColor="#c1edff"/>
-            </linearGradient>
-            <linearGradient id={id + 'wormgreen'} x2=".2" y2="1">
-              <stop stopColor="#a7ed60" /><stop offset="1" stopColor="#268a31"/>
-            </linearGradient>
-          </defs>
-          <rect width="480" height="444" rx="26" fill={'url(#' + id + 'wormsky)'}/>
-          <circle cx="395" cy="90" r="55" fill="#fff4b9" opacity=".65"/>
-          <path d="M0 382Q113 319 219 382T480 365V444H0Z" fill="#8ed19e" opacity=".7"/>
-          <path d="M32 278h178v74h112v-74h126v92H32Z" fill="#875132" stroke="#583723" strokeWidth="8" strokeLinejoin="round"/>
-          <path d="M32 278h178m112 0h126M32 353h416" stroke="#b58a61" strokeWidth="7" opacity=".75"/>
-          <path d="M32 273h178m112 0h126" stroke="#69c15c" strokeWidth="12" strokeLinecap="round"/>
-          <circle cx="408" cy="240" r="27" fill="#101a32" stroke="#88ddf2" strokeWidth="4"/>
-          <path d="M392 242c-7 -26 32 -27 30 0c-2 19 -27 13 -20 0c7 -10 15 3 5 5" fill="none" stroke="#91deff" strokeWidth="5"/>
-          <path d="M255 243c-23 -21 -43 8 -26 29c9 18 22 13 26 13c6 0 19 5 27 -13c16 -24 -8 -48 -27 -29Z"
-            fill="#ed3e32" stroke="#a42b27" strokeWidth="4"/>
-          <path d="M254 240q0 -15 8 -23m-6 16q10 -22 25 -10q-8 15 -25 10" fill="#329c55" stroke="#267744" strokeWidth="4"/>
-          {[0,1,2].map(i=><g key={i}>
-            <rect x={65 + i * 48} y="235" width="53" height="51" rx="22"
-              fill={'url(#' + id + 'wormgreen)'} stroke="#2f8d2c" strokeWidth="4"/>
-          </g>)}
-          <ellipse cx="178" cy="255" rx="13" ry="15" fill="white"/>
-          <ellipse cx="201" cy="255" rx="13" ry="15" fill="white"/>
-          <circle cx="183" cy="255" r="5" fill="#1c2737"/>
-          <circle cx="205" cy="255" r="5" fill="#1c2737"/>
-          <ellipse cx="200" cy="278" rx="19" ry="7" fill="#bd528e" stroke="#853b6e" strokeWidth="3"/>
-        </svg>
+        <AppleWormCover />
       ) : game === 'dotsAndBoxes' ? (
         <DotsAndBoxesArt id={id} />
       ) : game === 'dominoes' ? (
