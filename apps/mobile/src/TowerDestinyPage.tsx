@@ -28,7 +28,6 @@ export function TowerDestinyPage({onExit,settings}:{onExit:()=>void;settings:Set
   const settingsRef=useRef(settings);
   settingsRef.current=settings;
   const lastDisplay=useRef(0);
-  const finished=useRef(false);
   const sync=useCallback(()=>setView(snapshot(game.current)),[]);
   const save=useCallback(()=>{void storage.set(TOWER_SAVE_KEY,captureDefense(game.current));},[]);
   useEffect(()=>{
@@ -57,13 +56,11 @@ export function TowerDestinyPage({onExit,settings}:{onExit:()=>void;settings:Set
         carry=Math.min(80,carry+delta);
         let steps=0;
         while(carry>=FIXED_DT*1000&&steps++<5&&game.current.phase==='battle'){
-          const before=game.current.phase;
-          tickDefense(game.current,FIXED_DT);
+          const phase=tickDefense(game.current,FIXED_DT);
           carry-=FIXED_DT*1000;
-          if(before==='battle'&&game.current.phase!=='battle'){
-            if(game.current.phase==='won')feedback(settingsRef.current,'win');
-            else feedback(settingsRef.current,'move');
-            finished.current=true;save();sync();
+          if(phase!=='battle'){
+            feedback(settingsRef.current,phase==='won'?'win':'move');
+            save();sync();
           }
         }
       }else carry=0;
@@ -97,7 +94,7 @@ export function TowerDestinyPage({onExit,settings}:{onExit:()=>void;settings:Set
   const advance=()=>{
     if(game.current.phase!=='won')return;
     game.current=continueDefense(game.current);
-    pausedRef.current=false;setPaused(false);finished.current=false;
+    pausedRef.current=false;setPaused(false);
     save();sync();
   };
   const retry=()=>{
