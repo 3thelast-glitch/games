@@ -3,12 +3,14 @@ import { chessEn, chessAr } from './chess-i18n.ts';
 import { navalBattleEn, navalBattleAr } from './naval-battle-i18n.ts';
 import { ludoEn, ludoAr } from './ludo-i18n.ts';
 import { appleWormEn, appleWormAr } from './apple-worm-i18n.ts';
+import { basketballLineEn, basketballLineAr } from './basketball-line-i18n.ts';
 export type Language = 'en' | 'ar';
 const en: Record<string, string> = {
   ...chessEn,
   ...navalBattleEn,
   ...ludoEn,
   ...appleWormEn,
+  ...basketballLineEn,
   moveNumber: 'Move',
   practiceStatsTitle: 'Offline practice',
   practiceStatsScope: 'Based on up to 100 recent completed matches saved on this device. Not lifetime totals or ranked Elo.',
@@ -474,6 +476,7 @@ const ar: Record<string, string> = {
   ...navalBattleAr,
   ...ludoAr,
   ...appleWormAr,
+  ...basketballLineAr,
   moveNumber: 'الحركة',
   practiceStatsTitle: 'التدريب دون إنترنت',
   practiceStatsScope: 'البيانات من آخر 100 مباراة مكتملة ومحفوظة على هذا الجهاز؛ ليست إجماليًا مدى الحياة ولا تؤثر في تصنيف Online.',
