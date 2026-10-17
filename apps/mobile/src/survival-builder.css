@@ -43,6 +43,8 @@
 .survival-builder-requirements{display:grid;gap:6px;margin-top:14px}
 .survival-builder-requirements>div{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;background:#34453d;border:1px solid #496858;border-radius:9px;color:#c3d3bc;font-size:12px}
 .survival-builder-requirements b,.survival-builder-requirements strong{color:#f8e8b9}
+.survival-builder-sell{margin-inline-start:auto;flex:none;background:#426d57;color:#e4ffcf;border:1px solid #90b585;border-radius:6px;min-height:29px;padding:4px 6px;font-weight:850;font-size:10px;cursor:pointer}
+.survival-builder-sell:hover{background:#508968}
 .survival-builder-requirements .survival-builder-ready{border-color:#54895a;background:#355740}
 .survival-builder-requirements .survival-builder-ready strong{color:#b6efb0}
 .survival-builder-reward{margin-top:13px;padding:10px;border-radius:10px;background:#9c793629;text-align:center;border:1px solid #b6924a85;color:#ffdc80;font-size:13px;font-weight:900}
