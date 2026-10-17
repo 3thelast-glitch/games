@@ -12,5 +12,5 @@ test('Arithmetica home illustration renders a chalkboard framed with wood, five 
   assert.match(svg,/#e1ac61/);
   assert.equal((svg.match(/<circle /g)??[]).length,2);
   assert.equal((svg.match(/<polygon /g)??[]).length,5);
-  assert.ok(CHALK.powder!=='');
+  assert.match(CHALK.powder, /^#[0-9a-f]{6}$/i);
 });
