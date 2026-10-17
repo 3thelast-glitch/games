@@ -41,6 +41,7 @@ The built server serves the app and API at `http://localhost:8787`. `GET /api/he
 - Dots and Boxes: selectable board sizes, box ownership scoring, and an extra turn when completing a box.
 - Dominoes: two-player Draw Dominoes with a double-six set, boneyard, blocked-round scoring, opponent-hand privacy and game-aware AI.
 - Naval Battle: fleet placement, secret opposing fleet, hit/miss/sunk outcomes, AI targeting and tactical 3-of-6 abilities.
+- Basketball Line: standalone offline physics arcade with drawable cyan-blue guides, orange basketballs, red rim and white net, 1–3 pencils per round, limited ink, falling-ball physics, bombs, collectible diamonds, round progression, best score and Arabic/English support. Includes native-compatible touch/pointer input; independent of online game registry.
 - Apple Worm-inspired offline puzzle adventure: 30 original levels, deterministic gravity and growth rules, undo/restart, hints, touch/keyboard controls and per-device progress saving. This standalone solo game is not part of server matchmaking.
 - Local play, shared AI, quick match and private-room flows are provided through the same game registry. Ranked quick matches require a registered account; guests can play casual online matches.
 - Easy random legal play, medium positional evaluation and hard bounded alpha-beta search, running outside the UI thread.
