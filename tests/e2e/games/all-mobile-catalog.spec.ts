@@ -36,7 +36,6 @@ async function exerciseSolo(page: Page, id: SoloId) {
     await expect(page.locator('.worm-pad button')).toHaveCount(4);
     await page.locator('.worm-pad button.right').click();
     await expect(page.locator('.worm-board')).toBeVisible();
-    await page.locator('.worm-actions button').filter({has: page.locator('svg')}).count();
   } else if (id === 'basketballLine') {
     await expect(page.locator('.basketball-canvas')).toBeVisible();
     const c = page.locator('.basketball-canvas');
@@ -88,8 +87,6 @@ test('NAQLA library registers 20 unique playable game cards', async ({ page }) =
   await expect(cards).toHaveCount(20);
   expect(new Set(allIds).size).toBe(20);
   for (const id of allIds) {
-    const card = cards.filter({has: page.locator('.does-not-exist')});
-    void card;
     await expect(page.locator('.game-card.' + id + ' .play-button')).toBeVisible();
   }
   await expectNoGlobalOverflow(page);
