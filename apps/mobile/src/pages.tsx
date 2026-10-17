@@ -1084,7 +1084,7 @@ export function LeaderboardPage({
       <div className="leaderboard-controls">
         <div className="arena-game-scroll" role="group" aria-label={t('library')} tabIndex={0}>
           <div className="segmented">
-            {gameInfo.map((g) => (
+            {gameInfo.filter((g) => g.id !== 'ludo').map((g) => (
               <button key={g.id} onClick={() => setGame(g.id)} aria-pressed={game === g.id}>
                 {t(g.id)}
               </button>
