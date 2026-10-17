@@ -53,6 +53,7 @@ import { LanPage } from './LanPage.tsx';
 import { LudoPage } from './LudoPage.tsx';
 import { AppleWormPage } from './AppleWormPage.tsx';
 import { BasketballLinePage } from './BasketballLinePage.tsx';
+import { BackroomBillPage } from './BackroomBillPage.tsx';
 import { lan } from './lan.ts';
 import {
   archiveAnalysisStatus,
@@ -81,7 +82,8 @@ type Page =
   | 'lan'
   | 'ludo'
   | 'appleWorm'
-  | 'basketballLine';
+  | 'basketballLine'
+  | 'backroomBill';
 interface OfflineSession {
   id: string;
   controller: OfflineMatch;
@@ -1068,7 +1070,7 @@ function ArenaApp({
           <main className={`main-content ${page === 'match' ? 'match-content' : ''}`}>
             {page === 'library' && (
               <HomePage
-                onChoose={(gameId, mode) => gameId === 'ludo' ? setPage('ludo') : gameId === 'appleWorm' ? setPage('appleWorm') : gameId === 'basketballLine' ? setPage('basketballLine') : setChoice({ gameId, mode })}
+                onChoose={(gameId, mode) => gameId === 'ludo' ? setPage('ludo') : gameId === 'appleWorm' ? setPage('appleWorm') : gameId === 'basketballLine' ? setPage('basketballLine') : gameId === 'backroomBill' ? setPage('backroomBill') : setChoice({ gameId, mode })}
                 onRules={setRules}
                 profile={profile}
                 onFavorite={(id) =>
@@ -1087,6 +1089,7 @@ function ArenaApp({
             {page === 'ludo' && <LudoPage onExit={() => setPage('library')} />}
             {page === 'appleWorm' && <AppleWormPage onExit={() => setPage('library')} settings={settings} />}
             {page === 'basketballLine' && <BasketballLinePage onExit={() => setPage('library')} settings={settings} />}
+            {page === 'backroomBill' && <BackroomBillPage onExit={() => setPage('library')} settings={settings} />}
             {page === 'profile' && (
               <ProfilePage
                 profile={profile}
