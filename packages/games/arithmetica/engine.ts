@@ -15,7 +15,7 @@ export interface MathRun {
   seed: number; score: number; correct: number; mistakes: number;
   level: number; stars: number; timeMs: number; maxTimeMs: number;
   phase: Phase; feedback: Feedback; question: Question;
-  answered: number; elapsedMs: number; streak: number;
+  answered: number; elapsedMs: number; streak: number; maxStreak: number;
 }
 export interface MathRecord {
   bestScore: number; bestLevel: number; bestStreak: number;
@@ -38,9 +38,10 @@ function random(seed: number) {
     return ((x >>> 0) % 1000000) / 1000000;
   };
 }
-export function makeQuestion(seed: number, id: number): Question {
+export function makeQuestion(seed: number, id: number, selectedLevel?: number): Question {
   const safeId = Math.max(0, Math.floor(Number.isFinite(id) ? id : 0));
-  const level = 1 + Math.floor(safeId / QUESTIONS_PER_LEVEL);
+  const level = selectedLevel === undefined ? 1 + Math.floor(safeId / QUESTIONS_PER_LEVEL) :
+    Math.max(1, Math.floor(selectedLevel));
   const rnd = random((seed ^ Math.imul(safeId + 1, 0x45d9f3b)) | 0 || 1234567);
   const pick = (min: number, max: number) => min + Math.floor(rnd() * (max - min + 1));
   // The original primarily uses addition/subtraction. Increase magnitude with level.
@@ -81,7 +82,7 @@ export function startMathRun(seed = 12345): MathRun {
     seed: safeSeed, score: 0, correct: 0, mistakes: 0,
     level: 1, stars: 0, timeMs: INITIAL_TIME_MS, maxTimeMs: MAX_TIME_MS,
     phase: 'ready', feedback: null, question: makeQuestion(safeSeed, 0),
-    answered: 0, elapsedMs: 0, streak: 0,
+    answered: 0, elapsedMs: 0, streak: 0, maxStreak: 0,
   };
 }
 export function beginMathRun(run: MathRun): MathRun {
@@ -113,9 +114,10 @@ export function answerMathRun(run: MathRun, index: number): MathRun {
   const timeMs = clamp(run.timeMs + (correct ? RIGHT_BONUS_MS : -WRONG_PENALTY_MS), 0, MAX_TIME_MS);
   return {
     ...run, score, correct: correctCount, mistakes, streak, level, stars,
-    answered: nextAnswered, timeMs, feedback: correct ? 'correct' : 'wrong',
+    answered: nextAnswered, timeMs, maxStreak: Math.max(run.maxStreak, streak),
+    feedback: correct ? 'correct' : 'wrong',
     phase: timeMs <= 0 ? 'gameover' : 'playing',
-    question: makeQuestion(run.seed, nextAnswered),
+    question: makeQuestion(run.seed, nextAnswered, level),
   };
 }
 export function summarizeMathRun(record: MathRecord, run: MathRun): MathRecord {
@@ -123,7 +125,7 @@ export function summarizeMathRun(record: MathRecord, run: MathRun): MathRecord {
   return {
     bestScore: Math.max(record.bestScore, run.score),
     bestLevel: Math.max(record.bestLevel, run.level),
-    bestStreak: Math.max(record.bestStreak, run.streak),
+    bestStreak: Math.max(record.bestStreak, run.maxStreak),
     totalSolved: Math.min(100000000, record.totalSolved + run.correct),
     plays: Math.min(100000000, record.plays + 1),
   };
