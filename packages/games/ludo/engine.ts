@@ -203,7 +203,7 @@ export function validateLudo(state: LudoState): void {
 /** Old four/six-player sessions keep their original token IDs and progress. */
 export function restoreLudo(source: unknown): LudoState {
   if (!source || typeof source !== 'object') fail('invalid-save');
-  const saved = source as LudoState & { schemaVersion: number };
+  const saved = source as Omit<LudoState, 'schemaVersion'> & { schemaVersion: number };
   if (saved.schemaVersion === 1) {
     // Eight/ten-player legacy saves had four pawns per seat. Trimming them would
     // silently change an in-progress match; leave those saves untouched instead.
@@ -212,8 +212,8 @@ export function restoreLudo(source: unknown): LudoState {
     validateLudo(migrated);
     return migrated;
   }
-  validateLudo(saved);
-  return saved;
+  validateLudo(saved as LudoState);
+  return saved as LudoState;
 }
 
 export function chooseAiToken(state: LudoState, difficulty: 'easy' | 'medium' | 'hard', random: () => number): string {
