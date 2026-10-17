@@ -3,7 +3,7 @@ import { useI18n } from './i18n.tsx';
 import { storage } from './platform.ts';
 import {
   chooseAiToken, circuitSize, createLudo, finishProgress, isSafe,
-  legalMoves, moveLudo, nodeFor, resignLudo, rollLudo, secureDie,
+  legalMoves, moveLudo, nodeFor, resignLudo, rollLudo, secureDie, secureSeat,
   validateLudo, type LudoState, type SeatCount, type LudoToken,
 } from '../../../packages/games/ludo/engine.ts';
 
@@ -172,8 +172,8 @@ export function LudoPage({onExit}:{onExit:()=>void}) {
   const moves=game ? legalMoves(game):[];
   const start=()=>{
     const seats=Array.from({length:count},(_,i)=>mode==='local'||i===0?'human':'ai') as ('human'|'ai')[];
-    const seed=secureDie(a=>crypto.getRandomValues(a));
-    setGame(createLudo(count,seats,profile,(seed-1)%count));
+    const startSeat=secureSeat(count,a=>crypto.getRandomValues(a));
+    setGame(createLudo(count,seats,profile,startSeat));
     setZoom(1);setFocus({x:500,y:500});setNotice('');
   };
   const execute=(action:()=>LudoState)=>{
