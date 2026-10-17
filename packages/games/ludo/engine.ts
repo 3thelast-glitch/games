@@ -160,7 +160,11 @@ export function resignLudo(state: LudoState, seat: number): LudoState {
   const tokens = state.tokens.map(t => t.seat === seat && t.progress < finishProgress(state.seatCount) ? { ...t, progress: -2 } : { ...t });
   const next: LudoState = { ...state, tokens, placements: [...state.placements], revision: state.revision + 1 };
   rank(next, seat, 'resigned');
-  return settle(next, seat !== state.activeSeat, 'resigned');
+  if (seat !== state.activeSeat && next.placements.length < next.seatCount - 1) {
+    next.lastEvent = 'resigned';
+    return next; // Do not consume another participant's pending die or turn.
+  }
+  return settle(next, false, 'resigned');
 }
 export function validateLudo(state: LudoState): void {
   if (!state || state.schemaVersion !== 1) fail('invalid-save');
@@ -220,6 +224,18 @@ export function secureDie(source: (array: Uint8Array) => Uint8Array): number {
   for (let tries = 0; tries < 1024; tries++) {
     const byte = source(buffer)[0]!;
     if (byte < 252) return (byte % 6) + 1;
+  }
+  fail('secure-rng-unavailable');
+}
+
+/** Uniform first-seat selection independent from the six-sided die. */
+export function secureSeat(count: SeatCount, source: (array: Uint8Array) => Uint8Array): number {
+  assertSeatCount(count);
+  const limit = Math.floor(256 / count) * count;
+  const bytes = new Uint8Array(1);
+  for (let i = 0; i < 1024; i++) {
+    const byte = source(bytes)[0]!;
+    if (byte < limit) return byte % count;
   }
   fail('secure-rng-unavailable');
 }
