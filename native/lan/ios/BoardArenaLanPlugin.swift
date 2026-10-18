@@ -417,6 +417,7 @@ public class NaqlaOrientationPlugin: CAPPlugin, CAPBridgedPlugin {
             }
             if #available(iOS 16.0, *) {
                 controller.setNeedsUpdateOfSupportedInterfaceOrientations()
+                controller.setNeedsStatusBarAppearanceUpdate()
                 if let scene = controller.view.window?.windowScene {
                     let mask: UIInterfaceOrientationMask = landscape ? .landscape : .portrait
                     scene.requestGeometryUpdate(.iOS(interfaceOrientations: mask)) { error in
@@ -424,6 +425,7 @@ public class NaqlaOrientationPlugin: CAPPlugin, CAPBridgedPlugin {
                     }
                 }
             } else {
+                controller.setNeedsStatusBarAppearanceUpdate()
                 UIViewController.attemptRotationToDeviceOrientation()
             }
             call.resolve()
@@ -432,6 +434,8 @@ public class NaqlaOrientationPlugin: CAPPlugin, CAPBridgedPlugin {
 }
 
 final class BoardArenaViewController: CAPBridgeViewController {
+    override var prefersStatusBarHidden: Bool { NaqlaOrientationPlugin.wantsLandscape }
+    override var prefersHomeIndicatorAutoHidden: Bool { NaqlaOrientationPlugin.wantsLandscape }
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
         NaqlaOrientationPlugin.wantsLandscape ? .landscape : .portrait
     }
