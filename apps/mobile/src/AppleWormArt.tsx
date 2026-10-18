@@ -69,183 +69,227 @@ export function cellContour(cells: Cell[], tile: number, radius = .16): string {
   }).join(' ');
 }
 
+
 export function WormSky({ width, height, id }: { width: number; height: number; id: string }) {
-  const cloudsY = height * .74;
-  return <g>
+  const horizon = height * .65;
+  return <g aria-hidden="true">
     <defs>
-      <linearGradient id={id + '-sky'} x1="0" y1="0" x2="0" y2="1">
-        <stop stopColor="#6e9df1" /><stop offset=".7" stopColor="#7bb2f4"/>
-        <stop offset="1" stopColor="#b7d4f5"/>
+      <linearGradient id={id+'-sky'} x1="0" y1="0" x2=".15" y2="1">
+        <stop stopColor="#59b7fa"/><stop offset=".57" stopColor="#a1ecf9"/><stop offset="1" stopColor="#e5fcf0"/>
+      </linearGradient>
+      <radialGradient id={id+'-sun'}><stop stopColor="#fffce1" stopOpacity=".82"/>
+        <stop offset=".5" stopColor="#fff4bf" stopOpacity=".35"/>
+        <stop offset="1" stopColor="#fff4bf" stopOpacity="0"/></radialGradient>
+      <linearGradient id={id+'-cliff'} x1="0" y1="0" x2="1" y2="1">
+        <stop stopColor="#b18e79"/><stop offset=".65" stopColor="#826c72"/>
+        <stop offset="1" stopColor="#5e7285"/>
+      </linearGradient>
+      <linearGradient id={id+'-water'} x1="0" y1="0" x2="1" y2="0">
+        <stop stopColor="#c5fffd"/><stop offset=".4" stopColor="#55ddec"/>
+        <stop offset="1" stopColor="#8bd7f9"/>
       </linearGradient>
     </defs>
-    <rect width={width} height={height} fill={'url(#' + id + '-sky)'}/>
-    <g opacity=".14" fill="#d3e5ff">
-      <path d={'M' + (width * .34) + ' 0 L' + (width * .58) + ' 0 L' +
-        (width * .92) + ' ' + height + ' L' + (width * .67) + ' ' + height + 'Z'}/>
-      <path d={'M' + (width * .01) + ' 0 L' + (width * .19) + ' 0 L' +
-        (width * .43) + ' ' + height + ' L' + (width * .2) + ' ' + height + 'Z'}/>
-      <path d={'M' + (width * .8) + ' 0 L' + width + ' 0 L' +
-        (width * .78) + ' ' + height + ' L' + (width * .65) + ' ' + height + 'Z'}/>
+    <rect width={width} height={height} fill={'url(#'+id+'-sky)'}/>
+    <circle cx={width*.79} cy={height*.16} r={width*.28} fill={'url(#'+id+'-sun)'}/>
+    <g className="worm-clouds" opacity=".85" fill="#fffdf4">
+      {Array.from({length:5},(_,i)=>{
+        const x=width*(i*.23-.14),y=height*(.2+(i%3)*.15);
+        return <g key={i} transform={'translate('+x+' '+y+')'}>
+          <ellipse cx="22" rx="55" ry="16" cy="14"/>
+          <ellipse cx="0" cy="3" rx="36" ry="21"/>
+          <ellipse cx="48" cy="-3" rx="37" ry="24"/>
+        </g>;
+      })}
     </g>
-    <g fill="#dcecf9" opacity=".59">
-      <path d={'M0 ' + (cloudsY + 45) +
-        'Q' + (width * .04) + ' ' + (cloudsY - 15) + ' ' + (width * .12) + ' ' + (cloudsY + 9) +
-        'Q' + (width * .17) + ' ' + (cloudsY - 48) + ' ' + (width * .27) + ' ' + (cloudsY + 9) +
-        'Q' + (width * .34) + ' ' + (cloudsY - 22) + ' ' + (width * .42) + ' ' + (cloudsY + 24) +
-        'Q' + (width * .48) + ' ' + (cloudsY - 12) + ' ' + (width * .56) + ' ' + (cloudsY + 17) +
-        'Q' + (width * .62) + ' ' + (cloudsY - 37) + ' ' + (width * .72) + ' ' + (cloudsY + 9) +
-        'Q' + (width * .83) + ' ' + (cloudsY - 48) + ' ' + (width * .9) + ' ' + (cloudsY + 12) +
-        'Q' + (width * .97) + ' ' + (cloudsY - 14) + ' ' + width + ' ' + (cloudsY + 20) +
-        'V' + height + 'H0Z'}/>
+    <g opacity=".40">
+      <path d={'M0 '+horizon+'L'+width*.1+' '+height*.35+'L'+width*.21+' '+height*.52+
+        'L'+width*.33+' '+height*.30+'L'+width*.50+' '+height*.49+'L'+width*.65+' '+height*.27+
+        'L'+width*.8+' '+height*.49+'L'+width+' '+height*.33+'V'+height+'H0Z'}
+        fill="#83c0b4"/>
+      <path d={'M0 '+height*.82+'Q'+width*.21+' '+height*.39+' '+width*.43+' '+height*.75+
+        'Q'+width*.67+' '+height*.41+' '+width+' '+height*.67+'V'+height+'H0Z'} fill="#70afa5"/>
     </g>
-    <path d={'M0 ' + (height - 22) +
-      'Q' + (width * .05) + ' ' + (height - 72) + ' ' + (width * .12) + ' ' + (height - 44) +
-      'Q' + (width * .17) + ' ' + (height - 94) + ' ' + (width * .24) + ' ' + (height - 40) +
-      'Q' + (width * .34) + ' ' + (height - 67) + ' ' + (width * .42) + ' ' + (height - 35) +
-      'Q' + (width * .53) + ' ' + (height - 85) + ' ' + (width * .63) + ' ' + (height - 35) +
-      'Q' + (width * .71) + ' ' + (height - 83) + ' ' + (width * .79) + ' ' + (height - 43) +
-      'Q' + (width * .9) + ' ' + (height - 75) + ' ' + width + ' ' + (height - 29) +
-      'V' + height + 'H0Z'} fill="#96be82" opacity=".83"/>
-    <path d={'M0 ' + (height - 8) + 'Q' + (width * .2) + ' ' + (height - 35) +
-      ' ' + (width * .35) + ' ' + (height - 14) + 'T' + width + ' ' + (height - 10) +
-      'V' + height + 'H0Z'} fill="#83af77" opacity=".48"/>
-    {Array.from({ length: 22 }, (_, i) => {
-      const x = ((i * 97 + 31) % Math.max(1, Math.floor(width)));
-      const y = height - 7 - (i * 13 % 28);
-      return <ellipse key={i} cx={x} cy={y} rx="4.5" ry="2.5" fill="#c3d784" opacity=".45"/>;
+    {Array.from({length:4},(_,i)=>{
+      const x=width*(.11+i*.24),y=height*(.39+(i%2)*.08);
+      return <g key={i} opacity=".69" transform={'translate('+x+' '+y+')'}>
+        <path d="M-46 0L-28 71L4 91L34 49L49 0Z" fill={'url(#'+id+'-cliff)'}/>
+        <path d="M-46 0Q-30 -22 -6 -15Q10 -29 39 -12L49 0Q0 25 -46 0Z"
+          fill="#5ab97e" stroke="#459c78" strokeWidth="3"/>
+        <path d="M-14 7L-10 62Q-3 82 5 88L21 13Z" fill={'url(#'+id+'-water)'} opacity=".78"/>
+        <path d="M-35 -4Q-28 -29 -19 -4M14 -9Q21 -34 31 -8"
+          fill="none" stroke="#46875b" strokeWidth="10" strokeLinecap="round"/>
+      </g>;
     })}
+    <path d={'M0 '+height*.89+'Q'+width*.14+' '+height*.75+' '+width*.31+' '+height*.91+
+      'Q'+width*.50+' '+height*.72+' '+width*.65+' '+height*.90+
+      'Q'+width*.82+' '+height*.76+' '+width+' '+height*.91+'V'+height+'H0Z'}
+      fill="#b9e9c7" opacity=".62"/>
   </g>;
 }
 
 export function WormTerrain({ blocks, tile }: { blocks: Cell[]; tile: number }) {
-  const shape = cellContour(blocks, tile, .10);
-  const keys = new Set(blocks.map(pKey));
-  const tops = blocks.filter(p => !keys.has(adj(p, 0, -1)));
-  const lefts = blocks.filter(p => !keys.has(adj(p, -1, 0)));
-  const rights = blocks.filter(p => !keys.has(adj(p, 1, 0)));
-  return <g aria-hidden="true" strokeLinejoin="round" strokeLinecap="round">
-    <path d={shape} transform="translate(0 3)" fill="#342116" stroke="#302019" strokeWidth="5"/>
-    <path d={shape} fill="#57321f" stroke="#302019" strokeWidth="4.2"/>
-    {lefts.map(p => <path key={'left' + pKey(p)}
-      d={'M' + (p.x * tile + 3) + ' ' + (p.y * tile + 8) + 'L' +
-        (p.x * tile + tile * .18) + ' ' + (p.y * tile + 13) + 'V' +
-        (p.y * tile + tile - 7) + 'L' + (p.x * tile + 3) + ' ' + (p.y * tile + tile - 12) + 'Z'}
-      fill="#3e251b" stroke="#9d6c46" strokeWidth="1.6" />)}
-    {tops.map(p => <path key={'top' + pKey(p)}
-      d={'M' + (p.x * tile + 2) + ' ' + (p.y * tile + 3) + 'L' +
-        ((p.x + 1) * tile - 3) + ' ' + (p.y * tile + 3) + 'L' +
-        ((p.x + 1) * tile - 10) + ' ' + (p.y * tile + 14) + 'L' +
-        (p.x * tile + 9) + ' ' + (p.y * tile + 14) + 'Z'}
-      fill="#96613f" stroke="#ae754b" strokeWidth="1.25" />)}
-    {rights.map(p => <path key={'right' + pKey(p)}
-      d={'M' + ((p.x + 1) * tile - 4) + ' ' + (p.y * tile + 8) + 'L' +
-        ((p.x + 1) * tile - 4) + ' ' + ((p.y + 1) * tile - 9)}
-      fill="none" stroke="#a06c44" strokeWidth="2" opacity=".85"/>)}
-    <path d={shape} fill="none" stroke="#8c5b3c" strokeWidth="2.7" opacity=".98"/>
+  const shape=cellContour(blocks,tile,.12);
+  const keys=new Set(blocks.map(pKey));
+  const tops=blocks.filter(p=>!keys.has(adj(p,0,-1)));
+  return <g aria-hidden="true" className="worm-terrain">
+    <defs>
+      <linearGradient id="worm-soil-color" x1="0" y1="0" x2="1" y2="1">
+        <stop stopColor="#ce9259"/><stop offset=".47" stopColor="#b87749"/><stop offset="1" stopColor="#825943"/>
+      </linearGradient>
+      <linearGradient id="worm-grass-color" x1="0" y1="0" x2=".4" y2="1">
+        <stop stopColor="#e0f990"/><stop offset=".42" stopColor="#86d55a"/><stop offset="1" stopColor="#48a949"/>
+      </linearGradient>
+    </defs>
+    <path d={shape} transform="translate(0 7)" fill="#385a3e" opacity=".32"/>
+    <path d={shape} fill="#8c6548" stroke="#6d563d" strokeWidth="3" strokeLinejoin="round"/>
+    {blocks.map(({x,y},i)=>{
+      const l=x*tile,t=y*tile,above=!keys.has(x+','+(y-1));
+      const seed=(x*17+y*13)%7;
+      return <g key={x+'-'+y}>
+        <rect x={l+1.6} y={t+1.6} width={tile-3.2} height={tile-3.2} rx={tile*.09}
+          fill="url(#worm-soil-color)" stroke="#865b42" strokeWidth="1.5"/>
+        <path d={'M'+(l+6)+' '+(t+tile*.63)+'q'+(tile*.3)+' -'+(tile*.10)+' '+(tile*.53)+
+          ' 0'} stroke="#dc9d62" strokeWidth="2" fill="none" opacity=".45"/>
+        <path d={'M'+(l+tile*.12)+' '+(t+tile*.85)+'l'+(tile*.23)+' '+(tile*.08)+
+          'm'+(tile*.32)+' -'+(tile*.1)+'l'+(tile*.14)+' -'+(tile*.09)}
+          stroke="#815c44" strokeWidth="2.2" fill="none" opacity=".6" strokeLinecap="round"/>
+        <circle cx={l+tile*(.23+.05*seed)} cy={t+tile*.5} r={1.7} fill="#e0b588"/>
+        <circle cx={l+tile*.73} cy={t+tile*(.66-.02*seed)} r={2.3} fill="#735140" opacity=".7"/>
+        {above && <g>
+          <path d={'M'+(l+1)+' '+(t+13)+'Q'+(l+tile*.16)+' '+(t+5)+' '+(l+tile*.33)+' '+(t+9)+
+            'Q'+(l+tile*.56)+' '+(t+2)+' '+(l+tile-1)+' '+(t+8)+
+            'L'+(l+tile-2)+' '+(t+19)+'Q'+(l+tile*.5)+' '+(t+15)+' '+(l+2)+' '+(t+20)+'Z'}
+            fill="#3c9850"/>
+          <rect x={l+2} y={t+2} width={tile-4} height={tile*.28} rx={tile*.09}
+            fill="url(#worm-grass-color)" stroke="#3d9b48" strokeWidth="1.2"/>
+          <path d={'M'+(l+5)+' '+(t+13)+'q4 8 9 0t9 0t8 0t9 0'} stroke="#377c38" strokeWidth="2"
+            fill="none" opacity=".65"/>
+          {i%4===0&&<g transform={'translate('+(l+tile*.7)+' '+(t+4)+')'}>
+            <path d="M0 0q-10 -10 -12 1q6 6 12 -1q2 -12 11 -8q1 10 -11 8Z"
+              fill="#399848" stroke="#237343" strokeWidth="1"/>
+            <circle r="2" fill="#fef1a0"/>
+          </g>}
+        </g>}
+      </g>;
+    })}
+    <path d={shape} fill="none" stroke="#694f3a" strokeWidth="2" strokeLinejoin="round"/>
+    {tops.map(p=>p.x%4===0?<g key={'flower'+pKey(p)}
+      transform={'translate('+(p.x*tile+tile*.76)+' '+(p.y*tile-2)+')'}>
+      <path d="M0 7V-3" stroke="#3e9b4d" strokeWidth="2"/>
+      {[0,72,144,216,288].map(a=><ellipse key={a} cx="0" cy="-6" rx="3.7" ry="6.1"
+        transform={'rotate('+a+' 0 -6)'} fill="#f8f8dc" stroke="#eddfaf" strokeWidth=".8"/>)}
+      <circle cy="-6" r="3" fill="#f4b83c"/>
+    </g>:null)}
   </g>;
 }
-
 export function WormApple({ x, y, tile = 48 }: { x: number; y: number; tile?: number }) {
-  const c = tile / 48;
-  return <g transform={'translate(' + (x * tile + tile / 2) + ' ' + (y * tile + tile / 2 + 3) + ') scale(' + c + ')'}>
-    <path d="M-19 -11C-25 -23 -8 -27 0 -17C12 -27 28 -20 22 -4C21 8 15 21 4 22C-2 25 -12 21 -17 12C-23 3 -24 -3 -19 -11Z"
-      fill="#bd2118" stroke="#632b1a" strokeWidth="3.6" strokeLinejoin="round"/>
-    <path d="M-18 -9C-14 -18 -6 -18 0 -16C8 -20 20 -16 20 -7L18 9Q10 26 0 18Q-10 23 -17 7Z"
-      fill="#e32c18" opacity=".9"/>
-    <path d="M-16 -12Q-3 -18 13 -11" fill="none" stroke="#ffac47" strokeWidth="3.4" strokeLinecap="round"/>
-    <path d="M-3 -18Q-3 -27 4 -30" fill="none" stroke="#372c16" strokeWidth="4" strokeLinecap="round"/>
-    <path d="M1 -28Q13 -42 29 -33Q21 -20 7 -23Z" fill="#117d32" stroke="#093b29" strokeWidth="3" strokeLinejoin="round"/>
-    <path d="M-17 -8Q-12 -14 -6 -13" fill="none" stroke="#ffe08b" strokeWidth="3" opacity=".8" strokeLinecap="round"/>
+  const id=useId().replace(/:/g,'')+'-apple';
+  const s=tile/48;
+  return <g className="worm-apple" transform={'translate('+(x*tile+tile/2)+' '+(y*tile+tile/2)+') scale('+s+')'}>
+    <defs><radialGradient id={id} cx=".3" cy=".23" r=".85">
+      <stop stopColor="#ffbb78"/><stop offset=".25" stopColor="#fc5039"/><stop offset=".68" stopColor="#dd1f28"/>
+      <stop offset="1" stopColor="#982336"/></radialGradient></defs>
+    <ellipse cx="2" cy="19" rx="20" ry="6" fill="#574f37" opacity=".30"/>
+    <g className="worm-apple-glow">
+      <circle r="26" fill="#ffec83" opacity=".24"/>
+      <circle r="29" fill="none" stroke="#ffe584" strokeWidth="1.5" strokeDasharray="4 7"/>
+      <path d="M-31 0h8M23 0h8M0 -32v8M0 23v8" stroke="#fff7a4" strokeWidth="2.6" strokeLinecap="round"/>
+    </g>
+    <path d="M-20 -11Q-26 -21 -12 -23Q-4 -27 1 -20Q13 -27 23 -18Q29 -10 20 10Q10 27 1 20Q-14 28 -21 9Q-25 -2 -20 -11Z"
+      fill={'url(#'+id+')'} stroke="#922e2c" strokeWidth="2.6" strokeLinejoin="round"/>
+    <ellipse cx="-11" cy="-10" rx="6.5" ry="10" transform="rotate(-22 -11 -10)" fill="#fff9d4" opacity=".47"/>
+    <path d="M0 -19Q-1 -30 5 -32" stroke="#674632" strokeWidth="4" fill="none" strokeLinecap="round"/>
+    <path d="M3 -29Q13 -42 29 -32Q23 -20 7 -23Z" fill="#42b968" stroke="#1c8754" strokeWidth="2"/>
+    <path d="M7 -25Q15 -30 24 -31" stroke="#b2ed8a" strokeWidth="1.6" fill="none"/>
   </g>;
 }
-
 export function WormPortal({ x, y, tile = 48, ready = false }: {
   x: number; y: number; tile?: number; ready?: boolean;
 }) {
-  const radius = tile * .42;
-  const centerX = x * tile + tile / 2;
-  const centerY = y * tile + tile / 2;
-  return <g transform={'translate(' + centerX + ' ' + centerY + ')'}>
-    <circle r={radius + 1.5} fill="#24262a" stroke="#101114" strokeWidth="3.2"/>
-    <circle r={radius - 3} fill="#090b0d" stroke="#373b40" strokeWidth="2.2"/>
-    <circle r={radius - 8} fill="#0f1013" stroke="#20242a" strokeWidth="2"/>
-    <path d={'M-' + (radius * .65) + ' 0C-' + (radius * .76) + ' -' + (radius * .7) +
-      ' ' + (radius * .63) + ' -' + (radius * .75) + ' ' + (radius * .65) + ' -1C' +
-      (radius * .66) + ' ' + (radius * .66) + ' -' + (radius * .53) + ' ' + (radius * .62) +
-      ' -' + (radius * .52) + ' 0C-' + (radius * .47) + ' ' + (radius * .46) +
-      ' ' + (radius * .42) + ' ' + (radius * .38) + ' ' + (radius * .36) + ' 0C' +
-      (radius * .4) + ' -' + (radius * .29) + ' -' + (radius * .16) + ' -' + (radius * .25) +
-      ' -' + (radius * .1) + ' 0'}
-      stroke="#3c4042" strokeWidth="2.1" fill="none" strokeLinecap="round"/>
-    <circle r="2.7" fill="#020303"/>
-    {ready && <circle r={radius + 4} fill="none" stroke="#474a4a" opacity=".65" strokeWidth="1.7"/>}
+  const id=useId().replace(/:/g,'')+'-portal';
+  const cx=x*tile+tile/2,cy=y*tile+tile/2,r=tile*.41;
+  return <g transform={'translate('+cx+' '+cy+')'} className={ready?'worm-portal-ready':'worm-portal'}>
+    <defs><radialGradient id={id}><stop stopColor={ready?'#73f9df':'#131e2c'}/>
+      <stop offset=".7" stopColor={ready?'#298dbb':'#253248'}/>
+      <stop offset="1" stopColor="#101c2c"/></radialGradient></defs>
+    <ellipse cx="0" cy={r*.75} rx={r+3} ry="5" fill="#3c4335" opacity=".3"/>
+    <circle r={r+4} fill="#e2bd77" stroke="#8d694e" strokeWidth="3"/>
+    <circle r={r} fill={'url(#'+id+')'} stroke="#fff1b3" strokeWidth="2.4"/>
+    <circle r={r*.75} fill="none" stroke="#a6e8cd" strokeWidth="1.8" opacity=".6" strokeDasharray="4 4"/>
+    <path d={'M'+(-r*.57)+' 0Q'+(-r*.5)+' '+(-r*.60)+' 0 '+(-r*.54)+
+      'Q'+(r*.7)+' '+(-r*.4)+' '+(r*.42)+' '+(r*.14)+'Q0 '+(r*.5)+' '+(-r*.17)+
+      ' '+(r*.18)+'Q'+(-r*.25)+' 0 0 '+(-r*.1)}
+      fill="none" stroke={ready?'#e1fff7':'#90b5c3'} strokeWidth="2.4" strokeLinecap="round"/>
+    {[0,90,180,270].map(a=><circle key={a} cx={Math.cos(a*Math.PI/180)*(r+1.3)}
+      cy={Math.sin(a*Math.PI/180)*(r+1.3)} r="2" fill="#fff1c5"/>)}
   </g>;
 }
-
 export function WormCharacter({ body, tile = 48, id }: {
   body: Point[]; tile?: number; id: string;
 }) {
-  if (!body.length) return null;
-  const outline = cellContour(body, tile, .31);
-  const head = body[0]!;
-  const neck = body[1] ?? { x: head.x - 1, y: head.y };
-  const angle = head.x < neck.x ? 180 : head.y < neck.y ? -90 : head.y > neck.y ? 90 : 0;
-  const hx = (head.x + .5) * tile;
-  const hy = (head.y + .5) * tile;
-  const c = tile / 48;
+  if(!body.length)return null;
+  const outline=cellContour(body,tile,.31);
+  const head=body[0]!,neck=body[1]??{x:head.x-1,y:head.y};
+  const angle=head.x<neck.x?180:head.y<neck.y?-90:head.y>neck.y?90:0;
+  const hx=(head.x+.5)*tile,hy=(head.y+.5)*tile,c=tile/48;
   return <g className="worm-character" aria-hidden="true">
     <defs>
-      <linearGradient id={id + '-green'} x1=".1" y1="0" x2=".94" y2=".9">
-        <stop stopColor="#098100"/><stop offset=".63" stopColor="#098000"/>
-        <stop offset="1" stopColor="#035b05"/>
-      </linearGradient>
-      <clipPath id={id + '-shape'}><path d={outline}/></clipPath>
+      <radialGradient id={id+'-green'} cx=".35" cy=".18" r=".79">
+        <stop stopColor="#c4ff70"/><stop offset=".24" stopColor="#79e94a"/>
+        <stop offset=".66" stopColor="#39bd35"/><stop offset="1" stopColor="#258236"/>
+      </radialGradient>
+      <radialGradient id={id+'-face'} cx=".28" cy=".2" r=".95">
+        <stop stopColor="#d6ff92"/><stop offset=".47" stopColor="#81e64e"/>
+        <stop offset="1" stopColor="#32a949"/>
+      </radialGradient>
+      <clipPath id={id+'-shape'}><path d={outline}/></clipPath>
     </defs>
-    <path d={outline} transform="translate(0 2)" fill="#124d0d" opacity=".33"/>
-    <path d={outline} fill={'url(#' + id + '-green)'} stroke="#064109"
-      strokeWidth={3.5*c} strokeLinejoin="round"/>
-    <g clipPath={'url(#' + id + '-shape)'}>
-      {body.map((p, i) => <g key={i}>
-        <path d={'M' + (p.x * tile + 3) + ' ' + (p.y * tile + 4) + 'H' +
-          (p.x * tile + tile * .48) + 'Q' + (p.x * tile + tile * .68) + ' ' +
-          (p.y * tile + tile * .45) + ' ' + (p.x * tile + 5) + ' ' +
-          (p.y * tile + tile * .75) + 'Z'} fill="#1f9f12" opacity={i === 0 ? .47 : .28}/>
-        {i > 0 && <path d={'M' + (p.x * tile + tile * .85) + ' ' + (p.y * tile + 3) +
-          'V' + (p.y * tile + tile - 6)} stroke="#034c08" strokeWidth={tile * .035} opacity=".19"/>}
-      </g>)}
+    <path d={outline} transform="translate(0 4)" fill="#426f39" opacity=".34"/>
+    <path d={outline} fill="#44b43b" stroke="#2b8b37" strokeWidth="3" strokeLinejoin="round"/>
+    <g clipPath={'url(#'+id+'-shape)'}>
+      {body.map((p,i)=>{
+        const x=(p.x+.5)*tile,y=(p.y+.5)*tile;
+        return <g key={i}>
+          <ellipse cx={x+2} cy={y+5} rx={tile*.43} ry={tile*.37} fill="#3a9a37"/>
+          <circle cx={x} cy={y} r={tile*.44} fill={'url(#'+id+'-green)'}/>
+          <ellipse cx={x-tile*.16} cy={y-tile*.22} rx={tile*.14} ry={tile*.085}
+            fill="#eaffcf" opacity=".53" transform={'rotate(-25 '+x+' '+y+')'}/>
+          <path d={'M'+(x-tile*.26)+' '+(y+tile*.25)+'Q'+x+' '+(y+tile*.45)+' '+(x+tile*.24)+' '+(y+tile*.24)}
+            stroke="#c5f495" strokeWidth={tile*.11} strokeLinecap="round" opacity=".8" fill="none"/>
+        </g>;
+      })}
     </g>
-    <g transform={'translate(' + hx + ' ' + hy + ') rotate(' + angle + ') scale(' + c + ')'}>
-      <ellipse cx="0" cy="-10" rx="12" ry="13.5" fill="#fcffff"
-        stroke="#14181e" strokeWidth="3.1"/>
-      <ellipse cx="15" cy="-10" rx="11.5" ry="13" fill="#fcffff"
-        stroke="#14181e" strokeWidth="3.1"/>
-      <circle cx="5.5" cy="-11" r="5.1" fill="#12161c"/>
-      <circle cx="18.3" cy="-11" r="4.7" fill="#12161c"/>
-      <circle cx="7" cy="-14" r="1.65" fill="#fff"/>
-      <circle cx="19.8" cy="-14" r="1.55" fill="#fff"/>
-      <path d="M6 7Q20 3 23 11V23Q11 26 3 20Q-1 13 6 7Z"
-        fill="#b727a4" stroke="#24111e" strokeWidth="3.6" strokeLinejoin="round"/>
-      <path d="M6 14H23" stroke="#311333" strokeWidth="2.6" strokeLinecap="round"/>
-      <path d="M10 20H21" stroke="#e65ed5" strokeWidth="2.2" strokeLinecap="round"/>
+    <g transform={'translate('+hx+' '+hy+') rotate('+angle+') scale('+c+')'}>
+      <circle r="22.2" fill="#2c9a40" stroke="#207d35" strokeWidth="2.5"/>
+      <circle r="22" fill={'url(#'+id+'-face)'}/>
+      <path d="M-7 -18q-8 -14 -2 -18q7 -3 9 12M6 -20q1 -13 9 -16q8 2 2 15"
+        fill="none" stroke="#3caa3f" strokeWidth="4.8" strokeLinecap="round"/>
+      <circle cx="-10" cy="-34" r="4.6" fill="#79df45"/>
+      <circle cx="17" cy="-35" r="4.6" fill="#79df45"/>
+      <ellipse cx="-5" cy="-6" rx="10.3" ry="13.4" fill="#fff" stroke="#31583e" strokeWidth="1.8"/>
+      <ellipse cx="13" cy="-6" rx="10.2" ry="13.4" fill="#fff" stroke="#31583e" strokeWidth="1.8"/>
+      <circle cx="-1" cy="-5" r="5.9" fill="#202d35"/><circle cx="17" cy="-5" r="5.9" fill="#202d35"/>
+      <circle cx="1" cy="-9" r="2" fill="#fff"/><circle cx="19" cy="-9" r="2" fill="#fff"/>
+      <path d="M1 9Q12 4 20 12Q21 22 11 22Q2 20 1 9Z"
+        fill="#812846" stroke="#663044" strokeWidth="1.8"/>
+      <path d="M8 17Q13 12 19 18" stroke="#fa8fa0" strokeWidth="3.2" fill="none" strokeLinecap="round"/>
+      <ellipse cx="-15" cy="9" rx="4" ry="2.4" fill="#f29b79" opacity=".63"/>
     </g>
   </g>;
 }
-
 export function AppleWormCover() {
-  const id = useId().replace(/:/g, '') + '-cover';
-  const blocks: Point[] = [
-    ...Array.from({ length: 8 }, (_, x) => ({ x: x + 1, y: 6 })),
-    ...Array.from({ length: 2 }, (_, i) => ({ x: 1, y: i + 4 })),
-    ...Array.from({ length: 2 }, (_, i) => ({ x: 7, y: i + 4 })),
-    ...Array.from({ length: 2 }, (_, i) => ({ x: 8, y: i + 4 })),
+  const id=useId().replace(/:/g,'')+'-cover';
+  const blocks:Point[]=[
+    ...Array.from({length:9},(_,x)=>({x:x+1,y:6})),
+    {x:2,y:5},{x:2,y:4},{x:7,y:5},{x:8,y:5},
   ];
   return <svg viewBox="0 0 480 444" preserveAspectRatio="xMidYMid slice"
-    role="presentation" xmlns="http://www.w3.org/2000/svg">
+      role="presentation" xmlns="http://www.w3.org/2000/svg">
     <WormSky width={480} height={444} id={id}/>
-    <WormTerrain blocks={blocks} tile={47}/>
-    <WormApple x={4.5} y={4.7} tile={47}/>
-    <WormPortal x={8.55} y={3.05} tile={47}/>
-    <WormCharacter body={[{ x: 3, y: 3 }, { x: 2, y: 3 }, { x: 1, y: 3 }]}
-      tile={47} id={id}/>
+    <WormTerrain blocks={blocks} tile={46}/>
+    <WormApple x={6.8} y={5} tile={46}/>
+    <WormPortal x={9} y={5.05} tile={46}/>
+    <WormCharacter body={[{x:4,y:5},{x:3,y:5},{x:3,y:4}]}
+      tile={46} id={id}/>
   </svg>;
 }

@@ -1,71 +1,93 @@
-/* Apple Worm — original NAQLA puzzle art and responsive offline controls. */
-.worm-page{max-width:1320px;margin:0 auto;padding:clamp(12px,2vw,28px);color:#eef7ff}
-.worm-header{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:24px}
-.worm-header h1{margin:6px 0;font-size:clamp(27px,4vw,44px);letter-spacing:-.04em}
-.worm-header p{color:#9caec5;font-size:13px;line-height:1.75;max-width:560px}
-.worm-header .eyebrow{color:#a7e9a5;font-weight:750;letter-spacing:.12em}
-.worm-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,310px);align-items:start;gap:clamp(14px,2vw,25px)}
-.worm-stage{min-width:0;position:relative;border:1px solid #4c6780;border-radius:24px;overflow:hidden;background:linear-gradient(150deg,#162f42,#0e1a2c);box-shadow:0 22px 55px #0006}
-.worm-stage-top{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;padding:13px 18px;background:#10243c;color:#e0f8e4;font-size:13px;border-bottom:1px solid #3a5970}
-.worm-stage-top span{color:#abc5d8;font-size:12px}
-.worm-link{border:0;background:none;color:#9bedd1;font-weight:750;text-decoration:underline;text-underline-offset:4px;cursor:pointer;min-height:34px}
-.worm-board{display:block;width:100%;height:auto;max-height:min(67dvh,690px);margin:auto;touch-action:none;user-select:none}
-.worm-portal-ready{filter:drop-shadow(0 0 9px #76ffed);animation:worm-portal-glow 2.4s ease-in-out infinite}
-@keyframes worm-portal-glow{50%{filter:drop-shadow(0 0 16px #e0fff4)}}
-.worm-level-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px;padding:12px;background:#172c43;max-height:210px;overflow-y:auto}
-.worm-level-grid button{min-width:0;min-height:38px;border:1px solid #54728a;background:#213d50;color:#e5f6fa;border-radius:7px;font-size:12px}
-.worm-level-grid button.selected{background:#97e4b1;color:#132c27;border-color:#fff}
-.worm-level-grid button:disabled{background:#132333;color:#768da3;border-color:#354a5b}
-.worm-result{position:absolute;inset:auto 20px 20px;display:flex;align-items:center;flex-direction:column;gap:10px;text-align:center;background:#0c2138f5;border:1px solid #8adcb2;border-radius:18px;padding:24px;box-shadow:0 15px 50px #000a}
-.worm-result.lost{border-color:#f0b7b1}
-.worm-result h2{font-size:clamp(22px,3vw,29px)}
-.worm-result p{font-size:12px;color:#c2d6e3;line-height:1.7}
-.worm-result .button{width:min(260px,100%);font-size:14px;background:#9ce4ad;color:#173326}
-.worm-panel{display:flex;flex-direction:column;gap:17px;border:1px solid #3d5870;border-radius:22px;padding:clamp(14px,2vw,22px);background:linear-gradient(155deg,#172e40,#111c2f);box-shadow:0 12px 34px #0004}
-.worm-objective{display:flex;align-items:flex-start;gap:13px}
-.worm-objective strong{font-size:16px;color:#ccf3d1}
-.worm-objective p{font-size:12px;line-height:1.8;color:#9eb7cc;margin-top:8px}
-.worm-mini-apple{font-size:31px}
-.worm-stats{display:flex;justify-content:space-between;gap:10px;border-top:1px solid #35516a;border-bottom:1px solid #35516a;padding:15px 0;font-size:12px;color:#acc2d5}
-.worm-stats b{color:#bef0bc;font-size:16px;margin-inline-start:5px}
-.worm-pad{display:grid;grid-template-columns:repeat(3,64px);grid-template-rows:repeat(2,62px);justify-content:center;gap:7px;margin:3px auto}
-.worm-pad button{border:1px solid #8db6aa;background:linear-gradient(150deg,#407e79,#264a5c);border-radius:15px;box-shadow:0 5px 0 #0c2532;color:#f5fff7;font-size:30px;font-weight:800;min-height:58px;touch-action:manipulation}
-.worm-pad button:active:not(:disabled){transform:translateY(3px);box-shadow:0 2px 0 #0c2532}
-.worm-pad button.up{grid-column:2;grid-row:1}
-.worm-pad button.left{grid-column:1;grid-row:2}
-.worm-pad button.down{grid-column:2;grid-row:2}
-.worm-pad button.right{grid-column:3;grid-row:2}
+/* Apple Worm — polished touch-first floating-meadow mobile puzzle.
+ * Every active scene element is SVG generated from the actual puzzle state.
+ * No directional control overlay: swipe on the board to move.
+ */
+.worm-page{width:min(100%,1280px);margin:0 auto;padding:clamp(7px,1.8vw,23px);color:#eefaf4}
+.worm-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:15px}
+.worm-header h1{font-size:clamp(27px,3.5vw,41px);line-height:1.15;margin:6px 0 4px;font-weight:950;color:#ecffdc;text-shadow:0 3px 0 #225540}
+.worm-header p{color:#c4d4d1;font-size:12px;line-height:1.55;max-width:470px}
+.worm-header .eyebrow{color:#99dcb7;letter-spacing:.14em;font-size:10px;font-weight:900}
+.worm-header>.button{border:1px solid #8cbba9;background:#315d60;color:#e8f9e5;border-radius:12px;min-height:43px}
+.worm-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(235px,315px);gap:clamp(13px,1.6vw,24px);align-items:start}
+.worm-stage{position:relative;min-width:0;overflow:hidden;border-radius:23px;border:5px solid #85bcac;background:linear-gradient(160deg,#85dbf7,#e0f8c9);box-shadow:0 20px 0 #335b4b4d,0 30px 58px #0008}
+.worm-stage-top{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:11px 15px;background:linear-gradient(180deg,#f9eac1,#ead09b);border-bottom:4px solid #8d7450;color:#624a39}
+.worm-stage-top>strong{font-size:clamp(13px,2vw,19px);font-weight:950;border-radius:10px;background:linear-gradient(#af7445,#8a5834);border:2px solid #674528;padding:9px 13px;color:#ffefc5;text-shadow:0 2px 1px #6f3d28;box-shadow:inset 0 2px 2px #fbd99b9a,0 3px 3px #a78e75}
+.worm-stage-top>span{font-size:clamp(12px,1.7vw,17px);font-weight:950;color:#593d37;border-radius:11px;background:#fff7dd;border:2px solid #cca77a;padding:8px 13px;box-shadow:0 2px 0 #bd9a6a}
+.worm-link{min-height:42px;border-radius:12px;border:2px solid #718d9f;color:#f4fdff;background:linear-gradient(180deg,#6c9ab6,#3d6b84);box-shadow:0 3px 0 #2d5068;font-weight:850;font-size:12px;padding:7px 11px;cursor:pointer}
+.worm-link:hover{filter:brightness(1.08)}.worm-link:active{transform:translateY(2px);box-shadow:0 1px 0 #2d5068}
+.worm-playfield{position:relative;overflow:hidden}
+.worm-board{display:block;width:100%;height:auto;max-height:min(70dvh,720px);margin-inline:auto;aspect-ratio:auto;direction:ltr;touch-action:none;overscroll-behavior:contain;user-select:none;-webkit-user-select:none;cursor:grab;-webkit-touch-callout:none}
+.worm-board:active{cursor:grabbing}
+.worm-board-help{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);white-space:nowrap;max-width:95%;overflow:hidden;text-overflow:ellipsis;color:#2f6651;background:#fff9ddda;border:2px solid #f0d8a4;border-radius:999px;box-shadow:0 3px 9px #48684936;padding:5px 13px;font-size:clamp(10px,1.2vw,13px);font-weight:900;pointer-events:none}
+.worm-clouds{animation:worm-cloud-float 14s ease-in-out infinite alternate}
+@keyframes worm-cloud-float{from{transform:translateX(-6px)}to{transform:translateX(9px)}}
+.worm-character{animation:worm-arrival .23s cubic-bezier(.2,1.7,.6,1) both}
+@keyframes worm-arrival{from{opacity:.78;filter:brightness(1.35) drop-shadow(0 0 3px #ccfd95)}to{opacity:1;filter:none}}
+.worm-apple{animation:worm-apple-float 2.3s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes worm-apple-float{0%,100%{filter:drop-shadow(0 0 4px #ffe48f)}50%{filter:drop-shadow(0 0 11px #ffde67)}}
+.worm-apple-glow{animation:worm-apple-glimmer 2s ease-in-out infinite;transform-origin:center}
+@keyframes worm-apple-glimmer{0%,100%{opacity:.56}50%{opacity:1}}
+.worm-portal-ready{filter:drop-shadow(0 0 9px #69f5e9);animation:worm-portal-light 1.6s ease-in-out infinite}
+@keyframes worm-portal-light{50%{filter:drop-shadow(0 0 17px #c6ffff)}}
+.worm-level-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px;padding:12px;background:#f6e8c6;border-bottom:3px solid #a48d69;max-height:185px;overflow:auto;overscroll-behavior:contain}
+.worm-level-grid button{min-width:0;min-height:38px;background:#fef5d9;border:2px solid #c3a479;border-radius:10px;color:#6a5b49;font-size:11px;font-weight:850;cursor:pointer}
+.worm-level-grid button.selected{background:#85c657;color:#193e29;border-color:#4e8e4d}
+.worm-level-grid button:disabled{background:#cfcbbf;color:#8b8a80;cursor:not-allowed}
+.worm-result{position:absolute;z-index:3;inset:auto 10% 9%;padding:clamp(16px,3vw,28px);background:#fff7ddfa;color:#594334;border:4px solid #c6986f;border-radius:20px;box-shadow:0 12px 0 #976d4c,0 20px 40px #35451d77;text-align:center;display:flex;flex-direction:column;align-items:center;gap:11px}
+.worm-result::before{content:'★  ★  ★';font-size:25px;letter-spacing:6px;color:#ebb642;text-shadow:0 2px 0 #af792a}
+.worm-result.lost{border-color:#cfa994}
+.worm-result.lost::before{content:'↻';font-size:36px;color:#9a9081}
+.worm-result h2{font-size:clamp(20px,3vw,30px);font-weight:950;color:#3c5d3c}
+.worm-result p{font-size:12px;line-height:1.6;color:#796652}
+.worm-result button{width:min(260px,100%);min-height:48px;background:linear-gradient(#98e66a,#53b64e)!important;border:2px solid #3b9849!important;color:#244e2d!important;border-radius:12px!important;font-weight:900}
+.worm-panel{display:flex;flex-direction:column;gap:14px;border-radius:21px;padding:clamp(14px,1.8vw,22px);background:linear-gradient(156deg,#215a60,#163947);border:2px solid #598d80;box-shadow:0 16px 34px #0005}
+.worm-objective{display:flex;align-items:center;gap:11px}
+.worm-objective strong{font-size:16px;font-weight:900;color:#eeedc2}
+.worm-objective p{font-size:12px;line-height:1.6;color:#cee1d2;margin-top:5px}
+.worm-mini-apple{font-size:30px;filter:drop-shadow(0 3px 3px #152b2c)}
+.worm-stats{display:flex;gap:8px;justify-content:space-between;padding:12px 0;border-top:1px solid #80a79d;border-bottom:1px solid #80a79d;font-size:12px;color:#cce9d9}
+.worm-stats b{font-size:17px;color:#f9e9ab;padding-inline-start:4px}
+.worm-swipe-callout{background:#d1f3d8;border:2px solid #b0d8a9;border-radius:11px;color:#33684b;padding:11px;display:flex;align-items:center;justify-content:center;gap:11px;text-align:center;font-size:13px;line-height:1.5}
+.worm-swipe-callout span{font-size:22px}.worm-swipe-callout strong{font-weight:900}
 .worm-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
-.worm-actions button{border:1px solid #526e84;color:#e0f1ff;background:#234052;border-radius:10px;padding:8px 5px;min-height:45px;font-size:12px;font-weight:650}
-.worm-actions button:hover:not(:disabled){background:#345a65;border-color:#8fd7ac}
-.worm-actions button:disabled,.worm-pad button:disabled{opacity:.45;cursor:not-allowed}
-.worm-hint{border:1px solid #81c79a;border-radius:10px;padding:12px;color:#d1fadd;font-size:13px;text-align:center;background:#23483f}
-.worm-help{color:#92adc5;font-size:11px;line-height:1.65;text-align:center}
-.worm-page button:focus-visible{outline:3px solid #b5fff0;outline-offset:3px}
-@media(max-width:1050px){.worm-layout{grid-template-columns:minmax(0,1fr)}.worm-panel{max-width:none}.worm-pad{grid-template-columns:repeat(3,65px)}.worm-board{max-height:65dvh}}
-@media(max-width:600px){.worm-page{padding:8px}.worm-header{align-items:flex-start}.worm-header .button{font-size:11px;padding:10px;min-width:90px}.worm-stage{border-radius:15px}.worm-stage-top{padding:8px 10px;font-size:12px}.worm-board{max-height:60dvh}.worm-panel{border-radius:16px}.worm-level-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.worm-result{inset:auto 8px 8px;padding:15px}.worm-result .button{min-height:40px}.worm-pad{grid-template-columns:repeat(3,65px);grid-template-rows:repeat(2,59px)}}
-@media(prefers-reduced-motion:reduce){.worm-portal-ready{animation:none}}
-:root[data-reduce-motion='true'] .worm-portal-ready{animation:none}
-
-
-/* Faithful visual direction: flat sky/rays, solid earth faces and one continuous
-   green character. Keep the native NAQLA controls, but do not tilt the artwork. */
-.game-card.appleWorm{border-color:#38667e}
-.game-card.appleWorm:hover{border-color:#74b4dc}
-.appleWorm .card-art-wrap{background:#75aaef;border-bottom-color:#395d71}
+.worm-actions button{min-height:48px;padding:7px 5px;background:linear-gradient(#fff9e7,#dccdac);border:2px solid #c0ae8b;border-radius:11px;color:#4c5949;font-size:clamp(10px,1.3vw,12px);font-weight:900;cursor:pointer;box-shadow:0 3px 0 #867c67}
+.worm-actions button:hover:not(:disabled){filter:brightness(1.06)}
+.worm-actions button:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 #867c67}
+.worm-actions button:disabled{opacity:.48;cursor:not-allowed}
+.worm-hint{padding:10px;border-radius:10px;text-align:center;background:#ffeeb1;color:#584c33;font-size:12px;font-weight:850}
+.worm-help{color:#a2c9c0;line-height:1.6;text-align:center;font-size:10px}
+.worm-page button:focus-visible{outline:3px solid #fff0ac;outline-offset:2px}
+.game-card.appleWorm{border-color:#5d9c8a}.game-card.appleWorm:hover{border-color:#c6eb95}
+.appleWorm .card-art-wrap{background:#73d8d4;border-bottom-color:#5ab4ae}
 .game-art.appleWorm .art-orbit,.game-art.appleWorm .art-halo{display:none}
-.game-art.appleWorm>svg{
-  width:100%;height:100%;max-height:none;display:block;flex:none;
-  transform:none;filter:none;object-fit:cover;
+.game-art.appleWorm>svg{width:100%;height:100%;max-height:none;display:block;flex:none;transform:none;filter:none;object-fit:cover}
+.appleWorm .game-tag{color:#c3eba0}.appleWorm .play-button{background:#9bde7a;color:#254527}
+.appleWorm .play-button:hover{background:#c0f497}
+@media(max-width:900px){
+.worm-layout{grid-template-columns:minmax(0,1fr);gap:12px}
+.worm-stage,.worm-panel{max-width:690px;width:100%;margin-inline:auto}
+.worm-panel{gap:11px}
 }
-.appleWorm .game-tag{color:#88dca0}
-.appleWorm .play-button{background:#7fd77e;color:#112c18}
-.appleWorm .play-button:hover{background:#9bef97}
-.worm-stage{border-color:#5d87a8;border-radius:17px;background:#6e9df1}
-.worm-board{filter:none}
-.worm-portal-ready{animation:none;filter:none}
-.worm-objective{align-items:center}
-@media(max-width:600px){
-  .worm-stage{border-radius:11px}
-  .game-art.appleWorm>svg{height:100%}
+@media(max-width:480px){
+.worm-page{padding:7px}.worm-header{gap:8px;margin-bottom:11px}
+.worm-header h1{font-size:25px;margin:2px 0}.worm-header .eyebrow{font-size:8px;letter-spacing:.04em}
+.worm-header p{font-size:10px;line-height:1.4}.worm-header>.button{padding:6px 8px;font-size:10px;min-width:83px}
+.worm-stage{border-radius:14px;border-width:3px;box-shadow:0 7px 0 #4a756143,0 15px 30px #0006}
+.worm-stage-top{gap:5px;padding:7px 7px;border-bottom-width:2px}
+.worm-stage-top>strong,.worm-stage-top>span{font-size:11px;padding:6px 8px;border-width:1px}
+.worm-link{font-size:10px;padding:5px 7px;min-height:39px;border-width:1px}
+.worm-board{max-height:57dvh}.worm-board-help{bottom:7px;font-size:9px;padding:4px 10px}
+.worm-level-grid{grid-template-columns:repeat(6,minmax(0,1fr));padding:8px}
+.worm-result{inset:auto 5% 10%;padding:12px}.worm-result::before{font-size:17px}
+.worm-panel{border-radius:14px;padding:12px}.worm-objective p{font-size:11px}
+.worm-swipe-callout{font-size:12px;padding:8px}.worm-actions button{min-height:44px}
 }
+@media(prefers-reduced-motion:reduce){
+.worm-page .worm-clouds,.worm-page .worm-character,.worm-page .worm-apple,
+.worm-page .worm-apple-glow,.worm-page .worm-portal-ready{animation:none!important}
+}
+:root[data-reduce-motion='true'] .worm-page .worm-clouds,
+:root[data-reduce-motion='true'] .worm-page .worm-character,
+:root[data-reduce-motion='true'] .worm-page .worm-apple,
+:root[data-reduce-motion='true'] .worm-page .worm-apple-glow,
+:root[data-reduce-motion='true'] .worm-page .worm-portal-ready{animation:none!important}

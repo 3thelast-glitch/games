@@ -1,9 +1,10 @@
-import { useEffect, useId, useRef, useState, type TouchEvent } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
 import {
   WORM_LEVEL_COUNT, findWormSolution, moveWorm,
   restoreWorm, startWorm, wormLevel, type Direction, type WormState,
 } from '../../../packages/games/apple-worm/engine.ts';
 import { WormApple, WormCharacter, WormPortal, WormSky, WormTerrain } from './AppleWormArt.tsx';
+import { finishWormGesture, startWormGesture, type WormGesture } from './apple-worm-gestures.ts';
 import { useI18n } from './i18n.tsx';
 import { feedback, storage, type Settings } from './platform.ts';
 
@@ -23,25 +24,31 @@ function WormBoard({ state, onSwipe, label }: {
 }) {
   const board = wormLevel(state.level);
   const svgId = useId().replace(/:/g, '') + '-board';
-  const swipe = useRef<{ x: number; y: number } | null>(null);
+  const swipe = useRef<WormGesture | null>(null);
   const width = board.width * TILE;
   const height = board.height * TILE;
-  const touchStart = (e: TouchEvent<SVGSVGElement>) => {
-    const p = e.touches[0];
-    if (p) swipe.current = { x: p.clientX, y: p.clientY };
+  const onPointerDown = (event: PointerEvent<SVGSVGElement>) => {
+    if (swipe.current || !event.isPrimary ||
+        (event.pointerType === 'mouse' && event.button !== 0)) return;
+    const gesture = startWormGesture(event.pointerId, event.clientX, event.clientY);
+    if (!gesture) return;
+    swipe.current = gesture;
+    event.currentTarget.setPointerCapture(event.pointerId);
   };
-  const touchEnd = (e: TouchEvent<SVGSVGElement>) => {
-    if (!swipe.current || !e.changedTouches[0]) return;
-    const dx = e.changedTouches[0].clientX - swipe.current.x;
-    const dy = e.changedTouches[0].clientY - swipe.current.y;
+  const onPointerUp = (event: PointerEvent<SVGSVGElement>) => {
+    const direction = finishWormGesture(swipe.current, event.pointerId, event.clientX, event.clientY);
+    if (swipe.current?.pointerId !== event.pointerId) return;
     swipe.current = null;
-    if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
-    onSwipe(Math.abs(dx) > Math.abs(dy) ?
-      (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+    if (event.currentTarget.hasPointerCapture(event.pointerId))
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    if (direction) onSwipe(direction);
   };
+  const cancelSwipe = () => { swipe.current = null; };
   return (
     <svg className="worm-board" viewBox={'0 0 ' + width + ' ' + height}
-      role="img" aria-label={label} onTouchStart={touchStart} onTouchEnd={touchEnd}
+      role="img" aria-label={label} style={{direction:'ltr'}} data-input="swipe"
+      onPointerDown={onPointerDown} onPointerUp={onPointerUp}
+      onPointerCancel={cancelSwipe} onLostPointerCapture={cancelSwipe}
       xmlns="http://www.w3.org/2000/svg">
       <WormSky width={width} height={height} id={svgId}/>
       <WormTerrain blocks={board.blocks} tile={TILE}/>
@@ -56,7 +63,7 @@ function WormBoard({ state, onSwipe, label }: {
       ))}
       <WormPortal x={board.portal.x} y={board.portal.y} tile={TILE} ready={state.eaten}/>
       {!state.eaten && <WormApple x={board.apple.x} y={board.apple.y} tile={TILE}/>}
-      <WormCharacter body={state.body} tile={TILE} id={svgId}/>
+      <WormCharacter key={state.moves} body={state.body} tile={TILE} id={svgId}/>
     </svg>
   );
 }
@@ -70,6 +77,11 @@ export function AppleWormPage({ onExit, settings }: { onExit: () => void; settin
   const [history, setHistory] = useState<WormState[]>([]);
   const [hint, setHint] = useState<Direction | null>(null);
   const [showLevels, setShowLevels] = useState(false);
+  useLayoutEffect(() => {
+    // Start at the actual game area, not the previously scrolled library card.
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
   useEffect(() => {
     let active = true;
     void storage.get<SavedWorm | null>(SAVE_KEY, null).then(saved => {
@@ -158,7 +170,10 @@ export function AppleWormPage({ onExit, settings }: { onExit: () => void; settin
                 onClick={() => selectLevel(level)}>{level > unlocked ? '🔒' : level}</button>
             )}
           </div>}
-          <WormBoard state={state} onSwipe={move} label={t('appleWormBoard')} />
+          <div className="worm-playfield">
+            <WormBoard state={state} onSwipe={move} label={t('appleWormBoard')} />
+            <div className="worm-board-help" aria-hidden="true">{t('appleWormSwipeHint')}</div>
+          </div>
           {state.phase !== 'playing' && <div className={'worm-result ' + state.phase} role="status">
             <h2>{t(state.phase === 'won' ? 'appleWormWon' : 'appleWormLost')}</h2>
             <p>{t(state.phase === 'won' ? 'appleWormWonDesc' : 'appleWormLostDesc')}</p>
@@ -178,11 +193,9 @@ export function AppleWormPage({ onExit, settings }: { onExit: () => void; settin
             <span>{t('appleWormApple')}: <b>{state.eaten ? '✓' : '○'}</b></span>
             <span>{t('appleWormLength')}: <b>{state.body.length}</b></span>
           </div>
-          <div className="worm-pad" dir="ltr" aria-label={t('appleWormControls')}>
-            <button type="button" className="up" onClick={() => move('up')} disabled={state.phase !== 'playing'} aria-label={t('appleWormUp')}>↑</button>
-            <button type="button" className="left" onClick={() => move('left')} disabled={state.phase !== 'playing'} aria-label={t('appleWormLeft')}>←</button>
-            <button type="button" className="down" onClick={() => move('down')} disabled={state.phase !== 'playing'} aria-label={t('appleWormDown')}>↓</button>
-            <button type="button" className="right" onClick={() => move('right')} disabled={state.phase !== 'playing'} aria-label={t('appleWormRight')}>→</button>
+          <div className="worm-swipe-callout" role="note">
+            <span aria-hidden="true">☝️</span>
+            <strong>{t('appleWormSwipeHint')}</strong>
           </div>
           <div className="worm-actions">
             <button type="button" onClick={undo} disabled={!history.length}>{t('appleWormUndo')}</button>
