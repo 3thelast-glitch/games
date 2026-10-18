@@ -46,7 +46,7 @@ function WormBoard({ state, onSwipe, label }: {
   const cancelSwipe = () => { swipe.current = null; };
   return (
     <svg className="worm-board" viewBox={'0 0 ' + width + ' ' + height}
-      role="img" aria-label={label} dir="ltr" data-input="swipe"
+      role="img" aria-label={label} style={{direction:'ltr'}} data-input="swipe"
       onPointerDown={onPointerDown} onPointerUp={onPointerUp}
       onPointerCancel={cancelSwipe} onLostPointerCapture={cancelSwipe}
       xmlns="http://www.w3.org/2000/svg">
