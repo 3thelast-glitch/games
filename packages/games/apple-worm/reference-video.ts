@@ -17,10 +17,28 @@ export const APPLE_WORM_VIDEO_STAGE_TIMES = [
   2371.20, 2401.60, 2432.00, 2477.60, 2518.13, 2578.93, 2589.07, 2619.47, 2644.80, 2660.00,
   2675.20, 2710.67, 2725.87, 2746.13, 2812.00,
 ] as const;
+/** Earliest numeral-confirmed 0.25-second sample. May still be after a move.
+ *  Stage 105 uses the first keyed frame because the earlier text is ambiguous.
+ */
+export const APPLE_WORM_VIDEO_FIRST_OBSERVED_TIMES = [
+  0.000, 8.133, 16.267, 26.150, 39.283, 53.733, 65.617, 78.067, 100.083, 111.533,
+  130.483, 140.367, 167.767, 186.217, 198.917, 219.183, 253.650, 284.050, 298.433, 333.650,
+  375.500, 385.383, 404.083, 423.850, 443.867, 460.567, 480.083, 512.300, 543.200, 577.350,
+  621.450, 652.100, 687.067, 725.600, 754.183, 783.583, 808.667, 828.683, 848.950, 888.483,
+  915.317, 956.350, 986.750, 1005.017, 1023.783, 1050.867, 1089.083, 1103.033, 1135.000, 1158.517,
+  1185.600, 1218.317, 1235.267, 1267.733, 1285.683, 1306.950, 1334.100, 1354.617, 1395.150, 1435.183,
+  1465.083, 1474.717, 1489.350, 1540.017, 1581.617, 1614.767, 1652.050, 1688.767, 1725.983, 1760.950,
+  1782.217, 1833.883, 1853.650, 1891.683, 1914.700, 1939.283, 1957.300, 1975.000, 1994.017, 2010.967,
+  2040.867, 2103.983, 2119.683, 2157.150, 2195.683, 2226.833, 2261.300, 2279.250, 2317.533, 2339.800,
+  2370.450, 2399.100, 2430.250, 2473.600, 2516.383, 2575.433, 2584.817, 2618.967, 2644.050, 2658.000,
+  2674.700, 2708.917, 2725.367, 2743.383, 2812.000,
+] as const;
+
 export const APPLE_WORM_VIDEO_STAGE_COUNT = APPLE_WORM_VIDEO_STAGE_TIMES.length;
 export interface StageVerification {
   level:number;
   firstKeyframeSeconds:number;
+  firstObservedSeconds:number;
   frame:string;
   mapTranscribed:boolean;
   initialPoseVerified:boolean;
@@ -30,6 +48,7 @@ export interface StageVerification {
 export const APPLE_WORM_VIDEO_REFERENCE_INDEX: readonly StageVerification[] =
   APPLE_WORM_VIDEO_STAGE_TIMES.map((firstKeyframeSeconds,i)=>({
     level:i+1,firstKeyframeSeconds,
+    firstObservedSeconds:APPLE_WORM_VIDEO_FIRST_OBSERVED_TIMES[i]!,
     frame:`stage_${String(i+1).padStart(3,'0')}.jpg`,
     mapTranscribed:false,initialPoseVerified:false,
     mechanicsVerified:false,solutionVerified:false,
