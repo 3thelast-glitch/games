@@ -260,7 +260,7 @@ export function WormCharacter({ body, tile = 48, id }: {
       })}
     </g>
     <g transform={'translate('+hx+' '+hy+') rotate('+angle+') scale('+c+')'}>
-      <circle r="22.2" fill="url(#worm-head-fill)" stroke="#207d35" strokeWidth="2.5"/>
+      <circle r="22.2" fill="#2c9a40" stroke="#207d35" strokeWidth="2.5"/>
       <circle r="22" fill={'url(#'+id+'-face)'}/>
       <path d="M-7 -18q-8 -14 -2 -18q7 -3 9 12M6 -20q1 -13 9 -16q8 2 2 15"
         fill="none" stroke="#3caa3f" strokeWidth="4.8" strokeLinecap="round"/>
