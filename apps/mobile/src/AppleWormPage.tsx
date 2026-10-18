@@ -23,8 +23,8 @@ const INPUT: Record<string, Direction> = {
 };
 const TILE = 48;
 
-function WormBoard({ state, onSwipe, label }: {
-  state: WormState; onSwipe: (direction: Direction) => void; label: string;
+function WormBoard({ state, onSwipe, label, bite }: {
+  state: WormState; onSwipe: (direction: Direction) => void; label: string; bite: boolean;
 }) {
   const board = wormLevel(state.level);
   const svgId = useId().replace(/:/g, '') + '-board';
@@ -90,7 +90,17 @@ function WormBoard({ state, onSwipe, label }: {
       ))}
       <WormPortal x={board.portal.x} y={board.portal.y} tile={TILE} ready={state.eaten}/>
       {!state.eaten && <WormApple x={board.apple.x} y={board.apple.y} tile={TILE}/>}
-        <WormCharacter key={state.moves} body={state.body} tile={TILE} id={svgId}/>
+      {bite && <g className="worm-apple-bite-fx" aria-hidden="true">
+        <WormApple x={board.apple.x} y={board.apple.y} tile={TILE}/>
+        <g className="worm-apple-crumbs" transform={`translate(${(board.apple.x+.5)*TILE} ${(board.apple.y+.5)*TILE})`}>
+          <circle cx="-22" cy="-19" r="4" fill="#ffd35a"/>
+          <circle cx="22" cy="-20" r="5" fill="#fbad3e"/>
+          <circle cx="-16" cy="17" r="3" fill="#ffd75b"/>
+          <circle cx="20" cy="18" r="4" fill="#ffec95"/>
+          <path d="M0 -30V-40M-28 0H-40M30 0H40" fill="none" stroke="#fff0ae" strokeWidth="3" strokeLinecap="round"/>
+        </g>
+      </g>}
+        <WormCharacter key={state.moves} body={state.body} tile={TILE} id={svgId} bite={bite}/>
       </g>
     </svg>
   );
@@ -108,6 +118,12 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
   const [hint, setHint] = useState<Direction | null>(null);
   const [showLevels, setShowLevels] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [biteCue, setBiteCue] = useState<{level:number; moves:number} | null>(null);
+  useEffect(() => {
+    if (!biteCue) return;
+    const timer = window.setTimeout(() => setBiteCue(null), 600);
+    return () => window.clearTimeout(timer);
+  }, [biteCue]);
   useEffect(() => {
     void enterGameLandscape();
     let alive = true;
@@ -153,13 +169,15 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
     ref.current = next;
     setHistory(previous => [...previous.slice(-99), before]);
     setHint(null);
+    if (!before.eaten && next.eaten) setBiteCue({level:next.level,moves:next.moves});
+    else setBiteCue(null);
     setState(next);
     if (next.phase === 'won') setUnlocked(previous => Math.max(previous, Math.min(WORM_LEVEL_COUNT, next.level + 1)));
     feedback(settings, next.phase === 'won' ? 'win' : 'move');
   };
   const restart = () => {
     const next = startWorm(ref.current.level);
-    ref.current = next; setState(next); setHistory([]); setHint(null);
+    ref.current = next; setState(next); setHistory([]); setHint(null); setBiteCue(null);
   };
   const undo = () => {
     const previous = history.at(-1);
@@ -167,7 +185,7 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
     ref.current = previous;
     setState(previous);
     setHistory(items => items.slice(0, -1));
-    setHint(null);
+    setHint(null); setBiteCue(null);
   };
   const selectLevel = (level: number) => {
     if (level < 1 || level > unlocked) return;
@@ -199,7 +217,8 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
       data-display="immersive-landscape" data-phase={state.phase}>
       <section className="worm-stage worm-fullstage" aria-label={t('appleWormBoard')}>
         <div className="worm-playfield">
-          <WormBoard state={state} onSwipe={move} label={t('appleWormBoard')} />
+          <WormBoard state={state} onSwipe={move} label={t('appleWormBoard')}
+            bite={Boolean(biteCue && biteCue.level===state.level && biteCue.moves===state.moves)} />
         </div>
         <div className="worm-game-hud">
           <div className="worm-hud-start">
