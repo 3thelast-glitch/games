@@ -75,24 +75,38 @@ test('head never reverses straight into its neck; turn around by maneuvering ins
   assert.deepEqual(around.body[0], {x:2,y:6}, 'the bend succeeds and gravity settles the worm');
 });
 
-test('falling head actually eats the apple, grows and lands on ground — apple is not a platform', () => {
-  const airborne = {...startWorm(1),body:[{x:3,y:4},{x:2,y:4}]};
+test('fruit is a solid perch: landing on it does not eat or grow the worm', () => {
+  const board = wormLevel(1);
+  const airborne = {...startWorm(1),body:[{x:board.apple.x-1,y:board.apple.y-2},{x:board.apple.x-2,y:board.apple.y-2}]};
   const after = moveWorm(airborne,'right');
-  assert.equal(after.eaten,true,'head passing into the apple by gravity must consume it');
-  assert.equal(after.body.length,3,'collection increases body length');
-  assert.deepEqual(after.body[0],wormLevel(1).apple,'worm falls through fruit to solid ground');
+  assert.equal(after.eaten,false,'falling onto an apple must not count as eating');
+  assert.equal(after.body.length,2,'landing from above must never grow');
+  assert.deepEqual(after.body[0],{x:board.apple.x,y:board.apple.y-1},
+    'apple stops the worm in the cell immediately above it');
   assert.equal(after.phase,'playing');
-  assert.equal(after.moves,1);
-  assert.deepEqual(airborne.body,[{x:3,y:4},{x:2,y:4}],'the original state stays immutable');
+  assert.notEqual(after,airborne);
 });
 
-test('gravity fruit collection in an occupied tail cell defers growth rather than overlap', () => {
-  // Vertical head-above-tail pose: when falling, the vacated tail position is
-  // already the new head. No duplicate cells may ever be created.
-  const airborne = {...startWorm(1),body:[{x:3,y:3},{x:3,y:4}]};
-  const after = moveWorm(airborne,'right');
-  assert.equal(new Set(after.body.map(p=>p.x+':'+p.y)).size,after.body.length);
-  assert.equal(after.phase,'playing');
+test('worm bites apple only from the side, grows one segment and changes fruit state',()=>{
+  const board=wormLevel(1);
+  const standing={...startWorm(1),body:[{x:board.apple.x-1,y:board.apple.y},{x:board.apple.x-2,y:board.apple.y}]};
+  const consumed=moveWorm(standing,'right');
+  assert.equal(consumed.eaten,true);
+  assert.equal(consumed.body.length,3);
+  assert.deepEqual(consumed.body[0],board.apple);
+  assert.equal(consumed.phase,'playing');
+  assert.equal(standing.eaten,false,'previous state must remain unchanged');
+});
+
+test('apple cannot be entered from below or above, but can be climbed over',()=>{
+  const board=wormLevel(1);
+  const above={...startWorm(1),body:[{x:board.apple.x,y:board.apple.y-1},{x:board.apple.x-1,y:board.apple.y-1}]};
+  assert.equal(moveWorm(above,'down'),above);
+  const below={...startWorm(1),body:[{x:board.apple.x,y:board.apple.y+1},{x:board.apple.x-1,y:board.apple.y+1}]};
+  assert.equal(moveWorm(below,'up'),below);
+  const step=moveWorm(above,'right');
+  assert.notEqual(step,above,'the player can walk sideways away from the apple top');
+  assert.equal(step.eaten,false);
 });
 
 test('invalid pending-growth saves are rejected and old saves still load safely', () => {
