@@ -14,7 +14,7 @@ import { createPortal } from 'react-dom';
 import { APPLE_WORM_GROUPS, APPLE_WORM_CHAPTERS } from '../../../packages/games/apple-worm/levels.ts';
 
 interface SavedWorm { unlocked: number; state: WormState }
-const SAVE_KEY = 'apple-worm-original-40-v2';
+const SAVE_KEY = 'apple-worm-curated-40-v3';
 const DELTAS: Record<Direction, string> = {
   up: '↑', down: '↓', left: '←', right: '→',
 };
