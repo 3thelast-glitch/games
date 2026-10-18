@@ -131,7 +131,8 @@ export function restoreWorm(value:unknown):WormState|null {
 export function findWormSolution(initial:WormState,cap=30000):Direction[]|null {
  if(initial.phase==='won')return [];
  if(initial.phase==='lost')return null;
- const serialize=(s:WormState)=>collectedFrom(s,wormLevel(s.level)).join(',')+
+ const board=wormLevel(initial.level);
+ const serialize=(s:WormState)=>collectedFrom(s,board).join(',')+
   (s.pendingGrowth?'g':'-')+':'+s.body.map(key).join('|');
  const seen=new Set([serialize(initial)]);
  const queue:{state:WormState;path:Direction[]}[]=[{state:initial,path:[]}];
