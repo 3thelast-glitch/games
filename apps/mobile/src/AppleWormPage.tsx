@@ -11,9 +11,10 @@ import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
 import { fitWormViewport } from './apple-worm-viewport.ts';
 import { App as NativeApp } from '@capacitor/app';
 import { createPortal } from 'react-dom';
+import { APPLE_WORM_GROUPS } from '../../../packages/games/apple-worm/levels.ts';
 
 interface SavedWorm { unlocked: number; state: WormState }
-const SAVE_KEY = 'apple-worm-offline-v1';
+const SAVE_KEY = 'apple-worm-original-40-v2';
 const DELTAS: Record<Direction, string> = {
   up: '↑', down: '↓', left: '←', right: '→',
 };
@@ -117,6 +118,7 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
   const [history, setHistory] = useState<WormState[]>([]);
   const [hint, setHint] = useState<Direction | null>(null);
   const [showLevels, setShowLevels] = useState(false);
+  const [activeGroup, setActiveGroup] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
   const [biteCue, setBiteCue] = useState<{level:number; moves:number} | null>(null);
   useEffect(() => {
@@ -235,7 +237,8 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
             <button className="worm-game-button" type="button" onClick={showHint}
               disabled={state.phase !== 'playing'} aria-label={t('appleWormHint')}>💡</button>
             <button className="worm-game-button" type="button" onClick={() => {
-              setShowLevels(previous => !previous); setShowMenu(false);
+              setShowLevels(previous => !previous);
+              setActiveGroup(Math.floor((state.level - 1) / 10)); setShowMenu(false);
             }} aria-label={t('appleWormChoose')} aria-expanded={showLevels}>▦</button>
             <button className="worm-game-button" type="button" onClick={() => {
               setShowMenu(previous => !previous); setShowLevels(false);
@@ -265,8 +268,18 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
             <button className="worm-game-button" type="button" onClick={() => setShowLevels(false)}
               aria-label={t('appleWormClose')}>✕</button>
           </div>
-          <div className="worm-level-grid">
-            {Array.from({ length: WORM_LEVEL_COUNT }, (_, index) => index + 1).map(level =>
+          <div className="worm-pack-tabs" role="tablist" aria-label={t('appleWormPacks')}>
+            {APPLE_WORM_GROUPS.map((pack, index) =>
+              <button key={pack.start} type="button" role="tab" aria-selected={activeGroup===index}
+                className={activeGroup===index ? 'active' : ''}
+                onClick={() => setActiveGroup(index)}>
+                {pack.start}–{pack.end}
+              </button>)}
+          </div>
+          <div className="worm-level-grid" role="tabpanel">
+            {Array.from({ length: APPLE_WORM_GROUPS[activeGroup]!.end -
+                APPLE_WORM_GROUPS[activeGroup]!.start + 1 },
+                (_, index) => APPLE_WORM_GROUPS[activeGroup]!.start + index).map(level =>
               <button type="button" key={level} disabled={level > unlocked}
                 className={level === state.level ? 'selected' : ''}
                 aria-current={level === state.level ? 'step' : undefined}
