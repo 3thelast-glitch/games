@@ -178,3 +178,28 @@ body > .worm-immersive .worm-board{inset:0!important;width:100%!important;height
 @media(prefers-reduced-motion:reduce){
   .worm-character-biting .worm-mouth,.worm-apple-bite-fx,.worm-apple-crumbs{animation:none!important}
 }
+
+/* Four uncluttered level pages of ten stages each. */
+.worm-immersive .worm-pack-tabs{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;
+  margin:10px 0 12px;direction:ltr;
+}
+.worm-immersive .worm-pack-tabs button{
+  min-height:39px;border:2px solid #b9b192;border-radius:10px;
+  background:#eee7c8;color:#576452;font-weight:900;font-size:13px;cursor:pointer;
+}
+.worm-immersive .worm-pack-tabs button.active,
+.worm-immersive .worm-pack-tabs button[aria-selected=true]{
+  background:#8bcf6f;border-color:#509a60;color:#224c34;
+}
+.worm-immersive .worm-level-grid{
+  grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;
+  padding:4px 3px 6px;
+}
+.worm-immersive .worm-level-grid button{min-height:44px;font-size:14px}
+@media(max-height:460px) and (orientation:landscape){
+  .worm-immersive .worm-pack-tabs{margin:4px 0 7px}
+  .worm-immersive .worm-pack-tabs button{min-height:31px}
+  .worm-immersive .worm-level-grid{gap:6px}
+  .worm-immersive .worm-level-grid button{min-height:34px}
+}
