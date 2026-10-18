@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   APPLE_WORM_VIDEO_STAGE_COUNT,
   APPLE_WORM_VIDEO_STAGE_TIMES,
+  APPLE_WORM_VIDEO_FIRST_OBSERVED_TIMES,
   APPLE_WORM_VIDEO_REFERENCE_INDEX,
 } from '../packages/games/apple-worm/reference-video.ts';
 
@@ -15,6 +16,9 @@ test('reference video is indexed 1–105, in ascending time order',()=>{
     const stage=APPLE_WORM_VIDEO_REFERENCE_INDEX[i]!;
     assert.equal(stage.level,i+1);
     assert.equal(stage.firstKeyframeSeconds,APPLE_WORM_VIDEO_STAGE_TIMES[i]);
+    assert.equal(stage.firstObservedSeconds,APPLE_WORM_VIDEO_FIRST_OBSERVED_TIMES[i]);
+    assert.ok(stage.firstObservedSeconds <= stage.firstKeyframeSeconds);
+    if (i>0)assert.ok(stage.firstObservedSeconds > APPLE_WORM_VIDEO_FIRST_OBSERVED_TIMES[i-1]!);
     assert.equal(stage.frame,'stage_'+String(i+1).padStart(3,'0')+'.jpg');
     if(i>0)assert.ok(APPLE_WORM_VIDEO_STAGE_TIMES[i]!>APPLE_WORM_VIDEO_STAGE_TIMES[i-1]!);
   }
