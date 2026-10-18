@@ -11,9 +11,10 @@ import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
 import { fitWormViewport } from './apple-worm-viewport.ts';
 import { App as NativeApp } from '@capacitor/app';
 import { createPortal } from 'react-dom';
+import { APPLE_WORM_GROUPS, APPLE_WORM_CHAPTERS } from '../../../packages/games/apple-worm/levels.ts';
 
 interface SavedWorm { unlocked: number; state: WormState }
-const SAVE_KEY = 'apple-worm-offline-v1';
+const SAVE_KEY = 'apple-worm-curated-40-v3';
 const DELTAS: Record<Direction, string> = {
   up: '↑', down: '↓', left: '←', right: '→',
 };
@@ -23,8 +24,8 @@ const INPUT: Record<string, Direction> = {
 };
 const TILE = 48;
 
-function WormBoard({ state, onSwipe, label, bite }: {
-  state: WormState; onSwipe: (direction: Direction) => void; label: string; bite: boolean;
+function WormBoard({ state, onSwipe, label, biteIndex }: {
+  state: WormState; onSwipe: (direction: Direction) => void; label: string; biteIndex: number | null;
 }) {
   const board = wormLevel(state.level);
   const svgId = useId().replace(/:/g, '') + '-board';
@@ -89,10 +90,12 @@ function WormBoard({ state, onSwipe, label, bite }: {
           fill="#676971" stroke="#272b31" strokeWidth="3" strokeLinejoin="round"/>
       ))}
       <WormPortal x={board.portal.x} y={board.portal.y} tile={TILE} ready={state.eaten}/>
-      {!state.eaten && <WormApple x={board.apple.x} y={board.apple.y} tile={TILE}/>}
-      {bite && <g className="worm-apple-bite-fx" aria-hidden="true">
-        <WormApple x={board.apple.x} y={board.apple.y} tile={TILE}/>
-        <g className="worm-apple-crumbs" transform={`translate(${(board.apple.x+.5)*TILE} ${(board.apple.y+.5)*TILE})`}>
+      {board.apples.map((apple,index) =>
+        !state.collectedApples?.includes(index) &&
+          <WormApple key={index} x={apple.x} y={apple.y} tile={TILE}/>)}
+      {biteIndex!==null && <g className="worm-apple-bite-fx" aria-hidden="true">
+        <WormApple x={board.apples[biteIndex]!.x} y={board.apples[biteIndex]!.y} tile={TILE}/>
+        <g className="worm-apple-crumbs" transform={`translate(${(board.apples[biteIndex]!.x+.5)*TILE} ${(board.apples[biteIndex]!.y+.5)*TILE})`}>
           <circle cx="-22" cy="-19" r="4" fill="#ffd35a"/>
           <circle cx="22" cy="-20" r="5" fill="#fbad3e"/>
           <circle cx="-16" cy="17" r="3" fill="#ffd75b"/>
@@ -100,7 +103,7 @@ function WormBoard({ state, onSwipe, label, bite }: {
           <path d="M0 -30V-40M-28 0H-40M30 0H40" fill="none" stroke="#fff0ae" strokeWidth="3" strokeLinecap="round"/>
         </g>
       </g>}
-        <WormCharacter key={state.moves} body={state.body} tile={TILE} id={svgId} bite={bite}/>
+        <WormCharacter key={state.moves} body={state.body} tile={TILE} id={svgId} bite={biteIndex!==null}/>
       </g>
     </svg>
   );
@@ -117,8 +120,9 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
   const [history, setHistory] = useState<WormState[]>([]);
   const [hint, setHint] = useState<Direction | null>(null);
   const [showLevels, setShowLevels] = useState(false);
+  const [activeGroup, setActiveGroup] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
-  const [biteCue, setBiteCue] = useState<{level:number; moves:number} | null>(null);
+  const [biteCue, setBiteCue] = useState<{level:number; moves:number; index:number} | null>(null);
   useEffect(() => {
     if (!biteCue) return;
     const timer = window.setTimeout(() => setBiteCue(null), 600);
@@ -169,7 +173,9 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
     ref.current = next;
     setHistory(previous => [...previous.slice(-99), before]);
     setHint(null);
-    if (!before.eaten && next.eaten) setBiteCue({level:next.level,moves:next.moves});
+    const beforeFruits = new Set(before.collectedApples ?? []);
+    const fruitIndex = (next.collectedApples ?? []).find(index => !beforeFruits.has(index));
+    if (fruitIndex!==undefined) setBiteCue({level:next.level,moves:next.moves,index:fruitIndex});
     else setBiteCue(null);
     setState(next);
     if (next.phase === 'won') setUnlocked(previous => Math.max(previous, Math.min(WORM_LEVEL_COUNT, next.level + 1)));
@@ -218,7 +224,7 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
       <section className="worm-stage worm-fullstage" aria-label={t('appleWormBoard')}>
         <div className="worm-playfield">
           <WormBoard state={state} onSwipe={move} label={t('appleWormBoard')}
-            bite={Boolean(biteCue && biteCue.level===state.level && biteCue.moves===state.moves)} />
+            biteIndex={biteCue && biteCue.level===state.level && biteCue.moves===state.moves ? biteCue.index : null} />
         </div>
         <div className="worm-game-hud">
           <div className="worm-hud-start">
@@ -226,7 +232,9 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
               aria-label={t('appleWormBack')} title={t('appleWormBack')} onClick={onExit}>↩</button>
           </div>
           <div className="worm-hud-center" aria-live="polite">
-            <span className="worm-game-goal" aria-hidden="true">🐛 → 🍎 → 🌀</span>
+            <span className="worm-game-goal" aria-label={t('appleWormFruitProgress')}>
+              🐛 → 🍎 {state.collectedApples?.length ?? 0}/{wormLevel(state.level).apples.length} → 🌀
+            </span>
             <span className="worm-game-moves">{t('appleWormMoves')}: <b className="worm-moves-value">{state.moves}</b></span>
           </div>
           <div className="worm-hud-end">
@@ -235,7 +243,8 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
             <button className="worm-game-button" type="button" onClick={showHint}
               disabled={state.phase !== 'playing'} aria-label={t('appleWormHint')}>💡</button>
             <button className="worm-game-button" type="button" onClick={() => {
-              setShowLevels(previous => !previous); setShowMenu(false);
+              setShowLevels(previous => !previous);
+              setActiveGroup(Math.floor((state.level - 1) / 10)); setShowMenu(false);
             }} aria-label={t('appleWormChoose')} aria-expanded={showLevels}>▦</button>
             <button className="worm-game-button" type="button" onClick={() => {
               setShowMenu(previous => !previous); setShowLevels(false);
@@ -265,8 +274,23 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
             <button className="worm-game-button" type="button" onClick={() => setShowLevels(false)}
               aria-label={t('appleWormClose')}>✕</button>
           </div>
-          <div className="worm-level-grid">
-            {Array.from({ length: WORM_LEVEL_COUNT }, (_, index) => index + 1).map(level =>
+          <div className="worm-pack-tabs" role="tablist" aria-label={t('appleWormPacks')}>
+            {APPLE_WORM_GROUPS.map((pack, index) =>
+              <button key={pack.start} type="button" role="tab" aria-selected={activeGroup===index}
+                className={activeGroup===index ? 'active' : ''}
+                onClick={() => setActiveGroup(index)}>
+                {pack.start}–{pack.end}
+              </button>)}
+          </div>
+          <p className="worm-pack-caption" role="status">
+            {t('appleWormDifficulty'+
+              APPLE_WORM_CHAPTERS[activeGroup]!.difficulty[0]!.toUpperCase()+
+              APPLE_WORM_CHAPTERS[activeGroup]!.difficulty.slice(1))}
+          </p>
+          <div className="worm-level-grid" role="tabpanel">
+            {Array.from({ length: APPLE_WORM_GROUPS[activeGroup]!.end -
+                APPLE_WORM_GROUPS[activeGroup]!.start + 1 },
+                (_, index) => APPLE_WORM_GROUPS[activeGroup]!.start + index).map(level =>
               <button type="button" key={level} disabled={level > unlocked}
                 className={level === state.level ? 'selected' : ''}
                 aria-current={level === state.level ? 'step' : undefined}

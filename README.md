@@ -2,7 +2,7 @@
 
 <p align="center"><img src="docs/brand/naqla-lockup.png" alt="NAQLA | نقلة" width="480" /></p>
 
-A modular, bilingual strategy game platform for the web, Android and iOS. Version **0.1.0** is a functional implementation with **12 registered multiplayer-compatible games**: Abalone, Quoridor, Checkers, Gomoku, Nine Men’s Morris, Connect Four, Digital Game, Reversi, Chess, Dots and Boxes, Dominoes and Naval Battle, **plus offline Ludo for 4/6/8/10 players** (premium square/radial boards with 4/4/2/1 pawns per player), **and Apple Worm-inspired solo puzzles** with 30 original offline levels, plus local play, shared AI levels and an authoritative multiplayer server.
+A modular, bilingual strategy game platform for the web, Android and iOS. Version **0.1.0** is a functional implementation with **12 registered multiplayer-compatible games**: Abalone, Quoridor, Checkers, Gomoku, Nine Men’s Morris, Connect Four, Digital Game, Reversi, Chess, Dots and Boxes, Dominoes and Naval Battle, **plus offline Ludo for 4/6/8/10 players** (premium square/radial boards with 4/4/2/1 pawns per player), **and Apple Worm-inspired solo puzzles** with 40 solver-verified original levels progressing from short one-apple movement lessons to long, multi-fruit cliff and gap puzzles (4 chapters of ten), plus local play, shared AI levels and an authoritative multiplayer server.
 
 [دليل التشغيل بالعربية](README.ar.md) · [Architecture](docs/ARCHITECTURE.md) · [Deployment](docs/DEPLOYMENT.md) · [Delivery status](docs/STATUS.md)
 

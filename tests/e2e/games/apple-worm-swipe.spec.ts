@@ -84,7 +84,11 @@ for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:
     await options.click();
     await page.getByRole('button',{name:locale.id==='ar'?'اختيار المرحلة':'Choose level'}).click();
     await expect(page.locator('.worm-game-level-dialog')).toBeVisible();
-    await expect(page.locator('.worm-game-level-dialog .worm-level-grid button')).toHaveCount(30);
+    await expect(page.locator('.worm-pack-tabs [role="tab"]')).toHaveCount(4);
+    await expect(page.locator('.worm-game-level-dialog .worm-level-grid button')).toHaveCount(10);
+    await page.getByRole('tab',{name:'31–40'}).click();
+    await expect(page.locator('.worm-game-level-dialog .worm-level-grid button')).toHaveCount(10);
+    await expect(page.locator('.worm-game-level-dialog .worm-level-grid button').first()).toHaveText('🔒');
     await page.locator('.worm-level-heading button').click();
     await expect(page.locator('.worm-game-level-dialog')).toBeHidden();
     await expectNoGlobalOverflow(page);
