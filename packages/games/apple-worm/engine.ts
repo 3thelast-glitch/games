@@ -19,7 +19,7 @@ export interface WormState {
   level: number;
   body: Point[];
   eaten: boolean;
-  /** When gravity collects an apple in a cramped pose, grow on the next legal step. */
+  /** Backwards-compatible saved growth state from earlier engine versions. */
   pendingGrowth?: boolean;
   phase: Phase;
   moves: number;
@@ -100,45 +100,42 @@ export function moveWorm(state: WormState, direction: Direction): WormState {
   const nextHead = { x: head.x + delta.x, y: head.y + delta.y };
   if (!within(nextHead, board) || blocked.has(key(nextHead))) return state;
 
-  // A worm has a fixed head. Turning 180° into the neck is never allowed,
-  // including when it has only two segments and the tail would otherwise vacate.
-  // To turn around, the player must go around a bend with the worm's body.
+  // The worm has a permanent head. It must turn around its neck rather than
+  // reverse directly into the second segment, even when the tail could vacate.
   if (state.body[1] && same(state.body[1], nextHead)) return state;
 
-  const ateOnStep = !state.eaten && same(nextHead, board.apple);
+  // The apple is a PHYSICAL object. It supports the worm when approached from
+  // above. The only legal way to eat is for the head's mouth to move sideways
+  // into the fruit. Dropping onto it or pressing down/up must NEVER eat it.
+  const touchesApple = !state.eaten && same(nextHead, board.apple);
+  if (touchesApple && direction !== 'left' && direction !== 'right') return state;
+  const ateOnStep = touchesApple;
   const grows = ateOnStep || Boolean(state.pendingGrowth);
   const occupied = grows ? state.body : state.body.slice(0, -1);
   if (occupied.some(p => same(p, nextHead))) return state;
 
   let body = [nextHead, ...state.body.map(p => ({ ...p }))];
   if (!grows) body = body.slice(0, -1);
-  let eaten = state.eaten || ateOnStep;
-  let pendingGrowth = false;
+  const eaten = state.eaten || ateOnStep;
+  const pendingGrowth = false;
   let phase: Phase = 'playing';
-  const winning = () => eaten && !pendingGrowth && same(body[0]!, board.portal);
+  const winning = () => eaten && same(body[0]!, board.portal);
   const dead = () => body.some(p => !within(p, board) || lethal.has(key(p)));
+  const supported = (parts: Point[]) => parts.some(p =>
+    blocked.has(key({ x: p.x, y: p.y + 1 })) ||
+    (!eaten && same({ x: p.x, y: p.y + 1 }, board.apple)));
 
   if (dead()) phase = 'lost';
   else if (winning()) phase = 'won';
   else {
-    // Gravity translates the WHOLE connected worm together until any segment
-    // rests on ground. An apple is a collectible, never solid ground. The head
-    // must also collect it if gravity drops it into the apple's cell.
-    while (!body.some(p => blocked.has(key({ x: p.x, y: p.y + 1 })))) {
-      const previousTail = body[body.length - 1]!;
+    // Gravity moves the whole connected worm, never individual body parts.
+    // An uneaten apple blocks vertical falling and acts as a perch, just like
+    // a real solid object. It is collectible only by mouth-first side contact.
+    while (!supported(body)) {
       const falling = body.map(p => ({ x: p.x, y: p.y + 1 }));
-      if (!eaten && same(falling[0]!, board.apple)) {
-        eaten = true;
-        // The vacated tail cell touches the translated tail, so it can grow
-        // the worm without teleporting the head or treating fruit as a block.
-        // In a tight vertical U-pose this cell may already be occupied; in
-        // that case grow after the next legal movement instead of overlapping.
-        const freeTail = !falling.some(p => same(p, previousTail)) &&
-          within(previousTail, board) && !blocked.has(key(previousTail)) &&
-          !lethal.has(key(previousTail));
-        if (freeTail) falling.push({ ...previousTail });
-        else pendingGrowth = true;
-      }
+      // Defensive stop for unsupported/corrupted positions: the fruit cannot
+      // be passed through by gravity regardless of where the head is.
+      if (!eaten && falling.some(p => same(p, board.apple))) break;
       body = falling;
       if (dead()) { phase = 'lost'; break; }
       if (winning()) { phase = 'won'; break; }
