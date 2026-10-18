@@ -72,7 +72,7 @@ test('head never reverses straight into its neck; turn around by maneuvering ins
   assert.deepEqual(turn.body[0], {x:3,y:5});
   const around = moveWorm(turn, 'left');
   assert.notEqual(around, turn, 'a second bend can face the opposite way');
-  assert.deepEqual(around.body[0], {x:2,y:5});
+  assert.deepEqual(around.body[0], {x:2,y:6}, 'the bend succeeds and gravity settles the worm');
 });
 
 test('falling head actually eats the apple, grows and lands on ground — apple is not a platform', () => {
