@@ -33,6 +33,18 @@ export const gameRootSelectors: Record<GameId, string> = {
 
 export async function openLocalGame(page: Page, gameId: GameId, locale: LocaleCase) {
   await page.goto('/');
+  // Match the zero-motion assertions in the responsive suite *before* opening
+  // the game. Animating catalog cards caused WebKit 320px actionability
+  // retries to wait for the Play/Start buttons to become stable and time out.
+  // Reduce animation only in the test context; production animations remain.
+  await page.addStyleTag({content: `
+    *, *::before, *::after {
+      animation-duration: 0s !important;
+      animation-delay: 0s !important;
+      transition: none !important;
+      caret-color: transparent !important;
+    }
+  `});
   await expect(page.locator('html')).toHaveAttribute('dir', locale.dir);
   await expect(page.locator('html')).toHaveAttribute('lang', locale.id);
 
