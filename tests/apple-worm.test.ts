@@ -16,7 +16,7 @@ test('Apple Worm has forty distinct, valid offline level layouts', () => {
       assert.ok(!blocks.has(apple.x + ':' + apple.y), 'apple on ground: ' + level);
     assert.ok(!blocks.has(board.portal.x + ':' + board.portal.y), 'portal on ground: ' + level);
     assert.ok(!board.start.some(p => blocks.has(p.x + ':' + p.y)));
-    layouts.add(JSON.stringify([board.width, board.blocks, board.apple, board.portal, board.spikes]));
+    layouts.add(JSON.stringify([board.width, board.blocks, board.apples, board.portal, board.spikes]));
   }
   assert.equal(layouts.size, 40);
   assert.throws(() => wormLevel(0), RangeError);
