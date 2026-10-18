@@ -14,6 +14,7 @@ import './academy.css';
 import './practice.css';
 import './ludo.css';
 import './apple-worm.css';
+import './apple-worm-immersive.css';
 import './basketball-line.css';
 import './backroom-bill.css';
 import './arithmetica.css';
