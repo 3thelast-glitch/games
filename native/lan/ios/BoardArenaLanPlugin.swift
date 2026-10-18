@@ -435,7 +435,6 @@ public class NaqlaOrientationPlugin: CAPPlugin, CAPBridgedPlugin {
 
 final class BoardArenaViewController: CAPBridgeViewController {
     override var prefersStatusBarHidden: Bool { NaqlaOrientationPlugin.wantsLandscape }
-    override var prefersHomeIndicatorAutoHidden: Bool { NaqlaOrientationPlugin.wantsLandscape }
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
         NaqlaOrientationPlugin.wantsLandscape ? .landscape : .portrait
     }
