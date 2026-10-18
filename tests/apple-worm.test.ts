@@ -60,3 +60,46 @@ test('Apple Worm: restore only valid and bounded saves', () => {
   assert.equal(restoreWorm({ ...startWorm(1), moves: -1 }), null);
   assert.equal(restoreWorm(null), null);
 });
+
+test('head never reverses straight into its neck; turn around by maneuvering instead', () => {
+  const initial = startWorm(1);
+  assert.equal(moveWorm(initial, 'left'), initial, 'head cannot teleport to a two-segment tail');
+  const next = moveWorm(initial, 'right');
+  assert.equal(moveWorm(next, 'left'), next, 'immediate 180-degree reverse is illegal');
+  assert.deepEqual(next.body[0], {x:3,y:6});
+  const turn = moveWorm(next, 'up');
+  assert.notEqual(turn, next, 'a 90-degree bend is permitted');
+  assert.deepEqual(turn.body[0], {x:3,y:5});
+  const around = moveWorm(turn, 'left');
+  assert.notEqual(around, turn, 'a second bend can face the opposite way');
+  assert.deepEqual(around.body[0], {x:2,y:5});
+});
+
+test('falling head actually eats the apple, grows and lands on ground — apple is not a platform', () => {
+  const airborne = {...startWorm(1),body:[{x:3,y:4},{x:2,y:4}]};
+  const after = moveWorm(airborne,'right');
+  assert.equal(after.eaten,true,'head passing into the apple by gravity must consume it');
+  assert.equal(after.body.length,3,'collection increases body length');
+  assert.deepEqual(after.body[0],wormLevel(1).apple,'worm falls through fruit to solid ground');
+  assert.equal(after.phase,'playing');
+  assert.equal(after.moves,1);
+  assert.deepEqual(airborne.body,[{x:3,y:4},{x:2,y:4}],'the original state stays immutable');
+});
+
+test('gravity fruit collection in an occupied tail cell defers growth rather than overlap', () => {
+  // Vertical head-above-tail pose: when falling, the vacated tail position is
+  // already the new head. No duplicate cells may ever be created.
+  const airborne = {...startWorm(1),body:[{x:3,y:3},{x:3,y:4}]};
+  const after = moveWorm(airborne,'right');
+  assert.equal(new Set(after.body.map(p=>p.x+':'+p.y)).size,after.body.length);
+  assert.equal(after.phase,'playing');
+});
+
+test('invalid pending-growth saves are rejected and old saves still load safely', () => {
+  const a=startWorm(1);
+  const legacy={...a};
+  delete legacy.pendingGrowth;
+  assert.equal(restoreWorm(legacy)?.pendingGrowth,false);
+  assert.equal(restoreWorm({...a,pendingGrowth:true}),null);
+  assert.equal(restoreWorm({...a,pendingGrowth:'yes'}),null);
+});
