@@ -33,9 +33,20 @@ async function exerciseSolo(page: Page, id: SoloId) {
     await page.locator('.ludo-dice-line button').click();
     await expect(page.locator('.ludo-play')).toHaveAttribute('data-ludo-revision', '1');
   } else if (id === 'appleWorm') {
-    await expect(page.locator('.worm-pad button')).toHaveCount(4);
-    await page.locator('.worm-pad button.right').click();
-    await expect(page.locator('.worm-board')).toBeVisible();
+    const board = page.locator('.worm-board');
+    await expect(board).toBeVisible();
+    await expect(board).toHaveAttribute('data-input', 'swipe');
+    await expect(page.locator('.worm-pad')).toHaveCount(0);
+    const box = await board.boundingBox();
+    expect(box).not.toBeNull();
+    if (box) {
+      const y = box.y + box.height * .43;
+      await page.mouse.move(box.x + box.width * .35, y);
+      await page.mouse.down();
+      await page.mouse.move(box.x + box.width * .62, y, {steps: 5});
+      await page.mouse.up();
+    }
+    await expect(page.locator('.worm-stage-top')).toContainText(/1/);
   } else if (id === 'basketballLine') {
     await expect(page.locator('.basketball-canvas')).toBeVisible();
     const c = page.locator('.basketball-canvas');
