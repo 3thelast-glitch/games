@@ -2,6 +2,8 @@
  * NAQLA Apple Worm: original offline grid puzzles.
  * Pure, immutable rules. No copyrighted Poki code, level layouts or assets are used.
  */
+import { appleWormBlueprint, APPLE_WORM_STAGE_COUNT } from './levels.ts';
+
 export interface Point { x: number; y: number }
 export type Direction = 'up' | 'down' | 'left' | 'right';
 export type Phase = 'playing' | 'won' | 'lost';
@@ -24,7 +26,7 @@ export interface WormState {
   phase: Phase;
   moves: number;
 }
-export const WORM_LEVEL_COUNT = 30;
+export const WORM_LEVEL_COUNT = APPLE_WORM_STAGE_COUNT;
 export const DIRECTIONS: Direction[] = ['up', 'right', 'down', 'left'];
 const STEPS: Record<Direction, Point> = {
   up: { x: 0, y: -1 },
@@ -38,53 +40,25 @@ const within = (p: Point, level: WormLevel) =>
   p.x >= 0 && p.x < level.width && p.y >= 0 && p.y < level.height;
 
 /**
- * Thirty authored variants of an original five-chapter progression.
- * Ch. 1 teaches apples, gravity and gaps; subsequent chapters extend routes,
- * raise obstructions and combine bridge and climb mechanics.
+ * Forty individually specified independent stages; layouts are not generated
+ * from the previous 30-stage procedural formula. The unofficial online guide
+ * describes reference tactics but does not supply licensed map source files.
  */
 export function wormLevel(number: number): WormLevel {
-  if (!Number.isInteger(number) || number < 1 || number > WORM_LEVEL_COUNT)
-    throw new RangeError('Invalid Apple Worm level');
-  const index = number - 1;
-  const chapter = Math.floor(index / 6);
-  const variant = index % 6;
-  const width = 10 + chapter * 2;
-  const floor = 7;
+  const layout = appleWormBlueprint(number);
+  const gaps = new Set(layout.gaps);
   const blocks: Point[] = [];
-  const spikePositions: Point[] = [];
-  const gaps = new Set<number>();
-  // Leave at least one stable landing tile on the far side of a gap.
-  if (variant === 1) gaps.add(6 + chapter);
-  if (variant === 2) {
-    gaps.add(6 + chapter);
-    gaps.add(7 + chapter);
+  for (let x = 0; x < layout.width; x++) {
+    if (!gaps.has(x)) blocks.push({ x, y: layout.floor });
   }
-  if (variant === 4) gaps.add(8 + chapter);
-  if (chapter >= 2 && variant === 0) gaps.add(width - 4);
-  if (chapter >= 3 && variant === 1) gaps.add(width - 4);
-  for (let x = 0; x < width; x++) if (!gaps.has(x)) blocks.push({ x, y: floor });
-  if (variant === 3 || variant === 4) blocks.push({ x: 6, y: floor - 1 });
-  if (variant === 5) blocks.push({ x: 3, y: floor - 1 });
-  // Curated extra climb positions. All 30 puzzles are BFS-verified by tests.
-  const climbs: Record<number, number[]> = {
-    7:[8], 8:[9], 9:[8], 10:[8], 11:[8], 12:[9],
-    13:[5,9], 14:[6,11], 15:[5,9], 16:[5,11], 17:[10,11], 18:[7,11],
-    19:[6,10,11], 20:[8,9,13], 21:[5,6,10], 22:[11,13], 23:[7,11], 24:[7,13],
-    25:[5,9,13], 26:[7,11,15], 27:[5,9,13], 28:[5,10], 29:[10], 30:[8,12,15],
-  };
-  for (const x of climbs[number] ?? []) blocks.push({ x, y: floor - 1 });
-  // Raised end platforms add spatial planning without obstructing the teaching route.
-  if (chapter >= 2 && variant === 3) blocks.push({ x: width - 4, y: floor - 1 });
-  if (chapter >= 3 && variant === 4) blocks.push({ x: width - 4, y: floor - 1 });
-  // Decorative hazards are lethal when touched; keep the direct teaching lane clear.
-  if (chapter >= 1 && variant === 0) spikePositions.push({ x: width - 2, y: floor - 2 });
-  if (chapter >= 2 && variant === 2) spikePositions.push({ x: width - 3, y: floor - 2 });
-  const apple = variant === 5 ? { x: 4, y: floor - 2 } :
-    { x: 3 + ((index + 1) % 3), y: floor - 1 };
+  for (const x of layout.raised) blocks.push({x, y: layout.floor - 1});
+  for (const [x, y] of layout.floating) blocks.push({x, y});
   return {
-    number, width, height: 9, blocks, spikes: spikePositions,
-    apple, portal: { x: width - 2, y: floor - 1 },
-    start: [{ x: 2, y: floor - 1 }, { x: 1, y: floor - 1 }],
+    number, width: layout.width, height: layout.height,
+    blocks, spikes: [],
+    apple: {x:layout.fruit[0], y:layout.fruit[1]},
+    portal: {x:layout.exit[0], y:layout.exit[1]},
+    start:layout.start.map(([x,y])=>({x,y})),
   };
 }
 export function startWorm(level = 1): WormState {
@@ -147,7 +121,7 @@ export function moveWorm(state: WormState, direction: Direction): WormState {
 export function restoreWorm(value: unknown): WormState | null {
   if (!value || typeof value !== 'object') return null;
   const state = value as Partial<WormState>;
-  if (typeof state.level !== 'number' || !Number.isInteger(state.level) || (state.level ?? 0) < 1 || (state.level ?? 0) > 30
+  if (typeof state.level !== 'number' || !Number.isInteger(state.level) || (state.level ?? 0) < 1 || (state.level ?? 0) > WORM_LEVEL_COUNT
       || !Array.isArray(state.body) || state.body.length < 2 || state.body.length > 10
       || typeof state.eaten !== 'boolean' || (state.pendingGrowth !== undefined && typeof state.pendingGrowth !== 'boolean')
       || (state.pendingGrowth === true && (!state.eaten || state.phase === 'won'))
