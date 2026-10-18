@@ -43,7 +43,6 @@ export function AppleWormVideoPlaytest({level,lang}:{level:number;lang:'ar'|'en'
     move(Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up'));
   };
   const width=stage.width*30,height=stage.height*30;
-  const same=(a:readonly[number,number],b:readonly[number,number])=>a[0]===b[0]&&a[1]===b[1];
   const allApples=stage.apples.every((_,i)=>state.applesBitmask&(1<<i));
 
   return <section role="region" aria-label={label('Experimental source-map playtest','تجربة خريطة الفيديو')}
