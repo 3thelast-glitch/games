@@ -1,0 +1,138 @@
+/* NAQLA immersive game pilot. All selectors scoped to Apple Worm; the library is untouched. */
+html[data-immersive-game="appleWorm"],html[data-immersive-game="appleWorm"] body{
+  overscroll-behavior:none;overflow:hidden!important;margin:0;
+}
+.app-shell.is-immersive-game{min-height:100dvh;width:100vw;overflow:hidden}
+.app-shell.is-immersive-game>.sidebar,
+.app-shell.is-immersive-game .topbar,
+.app-shell.is-immersive-game>.mobile-nav,
+.app-shell.is-immersive-game .mobile-nav{display:none!important}
+.app-shell.is-immersive-game .main-shell{
+  margin:0!important;width:100vw!important;min-height:100dvh;max-width:none!important;
+}
+.app-shell.is-immersive-game .main-content{
+  margin:0!important;padding:0!important;min-height:100dvh!important;max-width:none!important;width:100vw!important;
+}
+.worm-immersive.worm-page{
+  position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;
+  max-width:none!important;max-height:none!important;margin:0!important;padding:0!important;
+  z-index:2000!important;background:#79cbe6;color:#fff9e7;
+  overflow:hidden!important;touch-action:none;isolation:isolate;animation:none!important;
+}
+.worm-immersive .worm-fullstage{
+  position:absolute;inset:0;display:block;width:100%;height:100%;margin:0;
+  border:0;border-radius:0;box-shadow:none;background:#8bd9e9;overflow:hidden;
+}
+.worm-immersive .worm-playfield{position:absolute;inset:0;overflow:hidden;background:linear-gradient(#70b5f1,#a5e6db)}
+.worm-immersive .worm-board{
+  position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;
+  max-height:none!important;margin:0;object-fit:cover;direction:ltr;
+  touch-action:none;cursor:grab;-webkit-user-select:none;user-select:none;
+}
+.worm-immersive .worm-game-hud{
+  position:absolute;top:0;left:0;right:0;z-index:8;
+  display:grid;grid-template-columns:minmax(50px,1fr) auto minmax(180px,1fr);
+  gap:10px;align-items:start;direction:ltr;
+  padding:max(9px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right))
+    7px max(10px,env(safe-area-inset-left));
+  pointer-events:none;
+}
+.worm-immersive .worm-hud-start,.worm-immersive .worm-hud-end,
+.worm-immersive .worm-hud-center{display:flex;align-items:center;gap:6px;pointer-events:auto}
+.worm-immersive .worm-hud-center{
+  flex-direction:column;gap:3px;justify-content:center;align-items:center;
+  padding:3px 18px;color:#fffdf2;text-shadow:0 2px 5px #4560808c;
+}
+.worm-immersive .worm-hud-end{justify-content:flex-end;min-width:0}
+.worm-immersive .worm-game-goal{font-size:clamp(12px,2.6vw,21px);white-space:nowrap}
+.worm-immersive .worm-game-moves{
+  border:1px solid #ffffffa0;border-radius:100px;padding:4px 13px;
+  background:#235d78a1;font-weight:900;font-size:clamp(10px,1.7vw,15px);
+  white-space:nowrap;direction:inherit;
+}
+.worm-immersive .worm-game-moves b{font-weight:950;color:#fff5ab}
+.worm-immersive .worm-game-button{
+  display:grid;place-items:center;flex:none;
+  width:clamp(39px,5.5vw,52px);height:clamp(39px,5.5vw,52px);
+  min-height:0!important;padding:0!important;border:2px solid #fdf9e8;
+  border-radius:13px;background:linear-gradient(160deg,#fffdf1,#e8e2d5);
+  color:#578083;font-size:clamp(20px,2.6vw,27px);font-weight:950;
+  box-shadow:0 3px 0 #aa9f84,0 6px 10px #28455a40;
+  cursor:pointer;touch-action:manipulation;user-select:none;
+}
+.worm-immersive .worm-game-button:active{transform:translateY(2px);box-shadow:0 1px 0 #aa9f84}
+.worm-immersive .worm-game-button:disabled{opacity:.4;cursor:default}
+.worm-immersive .worm-exit{color:#dc9d46;font-size:29px}
+.worm-immersive .worm-game-level{
+  position:absolute;bottom:max(9px,env(safe-area-inset-bottom));left:max(18px,env(safe-area-inset-left));
+  z-index:3;font-size:clamp(25px,5vw,48px);font-weight:950;line-height:1;
+  color:white;text-shadow:0 2px 3px #397a79a3;pointer-events:none;
+}
+.worm-immersive .worm-hint-bubble{
+  position:absolute;top:19%;left:50%;transform:translateX(-50%);z-index:10;
+  color:#456853;background:#fff7dceb;border:2px solid #f3ca79;border-radius:30px;
+  box-shadow:0 7px 14px #405f6b51;font-size:clamp(13px,2.5vw,22px);
+  font-weight:950;padding:8px 18px;white-space:nowrap;pointer-events:none
+}
+.worm-immersive .worm-game-menu,
+.worm-immersive .worm-game-level-dialog{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:15;
+  background:linear-gradient(160deg,#fff8dc,#e7e9c9);color:#44594c;
+  border:4px solid #f2e8c0;border-radius:19px;box-shadow:0 12px 0 #a77e4a,0 25px 50px #17323e8e;
+  width:min(490px,calc(100vw - 40px));max-height:calc(100dvh - 22px);
+  overflow-y:auto;overscroll-behavior:contain;padding:18px;direction:inherit;
+}
+.worm-immersive .worm-game-menu{display:flex;flex-direction:column;align-items:stretch;gap:8px;width:min(350px,calc(100vw - 40px))}
+.worm-immersive .worm-game-menu h2,
+.worm-immersive .worm-game-level-dialog h2{color:#537052;font-size:20px;font-weight:950;margin-bottom:5px}
+.worm-immersive .worm-game-menu button:not(.worm-game-button){
+  background:#f3dba2;border:2px solid #caa977;border-radius:11px;color:#5d5b46;
+  padding:9px;min-height:42px;font-weight:900;text-align:center;
+}
+.worm-immersive .worm-level-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+.worm-immersive .worm-level-grid{
+  grid-template-columns:repeat(10,minmax(0,1fr));padding:4px;gap:5px;border:0;
+  background:transparent;max-height:none;overflow:visible
+}
+.worm-immersive .worm-level-grid button{min-height:36px;font-size:12px}
+.worm-immersive .worm-result{
+  top:50%;left:50%;right:auto;bottom:auto;transform:translate(-50%,-50%);z-index:14;
+  width:min(390px,calc(100vw - 35px));max-height:calc(100dvh - 20px);overflow-y:auto;
+  padding:14px 16px;gap:7px;border-radius:18px;
+}
+.worm-immersive .worm-result::before{font-size:20px}
+.worm-immersive .worm-result h2{font-size:clamp(17px,3.2vw,26px)}
+.worm-immersive .worm-result p{font-size:11px}
+.worm-immersive .worm-result button{min-height:43px}
+.worm-immersive .worm-rotate-gate{display:none}
+@media (max-height:460px) and (orientation:landscape){
+  .worm-immersive .worm-game-hud{padding-top:max(3px,env(safe-area-inset-top))}
+  .worm-immersive .worm-game-button{width:39px;height:39px;border-radius:10px;font-size:20px}
+  .worm-immersive .worm-hud-center{padding:0 3px}
+  .worm-immersive .worm-game-goal{font-size:13px}
+  .worm-immersive .worm-game-moves{font-size:10px;padding:3px 8px}
+  .worm-immersive .worm-game-level-dialog{padding:9px 13px}
+  .worm-immersive .worm-level-heading{margin-bottom:4px}
+  .worm-immersive .worm-level-grid button{min-height:29px;font-size:11px}
+  .worm-immersive .worm-game-menu{padding:10px;gap:5px}
+  .worm-immersive .worm-game-menu button:not(.worm-game-button){min-height:34px;padding:5px}
+}
+@media (orientation:portrait) and (max-width:900px){
+  .worm-immersive .worm-rotate-gate{
+    position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;
+    flex-direction:column;text-align:center;gap:13px;padding:22px;
+    color:#ffffef;background:linear-gradient(145deg,#358eab,#214d7e);
+  }
+  .worm-immersive .worm-rotate-image{font-size:clamp(65px,17vw,115px);filter:drop-shadow(0 9px 15px #124a6a79)}
+  .worm-immersive .worm-rotate-gate h2{font-size:clamp(22px,7vw,34px);font-weight:950}
+  .worm-immersive .worm-rotate-gate p{max-width:350px;font-size:15px;line-height:1.75}
+  .worm-immersive .worm-rotate-gate button{
+    margin-top:9px;min-height:48px;border:2px solid #f8e9be;background:#f3dfac;
+    border-radius:12px;color:#385b60;font-weight:950;padding:8px 22px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .worm-immersive .worm-clouds,.worm-immersive .worm-apple,
+  .worm-immersive .worm-apple-glow,.worm-immersive .worm-portal-ready,
+  .worm-immersive .worm-character{animation:none!important}
+}
