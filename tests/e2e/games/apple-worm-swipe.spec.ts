@@ -39,6 +39,13 @@ for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:
     }
     const board=page.locator('.worm-board');
     await expect(board).toHaveCSS('touch-action','none');
+    await expect.poll(async()=>board.evaluate(svg=>{
+      const element=svg as SVGSVGElement;
+      const rect=element.getBoundingClientRect();
+      return Math.abs(element.viewBox.baseVal.width/element.viewBox.baseVal.height -
+        rect.width/rect.height);
+    })).toBeLessThan(.005); // No 16:9 letterbox on ultra-wide phones.
+    await expect(page.locator('.worm-page')).not.toHaveCSS('overflow-x','auto');
     const count=page.locator('.worm-moves-value');
     await expect(count).toHaveText('0');
     const area=await board.boundingBox();
