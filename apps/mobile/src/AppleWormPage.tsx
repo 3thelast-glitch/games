@@ -8,6 +8,7 @@ import { finishWormGesture, startWormGesture, type WormGesture } from './apple-w
 import { useI18n } from './i18n.tsx';
 import { feedback, storage, type Settings } from './platform.ts';
 import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
+import { fitWormViewport } from './apple-worm-viewport.ts';
 import { App as NativeApp } from '@capacitor/app';
 
 interface SavedWorm { unlocked: number; state: WormState }
@@ -27,12 +28,29 @@ function WormBoard({ state, onSwipe, label }: {
   const board = wormLevel(state.level);
   const svgId = useId().replace(/:/g, '') + '-board';
   const swipe = useRef<WormGesture | null>(null);
-  const width = board.width * TILE;
-  const height = board.height * TILE;
-  const sceneWidth = Math.max(width + TILE * 10, Math.ceil((height + TILE * 3) * 16 / 9));
-  const sceneHeight = Math.max(height + TILE * 2, Math.ceil(sceneWidth * 9 / 16));
-  const boardX = (sceneWidth - width) / 2;
-  const boardY = (sceneHeight - height) * .61;
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const [size, setSize] = useState(() => ({
+    width: typeof window === 'undefined' ? 960 : window.innerWidth,
+    height: typeof window === 'undefined' ? 540 : window.innerHeight,
+  }));
+  useLayoutEffect(() => {
+    const node = svgRef.current;
+    if (!node) return;
+    const measure = () => {
+      const rect = node.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) return;
+      setSize(previous => Math.abs(previous.width - rect.width) < .5 &&
+        Math.abs(previous.height - rect.height) < .5
+          ? previous : { width: rect.width, height: rect.height });
+    };
+    measure();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    observer?.observe(node);
+    window.addEventListener('resize', measure);
+    return () => { observer?.disconnect(); window.removeEventListener('resize', measure); };
+  }, []);
+  const { sceneWidth, sceneHeight, boardX, boardY } =
+    fitWormViewport(board.width, board.height, size.width, size.height, TILE);
   const onPointerDown = (event: PointerEvent<SVGSVGElement>) => {
     if (swipe.current || !event.isPrimary ||
         (event.pointerType === 'mouse' && event.button !== 0)) return;
@@ -51,7 +69,8 @@ function WormBoard({ state, onSwipe, label }: {
   };
   const cancelSwipe = () => { swipe.current = null; };
   return (
-    <svg className="worm-board" viewBox={'0 0 ' + sceneWidth + ' ' + sceneHeight}
+    <svg ref={svgRef} className="worm-board" viewBox={'0 0 ' + sceneWidth + ' ' + sceneHeight}
+      preserveAspectRatio="xMidYMid meet"
       role="img" aria-label={label} style={{direction:'ltr'}} data-input="swipe"
       onPointerDown={onPointerDown} onPointerUp={onPointerUp}
       onPointerCancel={cancelSwipe} onLostPointerCapture={cancelSwipe}

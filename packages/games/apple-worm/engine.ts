@@ -19,6 +19,8 @@ export interface WormState {
   level: number;
   body: Point[];
   eaten: boolean;
+  /** When gravity collects an apple in a cramped pose, grow on the next legal step. */
+  pendingGrowth?: boolean;
   phase: Phase;
   moves: number;
 }
@@ -86,7 +88,7 @@ export function wormLevel(number: number): WormLevel {
   };
 }
 export function startWorm(level = 1): WormState {
-  return { level, body: wormLevel(level).start.map(p => ({ ...p })), eaten: false, phase: 'playing', moves: 0 };
+  return { level, body: wormLevel(level).start.map(p => ({ ...p })), eaten: false, pendingGrowth: false, phase: 'playing', moves: 0 };
 }
 export function moveWorm(state: WormState, direction: Direction): WormState {
   if (state.phase !== 'playing' || !Object.prototype.hasOwnProperty.call(STEPS, direction)) return state;
@@ -94,36 +96,65 @@ export function moveWorm(state: WormState, direction: Direction): WormState {
   const blocked = new Set(board.blocks.map(key));
   const lethal = new Set(board.spikes.map(key));
   const delta = STEPS[direction];
-  const nextHead = { x: state.body[0]!.x + delta.x, y: state.body[0]!.y + delta.y };
+  const head = state.body[0]!;
+  const nextHead = { x: head.x + delta.x, y: head.y + delta.y };
   if (!within(nextHead, board) || blocked.has(key(nextHead))) return state;
-  const grows = !state.eaten && same(nextHead, board.apple);
+
+  // A worm has a fixed head. Turning 180° into the neck is never allowed,
+  // including when it has only two segments and the tail would otherwise vacate.
+  // To turn around, the player must go around a bend with the worm's body.
+  if (state.body[1] && same(state.body[1], nextHead)) return state;
+
+  const ateOnStep = !state.eaten && same(nextHead, board.apple);
+  const grows = ateOnStep || Boolean(state.pendingGrowth);
   const occupied = grows ? state.body : state.body.slice(0, -1);
   if (occupied.some(p => same(p, nextHead))) return state;
+
   let body = [nextHead, ...state.body.map(p => ({ ...p }))];
   if (!grows) body = body.slice(0, -1);
-  const eaten = state.eaten || grows;
+  let eaten = state.eaten || ateOnStep;
+  let pendingGrowth = false;
   let phase: Phase = 'playing';
-  const winning = () => eaten && same(body[0]!, board.portal);
+  const winning = () => eaten && !pendingGrowth && same(body[0]!, board.portal);
   const dead = () => body.some(p => !within(p, board) || lethal.has(key(p)));
+
   if (dead()) phase = 'lost';
   else if (winning()) phase = 'won';
   else {
-    // The whole worm falls one cell while not a single segment is supported.
-    // Every segment moves together; the body is a rigid connected shape.
+    // Gravity translates the WHOLE connected worm together until any segment
+    // rests on ground. An apple is a collectible, never solid ground. The head
+    // must also collect it if gravity drops it into the apple's cell.
     while (!body.some(p => blocked.has(key({ x: p.x, y: p.y + 1 })))) {
-      body = body.map(p => ({ x: p.x, y: p.y + 1 }));
+      const previousTail = body[body.length - 1]!;
+      const falling = body.map(p => ({ x: p.x, y: p.y + 1 }));
+      if (!eaten && same(falling[0]!, board.apple)) {
+        eaten = true;
+        // The vacated tail cell touches the translated tail, so it can grow
+        // the worm without teleporting the head or treating fruit as a block.
+        // In a tight vertical U-pose this cell may already be occupied; in
+        // that case grow after the next legal movement instead of overlapping.
+        const freeTail = !falling.some(p => same(p, previousTail)) &&
+          within(previousTail, board) && !blocked.has(key(previousTail)) &&
+          !lethal.has(key(previousTail));
+        if (freeTail) falling.push({ ...previousTail });
+        else pendingGrowth = true;
+      }
+      body = falling;
       if (dead()) { phase = 'lost'; break; }
       if (winning()) { phase = 'won'; break; }
     }
   }
-  return { level: state.level, body, eaten, phase, moves: state.moves + 1 };
+  return { level: state.level, body, eaten, pendingGrowth, phase, moves: state.moves + 1 };
 }
+
 export function restoreWorm(value: unknown): WormState | null {
   if (!value || typeof value !== 'object') return null;
   const state = value as Partial<WormState>;
   if (typeof state.level !== 'number' || !Number.isInteger(state.level) || (state.level ?? 0) < 1 || (state.level ?? 0) > 30
       || !Array.isArray(state.body) || state.body.length < 2 || state.body.length > 10
-      || typeof state.eaten !== 'boolean' || !['playing', 'lost', 'won'].includes(state.phase ?? '')
+      || typeof state.eaten !== 'boolean' || (state.pendingGrowth !== undefined && typeof state.pendingGrowth !== 'boolean')
+      || (state.pendingGrowth === true && (!state.eaten || state.phase === 'won'))
+      || !['playing', 'lost', 'won'].includes(state.phase ?? '')
       || typeof state.moves !== 'number' || !Number.isSafeInteger(state.moves) || (state.moves ?? -1) < 0) return null;
   const board = wormLevel(state.level!);
   if (!state.body.every(p => p && Number.isInteger(p.x) && Number.isInteger(p.y)
@@ -131,13 +162,13 @@ export function restoreWorm(value: unknown): WormState | null {
   if (new Set(state.body.map(key)).size !== state.body.length) return null;
   if (state.body.some(p => board.blocks.some(b => same(p, b)))) return null;
   return { level: state.level!, body: state.body.map(p => ({ ...p })), eaten: state.eaten,
-    phase: state.phase!, moves: state.moves! };
+    pendingGrowth: state.pendingGrowth === true, phase: state.phase!, moves: state.moves! };
 }
 /** BFS used only for an optional on-device hint, never during a normal input. */
 export function findWormSolution(initial: WormState, cap = 30000): Direction[] | null {
   if (initial.phase === 'won') return [];
   if (initial.phase === 'lost') return null;
-  const serialize = (s: WormState) => (s.eaten ? '1' : '0') + ':' + s.body.map(key).join('|');
+  const serialize = (s: WormState) => (s.eaten ? '1' : '0') + (s.pendingGrowth ? 'g' : '-') + ':' + s.body.map(key).join('|');
   const seen = new Set([serialize(initial)]);
   const queue: { state: WormState; path: Direction[] }[] = [{ state: initial, path: [] }];
   for (let index = 0; index < queue.length && index < cap; index++) {
