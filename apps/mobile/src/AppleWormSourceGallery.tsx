@@ -1,4 +1,5 @@
 import { useMemo, useState, type CSSProperties } from 'react';
+import { AppleWormVideoPlaytest } from './AppleWormVideoPlaytest.tsx';
 import {
   APPLE_WORM_VISUAL_SNAPSHOT_COUNT,
   appleWormVisualSnapshot,
@@ -14,6 +15,8 @@ type Props = { lang:'ar'|'en'; onClose:()=>void };
  */
 export function AppleWormSourceGallery({lang,onClose}:Props) {
   const [level,setLevel]=useState(1);
+  const [playtestOpen,setPlaytestOpen]=useState(false);
+  const chooseLevel=(number:number)=>{setLevel(number);setPlaytestOpen(false);};
   const ar=lang==='ar';
   const item=useMemo(()=>appleWormVisualSnapshot(level),[level]);
   const first=Math.floor((level-1)/15)*15+1;
@@ -48,6 +51,14 @@ export function AppleWormSourceGallery({lang,onClose}:Props) {
       border:'3px solid #426574',overflow:'hidden',flexShrink:0}}>
       <SourceSnapshotBoard stage={item}/>
     </div>
+    {level<=10 && <div style={{display:'flex',gap:8,justifyContent:'center',flexWrap:'wrap'}}>
+      <button type="button" onClick={()=>setPlaytestOpen(open=>!open)} style={buttonStyle}
+        aria-expanded={playtestOpen}>
+        {label(playtestOpen?'Hide experimental playtest':'Try this video-traced map (experimental)',
+          playtestOpen?'إخفاء التجربة':'تجربة الخريطة المأخوذة من الفيديو (تجريبي)')}
+      </button>
+    </div>}
+    {level<=10 && playtestOpen && <AppleWormVideoPlaytest key={level} level={level} lang={lang}/>}
     <div role="status" style={{maxWidth:930,width:'100%',fontSize:13,color:'#e3f0f0',
       display:'flex',flexWrap:'wrap',gap:'8px 20px',alignItems:'center'}}>
       <strong>{label('Stage','المرحلة')} {level}/{APPLE_WORM_VISUAL_SNAPSHOT_COUNT}</strong>
@@ -65,16 +76,16 @@ export function AppleWormSourceGallery({lang,onClose}:Props) {
     </p>
     <nav aria-label={label('Video stages','المراحل الأصلية')} style={{display:'flex',
       alignItems:'center',justifyContent:'center',gap:10,flexWrap:'wrap'}}>
-      <button type="button" disabled={level===1} onClick={()=>setLevel(n=>Math.max(1,n-1))}
+      <button type="button" disabled={level===1} onClick={()=>chooseLevel(Math.max(1,level-1))}
         style={buttonStyle}>{label('Previous','السابق')}</button>
       <span style={{fontVariantNumeric:'tabular-nums'}}>{level}</span>
-      <button type="button" disabled={level===105} onClick={()=>setLevel(n=>Math.min(105,n+1))}
+      <button type="button" disabled={level===105} onClick={()=>chooseLevel(Math.min(105,level+1))}
         style={buttonStyle}>{label('Next','التالي')}</button>
     </nav>
     <nav aria-label={label('Stage batches','دفعات المراحل')} style={{display:'flex',
       justifyContent:'center',flexWrap:'wrap',gap:5}}>
       {Array.from({length:7},(_,i)=>({from:i*15+1,to:Math.min((i+1)*15,105)})).map(pack=>
-        <button type="button" key={pack.from} onClick={()=>setLevel(pack.from)}
+        <button type="button" key={pack.from} onClick={()=>chooseLevel(pack.from)}
           aria-current={level>=pack.from&&level<=pack.to?'page':undefined}
           style={{...buttonStyle,background:level>=pack.from&&level<=pack.to?'#1a806e':'#28546c',
             fontSize:12,padding:'6px 10px'}}>
@@ -85,7 +96,7 @@ export function AppleWormSourceGallery({lang,onClose}:Props) {
       display:'grid',gridTemplateColumns:'repeat(15, minmax(28px,1fr))',
       width:'min(100%,650px)',gap:4,flexShrink:0}}>
       {Array.from({length:last-first+1},(_,i)=>first+i).map(n=>
-        <button type="button" key={n} onClick={()=>setLevel(n)}
+        <button type="button" key={n} onClick={()=>chooseLevel(n)}
           aria-current={n===level?'step':undefined}
           aria-label={label('Preview reference stage','معاينة مرجع المرحلة')+' '+n}
           style={{...buttonStyle,fontSize:12,
