@@ -52,6 +52,7 @@ import { ChessArchivePage } from './ChessArchivePage.tsx';
 import { LanPage } from './LanPage.tsx';
 import { LudoPage } from './LudoPage.tsx';
 import { AppleWormPage } from './AppleWormPage.tsx';
+import { requestGameFullscreen } from './immersive-game.ts';
 import { BasketballLinePage } from './BasketballLinePage.tsx';
 import { BackroomBillPage } from './BackroomBillPage.tsx';
 import { ArithmeticaPage } from './ArithmeticaPage.tsx';
@@ -1001,7 +1002,7 @@ function ArenaApp({
   const matchNow = online ? clock + serverOffset.current : clock;
   return (
     <NoticeContext.Provider value={notice}>
-      <div className={`app-shell ${page === 'match' || page === 'lan' ? 'in-match' : ''}`}>
+      <div className={`app-shell ${page === 'match' || page === 'lan' ? 'in-match' : ''} ${page === 'appleWorm' ? 'is-immersive-game' : ''}`}>
         <aside className="sidebar">
           <button className="brand-button" onClick={() => navigate('library')}>
             <Logo />
@@ -1078,7 +1079,7 @@ function ArenaApp({
           <main className={`main-content ${page === 'match' ? 'match-content' : ''}`}>
             {page === 'library' && (
               <HomePage
-                onChoose={(gameId, mode) => gameId === 'ludo' ? setPage('ludo') : gameId === 'appleWorm' ? setPage('appleWorm') : gameId === 'basketballLine' ? setPage('basketballLine') : gameId === 'backroomBill' ? setPage('backroomBill') : gameId === 'arithmetica' ? setPage('arithmetica') : gameId === 'survivalBuilder' ? setPage('survivalBuilder') : gameId === 'towerDestiny' ? setPage('towerDestiny') : gameId === 'gasStation' ? setPage('gasStation') : setChoice({ gameId, mode })}
+                onChoose={(gameId, mode) => gameId === 'ludo' ? setPage('ludo') : gameId === 'appleWorm' ? (requestGameFullscreen(), setPage('appleWorm')) : gameId === 'basketballLine' ? setPage('basketballLine') : gameId === 'backroomBill' ? setPage('backroomBill') : gameId === 'arithmetica' ? setPage('arithmetica') : gameId === 'survivalBuilder' ? setPage('survivalBuilder') : gameId === 'towerDestiny' ? setPage('towerDestiny') : gameId === 'gasStation' ? setPage('gasStation') : setChoice({ gameId, mode })}
                 onRules={setRules}
                 profile={profile}
                 onFavorite={(id) =>
@@ -1095,7 +1096,7 @@ function ArenaApp({
               />
             )}
             {page === 'ludo' && <LudoPage onExit={() => setPage('library')} />}
-            {page === 'appleWorm' && <AppleWormPage onExit={() => setPage('library')} settings={settings} />}
+            {page === 'appleWorm' && <AppleWormPage onExit={() => setPage('library')} settings={settings} onToggleSound={() => changeSettings({ sound: !settings.sound })} />}
             {page === 'basketballLine' && <BasketballLinePage onExit={() => setPage('library')} settings={settings} />}
             {page === 'backroomBill' && <BackroomBillPage onExit={() => setPage('library')} settings={settings} />}
             {page === 'arithmetica' && <ArithmeticaPage onExit={() => setPage('library')} settings={settings} />}

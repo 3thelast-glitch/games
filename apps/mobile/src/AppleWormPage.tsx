@@ -7,6 +7,8 @@ import { WormApple, WormCharacter, WormPortal, WormSky, WormTerrain } from './Ap
 import { finishWormGesture, startWormGesture, type WormGesture } from './apple-worm-gestures.ts';
 import { useI18n } from './i18n.tsx';
 import { feedback, storage, type Settings } from './platform.ts';
+import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
+import { App as NativeApp } from '@capacitor/app';
 
 interface SavedWorm { unlocked: number; state: WormState }
 const SAVE_KEY = 'apple-worm-offline-v1';
@@ -27,6 +29,10 @@ function WormBoard({ state, onSwipe, label }: {
   const swipe = useRef<WormGesture | null>(null);
   const width = board.width * TILE;
   const height = board.height * TILE;
+  const sceneWidth = Math.max(width + TILE * 10, Math.ceil((height + TILE * 3) * 16 / 9));
+  const sceneHeight = Math.max(height + TILE * 2, Math.ceil(sceneWidth * 9 / 16));
+  const boardX = (sceneWidth - width) / 2;
+  const boardY = (sceneHeight - height) * .61;
   const onPointerDown = (event: PointerEvent<SVGSVGElement>) => {
     if (swipe.current || !event.isPrimary ||
         (event.pointerType === 'mouse' && event.button !== 0)) return;
@@ -45,13 +51,14 @@ function WormBoard({ state, onSwipe, label }: {
   };
   const cancelSwipe = () => { swipe.current = null; };
   return (
-    <svg className="worm-board" viewBox={'0 0 ' + width + ' ' + height}
+    <svg className="worm-board" viewBox={'0 0 ' + sceneWidth + ' ' + sceneHeight}
       role="img" aria-label={label} style={{direction:'ltr'}} data-input="swipe"
       onPointerDown={onPointerDown} onPointerUp={onPointerUp}
       onPointerCancel={cancelSwipe} onLostPointerCapture={cancelSwipe}
       xmlns="http://www.w3.org/2000/svg">
-      <WormSky width={width} height={height} id={svgId}/>
-      <WormTerrain blocks={board.blocks} tile={TILE}/>
+      <WormSky width={sceneWidth} height={sceneHeight} id={svgId}/>
+      <g transform={`translate(${boardX} ${boardY})`}>
+        <WormTerrain blocks={board.blocks} tile={TILE}/>
       {board.spikes.map((p, i) => (
         <path key={i}
           d={'M' + (p.x * TILE + 6) + ' ' + (p.y * TILE + 43) +
@@ -63,13 +70,16 @@ function WormBoard({ state, onSwipe, label }: {
       ))}
       <WormPortal x={board.portal.x} y={board.portal.y} tile={TILE} ready={state.eaten}/>
       {!state.eaten && <WormApple x={board.apple.x} y={board.apple.y} tile={TILE}/>}
-      <WormCharacter key={state.moves} body={state.body} tile={TILE} id={svgId}/>
+        <WormCharacter key={state.moves} body={state.body} tile={TILE} id={svgId}/>
+      </g>
     </svg>
   );
 }
 
-export function AppleWormPage({ onExit, settings }: { onExit: () => void; settings: Settings }) {
+export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () => void; settings: Settings; onToggleSound: () => void }) {
   const { t, lang } = useI18n();
+  const exitRef = useRef(onExit);
+  exitRef.current = onExit;
   const [state, setState] = useState<WormState>(() => startWorm());
   const ref = useRef(state);
   const [unlocked, setUnlocked] = useState(1);
@@ -77,6 +87,21 @@ export function AppleWormPage({ onExit, settings }: { onExit: () => void; settin
   const [history, setHistory] = useState<WormState[]>([]);
   const [hint, setHint] = useState<Direction | null>(null);
   const [showLevels, setShowLevels] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  useEffect(() => {
+    void enterGameLandscape();
+    let alive = true;
+    let removal: (() => void) | undefined;
+    void NativeApp.addListener('backButton', () => exitRef.current()).then(handle => {
+      if (alive) removal = () => { void handle.remove(); };
+      else void handle.remove();
+    }).catch(() => {});
+    return () => {
+      alive = false;
+      removal?.();
+      void leaveGameLandscape();
+    };
+  }, []);
   useLayoutEffect(() => {
     // Start at the actual game area, not the previously scrolled library card.
     document.documentElement.scrollTop = 0;
@@ -127,7 +152,7 @@ export function AppleWormPage({ onExit, settings }: { onExit: () => void; settin
   const selectLevel = (level: number) => {
     if (level < 1 || level > unlocked) return;
     const next = startWorm(level);
-    ref.current = next; setState(next); setHistory([]); setHint(null); setShowLevels(false);
+    ref.current = next; setState(next); setHistory([]); setHint(null); setShowLevels(false); setShowMenu(false);
   };
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
@@ -143,73 +168,89 @@ export function AppleWormPage({ onExit, settings }: { onExit: () => void; settin
     window.addEventListener('keydown', keydown);
     return () => window.removeEventListener('keydown', keydown);
   });
-  if (!loaded) return <main className="worm-page"><p>{t('loading')}</p></main>;
+  const showHint = () => {
+    const path = findWormSolution(state, 30000);
+    setHint(path?.[0] ?? null);
+    setShowMenu(false);
+  };
+  if (!loaded) return <main className="worm-page worm-immersive"><p>{t('loading')}</p></main>;
   return (
-    <main className="worm-page page-enter">
-      <header className="worm-header">
-        <div>
-          <span className="eyebrow">NAQLA • PUZZLE ADVENTURE</span>
-          <h1>{t('appleWorm')}</h1>
-          <p>{t('appleWormDesc')}</p>
+    <main className="worm-page worm-immersive" dir={lang === 'ar' ? 'rtl' : 'ltr'}
+      data-display="immersive-landscape" data-phase={state.phase}>
+      <section className="worm-stage worm-fullstage" aria-label={t('appleWormBoard')}>
+        <div className="worm-playfield">
+          <WormBoard state={state} onSwipe={move} label={t('appleWormBoard')} />
         </div>
-        <button type="button" className="button secondary" onClick={onExit}>{t('appleWormBack')}</button>
-      </header>
-      <section className="worm-layout">
-        <div className="worm-stage">
-          <div className="worm-stage-top">
-            <strong>{t('appleWormLevel')} {state.level} / {WORM_LEVEL_COUNT}</strong>
-            <span>{t('appleWormMoves')}: {state.moves}</span>
-            <button className="worm-link" type="button" onClick={() => setShowLevels(value => !value)}
-              aria-expanded={showLevels}>{t('appleWormChoose')}</button>
+        <div className="worm-game-hud">
+          <div className="worm-hud-start">
+            <button className="worm-game-button worm-exit" type="button"
+              aria-label={t('appleWormBack')} title={t('appleWormBack')} onClick={onExit}>↩</button>
           </div>
-          {showLevels && <div className="worm-level-grid" aria-label={t('appleWormChoose')}>
+          <div className="worm-hud-center" aria-live="polite">
+            <span className="worm-game-goal" aria-hidden="true">🐛 → 🍎 → 🌀</span>
+            <span className="worm-game-moves">{t('appleWormMoves')}: <b className="worm-moves-value">{state.moves}</b></span>
+          </div>
+          <div className="worm-hud-end">
+            <button className="worm-game-button" type="button" onClick={onToggleSound}
+              aria-pressed={settings.sound} aria-label={t('appleWormSound')}>{settings.sound ? '🔊' : '🔇'}</button>
+            <button className="worm-game-button" type="button" onClick={showHint}
+              disabled={state.phase !== 'playing'} aria-label={t('appleWormHint')}>💡</button>
+            <button className="worm-game-button" type="button" onClick={() => {
+              setShowLevels(previous => !previous); setShowMenu(false);
+            }} aria-label={t('appleWormChoose')} aria-expanded={showLevels}>▦</button>
+            <button className="worm-game-button" type="button" onClick={() => {
+              setShowMenu(previous => !previous); setShowLevels(false);
+            }} aria-label={t('appleWormOptions')} aria-expanded={showMenu}>☰</button>
+          </div>
+        </div>
+        <div className="worm-game-level" aria-label={t('appleWormLevel')}>
+          {String(state.level).padStart(2, '0')}
+        </div>
+        {hint && state.phase === 'playing' && (
+          <div className="worm-hint-bubble" role="status">{t('appleWormHint')}: {DELTAS[hint]}</div>
+        )}
+        {showMenu && <div className="worm-game-menu" role="dialog" aria-label={t('appleWormOptions')}>
+          <h2>{t('appleWormOptions')}</h2>
+          <button type="button" onClick={undo} disabled={!history.length}>
+            ↶ {t('appleWormUndo')}</button>
+          <button type="button" onClick={() => { restart(); setShowMenu(false); }}>
+            ⟳ {t('appleWormRetry')}</button>
+          <button type="button" onClick={onToggleSound}>
+            {settings.sound ? '🔊' : '🔇'} {t('appleWormSound')}</button>
+          <button type="button" onClick={onExit}>↩ {t('appleWormBack')}</button>
+          <button type="button" onClick={() => setShowMenu(false)}>{t('appleWormClose')}</button>
+        </div>}
+        {showLevels && <div className="worm-game-level-dialog" role="dialog" aria-label={t('appleWormChoose')}>
+          <div className="worm-level-heading">
+            <h2>{t('appleWormChoose')}</h2>
+            <button className="worm-game-button" type="button" onClick={() => setShowLevels(false)}
+              aria-label={t('appleWormClose')}>✕</button>
+          </div>
+          <div className="worm-level-grid">
             {Array.from({ length: WORM_LEVEL_COUNT }, (_, index) => index + 1).map(level =>
               <button type="button" key={level} disabled={level > unlocked}
                 className={level === state.level ? 'selected' : ''}
                 aria-current={level === state.level ? 'step' : undefined}
                 onClick={() => selectLevel(level)}>{level > unlocked ? '🔒' : level}</button>
             )}
-          </div>}
-          <div className="worm-playfield">
-            <WormBoard state={state} onSwipe={move} label={t('appleWormBoard')} />
-            <div className="worm-board-help" aria-hidden="true">{t('appleWormSwipeHint')}</div>
           </div>
-          {state.phase !== 'playing' && <div className={'worm-result ' + state.phase} role="status">
-            <h2>{t(state.phase === 'won' ? 'appleWormWon' : 'appleWormLost')}</h2>
-            <p>{t(state.phase === 'won' ? 'appleWormWonDesc' : 'appleWormLostDesc')}</p>
-            <button className="button primary" type="button"
-              onClick={() => state.phase === 'won' && state.level < WORM_LEVEL_COUNT ?
-                selectLevel(state.level + 1) : restart()}>
-              {t(state.phase === 'won' && state.level < WORM_LEVEL_COUNT ? 'appleWormNext' : 'appleWormRetry')}
-            </button>
-          </div>}
-        </div>
-        <aside className="worm-panel">
-          <div className="worm-objective">
-            <span className="worm-mini-apple" aria-hidden="true">🍎</span>
-            <div><strong>{t('appleWormGoal')}</strong><p>{t('appleWormInstructions')}</p></div>
-          </div>
-          <div className="worm-stats">
-            <span>{t('appleWormApple')}: <b>{state.eaten ? '✓' : '○'}</b></span>
-            <span>{t('appleWormLength')}: <b>{state.body.length}</b></span>
-          </div>
-          <div className="worm-swipe-callout" role="note">
-            <span aria-hidden="true">☝️</span>
-            <strong>{t('appleWormSwipeHint')}</strong>
-          </div>
-          <div className="worm-actions">
-            <button type="button" onClick={undo} disabled={!history.length}>{t('appleWormUndo')}</button>
-            <button type="button" onClick={restart}>{t('appleWormRetry')}</button>
-            <button type="button" disabled={state.phase !== 'playing'} onClick={() => {
-              const path = findWormSolution(state, 30000);
-              setHint(path?.[0] ?? null);
-            }}>{t('appleWormHint')}</button>
-          </div>
-          {hint && <p className="worm-hint" role="status">{t('appleWormTry')} {DELTAS[hint]}</p>}
-          <small className="worm-help">{t('appleWormKeyboard')}</small>
-          <small className="worm-help">{lang === 'ar' ? 'يتم حفظ تقدمك تلقائيًا على هذا الجهاز.' : 'Your progress is saved automatically on this device.'}</small>
-        </aside>
+        </div>}
+        {state.phase !== 'playing' && <div className={'worm-result ' + state.phase} role="status">
+          <h2>{t(state.phase === 'won' ? 'appleWormWon' : 'appleWormLost')}</h2>
+          <p>{t(state.phase === 'won' ? 'appleWormWonDesc' : 'appleWormLostDesc')}</p>
+          <button type="button" onClick={() => state.phase === 'won' &&
+            state.level < WORM_LEVEL_COUNT ? selectLevel(state.level + 1) : restart()}>
+            {t(state.phase === 'won' && state.level < WORM_LEVEL_COUNT ?
+              'appleWormNext' : 'appleWormRetry')}
+          </button>
+        </div>}
       </section>
+      <div className="worm-rotate-gate" role="status">
+        <div className="worm-rotate-image" aria-hidden="true">📱↻</div>
+        <h2>{t('appleWormRotateTitle')}</h2>
+        <p>{t('appleWormRotateDesc')}</p>
+        <button type="button" onClick={onExit}>{t('appleWormBack')}</button>
+      </div>
     </main>
   );
 }

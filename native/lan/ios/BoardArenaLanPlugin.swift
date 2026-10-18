@@ -395,8 +395,51 @@ public class BoardArenaLanPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 }
 
+@objc(NaqlaOrientationPlugin)
+public class NaqlaOrientationPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "NaqlaOrientationPlugin"
+    public let jsName = "NaqlaOrientation"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "landscape", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "restore", returnType: CAPPluginReturnPromise),
+    ]
+    static var wantsLandscape = false
+
+    @objc func landscape(_ call: CAPPluginCall) { update(true, call) }
+    @objc func restore(_ call: CAPPluginCall) { update(false, call) }
+
+    private func update(_ landscape: Bool, _ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            Self.wantsLandscape = landscape
+            guard let controller = self.bridge?.viewController else {
+                call.reject("missing-bridge-view-controller")
+                return
+            }
+            if #available(iOS 16.0, *) {
+                controller.setNeedsUpdateOfSupportedInterfaceOrientations()
+                controller.setNeedsStatusBarAppearanceUpdate()
+                if let scene = controller.view.window?.windowScene {
+                    let mask: UIInterfaceOrientationMask = landscape ? .landscape : .portrait
+                    scene.requestGeometryUpdate(.iOS(interfaceOrientations: mask)) { error in
+                        call.reject("orientation-change-failed", error.localizedDescription)
+                    }
+                }
+            } else {
+                controller.setNeedsStatusBarAppearanceUpdate()
+                UIViewController.attemptRotationToDeviceOrientation()
+            }
+            call.resolve()
+        }
+    }
+}
+
 final class BoardArenaViewController: CAPBridgeViewController {
+    override var prefersStatusBarHidden: Bool { NaqlaOrientationPlugin.wantsLandscape }
+    override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+        NaqlaOrientationPlugin.wantsLandscape ? .landscape : .portrait
+    }
     override public func capacitorDidLoad() {
         bridge?.registerPluginInstance(BoardArenaLanPlugin())
+        bridge?.registerPluginInstance(NaqlaOrientationPlugin())
     }
 }
