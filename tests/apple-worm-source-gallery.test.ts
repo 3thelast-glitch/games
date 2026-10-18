@@ -11,6 +11,7 @@ test('the live UI exposes 105 source snapshots but does not falsely call them co
     lang:'en',onClose:()=>{},
   }));
   assert.match(html,/105 stages from the original video/);
+  assert.match(html,/Legacy practice \(40, not video\)/);
   assert.match(html,/Reference snapshots/);
   assert.match(html,/not playable or fully verified/);
   assert.match(html,/40 older generated puzzles are not video-verified/);
@@ -26,6 +27,7 @@ test('Arabic source gallery labels the old 40 levels as legacy unapproved',()=>{
     lang:'ar',onClose:()=>{},
   }));
   assert.match(html,/105 مراحل من الفيديو الأصلي/);
+  assert.match(html,/40 غير معتمدة/);
   assert.match(html,/المراحل الأربعون القديمة ليست مطابقة للفيديو/);
   assert.match(html,/ليست قابلة للعب/);
 });
