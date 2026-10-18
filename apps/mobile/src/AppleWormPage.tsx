@@ -78,6 +78,8 @@ function WormBoard({ state, onSwipe, label }: {
 
 export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () => void; settings: Settings; onToggleSound: () => void }) {
   const { t, lang } = useI18n();
+  const exitRef = useRef(onExit);
+  exitRef.current = onExit;
   const [state, setState] = useState<WormState>(() => startWorm());
   const ref = useRef(state);
   const [unlocked, setUnlocked] = useState(1);
@@ -90,7 +92,7 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
     void enterGameLandscape();
     let alive = true;
     let removal: (() => void) | undefined;
-    void NativeApp.addListener('backButton', () => onExit()).then(handle => {
+    void NativeApp.addListener('backButton', () => exitRef.current()).then(handle => {
       if (alive) removal = () => { void handle.remove(); };
       else void handle.remove();
     }).catch(() => {});
@@ -99,7 +101,7 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
       removal?.();
       void leaveGameLandscape();
     };
-  }, [onExit]);
+  }, []);
   useLayoutEffect(() => {
     // Start at the actual game area, not the previously scrolled library card.
     document.documentElement.scrollTop = 0;
