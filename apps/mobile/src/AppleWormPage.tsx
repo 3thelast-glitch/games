@@ -121,7 +121,9 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
   const [history, setHistory] = useState<WormState[]>([]);
   const [hint, setHint] = useState<Direction | null>(null);
   const [showLevels, setShowLevels] = useState(false);
-  const [showSourceGallery, setShowSourceGallery] = useState(false);
+  // The user approved ONLY the original 105 video-source stages. Open that
+  // catalogue by default; independently authored legacy puzzles are opt-in.
+  const [showSourceGallery, setShowSourceGallery] = useState(true);
   const [activeGroup, setActiveGroup] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
   const [biteCue, setBiteCue] = useState<{level:number; moves:number; index:number} | null>(null);
@@ -235,6 +237,9 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
           </div>
           <div className="worm-hud-center" aria-live="polite">
             <span className="worm-game-goal" aria-label={t('appleWormFruitProgress')}>
+              <span title={lang === 'ar' ? '40 مرحلة قديمة غير معتمدة' : '40 unapproved legacy stages'}>
+                {lang === 'ar' ? 'تجريبي (غير معتمد) · ' : 'Legacy (unapproved) · '}
+              </span>
               🐛 → 🍎 {state.collectedApples?.length ?? 0}/{wormLevel(state.level).apples.length} → 🌀
             </span>
             <span className="worm-game-moves">{t('appleWormMoves')}: <b className="worm-moves-value">{state.moves}</b></span>
