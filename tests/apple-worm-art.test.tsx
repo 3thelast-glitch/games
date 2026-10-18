@@ -52,8 +52,8 @@ test('original library cover renders same dynamic meadow art',()=>{
  assert.match(cover,/worm-terrain/);
  assert.doesNotMatch(cover,/NaN|Infinity/);
 });
-test('30 authored levels preserve collision geometry with a finite SVG contour',()=>{
- for(let level=1;level<=30;level++){
+test('40 authored levels preserve collision geometry with a finite SVG contour',()=>{
+ for(let level=1;level<=40;level++){
   const terrain=cellContour(wormLevel(level).blocks,48,.1);
   const body=cellContour(startWorm(level).body,48,.31);
   assert.ok(terrain.length>10&&body.length>10);
