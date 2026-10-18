@@ -69,3 +69,18 @@ A companion local QA ZIP `AppleWorm_105_Terrain_Candidates.zip` contains side-by
 
 ## CI investigation on PR #117
 At head `5d7bb591`, Validate NAQLA, Build Android APK, Build iOS and Responsive Smoke were successful. The Responsive Full Matrix failed on **WebKit mobile 320×568** in unrelated Checkers, Abalone, Quoridor and Gomoku test navigation when Play/Start click targets were not stable within 8 s. Firefox passed. `tests/e2e/helpers/game.ts` was changed to disable motion as soon as the catalog loads, before UI click operations; full final WebKit CI must still pass to close this issue. This test-only change does not disable animation in the production games.
+
+
+## Images-only extraction of all 105 existing screenshots (2026-10-18)
+
+Per user instruction, **do not re-process the 47m53s video simply to recreate existing still screenshots**. New extraction reads the already-existing `stage_001.jpg` through `stage_105.jpg` one time in one Python run.
+
+- `scripts/apple_worm_images_to_objects.py`: source-images-only OpenCV extraction of red apples, green worm cells, gray obstacles, and possible black spiral exits on the original 30px grid. Annotates both halves of each still for an auditable side-by-side comparison, exports JSON and CSV.
+- `packages/games/apple-worm/video-image-evidence-105.ts`: compact, typed, 105-image candidate coordinates (97 images have visible apples, 102 have green worm cells, 69 have gray objects, and 47 have sufficiently matched possible portals); 105/105 source images were processed. *These are detection counts, NOT in-game counts and not reliable ground truth by themselves.*
+- `packages/games/apple-worm/video-visual-snapshots-105.ts`: combines all 105 terrain estimates with detected objects into a single per-stage visual snapshot. All maps remain `snapshotIsOriginalLevelStart:false`, `gameplayAndSolutionVerified:false`, `readyForLiveGame:false`.
+- `tests/apple-worm-video-image-evidence-105.test.ts`, `tests/apple-worm-video-visual-snapshots-105.test.ts`: validate data for every one of the 105 screens and guard against representing consumed apples as truly absent.
+- A local QA archive `AppleWorm_105_Images_Extracted_Maps.zip` was prepared with **105** annotated source-image comparisons, all image object detections, 105 assembled geometry/object JSON records, a CSV with per-image counts, and README. That archive is a user-downloadable QA artifact, not embedded copyrighted game graphics.
+
+**Why not immediately ship 105 levels from these image extractions?** Screenshot stage **2** contains a four-piece worm *after* eating its first apple, and the screenshot shows **zero apples**, whereas its untouched level starts with a shorter worm and an apple. Copying the screenshot's zero apple count into a playable stage would introduce a wrong puzzle. Some later screenshots show stage end/mid-motion, movable crates, saw blades and portals cropped outside the frame. One still alone cannot reconstruct a previously eaten apple's location, the untouched worm pose, moving-hazard timing or the winning input sequence. These have to be checked from additional trustworthy reference images, or at ambiguous timestamps from the original video (only as exceptions, not an all-video rescan).
+
+Status: **105/105 photos converted into combined visual evidence; 10 initial layouts traced separately; 0 newly constructed maps source-route-verified playable in the new mode; live curated 40 remain unchanged**.

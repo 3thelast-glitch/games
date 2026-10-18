@@ -12,6 +12,7 @@ import { fitWormViewport } from './apple-worm-viewport.ts';
 import { App as NativeApp } from '@capacitor/app';
 import { createPortal } from 'react-dom';
 import { APPLE_WORM_GROUPS, APPLE_WORM_CHAPTERS } from '../../../packages/games/apple-worm/levels.ts';
+import { AppleWormSourceGallery } from './AppleWormSourceGallery.tsx';
 
 interface SavedWorm { unlocked: number; state: WormState }
 const SAVE_KEY = 'apple-worm-curated-40-v3';
@@ -120,6 +121,7 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
   const [history, setHistory] = useState<WormState[]>([]);
   const [hint, setHint] = useState<Direction | null>(null);
   const [showLevels, setShowLevels] = useState(false);
+  const [showSourceGallery, setShowSourceGallery] = useState(false);
   const [activeGroup, setActiveGroup] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
   const [biteCue, setBiteCue] = useState<{level:number; moves:number; index:number} | null>(null);
@@ -200,7 +202,7 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
   };
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
-      if (event.altKey || event.ctrlKey || event.metaKey || event.repeat || showLevels) return;
+      if (event.altKey || event.ctrlKey || event.metaKey || event.repeat || showLevels || showSourceGallery) return;
       const target = event.target as HTMLElement | null;
       if (target?.closest('input,textarea,select,[contenteditable="true"]')) return;
       const code = event.key.toLowerCase();
@@ -243,6 +245,10 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
             <button className="worm-game-button" type="button" onClick={showHint}
               disabled={state.phase !== 'playing'} aria-label={t('appleWormHint')}>💡</button>
             <button className="worm-game-button" type="button" onClick={() => {
+              setShowSourceGallery(true); setShowLevels(false); setShowMenu(false);
+            }} aria-label={lang === 'ar' ? 'مراجع المراحل الأصلية من الفيديو 105' : '105 original video level references'}
+              title={lang === 'ar' ? 'مراحل الفيديو الأصلية' : 'Original video levels'}>🎞</button>
+            <button className="worm-game-button" type="button" onClick={() => {
               setShowLevels(previous => !previous);
               setActiveGroup(Math.floor((state.level - 1) / 10)); setShowMenu(false);
             }} aria-label={t('appleWormChoose')} aria-expanded={showLevels}>▦</button>
@@ -274,6 +280,15 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
             <button className="worm-game-button" type="button" onClick={() => setShowLevels(false)}
               aria-label={t('appleWormClose')}>✕</button>
           </div>
+          <p style={{fontSize:12,margin:'0 0 9px',color:'#e8b970'}} role="note">
+            {lang === 'ar'
+              ? 'المراحل الأربعون الحالية تجريبية وليست معتمدة من الفيديو. افتح مراجع المراحل الأصلية للمقارنة.'
+              : 'These 40 legacy stages are not approved source-video levels. Open the original references to compare.'}
+          </p>
+          <button type="button" onClick={() => {setShowLevels(false);setShowSourceGallery(true);}}
+            className="worm-game-button" style={{width:'100%',marginBottom:8,padding:8}}>
+            🎞 {lang === 'ar' ? 'عرض خرائط الفيديو الأصلية الـ105' : 'View all 105 source-video map snapshots'}
+          </button>
           <div className="worm-pack-tabs" role="tablist" aria-label={t('appleWormPacks')}>
             {APPLE_WORM_GROUPS.map((pack, index) =>
               <button key={pack.start} type="button" role="tab" aria-selected={activeGroup===index}
@@ -298,7 +313,9 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
             )}
           </div>
         </div>}
-        {state.phase !== 'playing' && <div className={'worm-result ' + state.phase} role="status">
+        {showSourceGallery && <AppleWormSourceGallery lang={lang === 'ar' ? 'ar' : 'en'}
+          onClose={() => setShowSourceGallery(false)}/>}
+        {state.phase !== 'playing' && !showSourceGallery && <div className={'worm-result ' + state.phase} role="status">
           <h2>{t(state.phase === 'won' ? 'appleWormWon' : 'appleWormLost')}</h2>
           <p>{t(state.phase === 'won' ? 'appleWormWonDesc' : 'appleWormLostDesc')}</p>
           <button type="button" onClick={() => state.phase === 'won' &&
