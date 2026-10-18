@@ -10,6 +10,7 @@ import { feedback, storage, type Settings } from './platform.ts';
 import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
 import { fitWormViewport } from './apple-worm-viewport.ts';
 import { App as NativeApp } from '@capacitor/app';
+import { createPortal } from 'react-dom';
 
 interface SavedWorm { unlocked: number; state: WormState }
 const SAVE_KEY = 'apple-worm-offline-v1';
@@ -192,8 +193,8 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
     setHint(path?.[0] ?? null);
     setShowMenu(false);
   };
-  if (!loaded) return <main className="worm-page worm-immersive"><p>{t('loading')}</p></main>;
-  return (
+  if (!loaded) return createPortal(<main className="worm-page worm-immersive"><p>{t('loading')}</p></main>, document.body);
+  return createPortal(
     <main className="worm-page worm-immersive" dir={lang === 'ar' ? 'rtl' : 'ltr'}
       data-display="immersive-landscape" data-phase={state.phase}>
       <section className="worm-stage worm-fullstage" aria-label={t('appleWormBoard')}>
@@ -270,6 +271,6 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
         <p>{t('appleWormRotateDesc')}</p>
         <button type="button" onClick={onExit}>{t('appleWormBack')}</button>
       </div>
-    </main>
+    </main>, document.body
   );
 }
