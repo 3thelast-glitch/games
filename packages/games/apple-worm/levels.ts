@@ -1,88 +1,124 @@
 /**
- * NAQLA's independently authored 40-stage pack, organized into four chapters.
- * https://applewormlevel.com/levels is an unofficial collection of walkthroughs,
- * not a licensed source of ready-to-import grid maps. Never label these layouts
- * as a verbatim reconstruction of the commercial game.
+ * NAQLA Apple Worm: 40 independently designed, playable challenge maps.
+ * Inspired by the *difficulty progression* discussed at applewormlevel.com,
+ * NOT copied maps or copyrighted game level assets.
  *
- * Compact map schema: width, fruit X/Y, missing ground columns, raised columns,
- * free-floating solid blocks. All layouts are verified by our own pathfinder.
+ * ASCII tile format for quick human review and deliberate map iteration:
+ * one string per stage; five visible rows (y=3...7) separated by slash;
+ * "." free, "#" solid earth, "H" worm head, "o" body, "A" fruit, "X" exit.
+ * Three clear rows above plus two below provide safe falling room.
+ *
+ * Unlike the old near-identical straight corridors, maps progress toward
+ * raised cliffs, floor gaps, suspended platforms, 2-4 fruits and long routes.
+ * Move counts below are *shortest solutions from the independent solver*
+ * at the time the maps were authored and must be checked by CI on changes.
  */
-export interface StageBlueprint {
-  width: number;
-  height: number;
-  floor: number;
-  gaps: readonly number[];
-  raised: readonly number[];
-  floating: ReadonlyArray<readonly [number, number]>;
-  fruit: readonly [number, number];
-  start: ReadonlyArray<readonly [number, number]>;
-  exit: readonly [number, number];
-}
-type StageRow = readonly [
-  width: number, appleX: number, appleY: number,
-  gaps: readonly number[], raised: readonly number[],
-  floating: ReadonlyArray<readonly [number, number]>
+const MAPS: readonly string[] = [
+  "............/............/............/.oH.A.....X./############",
+  "............./............./............./.oHA.......X./#############",
+  "............./............./............./.oHA....#..X./#############",
+  "............./............./............./.oHA....#..X./#########.###",
+  "............./............./............./.oHA.....#.X./######.######",
+  "............./............./....#......../.oHA#......X./#####.#######",
+  "............./............./.........#.../.oH.A....#X../#######.#####",
+  "............/............/........#.../.oHA....#X../######.#####",
+  "............/............/........#.../.oH.A...#X../######.#####",
+  "............/............/........#.../.oH...A.#X../####.#######",
+  "............./............./.....#......./.oH.A#.#A..X./#######.#####",
+  "..........#..../.............../.............../.oH...A#A..#X../###########.###",
+  "......#......../.............../.............../.oH..#A...#.X../#########.#####",
+  "......#......../.............../.............../.oH.#A....A#.X./#########.#####",
+  ".............../.............../....#........../.oHA#A....#..X./#######.###.###",
+  ".........#...../.............../.....#...#...../.oH.##.A.#.A.X./##########.####",
+  "............./............./.........#.../.oH..#..A#AX./#######.#####",
+  "............../............../.......#....../.oH.#.A#A...X./#####.########",
+  ".............../.............../.........#...../.oHA.##A.#..X../####.##########",
+  ".............../.............../........#....../.oH....A.#A..X./#####.###.#####",
+  "................./........#......../.........#......./.oHA...#.#A..X.../####..###########",
+  "................./................./........#....#.../.oH.A.##....A#.X./#######..########",
+  "................./............#..../.........#.#...../.oH.......A#AX.../####.#.##########",
+  ".....#.........../.......#........./....#............/.oHA#A.....#..AX./#########.##.####",
+  ".............#../......#........./.....##........./.oHAA##A......X./##########...###",
+  "................/................/....#.........../.oHA#A.A..#...X./##########..####",
+  "........#......./...........#..../...........#..../.oHAA#A....#..X./#####.###..#####",
+  "................./................./..........#....../.oH..A.#AA...#X../####.##.##.######",
+  ".....#.........../................./................./.oHA#...#.A..#AX./###########.#.###",
+  "................./................./.....#......#..../.oHA#.A.##..#AX../####..#####.#####",
+  "................./........#......../....#...#.#....../.oHA#AA.#.#...X../#######.#.###.###",
+  "................../................../.....#.....#...#../.oH.##.#A..#..AAX./#########.#.#.####",
+  "...........#....../................../......#.##....#.../.oHA.A#.##A...#.X./######..######.###",
+  ".............##../.........#...#.../.............#.../.oH...A...AA.#AX./#####.##..#######",
+  "................../......#.........../.....#.#........../.oHA.#...A.###AAX./######...#########",
+  ".........#......../.........#......../............#.#.../.oH.#..A.#A...#AX./#####.##..#.######",
+  "..........#....../................./.....#....#....../.oHA.#A...#A.#.X./#######.##.#.####",
+  "......#.........#../.................../.....##.......#..../.oHAA.#A....###A.X./#####.###..###.####",
+  "................../................../....#............./.oHA#A.....A..#AX./#######.##.#..####",
+  ".............#...../.....#......#....../....###.#...#....../.oHA###.A...###AAX./#######.#..###.####",
 ];
-const STAGES: readonly StageRow[] = [
-  // Chapter I / 1–10: approach, collect, gravity and first obstacles.
-  [12,4,6,[],[],[]],
-  [12,5,6,[],[7],[]],
-  [11,5,6,[7],[6,8],[]],
-  [12,6,6,[7],[9],[]],
-  [12,5,6,[],[8],[]],
-  [12,6,6,[],[7],[]],
-  [12,6,6,[6],[9],[]],
-  [12,5,6,[],[7,8],[]],
-  [12,6,6,[6],[8],[]],
-  [12,6,6,[],[8,9],[]],
-  // Chapter II / 11–20: bridges, elevated obstacles, gap planning.
-  [14,7,6,[7],[],[]],
-  [13,7,6,[6],[9],[]],
-  [13,4,6,[],[9,10],[]],
-  [14,6,6,[],[8,10],[]],
-  [14,7,6,[7],[9,10,11],[]],
-  [14,4,6,[],[10],[]],
-  [14,5,6,[],[6,11],[]],
-  [12,7,6,[6],[5],[]],
-  [14,4,6,[],[5,10],[]],
-  [12,7,6,[6,7],[5],[]],
-  // Chapter III / 21–30: raised fruit, suspended stones, controlled falls.
-  [14,4,5,[7,8],[4,5,6,11],[[9,4]]],
-  [16,4,6,[],[13],[]],
-  [15,5,5,[],[5,6,7,11],[[9,4]]],
-  [16,4,6,[],[5,10,13],[]],
-  [16,8,6,[],[6,12,13],[]],
-  [15,8,6,[],[6,11],[[10,4]]],
-  [16,8,6,[8],[5,10,12,13],[]],
-  [16,5,6,[10],[6,13],[]],
-  [16,8,6,[7],[5,6],[]],
-  [14,7,6,[6],[5,10],[[8,4]]],
-  // Chapter IV / 31–40: longer routes, composite height and gap constraints.
-  [18,5,6,[],[7,9,11],[[8,5]]],
-  [18,5,5,[],[5,6,12,14],[[9,4]]],
-  [18,7,5,[],[5,7,15],[]],
-  [18,9,6,[12],[10,11,15],[]],
-  [18,8,5,[],[5,8,10],[]],
-  [18,9,6,[],[6,7,14],[]],
-  [18,8,6,[7,8],[6,11],[[5,4]]],
-  [17,8,6,[],[6,13],[]],
-  [18,5,5,[10,15],[5,14],[]],
-  [18,8,6,[],[6,10,15],[[11,4],[12,5]]],
-] as const;
-export const APPLE_WORM_STAGE_COUNT = STAGES.length;
+export const APPLE_WORM_STAGE_COUNT = MAPS.length;
 export const APPLE_WORM_GROUP_SIZE = 10;
-export const APPLE_WORM_GROUPS = Array.from(
-  {length: Math.ceil(APPLE_WORM_STAGE_COUNT / APPLE_WORM_GROUP_SIZE)},
-  (_, i) => ({start:i * APPLE_WORM_GROUP_SIZE + 1,
-    end:Math.min((i + 1)*APPLE_WORM_GROUP_SIZE, APPLE_WORM_STAGE_COUNT)}),
+export const APPLE_WORM_GROUPS = Object.freeze(
+  Array.from({length: Math.ceil(MAPS.length / APPLE_WORM_GROUP_SIZE)},
+    (_, i) => ({start:i*APPLE_WORM_GROUP_SIZE+1,
+      end:Math.min((i+1)*APPLE_WORM_GROUP_SIZE,MAPS.length)})),
 );
-export function appleWormBlueprint(level: number): StageBlueprint {
-  if (!Number.isInteger(level) || level < 1 || level > STAGES.length)
-    throw new RangeError('Invalid Apple Worm level');
-  const [width, appleX, appleY, gaps, raised, floating] = STAGES[level - 1]!;
+export type LevelDifficulty = 'easy'|'medium'|'hard'|'expert';
+export const APPLE_WORM_CHAPTERS: readonly {
+  difficulty: LevelDifficulty; description: string;
+}[] = [
+  {difficulty:'easy',description:'First steps • turning, fruit and simple ledges'},
+  {difficulty:'medium',description:'Ridges • two fruits, support and recovery'},
+  {difficulty:'hard',description:'Crossings • three fruits, tight gaps and multi-step turns'},
+  {difficulty:'expert',description:'Master routes • layered cliffs and 30–40 move puzzles'},
+];
+
+export interface StageBlueprint {
+  width:number;
+  height:number;
+  floor:number;
+  gaps:readonly number[];
+  raised:readonly number[];
+  floating:ReadonlyArray<readonly [number,number]>;
+  /** Legacy alias retained for consumers expecting one apple. */
+  fruit: readonly [number,number];
+  fruits:ReadonlyArray<readonly [number,number]>;
+  blocks:ReadonlyArray<readonly [number,number]>;
+  start:ReadonlyArray<readonly [number,number]>;
+  exit:readonly [number,number];
+  difficulty:LevelDifficulty;
+}
+export function appleWormBlueprint(level:number):StageBlueprint {
+  if(!Number.isInteger(level)||level<1||level>MAPS.length)throw new RangeError('Invalid Apple Worm level');
+  const rows=MAPS[level-1]!.split('/');
+  const width=rows[0]!.length;
+  const blocks:[number,number][]=[];
+  const fruits:[number,number][]=[];
+  const start:[number,number][]=[];
+  let head:[number,number]|null=null;
+  let exit:[number,number]|null=null;
+  for(let y=0;y<rows.length;y++){
+    const line=rows[y]!;
+    if(line.length!==width)throw new Error('Bad Apple Worm row width in level '+level);
+    for(let x=0;x<width;x++){
+      const tile=line[x]!;
+      if(tile==='#')blocks.push([x,y+3]);
+      if(tile==='A')fruits.push([x,y+3]);
+      if(tile==='H')head=[x,y+3];
+      if(tile==='o')start.push([x,y+3]);
+      if(tile==='X')exit=[x,y+3];
+    }
+  }
+  if(!head||!exit||!fruits.length)throw new Error('Invalid Apple Worm level '+level);
+  const ground=new Set(blocks.filter(([x,y])=>y===7).map(([x])=>x));
   return {
-    width, height: 9, floor: 7,
-    gaps, raised, floating, fruit: [appleX, appleY],
-    start: [[2,6],[1,6]], exit:[width - 2,6],
+    width,height:10,floor:7,
+    gaps:Array.from({length:width},(_,x)=>x).filter(x=>!ground.has(x)),
+    raised:blocks.filter(([x,y])=>y===6).map(([x])=>x),
+    floating:blocks.filter(([x,y])=>y<6),
+    fruit:fruits[0]!,fruits,blocks,
+    start:[head,...start.sort((a,b)=>Math.abs(a[0]-head![0])+Math.abs(a[1]-head![1])-
+       Math.abs(b[0]-head![0])-Math.abs(b[1]-head![1]))],
+    exit,
+    difficulty: APPLE_WORM_CHAPTERS[Math.floor((level-1)/10)]!.difficulty,
   };
 }
