@@ -37,16 +37,8 @@ async function exerciseSolo(page: Page, id: SoloId) {
     await expect(board).toBeVisible();
     await expect(board).toHaveAttribute('data-input', 'swipe');
     await expect(page.locator('.worm-pad')).toHaveCount(0);
-    const box = await board.boundingBox();
-    expect(box).not.toBeNull();
-    if (box) {
-      const y = box.y + box.height * .43;
-      await page.mouse.move(box.x + box.width * .35, y);
-      await page.mouse.down();
-      await page.mouse.move(box.x + box.width * .62, y, {steps: 5});
-      await page.mouse.up();
-    }
-    await expect(page.locator('.worm-stage-top')).toContainText(/1/);
+    await expect(page.locator('.worm-rotate-gate')).toBeVisible();
+    await expect(page.locator('.worm-game-level')).toContainText('01');
   } else if (id === 'basketballLine') {
     await expect(page.locator('.basketball-canvas')).toBeVisible();
     const c = page.locator('.basketball-canvas');
@@ -127,7 +119,9 @@ for (const locale of locales) {
             await expect(page.locator(config.scene)).toBeVisible();
             await exerciseSolo(page,id as SoloId);
             await expectNoGlobalOverflow(page);
-            const back=page.locator(config.root+' .button.secondary').first();
+            const back=id==='appleWorm'
+              ? page.locator('.worm-rotate-gate button')
+              : page.locator(config.root+' .button.secondary').first();
             await back.click();
             await expect(page.locator('.game-grid .game-card.'+id)).toBeVisible();
           } else {
