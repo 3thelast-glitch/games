@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
 import {
   WORM_LEVEL_COUNT, findWormSolution, moveWorm,
   restoreWorm, startWorm, wormLevel, type Direction, type WormState,
@@ -77,6 +77,11 @@ export function AppleWormPage({ onExit, settings }: { onExit: () => void; settin
   const [history, setHistory] = useState<WormState[]>([]);
   const [hint, setHint] = useState<Direction | null>(null);
   const [showLevels, setShowLevels] = useState(false);
+  useLayoutEffect(() => {
+    // Start at the actual game area, not the previously scrolled library card.
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
   useEffect(() => {
     let active = true;
     void storage.get<SavedWorm | null>(SAVE_KEY, null).then(saved => {
