@@ -12,7 +12,8 @@ test('Apple Worm has forty distinct, valid offline level layouts', () => {
     const board = wormLevel(level);
     const blocks = new Set(board.blocks.map(p => p.x + ':' + p.y));
     assert.equal(board.number, level);
-    assert.ok(!blocks.has(board.apple.x + ':' + board.apple.y), 'apple on ground: ' + level);
+    for(const apple of board.apples)
+      assert.ok(!blocks.has(apple.x + ':' + apple.y), 'apple on ground: ' + level);
     assert.ok(!blocks.has(board.portal.x + ':' + board.portal.y), 'portal on ground: ' + level);
     assert.ok(!board.start.some(p => blocks.has(p.x + ':' + p.y)));
     layouts.add(JSON.stringify([board.width, board.blocks, board.apple, board.portal, board.spikes]));
@@ -35,7 +36,8 @@ test('Apple Worm: each of the forty levels has a valid solution with gravity', (
     }
     assert.equal(state.phase, 'won', 'did not reach exit in level ' + level);
     assert.equal(state.eaten, true, 'did not eat apple in level ' + level);
-    assert.equal(state.body.length, 3, 'did not grow in level ' + level);
+    assert.equal(state.body.length, startWorm(level).body.length + wormLevel(level).apples.length,
+      'did not grow once per apple in level ' + level);
   }
 });
 
@@ -116,4 +118,52 @@ test('invalid pending-growth saves are rejected and old saves still load safely'
   assert.equal(restoreWorm(legacy)?.pendingGrowth,false);
   assert.equal(restoreWorm({...a,pendingGrowth:true}),null);
   assert.equal(restoreWorm({...a,pendingGrowth:'yes'}),null);
+});
+
+test('Apple Worm progression reflects planning complexity rather than just longer straight floors',()=>{
+ const solutions:number[][]=[[],[],[],[]];
+ const fruitCounts:number[]=[];
+ for(let level=1;level<=40;level++){
+  const board=wormLevel(level);
+  const solution=findWormSolution(startWorm(level));
+  assert.ok(solution, 'no winning route for stage '+level);
+  solutions[Math.floor((level-1)/10)]!.push(solution!.length);
+  fruitCounts.push(board.apples.length);
+  if(level>=14)assert.ok(board.apples.length>=2 || level===17 || level===19);
+  if(level>=31)assert.ok(board.apples.length>=3);
+ }
+ const mean=(a:number[])=>a.reduce((n,x)=>n+x,0)/a.length;
+ const a=solutions.map(mean);
+ assert.ok(a[0]!+4<a[1]!, 'medium group must be meaningfully harder than easy');
+ assert.ok(a[1]!+3<a[2]!, 'hard group must be harder than medium');
+ assert.ok(a[2]!+3<a[3]!, 'expert group must be harder than hard');
+ assert.ok(Math.max(...solutions[3]!)>=35, 'late game must contain 35+ move challenges');
+ assert.ok(Math.max(...fruitCounts)>=4,'later stages include 4-fruit routing');
+});
+test('collecting more than one fruit grows a permanent-head worm and exit only works after all fruit',()=>{
+ const target=14;
+ const board=wormLevel(target);
+ assert.ok(board.apples.length>=2);
+ let state=startWorm(target);
+ let picked=0;
+ const solution=findWormSolution(state,30000);
+ assert.ok(solution);
+ for(const direction of solution!){
+  const next=moveWorm(state,direction);
+  assert.notEqual(next,state);
+  const count=(next.collectedApples??[]).length;
+  if(count>picked){
+   assert.equal(count,picked+1);
+   assert.equal(next.body.length,state.body.length+1);
+   if(count<board.apples.length){
+    assert.equal(next.eaten,false,'must collect all before portal activates');
+    assert.equal(next.phase,'playing');
+   }
+   picked=count;
+  }
+  state=next;
+ }
+ assert.equal(picked,board.apples.length);
+ assert.equal(state.eaten,true);
+ assert.equal(state.phase,'won');
 });
