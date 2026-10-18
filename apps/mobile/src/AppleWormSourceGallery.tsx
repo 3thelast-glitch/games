@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import {
   APPLE_WORM_VISUAL_SNAPSHOT_COUNT,
   appleWormVisualSnapshot,
@@ -96,7 +96,7 @@ export function AppleWormSourceGallery({lang,onClose}:Props) {
   </div>;
 }
 
-const buttonStyle:React.CSSProperties={
+const buttonStyle:CSSProperties={
   background:'#28546c',color:'white',padding:'8px 12px',borderRadius:8,
   border:'1px solid #86aab8',cursor:'pointer',fontWeight:600,
 };
