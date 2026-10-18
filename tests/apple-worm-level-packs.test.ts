@@ -19,17 +19,17 @@ test('40 new blueprint layouts are bounded and unique, with no old synthetic-sta
   const blueprint=appleWormBlueprint(level);
   const board=wormLevel(level);
   assert.equal(board.number,level);
-  assert.equal(board.height,9);
+  assert.equal(board.height,10);
   assert.ok(board.width>=11);
   const blocks=new Set(board.blocks.map(p=>p.x+':'+p.y));
   assert.equal(blocks.size,board.blocks.length);
-  assert.ok(!blocks.has(board.apple.x+':'+board.apple.y));
+  for(const apple of board.apples)assert.ok(!blocks.has(apple.x+':'+apple.y));
   assert.ok(!blocks.has(board.portal.x+':'+board.portal.y));
   assert.ok(board.blocks.every(p=>p.x>=0&&p.x<board.width&&p.y>=0&&p.y<board.height));
   assert.ok(board.start.every(p=>!blocks.has(p.x+':'+p.y)));
   assert.deepEqual(startWorm(level).body,board.start);
   assert.deepEqual(board.apple,{x:blueprint.fruit[0],y:blueprint.fruit[1]});
-  const signature=JSON.stringify([board.blocks,board.apple,board.portal,board.width]);
+  const signature=JSON.stringify([board.blocks,board.apples,board.portal,board.width]);
   assert.ok(!seen.has(signature),'duplicate stage '+level);
   seen.add(signature);
  }
