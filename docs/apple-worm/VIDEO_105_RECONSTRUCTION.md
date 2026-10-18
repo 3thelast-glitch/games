@@ -46,3 +46,14 @@ Start with 1–10, then 11–25, 26–50, 51–75, 76–100, 101–105. Do not p
 - `apps/mobile/src/AppleWormPage.tsx`: live stage save namespace is still `apple-worm-curated-40-v3`; preserve existing player saves during a future migration.
 
 This PR remains intentionally **DRAFT** until the gameplay maps, physics and matching tests are real.
+
+
+## Implementation checkpoint: first ten *source-traced map blueprints* (2026-10-18)
+The first ten stage-entry frames were extracted directly from the MP4 (source timestamps: 0, 8.50, 16.60, 26.70, 40.50, 55.00, 65.80, 78.40, 100.70, 111.90 seconds). The following are **real reconstructed maps**, not the previously authored generic corridor levels:
+
+- `packages/games/apple-worm/video-traced-stages.ts`: per-stage 21×9 map grids, three ordered worm segments, apple coordinates, exit coordinates, source timestamps, and clear route/gameplay **unverified** flags. Stage 1 is zero-fruit and L-shaped. Stage 3 has two detached three-cell platforms. Stage 6 has a suspended exit. Stage 8's exit is beneath the right platform.
+- `tests/apple-worm-video-traced-stages.test.ts`: geometry/schema bounds, no impossible overlaps, connected source worm starts, independent stage terrain distinctness and special source-specific assertions.
+
+Grid tracing compared each ground tile's 9×9 pixel center against brown foreground threshold from its actual unoccluded entry video screenshot; all **10 × 21 × 8** sampled terrain cells matched in that specific check. This does NOT prove sprite-by-sprite pixel fidelity, complete 105 maps, realistic gravity, object interactions, or winning paths.
+
+The ten source-versus-reconstructed image sheets and machine-readable manifest have been delivered separately for inspection. The live `levels.ts` still uses the old 40 independently generated stages and the live game was **not updated** to run these new blueprints, because stage-1 zero-apple physics and stage-2 vertical biting differ from the existing engine and source solution routes have not yet been replayed. Do not merge or publish as 105 playable stages.
