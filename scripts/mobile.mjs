@@ -49,9 +49,10 @@ for (const platform of platforms) {
     const javaDir = 'android/app/src/main/java/com/boardarena/app';
     mkdirSync(javaDir, { recursive: true });
     copyFileSync('native/lan/android/BoardArenaLanPlugin.java', `${javaDir}/BoardArenaLanPlugin.java`);
+    copyFileSync('native/immersive/android/NaqlaOrientationPlugin.java', `${javaDir}/NaqlaOrientationPlugin.java`);
     writeFileSync(
       `${javaDir}/MainActivity.java`,
-      `package com.boardarena.app;\n\nimport android.os.Bundle;\nimport com.getcapacitor.BridgeActivity;\n\npublic class MainActivity extends BridgeActivity {\n  @Override\n  public void onCreate(Bundle savedInstanceState) {\n    registerPlugin(BoardArenaLanPlugin.class);\n    super.onCreate(savedInstanceState);\n  }\n}\n`,
+      `package com.boardarena.app;\n\nimport android.os.Bundle;\nimport com.getcapacitor.BridgeActivity;\n\npublic class MainActivity extends BridgeActivity {\n  @Override\n  public void onCreate(Bundle savedInstanceState) {\n    registerPlugin(BoardArenaLanPlugin.class);\n    registerPlugin(NaqlaOrientationPlugin.class);\n    super.onCreate(savedInstanceState);\n  }\n}\n`,
     );
   } else {
     const path = 'ios/App/App/Info.plist';
@@ -73,6 +74,14 @@ for (const platform of platforms) {
       <key>NSBonjourServices</key>
       <array><string>_boardarena._tcp</string></array>`,
       );
+    // Let the game request landscape on iOS, then restore the portrait NAQLA library.
+    // Keep iPad orientation metadata intact; native bridge controls the active controller mask.
+    if (!plist.includes('<string>UIInterfaceOrientationLandscapeLeft</string>')) {
+      plist = plist.replace(
+        /(<key>UISupportedInterfaceOrientations<\/key>\s*<array>)/,
+        '$1\n        <string>UIInterfaceOrientationLandscapeLeft</string>\n        <string>UIInterfaceOrientationLandscapeRight</string>',
+      );
+    }
     writeFileSync(path, plist);
 
     writeFileSync(
