@@ -31,3 +31,15 @@ test('every level 1–105 has a decoded frame-based terrain evidence mask, not a
   assert.throws(()=>appleWormSourceTerrainCandidate(0),RangeError);
   assert.throws(()=>appleWormSourceTerrainCandidate(106),RangeError);
 });
+
+test('brick sprite mortar is not mistaken for empty ground in level 48',()=>{
+  const stage=appleWormSourceTerrainCandidate(48);
+  assert.equal(stage.cells[8]![8],'#');
+  assert.equal(stage.cells[8]![10],'#');
+  assert.equal(stage.cells[8]![12],'#');
+  assert.equal(stage.readyForLiveGame,false);
+});
+test('source level 101 can legitimately have no solid ground (apples are separate objects)',()=>{
+  const stage=appleWormSourceTerrainCandidate(101);
+  assert.ok(stage.cells.every(row=>!row.includes('#')));
+});
