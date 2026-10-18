@@ -5,8 +5,8 @@ import {
   type Direction,
 } from '../packages/games/apple-worm/engine.ts';
 
-test('Apple Worm has thirty distinct, valid original offline levels', () => {
-  assert.equal(WORM_LEVEL_COUNT, 30);
+test('Apple Worm has forty distinct, valid offline level layouts', () => {
+  assert.equal(WORM_LEVEL_COUNT, 40);
   const layouts = new Set<string>();
   for (let level = 1; level <= WORM_LEVEL_COUNT; level++) {
     const board = wormLevel(level);
@@ -17,12 +17,12 @@ test('Apple Worm has thirty distinct, valid original offline levels', () => {
     assert.ok(!board.start.some(p => blocks.has(p.x + ':' + p.y)));
     layouts.add(JSON.stringify([board.width, board.blocks, board.apple, board.portal, board.spikes]));
   }
-  assert.equal(layouts.size, 30);
+  assert.equal(layouts.size, 40);
   assert.throws(() => wormLevel(0), RangeError);
-  assert.throws(() => wormLevel(31), RangeError);
+  assert.throws(() => wormLevel(41), RangeError);
 });
 
-test('Apple Worm: each of the thirty levels has a valid solution with gravity', () => {
+test('Apple Worm: each of the forty levels has a valid solution with gravity', () => {
   for (let level = 1; level <= WORM_LEVEL_COUNT; level++) {
     let state = startWorm(level);
     const solution = findWormSolution(state);
