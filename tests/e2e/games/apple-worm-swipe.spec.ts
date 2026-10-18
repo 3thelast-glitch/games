@@ -39,6 +39,16 @@ for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:
     }
     const board=page.locator('.worm-board');
     await expect(board).toHaveCSS('touch-action','none');
+    await expect(page.locator('body > .worm-immersive.worm-page')).toBeVisible();
+    // Regression for the actual screenshot: former 204px NAQLA sidebar offset
+    // left an empty blue strip. The game must paint the leftmost screen pixel.
+    await expect.poll(async()=>page.evaluate(() => {
+      const stage=document.querySelector('body > .worm-immersive');
+      const rect=stage?.getBoundingClientRect();
+      const painted=document.elementFromPoint(2,innerHeight/2);
+      return Boolean(rect && Math.abs(rect.left)<1 && rect.right>=innerWidth-1 &&
+        painted?.closest('.worm-immersive')===stage);
+    })).toBe(true);
     await expect.poll(async()=>board.evaluate(svg=>{
       const element=svg as SVGSVGElement;
       const rect=element.getBoundingClientRect();

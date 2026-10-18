@@ -136,3 +136,45 @@ html[data-immersive-game="appleWorm"],html[data-immersive-game="appleWorm"] body
   .worm-immersive .worm-apple-glow,.worm-immersive .worm-portal-ready,
   .worm-immersive .worm-character{animation:none!important}
 }
+
+
+/* Immersive world is portalled to <body>, never constrained by the library
+   sidebar's 204px grid offset, RTL wrappers or safe-area margins. */
+body > .worm-immersive.worm-page {
+  position:fixed!important;top:0!important;bottom:0!important;left:0!important;right:0!important;
+  inset:0!important;transform:none!important;
+  width:100vw!important;height:100dvh!important;max-width:none!important;
+  min-width:100vw!important;min-height:100dvh!important;margin:0!important;
+  padding:0!important;border:0!important;
+  overflow:hidden!important;z-index:2147480000!important;
+}
+body > .worm-immersive .worm-fullstage,body > .worm-immersive .worm-playfield,
+body > .worm-immersive .worm-board{inset:0!important;width:100%!important;height:100%!important}
+.worm-character-biting .worm-mouth{
+  transform-box:fill-box;transform-origin:50% 0%;
+  animation:worm-bite-open .6s ease-in-out both;
+}
+@keyframes worm-bite-open{
+  0%{transform:scaleY(1)}
+  17%{transform:scaleY(2.25) translateY(-3px)}
+  38%{transform:scaleY(.45) translateY(3px)}
+  53%{transform:scaleY(1.8) translateY(-2px)}
+  72%{transform:scaleY(.5)}
+  100%{transform:scaleY(1)}
+}
+.worm-apple-bite-fx{pointer-events:none;animation:worm-fruit-bite .6s ease-out both}
+@keyframes worm-fruit-bite{
+  0%,16%{opacity:1;filter:brightness(1);transform:none}
+  30%{opacity:1;filter:brightness(1.4)}
+  62%{opacity:.68;filter:brightness(1.3)}
+  100%{opacity:0;filter:brightness(1.5)}
+}
+.worm-apple-crumbs{animation:worm-fruit-burst .6s cubic-bezier(.12,.8,.35,1) both;transform-box:fill-box;transform-origin:center}
+@keyframes worm-fruit-burst{
+  0%,15%{opacity:0;scale:.45}
+  27%{opacity:1;scale:1.2}
+  100%{opacity:0;scale:1.6}
+}
+@media(prefers-reduced-motion:reduce){
+  .worm-character-biting .worm-mouth,.worm-apple-bite-fx,.worm-apple-crumbs{animation:none!important}
+}

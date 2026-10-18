@@ -224,15 +224,15 @@ export function WormPortal({ x, y, tile = 48, ready = false }: {
       cy={Math.sin(a*Math.PI/180)*(r+1.3)} r="2" fill="#fff1c5"/>)}
   </g>;
 }
-export function WormCharacter({ body, tile = 48, id }: {
-  body: Point[]; tile?: number; id: string;
+export function WormCharacter({ body, tile = 48, id, bite = false }: {
+  body: Point[]; tile?: number; id: string; bite?: boolean;
 }) {
   if(!body.length)return null;
   const outline=cellContour(body,tile,.31);
   const head=body[0]!,neck=body[1]??{x:head.x-1,y:head.y};
   const angle=head.x<neck.x?180:head.y<neck.y?-90:head.y>neck.y?90:0;
   const hx=(head.x+.5)*tile,hy=(head.y+.5)*tile,c=tile/48;
-  return <g className="worm-character" aria-hidden="true">
+  return <g className={bite ? "worm-character worm-character-biting" : "worm-character"} aria-hidden="true">
     <defs>
       <radialGradient id={id+'-green'} cx=".35" cy=".18" r=".79">
         <stop stopColor="#c4ff70"/><stop offset=".24" stopColor="#79e94a"/>
@@ -270,9 +270,11 @@ export function WormCharacter({ body, tile = 48, id }: {
       <ellipse cx="13" cy="-6" rx="10.2" ry="13.4" fill="#fff" stroke="#31583e" strokeWidth="1.8"/>
       <circle cx="-1" cy="-5" r="5.9" fill="#202d35"/><circle cx="17" cy="-5" r="5.9" fill="#202d35"/>
       <circle cx="1" cy="-9" r="2" fill="#fff"/><circle cx="19" cy="-9" r="2" fill="#fff"/>
-      <path d="M1 9Q12 4 20 12Q21 22 11 22Q2 20 1 9Z"
-        fill="#812846" stroke="#663044" strokeWidth="1.8"/>
-      <path d="M8 17Q13 12 19 18" stroke="#fa8fa0" strokeWidth="3.2" fill="none" strokeLinecap="round"/>
+      <g className="worm-mouth">
+        <path d="M1 9Q12 4 20 12Q21 22 11 22Q2 20 1 9Z"
+          fill="#812846" stroke="#663044" strokeWidth="1.8"/>
+        <path d="M8 17Q13 12 19 18" stroke="#fa8fa0" strokeWidth="3.2" fill="none" strokeLinecap="round"/>
+      </g>
       <ellipse cx="-15" cy="9" rx="4" ry="2.4" fill="#f29b79" opacity=".63"/>
     </g>
   </g>;
