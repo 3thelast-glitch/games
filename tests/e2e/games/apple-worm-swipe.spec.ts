@@ -26,6 +26,8 @@ for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:
     await expect(board).toHaveCSS('touch-action','none');
     const count=page.locator('.worm-stage-top > span');
     await expect(count).toContainText('0');
+    // Native touch dispatch only accepts viewport-visible coordinates.
+    await board.scrollIntoViewIfNeeded();
     const rect=await board.boundingBox();
     expect(rect).not.toBeNull();
     if(!rect)throw new Error('No Apple Worm board geometry');
