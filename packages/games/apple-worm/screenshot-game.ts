@@ -27,6 +27,8 @@ export interface ScreenshotLevel {
   readonly grayObjects:readonly ScreenshotPoint[];
   readonly canMove:boolean;
   readonly issues:readonly string[];
+  /** The PDF reference is approved; this is not a claim of visual parity. */
+  readonly referenceFrameApproved:true;
   readonly sourceGeometry:'screenshot';
   readonly exactPhysicsVerified:false;
   readonly exactVisualComparisonPassed:false;
@@ -52,7 +54,7 @@ const touching=(a:ScreenshotPoint,b:ScreenshotPoint)=>
  * Only an unambiguous non-branching chain is eligible for moving.
  * The choice of head is an unverified heuristic, never a source-fidelity claim.
  */
-function traceVisibleWorm(points:readonly ScreenshotPoint[]):ScreenshotPoint[]|null {
+function traceVisibleWorm(points:readonly ScreenshotPoint[], preferredHead?:ScreenshotPoint):ScreenshotPoint[]|null {
   if(!points.length)return null;
   const unique=new Map(points.map(p=>[key(p),p]));
   if(unique.size!==points.length)return null;
@@ -60,8 +62,11 @@ function traceVisibleWorm(points:readonly ScreenshotPoint[]):ScreenshotPoint[]|n
   const endpoints=points.filter(p=>points.filter(q=>touching(p,q)).length===1);
   if(endpoints.length!==2 ||
     points.some(p=>points.filter(q=>touching(p,q)).length>2))return null;
-  // Prefer the extreme right-most endpoint (a guess; direction must be audited).
-  const candidates=endpoints.sort((a,b)=>b[0]-a[0]||a[1]-b[1]);
+  // Stage 2's PDF frame visibly faces right from the top of the green bend;
+  // the old rightmost-endpoint heuristic wrongly put the head at its lower tail.
+  const candidates=endpoints.sort((a,b)=>
+    (preferredHead&&eq(a,preferredHead)?-1:preferredHead&&eq(b,preferredHead)?1:0)||
+    b[0]-a[0]||a[1]-b[1]);
   const chain:ScreenshotPoint[]=[candidates[0]!];
   const visited=new Set([key(chain[0]!)]);
   while(chain.length<points.length){
@@ -75,7 +80,20 @@ function traceVisibleWorm(points:readonly ScreenshotPoint[]):ScreenshotPoint[]|n
 }
 export function screenshotWormLevel(level:number):ScreenshotLevel {
   const source=appleWormVisualSnapshot(level);
-  const worm=traceVisibleWorm(source.wormVisible);
+  // Some screenshots have a uniquely visible forward-facing mouth which
+  // the generic rightmost-endpoint guess cannot infer (stages 2 and 59).
+  // Four green cells may mutually touch in a 2x2 area even when the
+  // actual body follows a U bend. In those two screenshots the mouth is
+  // visible, so preserve the pictured head-to-tail path instead of
+  // rejecting the worm as a loop.
+  const picturedOrder:readonly ScreenshotPoint[]|null=level===80
+    ?[[9,5],[10,5],[11,5],[11,6],[10,6]]
+    :level===99?[[3,2],[3,3],[3,4],[4,4],[4,3]]:null;
+  const manualMatches=picturedOrder!==null&&picturedOrder.length===source.wormVisible.length&&
+    picturedOrder.every(p=>source.wormVisible.some(q=>eq(p,q)))&&
+    picturedOrder.every((p,i)=>i===0||touching(p,picturedOrder[i-1]!));
+  const worm=manualMatches?[...picturedOrder!]:traceVisibleWorm(source.wormVisible,
+    level===2?[6,3]:level===59?[8,-2]:undefined);
   // The first 10 exits were manually traced from the walkthrough, and are
   // more reliable than the still-image portal detector when it misses a swirl.
   const portal=source.probablePortal??(level<=10?appleWormVideoTracedStage(level).exit:null);
@@ -83,7 +101,8 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
   if(!worm)issues.push('worm-shape-unresolved');
   else if(worm.length===1)issues.push('single-segment-snapshot');
   if(!portal)issues.push('portal-unresolved');
-  if(portal && (portal[1]<0||portal[1]>=9))issues.push('portal-outside-play-grid');
+  if(portal && portal[1]<0)issues.push('portal-above-terrain-grid');
+  if(portal && portal[1]>=9)issues.push('portal-below-terrain-grid');
   if(source.grayObjectsVisible.length)issues.push('gray-object-mechanics-unresolved');
   if(!source.applesVisible.length)issues.push('no-apples-visible-in-frame');
   issues.push('starting-head-and-physics-unverified');
@@ -96,7 +115,7 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
     grayObjects:source.grayObjectsVisible,
     canMove:worm!==null,
     issues,
-    sourceGeometry:'screenshot',
+    sourceGeometry:'screenshot',referenceFrameApproved:true,
     exactPhysicsVerified:false,exactVisualComparisonPassed:false,
   };
 }
@@ -107,7 +126,9 @@ export function startScreenshotWorm(level=1):ScreenshotState {
     collected:[],phase:'playing',moves:0,
   };
 }
-const onBoard=([x,y]:ScreenshotPoint)=>x>=0&&x<21&&y>=-2&&y<9;
+// Original 640x360 contact frames can show a spiral above the ground
+// rows (y=-2) or at the lower visible edge (y=9). Keep 9 terrain rows.
+const onBoard=([x,y]:ScreenshotPoint)=>x>=0&&x<21&&y>=-2&&y<=9;
 export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDirection):ScreenshotState {
   if(state.phase!=='playing'||!Object.prototype.hasOwnProperty.call(DELTAS,direction))return state;
   const stage=screenshotWormLevel(state.level);
@@ -137,7 +158,7 @@ export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDir
     while(!supported()){
       const falling:ScreenshotPoint[]=body.map(([x,y]):ScreenshotPoint=>[x,y+1]);
       if(remaining.some(p=>falling.some(b=>eq(b,p))))break;
-      if(falling.some(p=>p[1]>=9||p[0]<0||p[0]>=21)){
+      if(falling.some(p=>p[1]>9||p[0]<0||p[0]>=21)){
         // Keep the last in-bounds pose so losing states still restore safely.
         phase='lost';break;
       }

@@ -25,7 +25,9 @@ export interface AppleWormVisualSnapshot {
   wormVisible:readonly (readonly [number,number])[];
   grayObjectsVisible:readonly (readonly [number,number])[];
   probablePortal:readonly [number,number] | null;
-  /** Selected image frame might be mid-play, not level start. */
+  /** The uploaded PDF frame is the user's approved target for in-game presentation. */
+  referenceFrameApproved:true;
+  /** Selected image frame might be mid-play, not original video level start. */
   snapshotIsOriginalLevelStart:false;
   /** No move sequence has been matched with the source winning route. */
   gameplayAndSolutionVerified:false;
@@ -46,6 +48,7 @@ export function appleWormVisualSnapshot(level:number):AppleWormVisualSnapshot {
     wormVisible:objects.visibleWormCells,
     grayObjectsVisible:objects.grayObstacleCandidates,
     probablePortal:objects.probablePortal,
+    referenceFrameApproved:true,
     snapshotIsOriginalLevelStart:false,
     gameplayAndSolutionVerified:false,
     readyForLiveGame:false,

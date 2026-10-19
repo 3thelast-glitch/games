@@ -52,7 +52,7 @@ for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:
           return Math.abs(view.width/view.height-b.width/b.height);
         })).toBeLessThan(.02);
         const first=board.locator('[data-source-worm]');
-        await expect(first).toHaveAttribute('transform',/^translate\(165 /);
+        await expect(first).toHaveAttribute('transform',/^translate\(183 /);
         const rect=await board.boundingBox();
         expect(rect).not.toBeNull();
         if(!rect)throw Error('No source stage board');
@@ -73,9 +73,9 @@ for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:
           await page.mouse.move(end,y,{steps:8});
           await page.mouse.up();
         }
-        await expect(first).toHaveAttribute('transform',/^translate\(195 /);
+        await expect(first).toHaveAttribute('transform',/^translate\(213 /);
         await game.getByRole('button',{name:locale.id==='ar'?'تراجع':'Undo'}).click();
-        await expect(first).toHaveAttribute('transform',/^translate\(165 /);
+        await expect(first).toHaveAttribute('transform',/^translate\(183 /);
 
         const choose=game.locator('button[aria-expanded]');
         await choose.click();

@@ -136,7 +136,7 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
 
   return createPortal(
     <main className="worm-page worm-immersive worm-source-play" dir={ar?'rtl':'ltr'} data-display="immersive-landscape"
-      data-stage-origin="user-screenshot" data-source-stage-count={APPLE_WORM_SCREENSHOT_LEVEL_COUNT}
+      data-stage-origin="user-screenshot" data-pdf-reference="approved" data-source-stage-count={APPLE_WORM_SCREENSHOT_LEVEL_COUNT}
       style={{position:'fixed',inset:0,zIndex:1100,overflowY:'auto',padding:'env(safe-area-inset-top) 10px env(safe-area-inset-bottom)',
         boxSizing:'border-box',background:'linear-gradient(180deg,#193c59,#326181)',color:'white'}}>
       <section aria-label={t('Apple Worm original stages','مراحل دودة التفاح من الصور')}
@@ -176,11 +176,11 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
                 {completed.includes(n)?'✓':''}{n}
               </button>)}
           </div>
-          <small style={{color:'#e7cba8'}}>{t('All screenshot references remain selectable because some missing exit data prevents reliable progression.',
-            'كل المراحل متاحة للاختيار لأن بعض المخارج الناقصة تمنع التقدم الطبيعي.')}</small>
+          <small style={{color:'#e7cba8'}}>{t('All 105 stages follow the numbering of the supplied PDF.',
+            'المراحل الـ105 مرتبة بنفس ترتيب صور ملف PDF.')}</small>
         </div>}
         <svg role="img" aria-label={t('Swipe Apple Worm board','اسحب لتحريك الدودة')}
-          viewBox="0 0 630 270" data-source-level={level} preserveAspectRatio="xMidYMid meet"
+          viewBox="0 0 640 360" data-source-level={level} preserveAspectRatio="xMidYMid meet"
           onPointerDown={begin} onPointerUp={finish}
           onPointerCancel={()=>{swiping.current=null;}}
           onLostPointerCapture={()=>{swiping.current=null;}}
@@ -209,9 +209,12 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
           <button type="button" onClick={()=>pick(Math.min(105,level+1))}
             disabled={level>=105} style={buttonStyle}>{t('Next','التالي')} →</button>
         </div>
-        {!!board.issues.length&&<p role="note" style={{margin:'2px 0',textAlign:'center',
+        {(!board.portal||!board.canMove)&&<p role="status" style={{margin:'2px 0',textAlign:'center',
           fontSize:11,color:'#efcda5'}}>
-          {t('Reference gaps','بيانات مرجعية غير مكتملة')}: {board.issues.join(' · ')}
+          {!board.portal?t('Exit position not yet reconstructed for this PDF frame.',
+            'لم يُحدد موقع المخرج في تنفيذ اللعبة لهذه الصورة بعد.'):
+            t('Worm controls need reconstruction for this PDF frame.',
+            'يحتاج موضع الدودة في تنفيذ اللعبة إلى تصحيح لهذه الصورة.')}
         </p>}
         <footer style={{display:'flex',justifyContent:'center',gap:7,flexWrap:'wrap'}}>
           <button type="button" style={buttonStyle} onClick={onLegacy}>

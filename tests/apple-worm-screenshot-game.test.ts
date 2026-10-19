@@ -28,6 +28,7 @@ test('all 105 source snapshots load as actual gameplay geometry with zero invent
     assert.equal(state.moves,0);
     assert.equal(state.phase,'playing');
     assert.equal(board.sourceGeometry,'screenshot');
+    assert.equal(board.referenceFrameApproved,true);
     assert.equal(board.exactPhysicsVerified,false);
     assert.equal(board.exactVisualComparisonPassed,false);
     assert.deepEqual(new Set(state.body.map(key)),new Set(source.wormVisible.map(key)));
@@ -42,8 +43,8 @@ test('all 105 source snapshots load as actual gameplay geometry with zero invent
         'never mutate original snapshot initial pose');
     }
   }
-  assert.ok(motionCapable>=90,'the archive should support motion for most distinct worm shapes');
-  assert.ok(unresolvedPortals>0,'must not fill missing portals with invented exits');
+  assert.equal(motionCapable,105,'all PDF screenshot worms must have an ordered visible pose');
+  assert.equal(unresolvedPortals,3,'keep unsighted exits unresolved instead of inventing them');
   assert.deepEqual(screenshotWormLevel(2).portal,[13,2]);
   assert.deepEqual(screenshotWormLevel(4).portal,[14,1]);
   assert.throws(()=>screenshotWormLevel(0),RangeError);
@@ -54,6 +55,8 @@ test('post-apple stage 2 stays exactly as pictured, no phantom apples',()=>{
   assert.equal(board.apples.length,0);
   assert.equal(board.issues.includes('no-apples-visible-in-frame'),true);
   assert.equal(startScreenshotWorm(2).body.length,board.worm.length);
+  assert.deepEqual(board.worm[0],[6,3], 'head faces from upper bend in Level 002 reference');
+  assert.deepEqual(board.portal,[13,2], 'exit sits above right-side platform');
 });
 test('stage 48 retains all visible apples and all six gray unknown objects',()=>{
   const map=screenshotWormLevel(48);
@@ -61,12 +64,55 @@ test('stage 48 retains all visible apples and all six gray unknown objects',()=>
   assert.equal(map.grayObjects.length,6);
   assert.ok(map.issues.includes('gray-object-mechanics-unresolved'));
 });
-test('stage 101 does not invent a portal for an image showing many apples',()=>{
+test('stage 101 does not treat video UI icons as a source portal',()=>{
   const map=screenshotWormLevel(101);
   assert.equal(map.apples.length,12);
   assert.equal(map.portal,null);
   assert.ok(map.issues.includes('portal-unresolved'));
+  assert.equal(map.exactVisualComparisonPassed,false);
 });
+test('green worm bodies on screenshots 59 91 95 are now movable',()=>{
+  const expectedHeads:[[number,number],number][]=[[[8,-2],59],[[13,-1],91],[[10,7],95]];
+  for(const [head,level] of expectedHeads){
+    const board=screenshotWormLevel(level);
+    assert.equal(board.canMove,true,'PDF worm must be playable on level '+level);
+    assert.deepEqual(board.worm[0],head);
+    const state=startScreenshotWorm(level);
+    assert.deepEqual(state.body[0],head);
+  }
+});
+test('overlapping U-shaped worms remain ordered and movable on levels 80 and 99',()=>{
+  const expected=new Map<number,readonly (readonly[number,number])[]>([
+    [80,[[9,5],[10,5],[11,5],[11,6],[10,6]]],
+    [99,[[3,2],[3,3],[3,4],[4,4],[4,3]]],
+  ]);
+  for(const [n,body] of expected){
+    const level=screenshotWormLevel(n);
+    assert.equal(level.canMove,true);
+    assert.deepEqual(level.worm,body);
+    assert.deepEqual(startScreenshotWorm(n).body,body);
+  }
+});
+test('exit candidates on the bottom source-image edge remain addressable',()=>{
+  for(const n of [73,100]){
+    const board=screenshotWormLevel(n);
+    assert.deepEqual(board.portal,[6,9]);
+    assert.ok(board.issues.includes('portal-below-terrain-grid'));
+    assert.equal(board.height,9);
+  }
+});
+test('entering the bottom-edge portal counts as winning, without eating any fruit',()=>{
+  for(const level of [73,100]){
+    const near={...startScreenshotWorm(level),body:[[5,9],[4,9]] as const,collected:[] as number[]};
+    const reached=moveScreenshotWorm(near,'right');
+    assert.notEqual(reached,near);
+    assert.equal(reached.phase,'won', 'bottom-edge exit must be usable for level '+level);
+    assert.deepEqual(reached.body[0],[6,9]);
+    assert.deepEqual(reached.collected,[]);
+    assert.deepEqual(restoreScreenshotWorm(reached),reached);
+  }
+});
+
 test('state restoration validates source levels, coordinates and collected indexes',()=>{
   const initial=startScreenshotWorm(1);
   assert.deepEqual(restoreScreenshotWorm(initial),initial);
@@ -107,4 +153,21 @@ test('screenshot stage 1 has an actual playable route on provisional rules',()=>
   assert.deepEqual(current.body[0],[14,4]);
   assert.deepEqual(current.collected,[]);
   assert.deepEqual(restoreScreenshotWorm(current),current);
+});
+
+test('PDF Level 002 has a reproducible winning route without any apples',()=>{
+  const board=screenshotWormLevel(2);
+  assert.equal(board.apples.length,0,'the supplied Level 002 frame shows no apple');
+  assert.deepEqual(board.portal,[13,2]);
+  const moves=['right','right','right','up','up','up',
+    'right','right','right','right'] as const;
+  let state=startScreenshotWorm(2);
+  for(const direction of moves){
+    const next=moveScreenshotWorm(state,direction);
+    assert.notEqual(next,state,'blocked Level 002 move: '+direction);
+    state=next;
+  }
+  assert.equal(state.phase,'won');
+  assert.deepEqual(state.body[0],board.portal);
+  assert.deepEqual(state.collected,[]);
 });

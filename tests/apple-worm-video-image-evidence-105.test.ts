@@ -24,7 +24,7 @@ test('all 105 screenshots yield bounded object candidates, without falsely certi
       assert.equal(coord.length,2);
       const [x,y]=coord;
       assert.ok(Number.isInteger(x)&&x>=0&&x<=20,`stage ${n} x`);
-      assert.ok(Number.isInteger(y)&&y>=-2&&y<=8,`stage ${n} y`);
+      assert.ok(Number.isInteger(y)&&y>=-2&&y<=9,`stage ${n} y`);
     }
     hasApples+=+(s.visibleApples.length>0);
     hasWorm+=+(s.visibleWormCells.length>0);
@@ -33,9 +33,9 @@ test('all 105 screenshots yield bounded object candidates, without falsely certi
   }
   assert.equal(images.size,105);
   assert.equal(hasApples,97);
-  assert.equal(hasWorm,102);
+  assert.equal(hasWorm,105,'recovered three initially unrecognized worms by manual PDF review');
   assert.equal(hasGray,69);
-  assert.equal(hasExit,47);
+  assert.equal(hasExit,102,'three UI-overlay-only frames must not receive invented exits');
   assert.throws(()=>appleWormImageEvidence(0),RangeError);
   assert.throws(()=>appleWormImageEvidence(106),RangeError);
 });
@@ -45,6 +45,7 @@ test('stage 2 screenshot is post-apple: image analysis must not call that a zero
   assert.equal(stage.visibleApples.length,0);
   assert.equal(stage.visibleWormCells.length,4); // Apple already consumed in still
   assert.equal(stage.sourceInitialStateVerified,false);
+  assert.deepEqual(stage.probablePortal,[13,2], 'PDF Level 002 exit above the L');
 });
 
 test('high stages with many apples and saws retain independently visible objects',()=>{
@@ -55,5 +56,17 @@ test('high stages with many apples and saws retain independently visible objects
   const s101=appleWormImageEvidence(101);
   assert.equal(s101.visibleApples.length,12); // two 6-apple rows in still
   assert.equal(s101.visibleWormCells.length,3);
-  assert.equal(s101.probablePortal,null); // not visible in that still, not truly absent
+  assert.equal(s101.probablePortal,null); // black UI near WatchON is not an exit
+  assert.equal(appleWormImageEvidence(70).probablePortal,null);
+  assert.equal(appleWormImageEvidence(95).probablePortal,null);
+  assert.deepEqual(appleWormImageEvidence(73).probablePortal,[6,9]); // lower edge
+  assert.deepEqual(appleWormImageEvidence(100).probablePortal,[6,9]); // lower edge
+  assert.deepEqual(appleWormImageEvidence(56).probablePortal,[9,-2]);
+  assert.deepEqual(appleWormImageEvidence(12).probablePortal,[14,0]);
+  assert.deepEqual(appleWormImageEvidence(33).probablePortal,[14,0]);
+  assert.deepEqual(appleWormImageEvidence(105).probablePortal,[17,-1]);
+  assert.equal(appleWormImageEvidence(59).visibleWormCells.length,4);
+  assert.equal(appleWormImageEvidence(91).visibleWormCells.length,5);
+  assert.equal(appleWormImageEvidence(95).visibleWormCells.length,7);
+  assert.equal(appleWormImageEvidence(99).visibleWormCells.length,5);
 });
