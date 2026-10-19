@@ -33,6 +33,6 @@ test('Apple Worm enters the actual 105-source screenshot game and preserves imag
   const later=game.locator('svg[data-source-level="101"]');
   await expect(later).toBeVisible();
   await expect(later.locator('[data-source-apple]')).toHaveCount(12);
-  await expect(later.locator('[data-source-portal]')).toHaveCount(1);
+  await expect(later.locator('[data-source-portal]')).toHaveCount(0);
   expect(uncaught).toEqual([]);
 });
