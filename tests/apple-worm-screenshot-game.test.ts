@@ -77,9 +77,13 @@ test('screenshot stage 1 has an actual playable route on provisional rules',()=>
   assert.equal(level.apples.length,0);
   assert.deepEqual(level.portal,[14,4]);
   let current=startScreenshotWorm(1);
-  for(let i=0;i<9;i++){
-    const next=moveScreenshotWorm(current,'right');
-    assert.notEqual(next,current,'source stage 1 should move right');
+  // Real source image includes a two-block obstacle above the long floor:
+  // crossing it needs a climb, not nine straight moves.
+  const route=['right','right','right','up','right','right','right',
+    'down','right','right','right'] as const;
+  for(const direction of route){
+    const next=moveScreenshotWorm(current,direction);
+    assert.notEqual(next,current,'unexpected blocked source map move: '+direction);
     current=next;
   }
   assert.equal(current.phase,'won','screenshot stage 1 reaches pictured portal');
