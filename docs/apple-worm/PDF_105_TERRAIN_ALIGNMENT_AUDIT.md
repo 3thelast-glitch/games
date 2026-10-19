@@ -27,7 +27,7 @@ Independent cell-centre sampling compared the reference PDF to `appleWormSourceT
 | Rendering | Changed from 630×270 to native 640×360; correct grid offset and 16:9 framing |
 | Level 002 head | Upper bend chosen as head and right-facing initial mouth restored |
 | Level 002 route | Regression test proves direct portal completion with zero collected apples |
-| Portal evidence | **105/105 black-spiral portal candidates located** in PDF images; eight edge cases manually transcribed (y=-2 or y=9) |
+| Portal evidence | **102/105 probable exits located**, three not visible (Levels 70, 95, 101) |
 
 The automated terrain classification is a **cell-occupancy check**, not a pixel-perfect render comparison. Brown terrain sprites extend across tile boundaries; a cell-centre match does not certify texture, bevel widths, colors, shadows or image-level 1:1 identity.
 
@@ -39,8 +39,8 @@ The following remain **unverified**:
 - Manual head and tail orientation on every level (the legacy rightmost-head heuristic still applies beyond the specifically audited stage)
 - Exact original apple-eating, gravity, saw, spike and movable-obstacle physics
 - Exact asset styles and animations
-- All 105 contact-sheet frames now have a black-spiral portal candidate. The last eight required individual enlargement: Levels 56, 66, 70, 95, 96, 101 above the main terrain rows, and Levels 73, 100 at lower edge y=9. These positions are **image observations, not verified winning routes**; some spiral art is partly obscured or cropped.
-- Portal-entry physics was widened to support the last visible row y=9 without changing the original nine terrain rows. Full solutions for these levels have not yet been replayed.
+- Of eight initially ambiguous frames, enlarged PDF screenshots support five more portal positions: Levels 56, 66 and 96 near the upper terrain boundary, and Levels 73 and 100 at the lower visible edge (y=9). Initial coordinates for Levels 70, 95 and 101 were **retracted**: black rings at the upper-right are WatchON/control UI, not gameplay portals. Their exit locations remain unresolved.
+- Portal-entry physics was widened to support the last visible row y=9 without changing the original nine terrain rows. Winning routes still need independent replay.
 - Complete original winning replay sequence and solvability for all 105 stages
 
 **Do not label 105 stages as 100% identical or fully solved on the strength of the terrain-grid check.** Review the original high-resolution per-stage frames and the source video before promoting `exactVisualComparisonPassed` or `exactPhysicsVerified` to true.
