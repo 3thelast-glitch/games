@@ -11,8 +11,8 @@ test('the 105 previously reference-only gallery stages are now the ONE interacti
   await expect(game).toHaveAttribute('data-source-stage-count','105');
   await expect(game).toHaveAttribute('data-pdf-reference','approved');
   await expect(game).toHaveAttribute('data-renderer','premium-gallery-game');
-  await expect(game).toHaveAttribute('data-visual-revision','PDF105-R6');
-  await expect(game.getByText('PDF105-R6')).toBeVisible();
+  await expect(game).toHaveAttribute('data-visual-revision','PDF105-R7');
+  await expect(game.getByText('PDF105-R7')).toBeVisible();
   await expect(game.getByText(/Reference snapshots|ليست قابلة للعب|غير معتمدة/)).toHaveCount(0);
   await expect(game.getByRole('button',{name:/Legacy 40|المراحل القديمة 40/})).toHaveCount(0);
   const board=game.locator('svg[data-source-level="1"]');
@@ -43,6 +43,8 @@ test('the 105 previously reference-only gallery stages are now the ONE interacti
   await expect(second).toHaveAttribute('data-terrain-cell-count','10');
   await expect(second.locator('[data-source-worm]')).toHaveAttribute('data-head-x','195');
   await expect(second.locator('[data-source-worm]')).toHaveAttribute('data-head-y','105');
+  await expect(second.locator('[data-source-worm]')).toHaveAttribute('data-face-angle','0');
+  await expect(second.locator('[data-source-worm]')).toHaveAttribute('data-mouth-target-distance','none');
   await expect(second.locator('[data-source-apple]')).toHaveCount(0);
   await expect(second.locator('[data-source-portal]')).toHaveAttribute('transform','translate(405 75)');
   await expect(second.locator('.worm-portal-ready')).toHaveCount(1);
