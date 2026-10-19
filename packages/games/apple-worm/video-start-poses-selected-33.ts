@@ -7,7 +7,7 @@
  * positions stay unchanged. The source contact-sheet snapshots were taken at
  * varying times and missed occluded green segments and some eaten fruits.
  *
- * IMPORTANT: 27 other requested stages are not claimed corrected here.
+ * IMPORTANT: 26 other requested stages are not claimed corrected here.
  * Green foreground occlusion and dynamic gray physics require frame tracing.
  */
 import type { ScreenshotPoint } from './screenshot-game.ts';
@@ -42,6 +42,13 @@ export const APPLE_WORM_VIDEO_START_POSES:Readonly<Record<number,OriginalVideoIn
     // Two bottom apples have not yet been eaten at this filmed start.
     extraInitialApples:[[9,8],[11,8]],
     grayStartOverride:[[9,5],[10,7]],
+    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
+  },
+  44:{
+    stage:44,timestampSeconds:462,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    // Purple face at [14,0]; lower-right segment at [15,1] anchors the
+    // worm against the brick wall below [14,0].
+    headToTail:[[14,0],[15,0],[15,1]],
     evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
   },
   98:{
