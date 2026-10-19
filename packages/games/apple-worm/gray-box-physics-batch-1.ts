@@ -50,9 +50,13 @@ export function settleGrayBoxes(
   boxes:readonly ScreenshotPoint[],
   terrain:ReadonlySet<string>,
   worm:readonly ScreenshotPoint[],
+  remainingApples:readonly ScreenshotPoint[]=[] ,
 ):ScreenshotPoint[]{
   const positions=boxes.map(p=>[p[0],p[1]] as ScreenshotPoint);
   const wormCells=new Set(worm.map(key));
+  // Video L14/L18: a gray crate rests on a whole apple. It falls only
+  // AFTER that apple has been consumed or its supporting cell changes.
+  const appleCells=new Set(remainingApples.map(key));
   let changed=true,steps=0;
   while(changed&&steps++<12*boxes.length+12){
     changed=false;
@@ -62,7 +66,7 @@ export function settleGrayBoxes(
       const at=positions[i]!;
       const next=add(at,0,1),k=key(next);
       if(next[1]>9||next[0]<0||next[0]>=21||
-        terrain.has(k)||wormCells.has(k)||
+        terrain.has(k)||wormCells.has(k)||appleCells.has(k)||
         positions.some((p,j)=>i!==j&&key(p)===k))continue;
       positions[i]=next;
       changed=true;
