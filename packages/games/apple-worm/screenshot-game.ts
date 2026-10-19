@@ -123,8 +123,8 @@ export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDir
   const collected=grow?[...state.collected,fruitIndex].sort((a,b)=>a-b):[...state.collected];
   let body:ScreenshotPoint[]=[head,...(grow?state.body:state.body.slice(0,-1))]
     .map(([x,y]):ScreenshotPoint=>[x,y]);
-  const allEaten=collected.length===stage.apples.length;
-  const win=()=>stage.portal!==null&&allEaten&&eq(body[0]!,stage.portal);
+  // The black exit is always active. Fruit is optional growth, not a gate.
+  const win=()=>stage.portal!==null&&eq(body[0]!,stage.portal);
   let phase:ScreenshotPhase=win()?'won':'playing';
   const remaining=stage.apples.filter((_,i)=>!collected.includes(i));
   const supported=()=>body.some(([x,y])=>solid.has(key([x,y+1]))||
@@ -159,8 +159,7 @@ export function restoreScreenshotWorm(value:unknown):ScreenshotState|null {
   if(s.body.some((p,i)=>i>0&&!touching(p,s.body![i-1]!)))return null;
   if(s.collected.some(i=>!Number.isInteger(i)||i<0||i>=board.apples.length)||
     new Set(s.collected).size!==s.collected.length)return null;
-  if(s.phase==='won'&&(!board.portal||!eq(s.body[0]!,board.portal)||
-    s.collected.length!==board.apples.length))return null;
+  if(s.phase==='won'&&(!board.portal||!eq(s.body[0]!,board.portal)))return null;
   return {level:s.level!,body:s.body.map(([x,y]):ScreenshotPoint=>[x,y]),
     collected:[...s.collected],moves:s.moves!,phase:s.phase!};
 }
