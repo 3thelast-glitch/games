@@ -11,6 +11,7 @@ test('Apple Worm enters the actual 105-source screenshot game and preserves imag
   await expect(game).toHaveAttribute('data-source-stage-count','105');
   const board=game.locator('svg[data-source-level="1"]');
   await expect(board).toBeVisible();
+  await expect(board).toHaveAttribute('viewBox','0 0 640 360');
   await expect(board.locator('[data-source-worm]')).toHaveCount(1);
   await expect(board.locator('polyline')).toHaveCount(3);
   await expect(board.locator('[data-source-apple]')).toHaveCount(0);
@@ -19,6 +20,13 @@ test('Apple Worm enters the actual 105-source screenshot game and preserves imag
   await expect(board.locator('[data-source-worm]')).toHaveAttribute('transform',/^translate\(183 /);
   await game.getByRole('button',{name:'right'}).click();
   await expect(board.locator('[data-source-worm]')).toHaveAttribute('transform',/^translate\(213 /);
+  await game.locator('button[aria-expanded]').click();
+  await game.getByRole('button',{name:'Stage 2'}).click();
+  const second=game.locator('svg[data-source-level="2"]');
+  await expect(second).toHaveAttribute('viewBox','0 0 640 360');
+  await expect(second.locator('[data-source-worm]')).toHaveAttribute('transform','translate(213 163) rotate(0)');
+  await expect(second.locator('[data-source-apple]')).toHaveCount(0);
+  await expect(second.locator('[data-source-portal]')).toHaveAttribute('transform','translate(423 133)');
   await game.locator('button[aria-expanded]').click();
   await game.getByRole('button',{name:'91–105'}).click();
   await game.getByRole('button',{name:/101/}).click();
