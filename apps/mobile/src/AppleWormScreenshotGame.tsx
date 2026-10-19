@@ -4,7 +4,7 @@ import { AppleWormReferenceScene } from './AppleWormReferenceScene.tsx';
 import {
   APPLE_WORM_SCREENSHOT_LEVEL_COUNT, screenshotWormLevel,
   startScreenshotWorm, moveScreenshotWorm, restoreScreenshotWorm,
-  type ScreenshotDirection, type ScreenshotState,
+  type ScreenshotDirection, type ScreenshotState, type ScreenshotPoint,
 } from '../../../packages/games/apple-worm/screenshot-game.ts';
 import { useI18n } from './i18n.tsx';
 import { storage, type Settings } from './platform.ts';
@@ -13,7 +13,7 @@ import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
 interface SourceSave { level:number; state:ScreenshotState; completed:number[]; visualRevision?:string }
 const SAVE_KEY='apple-worm-screenshot-source-105-v1';
 /** Increases when the reference rendering/initial layouts change. */
-export const APPLE_WORM_VISUAL_REVISION='PDF105-R5';
+export const APPLE_WORM_VISUAL_REVISION='PDF105-R6';
 const keyMap:Record<string,ScreenshotDirection>={
   arrowup:'up',w:'up',arrowdown:'down',s:'down',
   arrowleft:'left',a:'left',arrowright:'right',d:'right',
@@ -38,12 +38,23 @@ export function AppleWormScreenshotGame({onExit,settings}:{
   const stateRef=useRef(state);
   stateRef.current=state;
   const [history,setHistory]=useState<ScreenshotState[]>([]);
+  const biteSequence=useRef(0);
+  const [biteFx,setBiteFx]=useState<{key:number;apple:ScreenshotPoint}|null>(null);
   const [completed,setCompleted]=useState<number[]>([]);
   const [ready,setReady]=useState(false);
   const [group,setGroup]=useState(0);
   const [showChoose,setShowChoose]=useState(false);
   const swiping=useRef<{id:number;x:number;y:number}|null>(null);
   const board=screenshotWormLevel(level);
+
+  // Cosmetic one-shot feedback; never persists or changes stage state.
+  useEffect(()=>{
+    if(!biteFx)return;
+    const key=biteFx.key;
+    const timer=window.setTimeout(()=>setBiteFx(current=>
+      current?.key===key?null:current),720);
+    return ()=>window.clearTimeout(timer);
+  },[biteFx?.key]);
 
   useEffect(()=>{
     void enterGameLandscape();
@@ -80,6 +91,11 @@ export function AppleWormScreenshotGame({onExit,settings}:{
     const next=moveScreenshotWorm(previous,direction);
     if(next===previous)return;
     stateRef.current=next;
+    const justCollected=next.collected.find(i=>!previous.collected.includes(i));
+    if(justCollected!==undefined){
+      const apple=screenshotWormLevel(previous.level).apples[justCollected];
+      if(apple)setBiteFx({key:++biteSequence.current,apple});
+    }
     setHistory(h=>[...h.slice(-89),previous]);
     setState(next);
     if(next.phase==='won')setCompleted(c=>c.includes(previous.level)?c:[...c,previous.level]);
@@ -87,6 +103,7 @@ export function AppleWormScreenshotGame({onExit,settings}:{
   const reset=()=>{
     const next=startScreenshotWorm(level);
     stateRef.current=next;
+    setBiteFx(null);
     setState(next);setHistory([]);
   };
   const undo=()=>{
@@ -94,11 +111,13 @@ export function AppleWormScreenshotGame({onExit,settings}:{
     if(!prev)return;
     setHistory(h=>h.slice(0,-1));
     stateRef.current=prev;
+    setBiteFx(null);
     setState(prev);
   };
   const pick=(n:number)=>{
     if(!Number.isInteger(n)||n<1||n>105)return;
     setLevel(n);
+    setBiteFx(null);
     const next=startScreenshotWorm(n);
     stateRef.current=next;
     setState(next);
@@ -169,7 +188,8 @@ export function AppleWormScreenshotGame({onExit,settings}:{
             onPointerCancel={()=>{swiping.current=null;}}
             onLostPointerCapture={()=>{swiping.current=null;}}
             style={{display:'block',width:'100%',height:'auto',touchAction:'none',direction:'ltr'}}>
-            <AppleWormReferenceScene board={board} body={state.body} remaining={remaining}/>
+            <AppleWormReferenceScene board={board} body={state.body}
+              remaining={remaining} phase={state.phase} biteFx={biteFx}/>
           </svg>
         </div>
         <div className="worm-source-stats" role="status">
