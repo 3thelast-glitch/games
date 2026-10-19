@@ -77,7 +77,8 @@ export function moveWorm(state:WormState,direction:Direction):WormState {
  const eaten=collectedApples.length===board.apples.length;
  const pendingGrowth=false;
  let phase:Phase='playing';
- const winning=()=>eaten&&same(body[0]!,board.portal);
+ // The exit is active from the first move; apples only affect growth.
+ const winning=()=>same(body[0]!,board.portal);
  const dead=()=>body.some(p=>!within(p,board)||lethal.has(key(p)));
  const remaining=board.apples.filter((_,i)=>!gathered.has(i));
  const supported=(parts:Point[])=>parts.some(p=>{
@@ -121,7 +122,7 @@ export function restoreWorm(value:unknown):WormState|null {
   if(collected.length!==state.collectedApples.length)return null;
  }else collected=state.eaten?board.apples.map((_,i)=>i):[];
  if(state.eaten!==(collected.length===board.apples.length))return null;
- if(state.phase==='won'&&!state.eaten)return null;
+ if(state.phase==='won'&&!same(state.body[0]!,board.portal))return null;
  return {level:state.level,body:state.body.map(p=>({...p})),eaten:state.eaten,
   collectedApples:collected,pendingGrowth:state.pendingGrowth===true,
   phase:state.phase!,moves:state.moves};
