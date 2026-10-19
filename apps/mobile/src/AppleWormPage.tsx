@@ -13,6 +13,7 @@ import { App as NativeApp } from '@capacitor/app';
 import { createPortal } from 'react-dom';
 import { APPLE_WORM_GROUPS, APPLE_WORM_CHAPTERS } from '../../../packages/games/apple-worm/levels.ts';
 import { AppleWormSourceGallery } from './AppleWormSourceGallery.tsx';
+import { AppleWormScreenshotGame } from './AppleWormScreenshotGame.tsx';
 
 interface SavedWorm { unlocked: number; state: WormState }
 const SAVE_KEY = 'apple-worm-curated-40-v3';
@@ -110,7 +111,7 @@ function WormBoard({ state, onSwipe, label, biteIndex }: {
   );
 }
 
-export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () => void; settings: Settings; onToggleSound: () => void }) {
+function LegacyAppleWormPage({ onExit, settings, onToggleSound }: { onExit: () => void; settings: Settings; onToggleSound: () => void }) {
   const { t, lang } = useI18n();
   const exitRef = useRef(onExit);
   exitRef.current = onExit;
@@ -123,7 +124,7 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
   const [showLevels, setShowLevels] = useState(false);
   // The user approved ONLY the original 105 video-source stages. Open that
   // catalogue by default; independently authored legacy puzzles are opt-in.
-  const [showSourceGallery, setShowSourceGallery] = useState(true);
+  const [showSourceGallery, setShowSourceGallery] = useState(false);
   const [activeGroup, setActiveGroup] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
   const [biteCue, setBiteCue] = useState<{level:number; moves:number; index:number} | null>(null);
@@ -338,4 +339,16 @@ export function AppleWormPage({ onExit, settings, onToggleSound }: { onExit: () 
       </div>
     </main>, document.body
   );
+}
+
+
+/** Public game entry. Source screenshots are the ONLY user-approved stage set.
+ * The old 40 created puzzles remain available for opt-in practice with their
+ * existing save namespace, but never masquerade as original source levels.
+ */
+export function AppleWormPage(props:{onExit:()=>void;settings:Settings;onToggleSound:()=>void}) {
+  const [legacy,setLegacy]=useState(false);
+  if(legacy)return <LegacyAppleWormPage {...props}/>;
+  return <AppleWormScreenshotGame onExit={props.onExit} settings={props.settings}
+    onLegacy={()=>setLegacy(true)}/>;
 }
