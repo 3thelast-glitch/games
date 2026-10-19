@@ -72,6 +72,19 @@ test('state restoration validates source levels, coordinates and collected index
   assert.equal(restoreScreenshotWorm({...initial,phase:'won'}),null);
 });
 
+test('a source portal wins even when its apple has not been collected',()=>{
+  const initial=startScreenshotWorm(3);
+  const board=screenshotWormLevel(3);
+  assert.deepEqual(board.portal,[14,4]);
+  assert.ok(board.apples.length>0);
+  const near={...initial,body:[[13,4],[12,4],[11,4]] as const,collected:[] as number[]};
+  const next=moveScreenshotWorm(near,'right');
+  assert.notEqual(next,near);
+  assert.equal(next.phase,'won');
+  assert.deepEqual(next.collected,[]);
+  assert.deepEqual(restoreScreenshotWorm(next),next);
+});
+
 test('screenshot stage 1 has an actual playable route on provisional rules',()=>{
   const level=screenshotWormLevel(1);
   assert.equal(level.apples.length,0);
