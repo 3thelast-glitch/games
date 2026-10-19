@@ -221,7 +221,7 @@ export function restoreScreenshotWorm(value:unknown):ScreenshotState|null {
   const boxes=isBatchOneMovableGray(s.level!)?s.grayPositions:undefined;
   if(boxes!==undefined&&(!Array.isArray(boxes)||
     boxes.length!==board.grayObjects.length||
-    boxes.some(p=>!Array.isArray(p)||p.length!==2||!onBoard(p)||
+    boxes.some(p=>!Array.isArray(p)||p.length!==2||!onBoard([p[0],p[1]])||
       !Number.isInteger(p[0])||!Number.isInteger(p[1]))||
     new Set(boxes.map(key)).size!==boxes.length||
     boxes.some(p=>s.body!.some(b=>eq(p,b)))))return null;
