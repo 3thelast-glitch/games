@@ -35,7 +35,7 @@ test('all 105 screenshots yield bounded object candidates, without falsely certi
   assert.equal(hasApples,97);
   assert.equal(hasWorm,102);
   assert.equal(hasGray,69);
-  assert.equal(hasExit,105,'all 105 contact-sheet black-spiral candidates now located');
+  assert.equal(hasExit,102,'three UI-overlay-only frames must not receive invented exits');
   assert.throws(()=>appleWormImageEvidence(0),RangeError);
   assert.throws(()=>appleWormImageEvidence(106),RangeError);
 });
@@ -56,7 +56,9 @@ test('high stages with many apples and saws retain independently visible objects
   const s101=appleWormImageEvidence(101);
   assert.equal(s101.visibleApples.length,12); // two 6-apple rows in still
   assert.equal(s101.visibleWormCells.length,3);
-  assert.deepEqual(s101.probablePortal,[17,-2]); // partially obscured at top edge
+  assert.equal(s101.probablePortal,null); // black UI near WatchON is not an exit
+  assert.equal(appleWormImageEvidence(70).probablePortal,null);
+  assert.equal(appleWormImageEvidence(95).probablePortal,null);
   assert.deepEqual(appleWormImageEvidence(73).probablePortal,[6,9]); // lower edge
   assert.deepEqual(appleWormImageEvidence(100).probablePortal,[6,9]); // lower edge
   assert.deepEqual(appleWormImageEvidence(56).probablePortal,[9,-2]);
