@@ -91,7 +91,7 @@ function WormBoard({ state, onSwipe, label, biteIndex }: {
             'L' + (p.x * TILE + 46) + ' ' + (p.y * TILE + 43) + 'Z'}
           fill="#676971" stroke="#272b31" strokeWidth="3" strokeLinejoin="round"/>
       ))}
-      <WormPortal x={board.portal.x} y={board.portal.y} tile={TILE} ready={state.eaten}/>
+      <WormPortal x={board.portal.x} y={board.portal.y} tile={TILE} ready={true}/>
       {board.apples.map((apple,index) =>
         !state.collectedApples?.includes(index) &&
           <WormApple key={index} x={apple.x} y={apple.y} tile={TILE}/>)}
@@ -241,7 +241,7 @@ function LegacyAppleWormPage({ onExit, settings, onToggleSound }: { onExit: () =
               <span title={lang === 'ar' ? '40 مرحلة قديمة غير معتمدة' : '40 unapproved legacy stages'}>
                 {lang === 'ar' ? 'تجريبي (غير معتمد) · ' : 'Legacy (unapproved) · '}
               </span>
-              🐛 → 🍎 {state.collectedApples?.length ?? 0}/{wormLevel(state.level).apples.length} → 🌀
+              🐛 → 🌀 · 🍎 {state.collectedApples?.length ?? 0}/{wormLevel(state.level).apples.length}
             </span>
             <span className="worm-game-moves">{t('appleWormMoves')}: <b className="worm-moves-value">{state.moves}</b></span>
           </div>
