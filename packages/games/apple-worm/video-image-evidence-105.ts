@@ -8,7 +8,7 @@
  * portals; some gray circles are saws, while other gray squares are blocks.
  *
  * Grid x = 33 + x*30, y = 73 + y*30 on original 640×360 screenshots.
- * Grid y may be -2 or -1 for objects above the viewport logical grid.
+ * Grid y may be -2/-1 above the terrain grid or +9 for partly visible exits\n * at the bottom of the original 640x360 source framing.
  * No level is marked as ready for live gameplay or source-solution verified.
  *
  * Encoded fields: visible apples, green worm segments, gray obstacle cells,
@@ -86,7 +86,7 @@ RXiL,W1xd,dw==,mw==
 SXA=,S19g,m54=,OQ==
 hw==,r7Cxsg==,m8Y=,Gg==
 XXSf,hoeb,WltcXl9gsg==,Hg==
-RYib,cHFy,b4c=,
+RYib,cHFy,b4c=,CQ==
 iZw=,cHFyhQ==,m50=,HQ==
 eLHI,SF1y,,LQ==
 Xg==,,,Gg==
@@ -96,14 +96,14 @@ iJo=,iZ4=,cg==,Ig==
 iKA=,coaH,SErHyA==,GQ==
 d5mi,coeI,dA==,yg==
 WbE=,XV5f,MnWd,Ig==
-THI=,doqL,SEpxmg==,
+THI=,doqL,SEpxmg==,CQ==
 couY,rq+w,,Iw==
 hIaxsw==,W1xd,RkhKc5o=,DA==
 iYuexg==,m5yw,SA==,Mw==
-R7A=,Xl90iQ==,,
+R7A=,Xl90iQ==,,Dw==
 XoQ=,iIme,r7K2,yg==
 SYk=,c3Q=,iJmam5yd,Hg==
-mpucna+zxMg=,cnN0,nrHG,
+mpucna+zxMg=,cnN0,nrHG,7Q==
 M2Kctg==,orc=,RltwhZqxsrM=,Qg==
 WQ==,b3Bx,MTI=,dw==
 daA=,ios=,n7S1,UA==
@@ -125,13 +125,13 @@ cYs=,,NVyuxA==,Mw==
 RJ+uxg==,YXV2ig==,NA==,hw==
 MTM4nrC2yQ==,d4w=,Rltw,nA==
 b3GDh5mbrw==,WltwhQ==,WV1tc4GJl52tsQ==,Ow==
-,,nMA=,
-hw==,MUZb,hpvG,
+,,nMA=,EA==
+hw==,MUZb,hpvG,Bw==
 ipU=,bm9wgw==,M4A=,nA==
 mcE=,Tg==,L0RH,QQ==
 ,bG2Bgg==,MEaJn7A=,ZA==
-hoeImp6vs8XGxw==,W1xwhQ==,iZyxxMg=,
-bW5vcHFyrK2ur7Cx,XF1e,,
+hoeImp6vs8XGxw==,W1xwhQ==,iZyxxMg=,7Q==
+bW5vcHFyrK2ur7Cx,XF1e,,EQ==
 XXJ1,MzQ1Ng==,YIeK,sQ==
 dA==,RllaWw==,MQ==,TQ==
 ,rQ==,Q1htgpeswcQ=,cw==
