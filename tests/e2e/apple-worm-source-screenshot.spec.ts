@@ -9,6 +9,7 @@ test('Apple Worm enters the actual 105-source screenshot game and preserves imag
   const game=page.locator('[data-stage-origin="user-screenshot"]');
   await expect(game).toBeVisible();
   await expect(game).toHaveAttribute('data-source-stage-count','105');
+  await expect(game).toHaveAttribute('data-pdf-reference','approved');
   const board=game.locator('svg[data-source-level="1"]');
   await expect(board).toBeVisible();
   await expect(board).toHaveAttribute('viewBox','0 0 640 360');
