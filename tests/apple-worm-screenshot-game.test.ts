@@ -78,6 +78,18 @@ test('exit candidates on the bottom source-image edge remain addressable',()=>{
     assert.equal(board.height,9);
   }
 });
+test('entering the bottom-edge portal counts as winning, without eating any fruit',()=>{
+  for(const level of [73,100]){
+    const near={...startScreenshotWorm(level),body:[[5,9],[4,9]] as const,collected:[] as number[]};
+    const reached=moveScreenshotWorm(near,'right');
+    assert.notEqual(reached,near);
+    assert.equal(reached.phase,'won', 'bottom-edge exit must be usable for level '+level);
+    assert.deepEqual(reached.body[0],[6,9]);
+    assert.deepEqual(reached.collected,[]);
+    assert.deepEqual(restoreScreenshotWorm(reached),reached);
+  }
+});
+
 test('state restoration validates source levels, coordinates and collected indexes',()=>{
   const initial=startScreenshotWorm(1);
   assert.deepEqual(restoreScreenshotWorm(initial),initial);
