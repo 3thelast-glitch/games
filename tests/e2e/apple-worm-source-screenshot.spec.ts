@@ -10,32 +10,36 @@ test('the 105 previously reference-only gallery stages are now the ONE interacti
   await expect(game).toBeVisible();
   await expect(game).toHaveAttribute('data-source-stage-count','105');
   await expect(game).toHaveAttribute('data-pdf-reference','approved');
-  await expect(game).toHaveAttribute('data-renderer','approved-gallery-game');
-  await expect(game).toHaveAttribute('data-visual-revision','PDF105-R4');
-  await expect(game.getByText('PDF105-R4')).toBeVisible();
+  await expect(game).toHaveAttribute('data-renderer','premium-gallery-game');
+  await expect(game).toHaveAttribute('data-visual-revision','PDF105-R5');
+  await expect(game.getByText('PDF105-R5')).toBeVisible();
   await expect(game.getByText(/Reference snapshots|ليست قابلة للعب|غير معتمدة/)).toHaveCount(0);
   await expect(game.getByRole('button',{name:/Legacy 40|المراحل القديمة 40/})).toHaveCount(0);
   const board=game.locator('svg[data-source-level="1"]');
   await expect(board).toBeVisible();
   await expect(board).toHaveAttribute('viewBox','0 0 630 270');
   await expect(board).toHaveAttribute('data-terrain-cell-count','12');
-  await expect(board.locator('[data-source-terrain="gallery-approved"]')).toHaveCount(1);
-  await expect(board.locator('[data-worm-segment]')).toHaveCount(3);
+  await expect(board.locator('[data-source-terrain="premium-art"]')).toHaveCount(1);
+  await expect(board.locator('[data-source-worm]')).toHaveCount(1);
+  await expect(board.locator('.worm-character')).toHaveCount(1);
+  await expect(board.locator('.worm-terrain')).toHaveCount(1);
+  await expect(board.locator('.worm-clouds')).toHaveCount(1);
+  await expect(board.locator('[data-source-worm]')).toHaveAttribute('data-body-length','3');
   await expect(board.locator('[data-source-apple]')).toHaveCount(0);
   await expect(board.locator('[data-source-gray-object]')).toHaveCount(0);
   await expect(board.locator('[data-source-portal]')).toHaveCount(1);
-  await expect(board.locator('[data-worm-segment]').first()).toHaveAttribute('cx','165');
+  await expect(board.locator('[data-source-worm]')).toHaveAttribute('data-head-x','165');
   await game.getByRole('button',{name:'right'}).click();
-  await expect(board.locator('[data-worm-segment]').first()).toHaveAttribute('cx','195');
+  await expect(board.locator('[data-source-worm]')).toHaveAttribute('data-head-x','195');
   await game.getByRole('button',{name:'Undo'}).click();
-  await expect(board.locator('[data-worm-segment]').first()).toHaveAttribute('cx','165');
+  await expect(board.locator('[data-source-worm]')).toHaveAttribute('data-head-x','165');
 
   await game.getByRole('button',{name:'Stage 2'}).click();
   const second=game.locator('svg[data-source-level="2"]');
   await expect(second).toHaveAttribute('viewBox','0 0 630 270');
   await expect(second).toHaveAttribute('data-terrain-cell-count','10');
-  await expect(second.locator('[data-worm-segment]').first()).toHaveAttribute('cx','195');
-  await expect(second.locator('[data-worm-segment]').first()).toHaveAttribute('cy','105');
+  await expect(second.locator('[data-source-worm]')).toHaveAttribute('data-head-x','195');
+  await expect(second.locator('[data-source-worm]')).toHaveAttribute('data-head-y','105');
   await expect(second.locator('[data-source-apple]')).toHaveCount(0);
   await expect(second.locator('[data-source-portal]')).toHaveAttribute('transform','translate(405 75)');
 
@@ -47,7 +51,8 @@ test('the 105 previously reference-only gallery stages are now the ONE interacti
   const fifteenth=game.locator('svg[data-source-level="15"]');
   await expect(fifteenth).toBeVisible();
   await expect(fifteenth.locator('[data-source-apple]')).toHaveCount(1);
-  await expect(fifteenth.locator('[data-worm-segment]')).toHaveCount(3);
+  await expect(fifteenth.locator('[data-source-worm]')).toHaveAttribute('data-body-length','3');
+  await expect(fifteenth.locator('.worm-apple')).toHaveCount(1);
 
   await game.getByRole('button',{name:'91–105'}).click();
   await game.getByRole('button',{name:'Stage 101'}).click();

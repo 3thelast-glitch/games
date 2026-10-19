@@ -318,3 +318,68 @@ body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] svg[data-s
   }
   .worm-source-title p{display:none}
 }
+
+/* PDF105-R5: premium visual skin only. No grid, selector, geometry or hitbox changes. */
+body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"]{
+  background:radial-gradient(ellipse at 50% -15%,#2c6674 0%,#12354b 55%,#091e30 100%)!important;
+}
+.worm-source-board-frame{
+  border:3px solid #dcfff0!important;
+  border-radius:18px!important;
+  box-shadow:0 0 0 2px #489ea590,0 15px 42px #031d2b80,0 2px 0 #eefcfb inset!important;
+  background:#9ee6f2!important;
+}
+.worm-source-title h2{
+  color:#fffdec!important;
+  letter-spacing:.015em;
+  text-shadow:0 3px 12px #0d566cb0;
+}
+.worm-source-title p{color:#c8f4ea!important;}
+.worm-source-title small{
+  display:inline-block;
+  padding:2px 8px;
+  border:1px solid #9ce9ca80;
+  border-radius:999px;
+  background:#0a4353a6;
+  color:#ddfff5!important;
+  letter-spacing:.04em;
+  font-weight:800;
+}
+.worm-source-page button{
+  border-color:#99ccce!important;
+  box-shadow:inset 0 1px 0 #ffffff47,0 3px 10px #071d2f59;
+  background-image:linear-gradient(160deg,#ffffff18,#00000025)!important;
+  border-radius:10px!important;
+  transition:filter .14s ease,transform .14s ease,box-shadow .14s ease;
+}
+.worm-source-page button:hover:not(:disabled),
+.worm-source-page button:focus-visible{
+  filter:brightness(1.16);
+  box-shadow:inset 0 1px 0 #ffffff85,0 5px 18px #041d31bb;
+}
+.worm-source-page button:active:not(:disabled){transform:translateY(1px);}
+.worm-source-page button:focus-visible{
+  outline:2px solid #f6edb0;
+  outline-offset:2px;
+}
+.worm-source-stats{
+  color:#e8fff9!important;
+  text-shadow:0 2px 6px #062639;
+}
+.worm-source-stats strong{
+  padding:5px 11px;
+  border:1px solid #a7eccc60;
+  border-radius:10px;
+  background:#216478a1;
+  color:#ffffff;
+}
+.worm-source-packs button[aria-pressed="true"],
+.worm-source-level-grid button[aria-current="step"]{
+  border-color:#d8f7bf!important;
+  color:#ffffff!important;
+  box-shadow:0 0 0 1px #edffc18f,0 4px 15px #1c9f8888,inset 0 1px 0 #ffffff74!important;
+}
+.worm-source-level-grid button{font-variant-numeric:tabular-nums;}
+@media(prefers-reduced-motion:reduce){
+  .worm-source-page button{transition:none!important;}
+}

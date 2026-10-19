@@ -1,74 +1,118 @@
+import { useId } from 'react';
 import type { ScreenshotLevel, ScreenshotPoint } from '../../../packages/games/apple-worm/screenshot-game.ts';
+import { WormApple, WormCharacter, WormPortal, WormSky, WormTerrain }
+  from './AppleWormArt.tsx';
 
 /**
- * The ONE Apple Worm playfield is now the formerly reference-only 105-stage
- * brown-block / green-circle board requested in the user's desktop capture.
+ * VISUAL-ONLY ART PASS — PDF105-R5.
  *
- * It uses the same PDF-derived data for rendering AND actual movement.
- * Neither the independently authored 40-stage set nor the floating-island
- * artwork may replace the approved 105 stage maps.
+ * Keep the exact 21 x 9 / 30px-grid positions from the user's approved
+ * source layouts (viewBox 630 x 270). This component never edits game state,
+ * changes the 105 source maps, offsets a cell, or decides whether a move wins.
  *
- * Gallery-native coordinate system: 21 columns x 9 rows, 30px cells,
- * 630 x 270 viewBox. Level selection does not change renderers.
+ * Premium WormSky/Terrain/Character/Apple/Portal are the previous, attractive
+ * artwork, now applied to the ONE approved PDF stage renderer. All sprite
+ * anchors are at precisely (x+0.5)*30, (y+0.5)*30, including offboard exits.
  */
 const CELL=30;
-const point=([x,y]:ScreenshotPoint)=>({x:x*CELL+15,y:y*CELL+15});
+const anchor=([x,y]:ScreenshotPoint)=>({
+  x:(x+.5)*CELL,y:(y+.5)*CELL,
+});
 
 export function AppleWormReferenceScene({board,body,remaining}:{
   board:ScreenshotLevel;
   body:readonly ScreenshotPoint[];
   remaining:readonly ScreenshotPoint[];
 }) {
+  const id=useId().replace(/:/g,'')+'-pdf105-r5';
+  const blocks=board.rows.flatMap((row,y)=>[...row].flatMap((tile,x)=>
+    tile==='#'?[{x,y}]:[]));
+  const worm=body.map(([x,y])=>({x,y}));
+  const head=body[0],neck=body[1];
+  const headAnchor=head?anchor(head):null;
+  // Stage 2's approved source frame shows a right-facing mouth on the bend.
+  // This is art direction ONLY; it does not change the worm body's direction.
+  const stageTwoSourcePose=board.number===2&&body.length===board.worm.length&&
+    body.every((p,i)=>p[0]===board.worm[i]![0]&&p[1]===board.worm[i]![1]);
+  const faceAngle=stageTwoSourcePose?0:undefined;
+
   return <>
-    <rect width="630" height="270" fill="#a4eaff"/>
-    <path d="M0 224 Q70 175 135 219 T270 220 T405 218 T540 220 T675 219V270H0Z"
-      fill="#e9faff"/>
-    <g data-source-terrain="gallery-approved">
-      {board.rows.map((line,y)=>[...line].map((tile,x)=>tile==='#'
-        ?<g key={y*21+x}>
-          <rect x={x*CELL} y={y*CELL} width={CELL} height={CELL}
-            fill="#7b4d31" stroke="#523727" strokeWidth="1.5"/>
-          <path d={'M'+(x*CELL+2)+' '+(y*CELL+3)+'h26'}
-            stroke="#ac7651" strokeWidth="2"/>
-        </g>:null))}
+    <WormSky width={630} height={270} id={id+'-sky'}/>
+    <defs>
+      <radialGradient id={id+'-gleam'} cx=".5" cy=".5" r=".5">
+        <stop stopColor="#ffffff" stopOpacity=".7"/>
+        <stop offset="1" stopColor="#ffffff" stopOpacity="0"/>
+      </radialGradient>
+      <linearGradient id={id+'-metal'} x1="0" y1="0" x2="1" y2="1">
+        <stop stopColor="#f6fcff"/>
+        <stop offset=".31" stopColor="#bccfda"/>
+        <stop offset=".7" stopColor="#718fa4"/>
+        <stop offset="1" stopColor="#466273"/>
+      </linearGradient>
+      <linearGradient id={id+'-metal-inset'} x1="0" y1="0" x2=".8" y2="1">
+        <stop stopColor="#c5deeb"/>
+        <stop offset="1" stopColor="#6c92a4"/>
+      </linearGradient>
+    </defs>
+    <g aria-hidden="true" opacity=".48" className="worm-world-glints">
+      <circle cx="76" cy="59" r="28" fill={'url(#'+id+'-gleam)'}/>
+      <circle cx="516" cy="45" r="21" fill={'url(#'+id+'-gleam)'}/>
+      <path d="M88 63v9m-5-4h10M537 103v8m-4-4h8M288 30v7m-3-3h6"
+        stroke="#fffbe1" strokeWidth="1.5" strokeLinecap="round"/>
     </g>
-    {board.grayObjects.map((p,i)=>{
-      const {x,y}=point(p);
-      return <g key={'gray-'+i} data-source-gray-object
+
+    <g data-source-terrain="premium-art" data-terrain-cell-count={blocks.length}>
+      <WormTerrain blocks={blocks} tile={CELL}/>
+    </g>
+
+    {board.grayObjects.map((point,i)=>{
+      const {x,y}=anchor(point);
+      return <g key={'obstacle-'+i} data-source-gray-object
         transform={'translate('+x+' '+y+')'}>
-        <rect x="-13" y="-13" width="26" height="26" rx="5"
-          fill="#95a1ad" stroke="#5f6c78" strokeWidth="2"/>
-        <text textAnchor="middle" y="6" fontSize="18" fill="#253442">?</text>
+        <rect x="-13" y="-12" width="26" height="26" rx="6" fill="#203f4c" opacity=".24"
+          transform="translate(1 3)"/>
+        <rect x="-13" y="-13" width="26" height="26" rx="6"
+          fill={'url(#'+id+'-metal)'} stroke="#456274" strokeWidth="1.8"/>
+        <rect x="-10.5" y="-10.5" width="21" height="21" rx="4.5"
+          fill={'url(#'+id+'-metal-inset)'} stroke="#e7f4f7" strokeWidth="1"/>
+        <path d="M-9-9h15" stroke="#ffffff" strokeWidth="1.7"
+          strokeLinecap="round" opacity=".8"/>
+        <path d="M-6-3Q-6-8 0-8Q6-8 6-3Q6 0 1 2L1 4"
+          fill="none" stroke="#395a6a" strokeWidth="2.1"
+          strokeLinecap="round" strokeLinejoin="round"/>
+        <circle cx="1" cy="8" r="1.5" fill="#395a6a"/>
+        <circle cx="-9" cy="9" r="1" fill="#f2ffff"/>
+        <circle cx="9" cy="-9" r="1" fill="#f2ffff"/>
       </g>;
     })}
-    {remaining.map((p,i)=>{
-      const {x,y}=point(p);
-      return <g key={'apple-'+i} data-source-apple>
-        <circle cx={x} cy={y+2} r="12" fill="#e13930"
-          stroke="#a81825" strokeWidth="1.5"/>
-        <path d={'M'+x+' '+(y-8)+'l2 -8m-2 6q8 -9 11 -1'}
-          fill="none" stroke="#227b43" strokeWidth="3"
-          strokeLinecap="round"/>
-      </g>;
-    })}
-    <g data-source-worm aria-label="Apple Worm">
-      {body.map((p,i)=>{
-        const {x,y}=point(p);
-        return <circle key={'worm-'+i} data-worm-segment
-          cx={x} cy={y} r="14" fill="#55c733"
-          stroke="#289331" strokeWidth="2"/>;
-      })}
-    </g>
+
     {board.portal&&(()=>{
-      const {x,y}=point(board.portal);
+      const {x,y}=anchor(board.portal);
       return <g key="portal" data-source-portal
         transform={'translate('+x+' '+y+')'}>
-        <circle r="16" fill="#17253c" stroke="#505975" strokeWidth="3"/>
-        <path d="M-10 -3C3 -19 16 -4 6 6S-6 8 1 1"
-          stroke="#c0c2ea" strokeWidth="2" fill="none"/>
+        <g transform={'translate('+(-CELL/2)+' '+(-CELL/2)+')'}>
+          <WormPortal x={0} y={0} tile={CELL} ready/>
+        </g>
       </g>;
     })()}
-    <rect x="1" y="1" width="628" height="268"
-      fill="none" stroke="#e9fbff" strokeOpacity=".55" strokeWidth="2"/>
+
+    {remaining.map((p,i)=>{
+      const {x,y}=anchor(p);
+      return <g key={'apple-'+i} data-source-apple
+        transform={'translate('+x+' '+y+')'}>
+        <g transform={'translate('+(-CELL/2)+' '+(-CELL/2)+')'}>
+          <WormApple x={0} y={0} tile={CELL}/>
+        </g>
+      </g>;
+    })}
+
+    {headAnchor&&<g data-source-worm
+      data-head-x={headAnchor.x} data-head-y={headAnchor.y}
+      data-body-length={body.length}
+      data-neck-x={neck?anchor(neck).x:undefined}
+      data-neck-y={neck?anchor(neck).y:undefined}>
+      <WormCharacter body={worm} tile={CELL} id={id+'-worm'}
+        faceAngle={faceAngle}/>
+    </g>}
   </>;
 }

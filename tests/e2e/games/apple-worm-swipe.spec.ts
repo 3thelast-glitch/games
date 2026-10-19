@@ -41,7 +41,7 @@ for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:
           expect(Math.abs(frame.height-longSide)).toBeLessThan(2);
         }
         await expect(game).toHaveCSS('overflow-y','auto');
-        await expect(game).toHaveAttribute('data-renderer','approved-gallery-game');
+        await expect(game).toHaveAttribute('data-renderer','premium-gallery-game');
         await expect(game.getByRole('button',{name:/Legacy 40|المراحل القديمة 40/})).toHaveCount(0);
         await expectNoGlobalOverflow(page);
 
@@ -49,9 +49,9 @@ for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:
         await expect(board).toBeVisible();
         await expect(board).toHaveAttribute('viewBox','0 0 630 270');
         await expect(board).toHaveAttribute('preserveAspectRatio','xMidYMid meet');
-        await expect(board.locator('[data-source-terrain="gallery-approved"]')).toHaveCount(1);
-        const first=board.locator('[data-worm-segment]').first();
-        await expect(first).toHaveAttribute('cx','165');
+        await expect(board.locator('[data-source-terrain="premium-art"]')).toHaveCount(1);
+        const first=board.locator('[data-source-worm]');
+        await expect(first).toHaveAttribute('data-head-x','165');
         const rect=await board.boundingBox();
         expect(rect).not.toBeNull();
         if(!rect)throw Error('No source stage board');
@@ -72,9 +72,9 @@ for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:
           await page.mouse.move(end,y,{steps:8});
           await page.mouse.up();
         }
-        await expect(first).toHaveAttribute('cx','195');
+        await expect(first).toHaveAttribute('data-head-x','195');
         await game.getByRole('button',{name:locale.id==='ar'?'تراجع':'Undo'}).click();
-        await expect(first).toHaveAttribute('cx','165');
+        await expect(first).toHaveAttribute('data-head-x','165');
 
         const choose=game.locator('button[aria-expanded]');
         await choose.click();
