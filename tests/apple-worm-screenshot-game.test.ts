@@ -110,3 +110,20 @@ test('screenshot stage 1 has an actual playable route on provisional rules',()=>
   assert.deepEqual(current.collected,[]);
   assert.deepEqual(restoreScreenshotWorm(current),current);
 });
+
+test('PDF Level 002 has a reproducible winning route without any apples',()=>{
+  const board=screenshotWormLevel(2);
+  assert.equal(board.apples.length,0,'the supplied Level 002 frame shows no apple');
+  assert.deepEqual(board.portal,[13,2]);
+  const moves=['right','right','right','up','up','up',
+    'right','right','right','right'] as const;
+  let state=startScreenshotWorm(2);
+  for(const direction of moves){
+    const next=moveScreenshotWorm(state,direction);
+    assert.notEqual(next,state,'blocked Level 002 move: '+direction);
+    state=next;
+  }
+  assert.equal(state.phase,'won');
+  assert.deepEqual(state.body[0],board.portal);
+  assert.deepEqual(state.collected,[]);
+});
