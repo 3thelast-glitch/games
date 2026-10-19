@@ -12,7 +12,7 @@ import { expectNoGlobalOverflow } from '../helpers/layout.ts';
 
 const solo = {
   ludo: { root: '.ludo-page', scene: '.ludo-variants' },
-  appleWorm: { root: '.worm-page', scene: '.worm-board' },
+  appleWorm: { root: '[data-stage-origin="user-screenshot"]', scene: 'svg[data-source-level]' },
   basketballLine: { root: '.basketball-page', scene: '.basketball-canvas' },
   backroomBill: { root: '.backroom-page', scene: '.backroom-canvas' },
   arithmetica: { root: '.arithmetica-page', scene: '.arithmetica-blackboard' },
@@ -33,12 +33,20 @@ async function exerciseSolo(page: Page, id: SoloId) {
     await page.locator('.ludo-dice-line button').click();
     await expect(page.locator('.ludo-play')).toHaveAttribute('data-ludo-revision', '1');
   } else if (id === 'appleWorm') {
-    const board = page.locator('.worm-board');
+    const game=page.locator('[data-stage-origin="user-screenshot"]');
+    const board=game.locator('svg[data-source-level="1"]');
     await expect(board).toBeVisible();
-    await expect(board).toHaveAttribute('data-input', 'swipe');
-    await expect(page.locator('.worm-pad')).toHaveCount(0);
-    await expect(page.locator('.worm-rotate-gate')).toBeVisible();
-    await expect(page.locator('.worm-game-level')).toContainText('01');
+    await expect(game).toHaveAttribute('data-source-stage-count','105');
+    await expect(board.locator('[data-source-worm]')).toHaveCount(3);
+    await expect(board.locator('[data-source-apple]')).toHaveCount(0);
+    await expect(board.locator('[data-source-portal]')).toHaveCount(1);
+    await expect(board).toHaveCSS('touch-action','none');
+    await game.locator('button[aria-label="right"]').click();
+    await expect(board.locator('[data-source-worm]').first().locator('circle').first())
+      .toHaveAttribute('cx','195');
+    await game.getByRole('button',{name:/^Undo$|^تراجع$/}).click();
+    await expect(board.locator('[data-source-worm]').first().locator('circle').first())
+      .toHaveAttribute('cx','165');
   } else if (id === 'basketballLine') {
     await expect(page.locator('.basketball-canvas')).toBeVisible();
     const c = page.locator('.basketball-canvas');
@@ -120,7 +128,7 @@ for (const locale of locales) {
             await exerciseSolo(page,id as SoloId);
             await expectNoGlobalOverflow(page);
             const back=id==='appleWorm'
-              ? page.locator('.worm-rotate-gate button')
+              ? page.locator('[data-stage-origin="user-screenshot"] header button').first()
               : page.locator(config.root+' .button.secondary').first();
             await back.click();
             await expect(page.locator('.game-grid .game-card.'+id)).toBeVisible();
