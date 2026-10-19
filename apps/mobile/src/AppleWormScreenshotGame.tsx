@@ -180,7 +180,7 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
             'كل المراحل متاحة للاختيار لأن بعض المخارج الناقصة تمنع التقدم الطبيعي.')}</small>
         </div>}
         <svg role="img" aria-label={t('Swipe Apple Worm board','اسحب لتحريك الدودة')}
-          viewBox="0 0 630 270" data-source-level={level} preserveAspectRatio="xMidYMid meet"
+          viewBox="0 0 640 360" data-source-level={level} preserveAspectRatio="xMidYMid meet"
           onPointerDown={begin} onPointerUp={finish}
           onPointerCancel={()=>{swiping.current=null;}}
           onLostPointerCapture={()=>{swiping.current=null;}}
