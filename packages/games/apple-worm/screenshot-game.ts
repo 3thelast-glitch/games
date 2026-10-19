@@ -87,7 +87,8 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
   if(!worm)issues.push('worm-shape-unresolved');
   else if(worm.length===1)issues.push('single-segment-snapshot');
   if(!portal)issues.push('portal-unresolved');
-  if(portal && (portal[1]<0||portal[1]>=9))issues.push('portal-outside-play-grid');
+  if(portal && portal[1]<0)issues.push('portal-above-terrain-grid');
+  if(portal && portal[1]>=9)issues.push('portal-below-terrain-grid');
   if(source.grayObjectsVisible.length)issues.push('gray-object-mechanics-unresolved');
   if(!source.applesVisible.length)issues.push('no-apples-visible-in-frame');
   issues.push('starting-head-and-physics-unverified');
@@ -111,7 +112,9 @@ export function startScreenshotWorm(level=1):ScreenshotState {
     collected:[],phase:'playing',moves:0,
   };
 }
-const onBoard=([x,y]:ScreenshotPoint)=>x>=0&&x<21&&y>=-2&&y<9;
+// Original 640x360 contact frames can show a spiral above the ground
+// rows (y=-2) or at the lower visible edge (y=9). Keep 9 terrain rows.
+const onBoard=([x,y]:ScreenshotPoint)=>x>=0&&x<21&&y>=-2&&y<=9;
 export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDirection):ScreenshotState {
   if(state.phase!=='playing'||!Object.prototype.hasOwnProperty.call(DELTAS,direction))return state;
   const stage=screenshotWormLevel(state.level);
@@ -141,7 +144,7 @@ export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDir
     while(!supported()){
       const falling:ScreenshotPoint[]=body.map(([x,y]):ScreenshotPoint=>[x,y+1]);
       if(remaining.some(p=>falling.some(b=>eq(b,p))))break;
-      if(falling.some(p=>p[1]>=9||p[0]<0||p[0]>=21)){
+      if(falling.some(p=>p[1]>9||p[0]<0||p[0]>=21)){
         // Keep the last in-bounds pose so losing states still restore safely.
         phase='lost';break;
       }
