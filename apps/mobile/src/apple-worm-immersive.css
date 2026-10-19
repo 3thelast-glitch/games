@@ -209,32 +209,65 @@ body > .worm-immersive .worm-board{inset:0!important;width:100%!important;height
 
 
 /*
- * ONE premium Apple Worm game on 105 reference stages.
- * Fill the same immersive screen previously used by the separate polished
- * 40-stage mode. Never shrink the 105-stage world into a mini scroll card.
+ * Apple Worm: the user's formerly reference-only 105-stage gallery is now
+ * the sole PLAYABLE game screen on PC and mobile. The approved screenshot
+ * scene must preserve the original 630x270 aspect ratio, not stretch.
  */
-body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] {
-  overflow:hidden!important;
-  touch-action:none!important;
-  background:#94dadd!important;
-  padding:0!important;
-  box-sizing:border-box;
+body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"]{
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior-y:contain;
+  touch-action:pan-y!important;
+  background:linear-gradient(180deg,#102a38,#143245)!important;
+  padding:max(12px,env(safe-area-inset-top)) 14px
+    max(16px,env(safe-area-inset-bottom))!important;
+  box-sizing:border-box!important;
+  scrollbar-gutter:stable;
 }
-body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] > section {
-  position:relative;
-  height:100%!important;
+body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] > .worm-source-page{
+  width:min(100%,1120px)!important;
+  height:auto!important;
   min-height:100%!important;
-  width:100%!important;
-  max-width:none!important;
+  max-width:1120px!important;
+  margin:0 auto!important;
+  position:relative!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  gap:10px!important;
 }
-body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] svg[data-source-level] {
-  position:absolute!important;
-  inset:0!important;
+.worm-source-heading{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;flex-wrap:wrap;
+  color:white;
+}
+.worm-source-title{text-align:center;flex:1 1 220px;}
+.worm-source-title h2{
+  margin:0;font-size:clamp(16px,2.6vw,25px);
+  font-weight:900;color:#f7ffff;
+}
+.worm-source-title p{
+  margin:3px 0;font-size:clamp(11px,1.3vw,14px);
+  color:#d2e9ec;
+}
+.worm-source-title small{font-size:10px;color:#98d7d8}
+.worm-source-board-frame{
+  background:#96dff2;
+  border:3px solid #426574;
+  border-radius:15px;
+  overflow:hidden;
+  width:100%;
+  max-width:100%;
+  flex-shrink:0;
+}
+body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] svg[data-source-level]{
+  position:static!important;
+  inset:auto!important;
   display:block!important;
   width:100%!important;
-  height:100%!important;
+  height:auto!important;
   min-height:0!important;
-  max-height:none!important;
+  max-height:min(52dvh,490px)!important;
   margin:0!important;
   border:0!important;
   border-radius:0!important;
@@ -243,14 +276,45 @@ body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] svg[data-s
   -webkit-user-select:none;
   user-select:none;
 }
-body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] .worm-character{
-  transform-box:fill-box;
+.worm-source-stats{
+  display:flex;justify-content:center;align-items:center;
+  flex-wrap:wrap;gap:6px 18px;min-height:30px;
+  font-size:12px;color:#e3f0f0;text-align:center;
 }
-@media(max-height:410px) and (orientation:landscape){
-  body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] header{
-    padding-top:2px!important;padding-bottom:2px!important;
+.worm-source-caveat{
+  margin:0;text-align:center;font-size:12px;color:#f8d7a0;
+}
+.worm-source-transport{
+  display:flex;align-items:center;justify-content:center;
+  gap:6px;flex-wrap:wrap;color:#e5f4ff;
+}
+.worm-source-transport strong{min-width:26px;text-align:center}
+.worm-source-levels{
+  width:100%;display:flex;flex-direction:column;
+  align-items:center;gap:8px;padding:2px 0 16px;
+}
+.worm-source-packs{
+  display:flex;gap:5px;flex-wrap:wrap;align-items:center;
+  justify-content:center;width:100%;
+}
+.worm-source-packs button{font-size:12px!important}
+.worm-source-level-grid{
+  width:min(100%,780px);
+  display:grid;grid-template-columns:repeat(15,minmax(0,1fr));
+  gap:4px;direction:ltr;
+}
+.worm-source-level-grid button{min-width:0;padding:8px 2px!important;}
+@media(max-width:600px){
+  .worm-source-title{order:-1;flex:1 1 100%}
+  .worm-source-levels[data-open="false"]{display:none!important}
+  .worm-source-level-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .worm-source-transport button{padding:6px 10px!important}
+}
+@media(max-height:450px) and (orientation:landscape){
+  .worm-source-heading{gap:5px}
+  .worm-source-board-frame{max-width:min(100%,145dvh);margin:0 auto}
+  body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] svg[data-source-level]{
+    max-height:43dvh!important;
   }
-  body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] button{
-    min-height:32px;
-  }
+  .worm-source-title p{display:none}
 }

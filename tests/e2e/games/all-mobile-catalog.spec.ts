@@ -38,18 +38,18 @@ async function exerciseSolo(page: Page, id: SoloId) {
     await expect(board).toBeVisible();
     await expect(game).toHaveAttribute('data-source-stage-count','105');
     await expect(board.locator('[data-source-worm]')).toHaveCount(1);
-    await expect(board.locator('.worm-character')).toHaveCount(1);
-    await expect(board.locator('.worm-terrain')).toHaveCount(1);
-    await expect(board).toHaveAttribute('viewBox','0 0 640 360');
+    await expect(board.locator('[data-source-terrain="gallery-approved"]')).toHaveCount(1);
+    await expect(board.locator('[data-worm-segment]')).toHaveCount(3);
+    await expect(board).toHaveAttribute('viewBox','0 0 630 270');
     await expect(board.locator('[data-source-apple]')).toHaveCount(0);
     await expect(board.locator('[data-source-portal]')).toHaveCount(1);
     await expect(board).toHaveCSS('touch-action','none');
     await game.locator('button[aria-label="right"]').click();
-    await expect(board.locator('[data-source-worm]'))
-      .toHaveAttribute('transform',/^translate\(213 /);
+    await expect(board.locator('[data-worm-segment]').first())
+      .toHaveAttribute('cx','195');
     await game.getByRole('button',{name:/^Undo$|^تراجع$/}).click();
-    await expect(board.locator('[data-source-worm]'))
-      .toHaveAttribute('transform',/^translate\(183 /);
+    await expect(board.locator('[data-worm-segment]').first())
+      .toHaveAttribute('cx','165');
   } else if (id === 'basketballLine') {
     await expect(page.locator('.basketball-canvas')).toBeVisible();
     const c = page.locator('.basketball-canvas');
