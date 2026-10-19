@@ -6,33 +6,24 @@ import { AppleWormSourceGallery } from '../apps/mobile/src/AppleWormSourceGaller
 import { AppleWormVideoPlaytest, APPLE_WORM_VIDEO_PLAYTEST_LEVEL_COUNT }
   from '../apps/mobile/src/AppleWormVideoPlaytest.tsx';
 
-test('the live UI exposes 105 source snapshots but does not falsely call them completed gameplay',()=>{
+test('the retired 105-stage preview route redirects to the ONE approved interactive Apple Worm game',()=>{
   const html=renderToStaticMarkup(createElement(AppleWormSourceGallery,{
     lang:'en',onClose:()=>{},
   }));
-  assert.match(html,/105 stages from the original video/);
-  assert.match(html,/Legacy practice \(40, not video\)/);
-  assert.match(html,/Reference snapshots/);
-  assert.match(html,/not playable or fully verified/);
-  assert.match(html,/40 older generated puzzles are not video-verified/);
-  assert.match(html,/Try this video-traced map \(experimental\)/);
-  assert.match(html,/1–15/);
-  assert.match(html,/91–105/);
-  assert.match(html,/stage 1/i);
+  assert.match(html,/approved 105-stage Apple Worm game/);
+  assert.doesNotMatch(html,/Legacy practice|Reference snapshots|not playable|40, not video/i);
   assert.doesNotMatch(html,/150 stages/);
 });
 
-test('Arabic source gallery labels the old 40 levels as legacy unapproved',()=>{
+test('the former Arabic gallery no longer calls user-approved source stages unplayable',()=>{
   const html=renderToStaticMarkup(createElement(AppleWormSourceGallery,{
     lang:'ar',onClose:()=>{},
   }));
-  assert.match(html,/105 مراحل من الفيديو الأصلي/);
-  assert.match(html,/40 غير معتمدة/);
-  assert.match(html,/المراحل الأربعون القديمة ليست مطابقة للفيديو/);
-  assert.match(html,/ليست قابلة للعب/);
+  assert.match(html,/المراحل الـ105 المعتمدة/);
+  assert.doesNotMatch(html,/40 غير معتمدة|ليست قابلة للعب|صور مرجعية/);
 });
 
-test('ten source-traced boards support an isolated experimental playtest',()=>{
+test('previous video playtest helper remains isolated from the public game',()=>{
   assert.equal(APPLE_WORM_VIDEO_PLAYTEST_LEVEL_COUNT,10);
   const html=renderToStaticMarkup(createElement(AppleWormVideoPlaytest,{
     level:1,lang:'en',
@@ -43,6 +34,5 @@ test('ten source-traced boards support an isolated experimental playtest',()=>{
   assert.match(html,/Restart/);
   assert.match(html,/Undo/);
   assert.match(html,/Test provisional solver/);
-  // CSS sizing legitimately includes 100%; only forbid a false gameplay claim.
   assert.doesNotMatch(html,/100% (?:source-matched|video-accurate|verified)/i);
 });
