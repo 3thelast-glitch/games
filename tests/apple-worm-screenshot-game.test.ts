@@ -181,7 +181,7 @@ test('PDF Level 002 has a reproducible winning route without any apples',()=>{
 });
 
 test('selected source video reconstructs explicit real worm starts, not screenshot-hidden single cells',()=>{
-  const levels=[5,7,8,30,44,98,104,105];
+  const levels=[5,7,8,9,12,13,14,15,30,44,98,104,105];
   const restored=levels.map(level=>{
     const record=APPLE_WORM_VIDEO_START_POSES[level]!;
     const stage=screenshotWormLevel(level);
@@ -202,12 +202,14 @@ test('selected source video reconstructs explicit real worm starts, not screensh
     return {level,length:stage.worm.length};
   });
   assert.deepEqual(restored,[
-    {level:5,length:4},{level:7,length:3},{level:8,length:3},{level:30,length:3},{level:44,length:3},
+    {level:5,length:4},{level:7,length:3},{level:8,length:3},{level:9,length:4},
+    {level:12,length:3},{level:13,length:3},{level:14,length:3},{level:15,length:3},{level:30,length:3},{level:44,length:3},
     {level:98,length:5},{level:104,length:3},{level:105,length:3},
   ]);
   assert.equal(VIDEO_AUDIT_REQUESTED_33.length,33);
   assert.deepEqual(screenshotWormLevel(30).apples.length,5);
   assert.deepEqual(screenshotWormLevel(30).grayObjects,[[9,5],[10,7]]);
+  assert.deepEqual(screenshotWormLevel(12).grayObjects,[[10,4]]);
   assert.deepEqual(screenshotWormLevel(104).apples,[]);
   assert.deepEqual(screenshotWormLevel(98).apples,[[6,5],[4,7]]);
   console.log('APPLE_WORM_SOURCE_VIDEO_START_CORRECTIONS='+JSON.stringify(restored));
