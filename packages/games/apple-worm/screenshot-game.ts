@@ -80,7 +80,17 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
   const source=appleWormVisualSnapshot(level);
   // Some screenshots have a uniquely visible forward-facing mouth which
   // the generic rightmost-endpoint guess cannot infer (stages 2 and 59).
-  const worm=traceVisibleWorm(source.wormVisible,
+  // Four green cells may mutually touch in a 2x2 area even when the
+  // actual body follows a U bend. In those two screenshots the mouth is
+  // visible, so preserve the pictured head-to-tail path instead of
+  // rejecting the worm as a loop.
+  const picturedOrder:readonly ScreenshotPoint[]|null=level===80
+    ?[[9,5],[10,5],[11,5],[11,6],[10,6]]
+    :level===99?[[3,2],[3,3],[3,4],[4,4],[4,3]]:null;
+  const manualMatches=picturedOrder!==null&&picturedOrder.length===source.wormVisible.length&&
+    picturedOrder.every(p=>source.wormVisible.some(q=>eq(p,q)))&&
+    picturedOrder.every((p,i)=>i===0||touching(p,picturedOrder[i-1]!));
+  const worm=manualMatches?[...picturedOrder!]:traceVisibleWorm(source.wormVisible,
     level===2?[6,3]:level===59?[8,-2]:undefined);
   // The first 10 exits were manually traced from the walkthrough, and are
   // more reliable than the still-image portal detector when it misses a swirl.
