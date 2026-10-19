@@ -41,16 +41,13 @@ for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:
           expect(Math.abs(frame.width-shortSide)).toBeLessThan(2);
           expect(Math.abs(frame.height-longSide)).toBeLessThan(2);
         }
-        await expect(game).toHaveCSS('overflow-y','auto');
+        await expect(game).toHaveCSS('overflow-y','hidden');
         await expectNoGlobalOverflow(page);
 
         await page.setViewportSize({width:longSide,height:shortSide});
         await expect(board).toBeVisible();
-        await expect.poll(async()=>board.evaluate(svg=>{
-          const b=svg.getBoundingClientRect();
-          const view=(svg as SVGSVGElement).viewBox.baseVal;
-          return Math.abs(view.width/view.height-b.width/b.height);
-        })).toBeLessThan(.02);
+        await expect(board).toHaveAttribute('preserveAspectRatio','xMidYMid meet');
+        await expect(board).toHaveAttribute('viewBox','0 0 640 360');
         const first=board.locator('[data-source-worm]');
         await expect(first).toHaveAttribute('transform',/^translate\(183 /);
         const rect=await board.boundingBox();
@@ -81,8 +78,9 @@ for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:
         await choose.click();
         const dialog=game.getByRole('dialog');
         await expect(dialog).toBeVisible();
-        await expect(dialog.getByRole('button',{name:'91–105'})).toBeVisible();
-        await dialog.getByRole('button',{name:'91–105'}).click();
+        await expect(dialog.getByRole('tab',{name:'91–105'})).toBeVisible();
+        await dialog.getByRole('tab',{name:'91–105'}).click();
+        await dialog.locator('.source-practice input').check();
         await dialog.getByRole('button',{name:locale.id==='ar'?'المرحلة 101':'Stage 101'}).click();
         const late=game.locator('svg[data-source-level="101"]');
         await expect(late).toBeVisible();
