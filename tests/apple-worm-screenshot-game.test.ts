@@ -54,6 +54,8 @@ test('post-apple stage 2 stays exactly as pictured, no phantom apples',()=>{
   assert.equal(board.apples.length,0);
   assert.equal(board.issues.includes('no-apples-visible-in-frame'),true);
   assert.equal(startScreenshotWorm(2).body.length,board.worm.length);
+  assert.deepEqual(board.worm[0],[6,3], 'head faces from upper bend in Level 002 reference');
+  assert.deepEqual(board.portal,[13,2], 'exit sits above right-side platform');
 });
 test('stage 48 retains all visible apples and all six gray unknown objects',()=>{
   const map=screenshotWormLevel(48);
