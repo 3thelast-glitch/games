@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {appleWormVisualSnapshot} from '../packages/games/apple-worm/video-visual-snapshots-105.ts';
+import {appleWormVideoTracedStage} from '../packages/games/apple-worm/video-traced-stages.ts';
 import {
   APPLE_WORM_SCREENSHOT_LEVEL_COUNT,
   SCREENSHOT_DIRECTIONS, screenshotWormLevel,
@@ -21,7 +22,8 @@ test('all 105 source snapshots load as actual gameplay geometry with zero invent
     assert.deepEqual(board.rows,source.terrain);
     assert.deepEqual(board.apples,source.applesVisible);
     assert.deepEqual(board.grayObjects,source.grayObjectsVisible);
-    assert.deepEqual(board.portal,source.probablePortal);
+    assert.deepEqual(board.portal,source.probablePortal??
+      (level<=10?appleWormVideoTracedStage(level).exit:null));
     assert.deepEqual(state.collected,[]);
     assert.equal(state.moves,0);
     assert.equal(state.phase,'playing');
@@ -42,6 +44,8 @@ test('all 105 source snapshots load as actual gameplay geometry with zero invent
   }
   assert.ok(motionCapable>=90,'the archive should support motion for most distinct worm shapes');
   assert.ok(unresolvedPortals>0,'must not fill missing portals with invented exits');
+  assert.deepEqual(screenshotWormLevel(2).portal,[13,2]);
+  assert.deepEqual(screenshotWormLevel(4).portal,[14,1]);
   assert.throws(()=>screenshotWormLevel(0),RangeError);
   assert.throws(()=>screenshotWormLevel(106),RangeError);
 });
