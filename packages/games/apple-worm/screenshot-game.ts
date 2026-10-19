@@ -78,8 +78,10 @@ function traceVisibleWorm(points:readonly ScreenshotPoint[], preferredHead?:Scre
 }
 export function screenshotWormLevel(level:number):ScreenshotLevel {
   const source=appleWormVisualSnapshot(level);
+  // Some screenshots have a uniquely visible forward-facing mouth which
+  // the generic rightmost-endpoint guess cannot infer (stages 2 and 59).
   const worm=traceVisibleWorm(source.wormVisible,
-    level===2?[6,3]:undefined);
+    level===2?[6,3]:level===59?[8,-2]:undefined);
   // The first 10 exits were manually traced from the walkthrough, and are
   // more reliable than the still-image portal detector when it misses a swirl.
   const portal=source.probablePortal??(level<=10?appleWormVideoTracedStage(level).exit:null);
