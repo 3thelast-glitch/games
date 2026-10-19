@@ -12,6 +12,8 @@
  */
 import { appleWormVisualSnapshot, APPLE_WORM_VISUAL_SNAPSHOT_COUNT } from './video-visual-snapshots-105.ts';
 import { appleWormVideoTracedStage } from './video-traced-stages.ts';
+import { APPLE_WORM_VIDEO_START_POSES } from './video-start-poses-selected-33.ts';
+import { isBatchOneMovableGray, pushGrayBox, settleGrayBoxes } from './gray-box-physics-batch-1.ts';
 
 export type ScreenshotPoint = readonly [number, number];
 export type ScreenshotDirection = 'up'|'right'|'down'|'left';
@@ -37,6 +39,8 @@ export interface ScreenshotState {
   readonly level:number;
   readonly body:readonly ScreenshotPoint[];
   readonly collected:readonly number[];
+  /** Dynamic gray crates only on the eight problem stages in video batch 1. */
+  readonly grayPositions?:readonly ScreenshotPoint[];
   readonly phase:ScreenshotPhase;
   readonly moves:number;
 }
@@ -92,7 +96,8 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
   const manualMatches=picturedOrder!==null&&picturedOrder.length===source.wormVisible.length&&
     picturedOrder.every(p=>source.wormVisible.some(q=>eq(p,q)))&&
     picturedOrder.every((p,i)=>i===0||touching(p,picturedOrder[i-1]!));
-  const worm=manualMatches?[...picturedOrder!]:traceVisibleWorm(source.wormVisible,
+  const videoStart=APPLE_WORM_VIDEO_START_POSES[level];
+  const worm=videoStart?[...videoStart.headToTail]:manualMatches?[...picturedOrder!]:traceVisibleWorm(source.wormVisible,
     level===2?[6,3]:level===59?[8,-2]:undefined);
   // The first 10 exits were manually traced from the walkthrough, and are
   // more reliable than the still-image portal detector when it misses a swirl.
@@ -104,15 +109,19 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
   if(portal && portal[1]<0)issues.push('portal-above-terrain-grid');
   if(portal && portal[1]>=9)issues.push('portal-below-terrain-grid');
   if(source.grayObjectsVisible.length)issues.push('gray-object-mechanics-unresolved');
-  if(!source.applesVisible.length)issues.push('no-apples-visible-in-frame');
+  const apples=videoStart?.extraInitialApples
+    ?[...source.applesVisible,...videoStart.extraInitialApples]:source.applesVisible;
+  const grayObjects=videoStart?.grayStartOverride??source.grayObjectsVisible;
+  if(videoStart)issues.push('video-clip-start-reconstructed');
+  if(!apples.length)issues.push('no-apples-visible-in-frame');
   issues.push('starting-head-and-physics-unverified');
   return {
     number:level,width:21,height:9,
     rows:source.terrain,
     worm:worm??source.wormVisible,
-    apples:source.applesVisible,
+    apples,
     portal,
-    grayObjects:source.grayObjectsVisible,
+    grayObjects,
     canMove:worm!==null,
     issues,
     sourceGeometry:'screenshot',referenceFrameApproved:true,
@@ -124,6 +133,8 @@ export function startScreenshotWorm(level=1):ScreenshotState {
   return {
     level,body:map.worm.map(([x,y]):ScreenshotPoint=>[x,y]),
     collected:[],phase:'playing',moves:0,
+    ...(isBatchOneMovableGray(level)?{grayPositions:map.grayObjects.map(
+      ([x,y]):ScreenshotPoint=>[x,y])}:{})
   };
 }
 // Original 640x360 contact frames can show a spiral above the ground
@@ -141,13 +152,24 @@ export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDir
   if(!solid){
     solid=new Set<string>();
     stage.rows.forEach((row,y)=>[...row].forEach((t,x)=>{if(t==='#')solid!.add(key([x,y]));}));
-    // Gray unknown objects remain blockers exactly as in the original engine.
-    stage.grayObjects.forEach(p=>solid!.add(key(p)));
+    // Gray boxes remain static blockers outside the eight problem stages.
+    if(!isBatchOneMovableGray(stage.number))
+      stage.grayObjects.forEach(p=>solid!.add(key(p)));
     solidCellsByStage.set(stage,solid);
   }
   const [dx,dy]=DELTAS[direction], [hx,hy]=state.body[0]!;
   const head:ScreenshotPoint=[hx+dx,hy+dy];
   if(!onBoard(head)||solid.has(key(head))||state.body[1]&&eq(head,state.body[1]))return state;
+  const dynamic=isBatchOneMovableGray(stage.number);
+  let boxes:readonly ScreenshotPoint[]|undefined=dynamic
+    ?(state.grayPositions??stage.grayObjects):undefined;
+  if(dynamic){
+    const afterPush=pushGrayBox({boxes:boxes!,headTarget:head,direction,
+      terrain:solid,body:state.body,
+      apples:stage.apples.filter((_,i)=>!state.collected.includes(i))});
+    if(!afterPush)return state;
+    boxes=afterPush;
+  }
   const fruitIndex=stage.apples.findIndex((p,i)=>!state.collected.includes(i)&&eq(p,head));
   const grow=fruitIndex>=0;
   const occupied=grow?state.body:state.body.slice(0,-1);
@@ -159,7 +181,10 @@ export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDir
   const win=()=>stage.portal!==null&&eq(body[0]!,stage.portal);
   let phase:ScreenshotPhase=win()?'won':'playing';
   const remaining=stage.apples.filter((_,i)=>!collected.includes(i));
+  // Simulate source-video gray box gravity only for the eight requested stages.
+  if(dynamic)boxes=settleGrayBoxes(boxes!,solid,body,remaining);
   const supported=()=>body.some(([x,y])=>solid.has(key([x,y+1]))||
+    (boxes?.some(p=>eq(p,[x,y+1]))??false)||
     remaining.some(p=>eq(p,[x,y+1])));
   // Gravity starts only after a legal move; the untouched screenshot is never changed.
   if(phase==='playing'){
@@ -174,7 +199,8 @@ export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDir
       if(win()){phase='won';break;}
     }
   }
-  return {level:state.level,body,collected,phase,moves:state.moves+1};
+  return {level:state.level,body,collected,phase,moves:state.moves+1,
+    ...(dynamic?{grayPositions:boxes!.map(([x,y]):ScreenshotPoint=>[x,y])}:{})};
 }
 /** Strict restoring: never accept arbitrary saved worm pixels or completed flags. */
 export function restoreScreenshotWorm(value:unknown):ScreenshotState|null {
@@ -192,6 +218,15 @@ export function restoreScreenshotWorm(value:unknown):ScreenshotState|null {
   if(s.collected.some(i=>!Number.isInteger(i)||i<0||i>=board.apples.length)||
     new Set(s.collected).size!==s.collected.length)return null;
   if(s.phase==='won'&&(!board.portal||!eq(s.body[0]!,board.portal)))return null;
+  const boxes=isBatchOneMovableGray(s.level!)?s.grayPositions:undefined;
+  if(boxes!==undefined&&(!Array.isArray(boxes)||
+    boxes.length!==board.grayObjects.length||
+    boxes.some(p=>!Array.isArray(p)||p.length!==2||!onBoard([p[0],p[1]])||
+      !Number.isInteger(p[0])||!Number.isInteger(p[1]))||
+    new Set(boxes.map(key)).size!==boxes.length||
+    boxes.some(p=>s.body!.some(b=>eq(p,b)))))return null;
   return {level:s.level!,body:s.body.map(([x,y]):ScreenshotPoint=>[x,y]),
-    collected:[...s.collected],moves:s.moves!,phase:s.phase!};
+    collected:[...s.collected],moves:s.moves!,phase:s.phase!,
+    ...(isBatchOneMovableGray(s.level!)?{grayPositions:(boxes??board.grayObjects)
+      .map(([x,y]):ScreenshotPoint=>[x,y])}:{})};
 }

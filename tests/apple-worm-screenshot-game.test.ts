@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {appleWormVisualSnapshot} from '../packages/games/apple-worm/video-visual-snapshots-105.ts';
 import {appleWormVideoTracedStage} from '../packages/games/apple-worm/video-traced-stages.ts';
+import {APPLE_WORM_VIDEO_START_POSES, VIDEO_AUDIT_REQUESTED_33} from '../packages/games/apple-worm/video-start-poses-selected-33.ts';
 import {
   APPLE_WORM_SCREENSHOT_LEVEL_COUNT,
   SCREENSHOT_DIRECTIONS, screenshotWormLevel,
@@ -20,8 +21,10 @@ test('all 105 source snapshots load as actual gameplay geometry with zero invent
     assert.equal(board.width,21);
     assert.equal(board.height,9);
     assert.deepEqual(board.rows,source.terrain);
-    assert.deepEqual(board.apples,source.applesVisible);
-    assert.deepEqual(board.grayObjects,source.grayObjectsVisible);
+    const video=APPLE_WORM_VIDEO_START_POSES[level];
+    assert.deepEqual(board.apples,video?.extraInitialApples
+      ?[...source.applesVisible,...video.extraInitialApples]:source.applesVisible);
+    assert.deepEqual(board.grayObjects,video?.grayStartOverride??source.grayObjectsVisible);
     assert.deepEqual(board.portal,source.probablePortal??
       (level<=10?appleWormVideoTracedStage(level).exit:null));
     assert.deepEqual(state.collected,[]);
@@ -31,7 +34,12 @@ test('all 105 source snapshots load as actual gameplay geometry with zero invent
     assert.equal(board.referenceFrameApproved,true);
     assert.equal(board.exactPhysicsVerified,false);
     assert.equal(board.exactVisualComparisonPassed,false);
-    assert.deepEqual(new Set(state.body.map(key)),new Set(source.wormVisible.map(key)));
+    assert.deepEqual(new Set(state.body.map(key)),
+      new Set((video?.headToTail??source.wormVisible).map(key)));
+    if(video){
+      assert.deepEqual(state.body,video.headToTail);
+      assert.equal(board.issues.includes('video-clip-start-reconstructed'),true);
+    }
     if(board.canMove) motionCapable++;
     if(!board.portal)unresolvedPortals++;
     for(const dir of SCREENSHOT_DIRECTIONS){
@@ -170,4 +178,49 @@ test('PDF Level 002 has a reproducible winning route without any apples',()=>{
   assert.equal(state.phase,'won');
   assert.deepEqual(state.body[0],board.portal);
   assert.deepEqual(state.collected,[]);
+});
+
+test('selected source video reconstructs explicit real worm starts, not screenshot-hidden single cells',()=>{
+  const levels=[5,7,8,9,12,13,14,15,17,18,19,20,28,30,34];
+  const restored=levels.map(level=>{
+    const record=APPLE_WORM_VIDEO_START_POSES[level]!;
+    const stage=screenshotWormLevel(level);
+    assert.deepEqual(stage.worm,record.headToTail);
+    assert.equal(stage.portal!==null,true);
+    assert.equal(stage.canMove,true);
+    const unique=new Set(stage.worm.map(key));
+    assert.equal(unique.size,stage.worm.length);
+    for(let i=1;i<stage.worm.length;i++){
+      const a=stage.worm[i-1]!,b=stage.worm[i]!;
+      assert.equal(Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1]),1);
+    }
+    stage.worm.forEach(([x,y])=>{
+      assert.ok(x>=0&&x<21&&y>=-2&&y<=9);
+      if(y>=0&&y<9)assert.equal(stage.rows[y]![x],'.',
+        'filmed body must not overlap existing terrain on stage '+level);
+    });
+    return {level,length:stage.worm.length};
+  });
+  assert.deepEqual(restored,[
+    {level:5,length:4},
+    {level:7,length:3},
+    {level:8,length:3},
+    {level:9,length:4},
+    {level:12,length:3},
+    {level:13,length:3},
+    {level:14,length:3},
+    {level:15,length:3},
+    {level:17,length:3},
+    {level:18,length:3},
+    {level:19,length:4},
+    {level:20,length:3},
+    {level:28,length:3},
+    {level:30,length:3},
+    {level:34,length:3},
+  ]);
+  assert.equal(VIDEO_AUDIT_REQUESTED_33.length,33);
+  assert.deepEqual(screenshotWormLevel(30).apples.length,5);
+  assert.deepEqual(screenshotWormLevel(30).grayObjects,[[9,5],[10,7]]);
+  assert.deepEqual(screenshotWormLevel(12).grayObjects,[[10,4]]);
+  console.log('APPLE_WORM_SOURCE_VIDEO_START_CORRECTIONS='+JSON.stringify(restored));
 });

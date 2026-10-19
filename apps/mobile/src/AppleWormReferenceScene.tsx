@@ -20,14 +20,16 @@ const anchor=([x,y]:ScreenshotPoint)=>({
   x:(x+.5)*CELL,y:(y+.5)*CELL,
 });
 
-export function AppleWormReferenceScene({board,body,remaining,phase='playing',biteFx=null}:{
+export function AppleWormReferenceScene({board,body,remaining,grayPositions,phase='playing',biteFx=null}:{
   board:ScreenshotLevel;
   body:readonly ScreenshotPoint[];
   remaining:readonly ScreenshotPoint[];
+  grayPositions?:readonly ScreenshotPoint[];
   phase?:'playing'|'won'|'lost';
   biteFx?:{key:number;apple:ScreenshotPoint}|null;
 }) {
-  const id=useId().replace(/:/g,'')+'-pdf105-r6';
+  const id=useId().replace(/:/g,'')+'-pdf105-r9';
+  const currentGray=grayPositions??board.grayObjects;
   const blocks=board.rows.flatMap((row,y)=>[...row].flatMap((tile,x)=>
     tile==='#'?[{x,y}]:[]));
   const worm=body.map(([x,y])=>({x,y}));
@@ -41,7 +43,7 @@ export function AppleWormReferenceScene({board,body,remaining,phase='playing',bi
   // Keep the original source-frame head pose as a cosmetic exception on L002.
   const faceAngle=appleWormFacingAngle(body,stageTwoSourcePose);
   const occupied:ScreenshotPoint[]=[...blocks.map(p=>[p.x,p.y] as const),
-    ...board.grayObjects,...body.slice(1)];
+    ...currentGray,...body.slice(1)];
   const cue=appleWormMouthCue(head,remaining,phase,faceAngle,occupied);
   const chewing=biteFx!==null&&phase!=='lost';
 
@@ -74,7 +76,7 @@ export function AppleWormReferenceScene({board,body,remaining,phase='playing',bi
       <WormTerrain blocks={blocks} tile={CELL}/>
     </g>
 
-    {board.grayObjects.map((point,i)=>{
+    {currentGray.map((point,i)=>{
       const {x,y}=anchor(point);
       return <g key={'obstacle-'+i} data-source-gray-object
         transform={'translate('+x+' '+y+')'}>
