@@ -68,4 +68,5 @@ test('high stages with many apples and saws retain independently visible objects
   assert.equal(appleWormImageEvidence(59).visibleWormCells.length,4);
   assert.equal(appleWormImageEvidence(91).visibleWormCells.length,5);
   assert.equal(appleWormImageEvidence(95).visibleWormCells.length,7);
+  assert.equal(appleWormImageEvidence(99).visibleWormCells.length,5);
 });
