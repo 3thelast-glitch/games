@@ -34,7 +34,8 @@ interface SearchNode {
   via:ScreenshotDirection|null;
 }
 const stateKey=(s:ScreenshotState)=>
-  s.body.map(p=>p[0]+','+p[1]).join(';')+'|'+s.collected.join(',');
+  s.body.map(p=>p[0]+','+p[1]).join(';')+'|'+s.collected.join(',')+
+  '|'+(s.grayPositions?.map(p=>p[0]+','+p[1]).join(';')??'');
 const delta:Record<ScreenshotDirection,readonly[number,number]>={
   up:[0,-1],right:[1,0],down:[0,1],left:[-1,0],
 };
