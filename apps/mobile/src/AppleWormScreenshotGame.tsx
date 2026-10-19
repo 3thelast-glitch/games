@@ -13,7 +13,7 @@ import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
 interface SourceSave { level:number; state:ScreenshotState; completed:number[]; visualRevision?:string }
 const SAVE_KEY='apple-worm-screenshot-source-105-v1';
 /** Increases when the reference rendering/initial layouts change. */
-export const APPLE_WORM_VISUAL_REVISION='PDF105-R4';
+export const APPLE_WORM_VISUAL_REVISION='PDF105-R5';
 const keyMap:Record<string,ScreenshotDirection>={
   arrowup:'up',w:'up',arrowdown:'down',s:'down',
   arrowleft:'left',a:'left',arrowright:'right',d:'right',
@@ -58,10 +58,9 @@ export function AppleWormScreenshotGame({onExit,settings}:{
         const n=resume?.level??saved.level;
         setLevel(n);
         setGroup(Math.floor((n-1)/15));
-        // Retain completed stages, but do not revive an old on-board pose after
-        // a reference-art/geometry update. Show the corrected PDF start frame.
-        const next=resume&&saved.visualRevision===APPLE_WORM_VISUAL_REVISION
-          ?resume:startScreenshotWorm(n);
+        // A visual-only release MUST NOT reset the player's in-progress worm.
+        // The geometry/logic/source maps are unchanged; resume as before.
+        const next=resume??startScreenshotWorm(n);
         stateRef.current=next;
         setState(next);
         if(Array.isArray(saved.completed))
@@ -143,7 +142,7 @@ export function AppleWormScreenshotGame({onExit,settings}:{
     <main className="worm-page worm-immersive worm-source-play" dir={ar?'rtl':'ltr'}
       data-display="immersive-landscape" data-stage-origin="user-screenshot"
       data-pdf-reference="approved" data-source-stage-count={APPLE_WORM_SCREENSHOT_LEVEL_COUNT}
-      data-visual-revision={APPLE_WORM_VISUAL_REVISION} data-renderer="approved-gallery-game">
+      data-visual-revision={APPLE_WORM_VISUAL_REVISION} data-renderer="premium-gallery-game">
       <section className="worm-source-page"
         aria-label={t('Approved Apple Worm stages','مراحل دودة التفاح المعتمدة')}>
         <header className="worm-source-heading">
