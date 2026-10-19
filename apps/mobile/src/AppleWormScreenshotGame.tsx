@@ -13,7 +13,7 @@ import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
 interface SourceSave { level:number; state:ScreenshotState; completed:number[]; visualRevision?:string }
 const SAVE_KEY='apple-worm-screenshot-source-105-v1';
 /** Increases when the reference rendering/initial layouts change. */
-export const APPLE_WORM_VISUAL_REVISION='PDF105-R2';
+export const APPLE_WORM_VISUAL_REVISION='PDF105-R3';
 const keyMap:Record<string,ScreenshotDirection>={
   arrowup:'up',w:'up',arrowdown:'down',s:'down',
   arrowleft:'left',a:'left',arrowright:'right',d:'right',
@@ -26,8 +26,8 @@ const controls:readonly [ScreenshotDirection,string][]=[
  * Geometry and visible objects come only from the source archive. Where head,
  * portal or gray-object behavior is unclear, call it provisional, never solved.
  */
-export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
-  onExit:()=>void;onLegacy:()=>void;settings:Settings;
+export function AppleWormScreenshotGame({onExit,settings}:{
+  onExit:()=>void;settings:Settings;
 }) {
   const {lang}=useI18n();
   const ar=lang==='ar';
@@ -44,7 +44,6 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
   const [showChoose,setShowChoose]=useState(false);
   const swiping=useRef<{id:number;x:number;y:number}|null>(null);
   const board=screenshotWormLevel(level);
-  const inSourceMode=true;
 
   useEffect(()=>{
     void enterGameLandscape();
@@ -144,11 +143,14 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
     <main className="worm-page worm-immersive worm-source-play" dir={ar?'rtl':'ltr'} data-display="immersive-landscape"
       data-stage-origin="user-screenshot" data-pdf-reference="approved" data-source-stage-count={APPLE_WORM_SCREENSHOT_LEVEL_COUNT}
       data-visual-revision={APPLE_WORM_VISUAL_REVISION}
-      style={{position:'fixed',inset:0,zIndex:1100,overflowY:'auto',padding:'env(safe-area-inset-top) 10px env(safe-area-inset-bottom)',
-        boxSizing:'border-box',background:'linear-gradient(180deg,#193c59,#326181)',color:'white'}}>
+      style={{position:'fixed',inset:0,zIndex:1100,overflow:'hidden',padding:0,
+        boxSizing:'border-box',background:'#a4e5ea',color:'white'}}>
       <section aria-label={t('Apple Worm original stages','مراحل دودة التفاح من الصور')}
-        style={{maxWidth:1000,margin:'0 auto',display:'flex',flexDirection:'column',gap:6}}>
-        <header style={{display:'flex',alignItems:'center',gap:8,justifyContent:'space-between',flexWrap:'wrap'}}>
+        style={{width:'100%',height:'100%',position:'relative',maxWidth:'none',margin:0,display:'block'}}>
+        <header style={{position:'absolute',top:0,left:0,right:0,zIndex:9,display:'flex',
+          alignItems:'center',gap:8,justifyContent:'space-between',flexWrap:'wrap',
+          background:'linear-gradient(180deg,rgba(24,67,73,.62),transparent)',
+          padding:'max(5px,env(safe-area-inset-top)) 12px 5px'}}>
           <button type="button" onClick={onExit} style={buttonStyle}>
             ↩ {t('Back to NAQLA','العودة لنقلة')}
           </button>
@@ -160,12 +162,16 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
           <button type="button" onClick={()=>setShowChoose(n=>!n)} aria-expanded={showChoose}
             style={buttonStyle}>{t('Choose stage','اختيار المرحلة')} ▦</button>
         </header>
-        <div style={{fontSize:12,color:'#e8f8ff',lineHeight:1.3,textAlign:'center'}} role="note">
+        <div style={{position:'absolute',top:76,left:0,right:0,zIndex:6,fontSize:12,
+          color:'#244e59',lineHeight:1.3,textAlign:'center',pointerEvents:'none'}} role="note">
           {t('Reach the black exit to win · Apples are optional',
             'ادخل المخرج الأسود للفوز · التفاح اختياري')}
         </div>
         {showChoose && <div role="dialog" aria-label={t('Stage selector','اختيار المراحل')}
-          style={{padding:10,background:'#1b5267',borderRadius:12,display:'flex',flexDirection:'column',gap:9}}>
+          style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',
+            zIndex:20,width:'min(650px,92vw)',maxHeight:'75dvh',overflowY:'auto',
+            padding:12,background:'rgba(27,82,103,.97)',borderRadius:12,
+            display:'flex',flexDirection:'column',gap:9,boxShadow:'0 10px 35px #18394788'}}>
           <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
             {Array.from({length:7},(_,i)=>i).map(i=><button type="button" key={i}
               onClick={()=>setGroup(i)}
@@ -194,12 +200,14 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
           onPointerDown={begin} onPointerUp={finish}
           onPointerCancel={()=>{swiping.current=null;}}
           onLostPointerCapture={()=>{swiping.current=null;}}
-          style={{display:'block',width:'100%',height:'auto',maxHeight:'min(54dvh,440px)',minHeight:100,
-            touchAction:'none',borderRadius:12,border:'3px solid #a6e4f0',
-            background:'#89ceef',boxSizing:'border-box',flexShrink:0}}>
+          style={{position:'absolute',inset:0,display:'block',width:'100%',height:'100%',
+            maxHeight:'none',minHeight:0,touchAction:'none',border:'none',borderRadius:0,
+            background:'#a5e8ef',boxSizing:'border-box'}}>
           <AppleWormReferenceScene board={board} body={state.body} remaining={remaining}/>
         </svg>
-        <div style={{display:'flex',justifyContent:'space-between',flexWrap:'wrap',gap:7,fontSize:12}}>
+        <div style={{position:'absolute',bottom:70,left:12,right:12,zIndex:8,display:'flex',
+          justifyContent:'space-between',flexWrap:'wrap',gap:7,fontSize:12,
+          color:'#fff',textShadow:'0 1px 3px #275358',pointerEvents:'none'}}>
           <span>{t('Moves','الحركات')}: {state.moves}</span>
           <span>{t('Optional apples','التفاح الاختياري')}: {state.collected.length}/{board.apples.length}</span>
           <span>{t('Verified completions','الإنجازات المسجلة')}: {completed.length}/105</span>
@@ -208,7 +216,8 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
             !board.canMove?t('Worm pose unresolved','وضع الدودة غير واضح'):
             t('Swipe or use arrows','اسحب أو استخدم الأسهم')}</span>
         </div>
-        <div style={{display:'flex',gap:6,justifyContent:'center',flexWrap:'wrap',alignItems:'center'}}>
+        <div style={{position:'absolute',bottom:12,left:12,right:12,zIndex:9,display:'flex',
+          gap:6,justifyContent:'center',flexWrap:'wrap',alignItems:'center'}}>
           {controls.map(([dir,glyph])=>
             <button type="button" key={dir} onClick={()=>move(dir)}
               disabled={!board.canMove||state.phase!=='playing'}
@@ -219,21 +228,15 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
           <button type="button" onClick={()=>pick(Math.min(105,level+1))}
             disabled={level>=105} style={buttonStyle}>{t('Next','التالي')} →</button>
         </div>
-        {(!board.portal||!board.canMove)&&<p role="status" style={{margin:'2px 0',textAlign:'center',
-          fontSize:11,color:'#efcda5'}}>
+        {(!board.portal||!board.canMove)&&<p role="status" style={{position:'absolute',bottom:110,
+          left:0,right:0,zIndex:8,margin:0,textAlign:'center',fontSize:11,color:'#754829'}}>
           {!board.portal?t('Exit position not yet reconstructed for this PDF frame.',
             'لم يُحدد موقع المخرج في تنفيذ اللعبة لهذه الصورة بعد.'):
             t('Worm controls need reconstruction for this PDF frame.',
             'يحتاج موضع الدودة في تنفيذ اللعبة إلى تصحيح لهذه الصورة.')}
         </p>}
-        <footer style={{display:'flex',justifyContent:'center',gap:7,flexWrap:'wrap'}}>
-          <button type="button" style={buttonStyle} onClick={onLegacy}>
-            {t('Legacy 40 practice maps (not video)','المراحل القديمة 40 (غير معتمدة)')}
-          </button>
-          <span style={{fontSize:10,color:'#bad4e3',alignSelf:'center'}}>
-            {settings.sound?'♪':''} {inSourceMode?t('Screenshot-defined board','لوحة مبنية من الصورة'):''}
-          </span>
-        </footer>
+        <span style={{position:'absolute',bottom:6,right:8,zIndex:7,fontSize:9,
+          color:'#567c7c',pointerEvents:'none'}}>{settings.sound?'♪ ':''}{APPLE_WORM_VISUAL_REVISION}</span>
       </section>
     </main>,document.body);
 }
