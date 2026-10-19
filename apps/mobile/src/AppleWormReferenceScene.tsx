@@ -23,6 +23,8 @@ export function AppleWormReferenceScene({board,body,remaining}:{
   const brick=board.number>=31;
   const cells=board.rows.flatMap((line,y)=>
     [...line].flatMap((tile,x)=>tile==='#'?[{x,y}]:[]));
+  const occupied=new Set(cells.map(({x,y})=>x+','+y));
+  const exposed=(x:number,y:number)=>!occupied.has(x+','+y);
   const connected=body.every((part,i)=>i===0||touching(part,body[i-1]!));
   const ordered=body.slice().reverse();
   const points=ordered.map(p=>{const c=center(p);return c.x+','+c.y;}).join(' ');
@@ -86,18 +88,42 @@ export function AppleWormReferenceScene({board,body,remaining}:{
     <path d="M0 263 Q35 246 70 267 T139 268 T215 264 T292 269 T375 266 T449 268 T527 264 T630 269 L630 280H0Z"
       fill="#5ca263"/>
     </g>
-    {cells.map(({x,y})=><g key={'earth-'+x+'-'+y}
-      transform={'translate('+(18+x*CELL)+' '+(58+y*CELL)+')'}>
-      <rect width={CELL} height={CELL} rx="1" fill={brick?'url(#wormref-brick)':'url(#wormref-earth)'}
-        stroke={brick?'#653b2c':'#512c1d'} strokeWidth="1.5"/>
-      {brick?<g fill="none" stroke="#6c3d2d" strokeWidth="1.5" opacity=".8">
-        <path d="M0 9H30M0 19H30M0 29H30M15 0V9M7 9V19M23 19V29"/>
-        <path d="M1 3H13M18 13H28M8 24H20" stroke="#e79a6c" strokeWidth="1" opacity=".65"/>
-      </g>:<g fill="none">
-        <path d="M2 4H28M3 9H27" stroke="#c18a59" strokeWidth="2" opacity=".8"/>
-        <path d="M1 25H29M2 20H27" stroke="#3c271e" strokeWidth="2" opacity=".5"/>
-      </g>}
-    </g>)}
+    {/* Draw a continuous landmass. Internal tile outlines created artificial
+          square seams that are absent from the approved PDF platform shape. */}
+    <g data-source-terrain="continuous">
+      {cells.map(({x,y})=><rect key={'terrain-fill-'+x+'-'+y}
+        x={18+x*CELL} y={58+y*CELL} width={CELL} height={CELL}
+        fill={brick?'url(#wormref-brick)':'url(#wormref-earth)'}/>)}
+      {cells.map(({x,y})=>{
+        const top=exposed(x,y-1),bottom=exposed(x,y+1);
+        const left=exposed(x-1,y),right=exposed(x+1,y);
+        const tx=18+x*CELL,ty=58+y*CELL;
+        return <g key={'terrain-details-'+x+'-'+y}
+          transform={'translate('+tx+' '+ty+')'}>
+          {/* A shared cap and perimeter shadow follow only exposed edges. */}
+          {top&&<g fill="none" strokeLinecap="square">
+            <path d="M0 1H30" stroke={brick?'#f2b07e':'#cb8751'}
+              strokeWidth="3"/>
+            <path d="M0 5H30" stroke={brick?'#c9855d':'#ad7040'}
+              strokeWidth="1.5" opacity=".9"/>
+          </g>}
+          {bottom&&<path d="M0 29H30" stroke="#3c221a"
+            strokeWidth="3"/>}
+          {left&&<path d="M1 0V30" stroke="#4e2b1b"
+            strokeWidth="3"/>}
+          {right&&<path d="M29 0V30" stroke="#4e2b1b"
+            strokeWidth="3"/>}
+          {brick?<g fill="none" stroke="#71402c" strokeWidth="1.3" opacity=".7">
+            <path d="M0 11H30M0 23H30M15 0V11M6 11V23M22 23V30"/>
+          </g>:<g fill="none">
+            <path d="M2 10H27M4 19H29" stroke="#9b5e37" strokeWidth="2"
+              opacity=".6"/>
+            <path d="M7 15H23M3 26H18" stroke="#4d301e" strokeWidth="2"
+              opacity=".45"/>
+          </g>}
+        </g>;
+      })}
+    </g>
     {board.grayObjects.map((p,i)=>{
       const {x,y}=center(p);
       return <g key={'metal-'+i} transform={'translate('+x+' '+y+')'}
