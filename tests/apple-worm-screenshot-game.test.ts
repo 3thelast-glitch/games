@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {appleWormVisualSnapshot} from '../packages/games/apple-worm/video-visual-snapshots-105.ts';
+import {appleWormVideoTracedStage} from '../packages/games/apple-worm/video-traced-stages.ts';
 import {
   APPLE_WORM_SCREENSHOT_LEVEL_COUNT,
   SCREENSHOT_DIRECTIONS, screenshotWormLevel,
@@ -21,7 +22,8 @@ test('all 105 source snapshots load as actual gameplay geometry with zero invent
     assert.deepEqual(board.rows,source.terrain);
     assert.deepEqual(board.apples,source.applesVisible);
     assert.deepEqual(board.grayObjects,source.grayObjectsVisible);
-    assert.deepEqual(board.portal,source.probablePortal);
+    assert.deepEqual(board.portal,source.probablePortal??
+      (level<=10?appleWormVideoTracedStage(level).exit:null));
     assert.deepEqual(state.collected,[]);
     assert.equal(state.moves,0);
     assert.equal(state.phase,'playing');
@@ -42,6 +44,8 @@ test('all 105 source snapshots load as actual gameplay geometry with zero invent
   }
   assert.ok(motionCapable>=90,'the archive should support motion for most distinct worm shapes');
   assert.ok(unresolvedPortals>0,'must not fill missing portals with invented exits');
+  assert.deepEqual(screenshotWormLevel(2).portal,[13,2]);
+  assert.deepEqual(screenshotWormLevel(4).portal,[14,1]);
   assert.throws(()=>screenshotWormLevel(0),RangeError);
   assert.throws(()=>screenshotWormLevel(106),RangeError);
 });
@@ -70,6 +74,19 @@ test('state restoration validates source levels, coordinates and collected index
   assert.equal(restoreScreenshotWorm({...initial,collected:[0]}),null);
   assert.equal(restoreScreenshotWorm({...initial,body:[[999,5]]}),null);
   assert.equal(restoreScreenshotWorm({...initial,phase:'won'}),null);
+});
+
+test('a source portal wins even when its apple has not been collected',()=>{
+  const initial=startScreenshotWorm(3);
+  const board=screenshotWormLevel(3);
+  assert.deepEqual(board.portal,[14,4]);
+  assert.ok(board.apples.length>0);
+  const near={...initial,body:[[13,4],[12,4],[11,4]] as const,collected:[] as number[]};
+  const next=moveScreenshotWorm(near,'right');
+  assert.notEqual(next,near);
+  assert.equal(next.phase,'won');
+  assert.deepEqual(next.collected,[]);
+  assert.deepEqual(restoreScreenshotWorm(next),next);
 });
 
 test('screenshot stage 1 has an actual playable route on provisional rules',()=>{

@@ -11,6 +11,7 @@
  * as faithfully solved original-game levels.
  */
 import { appleWormVisualSnapshot, APPLE_WORM_VISUAL_SNAPSHOT_COUNT } from './video-visual-snapshots-105.ts';
+import { appleWormVideoTracedStage } from './video-traced-stages.ts';
 
 export type ScreenshotPoint = readonly [number, number];
 export type ScreenshotDirection = 'up'|'right'|'down'|'left';
@@ -75,12 +76,14 @@ function traceVisibleWorm(points:readonly ScreenshotPoint[]):ScreenshotPoint[]|n
 export function screenshotWormLevel(level:number):ScreenshotLevel {
   const source=appleWormVisualSnapshot(level);
   const worm=traceVisibleWorm(source.wormVisible);
+  // The first 10 exits were manually traced from the walkthrough, and are
+  // more reliable than the still-image portal detector when it misses a swirl.
+  const portal=source.probablePortal??(level<=10?appleWormVideoTracedStage(level).exit:null);
   const issues:string[]=[];
   if(!worm)issues.push('worm-shape-unresolved');
   else if(worm.length===1)issues.push('single-segment-snapshot');
-  if(!source.probablePortal)issues.push('portal-unresolved');
-  if(source.probablePortal && (source.probablePortal[1]<0||
-    source.probablePortal[1]>=9))issues.push('portal-outside-play-grid');
+  if(!portal)issues.push('portal-unresolved');
+  if(portal && (portal[1]<0||portal[1]>=9))issues.push('portal-outside-play-grid');
   if(source.grayObjectsVisible.length)issues.push('gray-object-mechanics-unresolved');
   if(!source.applesVisible.length)issues.push('no-apples-visible-in-frame');
   issues.push('starting-head-and-physics-unverified');
@@ -89,7 +92,7 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
     rows:source.terrain,
     worm:worm??source.wormVisible,
     apples:source.applesVisible,
-    portal:source.probablePortal,
+    portal,
     grayObjects:source.grayObjectsVisible,
     canMove:worm!==null,
     issues,
@@ -123,8 +126,8 @@ export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDir
   const collected=grow?[...state.collected,fruitIndex].sort((a,b)=>a-b):[...state.collected];
   let body:ScreenshotPoint[]=[head,...(grow?state.body:state.body.slice(0,-1))]
     .map(([x,y]):ScreenshotPoint=>[x,y]);
-  const allEaten=collected.length===stage.apples.length;
-  const win=()=>stage.portal!==null&&allEaten&&eq(body[0]!,stage.portal);
+  // The black exit is always active. Fruit is optional growth, not a gate.
+  const win=()=>stage.portal!==null&&eq(body[0]!,stage.portal);
   let phase:ScreenshotPhase=win()?'won':'playing';
   const remaining=stage.apples.filter((_,i)=>!collected.includes(i));
   const supported=()=>body.some(([x,y])=>solid.has(key([x,y+1]))||
@@ -159,8 +162,7 @@ export function restoreScreenshotWorm(value:unknown):ScreenshotState|null {
   if(s.body.some((p,i)=>i>0&&!touching(p,s.body![i-1]!)))return null;
   if(s.collected.some(i=>!Number.isInteger(i)||i<0||i>=board.apples.length)||
     new Set(s.collected).size!==s.collected.length)return null;
-  if(s.phase==='won'&&(!board.portal||!eq(s.body[0]!,board.portal)||
-    s.collected.length!==board.apples.length))return null;
+  if(s.phase==='won'&&(!board.portal||!eq(s.body[0]!,board.portal)))return null;
   return {level:s.level!,body:s.body.map(([x,y]):ScreenshotPoint=>[x,y]),
     collected:[...s.collected],moves:s.moves!,phase:s.phase!};
 }
