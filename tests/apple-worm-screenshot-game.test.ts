@@ -43,7 +43,7 @@ test('all 105 source snapshots load as actual gameplay geometry with zero invent
     }
   }
   assert.ok(motionCapable>=90,'the archive should support motion for most distinct worm shapes');
-  assert.ok(unresolvedPortals>0,'must not fill missing portals with invented exits');
+  assert.equal(unresolvedPortals,0,'each PDF screenshot has a black spiral candidate');
   assert.deepEqual(screenshotWormLevel(2).portal,[13,2]);
   assert.deepEqual(screenshotWormLevel(4).portal,[14,1]);
   assert.throws(()=>screenshotWormLevel(0),RangeError);
@@ -63,11 +63,20 @@ test('stage 48 retains all visible apples and all six gray unknown objects',()=>
   assert.equal(map.grayObjects.length,6);
   assert.ok(map.issues.includes('gray-object-mechanics-unresolved'));
 });
-test('stage 101 does not invent a portal for an image showing many apples',()=>{
+test('stage 101 now recovers its partially obscured top-edge black spiral',()=>{
   const map=screenshotWormLevel(101);
   assert.equal(map.apples.length,12);
-  assert.equal(map.portal,null);
-  assert.ok(map.issues.includes('portal-unresolved'));
+  assert.deepEqual(map.portal,[17,-2]);
+  assert.ok(map.issues.includes('portal-above-terrain-grid'));
+  assert.equal(map.exactVisualComparisonPassed,false);
+});
+test('exit candidates on the bottom source-image edge remain addressable',()=>{
+  for(const n of [73,100]){
+    const board=screenshotWormLevel(n);
+    assert.deepEqual(board.portal,[6,9]);
+    assert.ok(board.issues.includes('portal-below-terrain-grid'));
+    assert.equal(board.height,9);
+  }
 });
 test('state restoration validates source levels, coordinates and collected indexes',()=>{
   const initial=startScreenshotWorm(1);
