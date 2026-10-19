@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { createPortal } from 'react-dom';
+import { AppleWormReferenceScene } from './AppleWormReferenceScene.tsx';
 import {
   APPLE_WORM_SCREENSHOT_LEVEL_COUNT, screenshotWormLevel,
   startScreenshotWorm, moveScreenshotWorm, restoreScreenshotWorm,
@@ -11,7 +12,6 @@ import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
 
 interface SourceSave { level:number; state:ScreenshotState; completed:number[] }
 const SAVE_KEY='apple-worm-screenshot-source-105-v1';
-const CELL=30;
 const keyMap:Record<string,ScreenshotDirection>={
   arrowup:'up',w:'up',arrowdown:'down',s:'down',
   arrowleft:'left',a:'left',arrowright:'right',d:'right',
@@ -131,17 +131,14 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
     move(Math.abs(dx)>=Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up');
   };
   const remaining=board.apples.filter((_,i)=>!state.collected.includes(i));
-  const present=(point:readonly[number,number])=>{
-    const [x,y]=point;return {x:x*CELL+CELL/2,y:y*CELL+CELL/2};
-  };
   const selectedGroupFrom=group*15+1;
   const selectedGroupEnd=Math.min(105,selectedGroupFrom+14);
 
   return createPortal(
-    <main className="worm-page worm-immersive" dir={ar?'rtl':'ltr'} data-display="immersive-landscape"
+    <main className="worm-page worm-immersive worm-source-play" dir={ar?'rtl':'ltr'} data-display="immersive-landscape"
       data-stage-origin="user-screenshot" data-source-stage-count={APPLE_WORM_SCREENSHOT_LEVEL_COUNT}
       style={{position:'fixed',inset:0,zIndex:1100,overflowY:'auto',padding:'env(safe-area-inset-top) 10px env(safe-area-inset-bottom)',
-        boxSizing:'border-box',background:'linear-gradient(180deg,#112f48,#153e58)',color:'white'}}>
+        boxSizing:'border-box',background:'linear-gradient(180deg,#193c59,#326181)',color:'white'}}>
       <section aria-label={t('Apple Worm original stages','مراحل دودة التفاح من الصور')}
         style={{maxWidth:1000,margin:'0 auto',display:'flex',flexDirection:'column',gap:6}}>
         <header style={{display:'flex',alignItems:'center',gap:8,justifyContent:'space-between',flexWrap:'wrap'}}>
@@ -149,15 +146,15 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
             ↩ {t('Back to NAQLA','العودة لنقلة')}
           </button>
           <div style={{textAlign:'center'}}>
-            <strong>{t('Apple Worm · Screenshot Stages','دودة التفاح · مراحل الصور')}</strong>
-            <div style={{fontSize:12,color:'#b8d7e7'}}>{level} / 105 · {t('Original image geometry','تصميم الصورة الأصلية')}</div>
+            <strong>{t('Apple Worm','دودة التفاح')}</strong>
+            <div style={{fontSize:12,color:'#b8d7e7'}}>{t('Level','المرحلة')} {String(level).padStart(3,'0')} / 105</div>
           </div>
           <button type="button" onClick={()=>setShowChoose(n=>!n)} aria-expanded={showChoose}
             style={buttonStyle}>{t('Choose stage','اختيار المرحلة')} ▦</button>
         </header>
-        <div style={{fontSize:11,color:'#ffdcb0',lineHeight:1.3,textAlign:'center'}} role="note">
-          {t('105 source-image layouts; provisional movement. Unconfirmed exit/head/hazards are not invented.',
-          '105 خريطة من الصور؛ الحركة تجريبية. المخرج ورأس الدودة والعوائق غير المؤكدة لا تُخترع.')}
+        <div style={{fontSize:12,color:'#e8f8ff',lineHeight:1.3,textAlign:'center'}} role="note">
+          {t('Reach the black exit to win · Apples are optional',
+            'ادخل المخرج الأسود للفوز · التفاح اختياري')}
         </div>
         {showChoose && <div role="dialog" aria-label={t('Stage selector','اختيار المراحل')}
           style={{padding:10,background:'#1b5267',borderRadius:12,display:'flex',flexDirection:'column',gap:9}}>
@@ -169,12 +166,12 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
               {i*15+1}–{Math.min((i+1)*15,105)}
             </button>)}
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(15,minmax(0,1fr))',gap:3}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(5,minmax(0,1fr))',gap:3}}>
             {Array.from({length:selectedGroupEnd-selectedGroupFrom+1},(_,i)=>i+selectedGroupFrom)
               .map(n=><button type="button" key={n} onClick={()=>pick(n)}
                 aria-label={t('Stage ','المرحلة ')+n}
                 aria-current={level===n?'step':undefined}
-                style={{...buttonStyle,minWidth:0,padding:'6px 0',fontSize:11,
+                style={{...buttonStyle,minWidth:0,padding:'8px 0',fontSize:13,
                   background:level===n?'#20a68b':completed.includes(n)?'#397e57':'#285167'}}>
                 {completed.includes(n)?'✓':''}{n}
               </button>)}
@@ -189,59 +186,14 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
           onLostPointerCapture={()=>{swiping.current=null;}}
           style={{display:'block',width:'100%',height:'auto',maxHeight:'min(54dvh,440px)',minHeight:100,
             touchAction:'none',borderRadius:12,border:'3px solid #a6e4f0',
-            background:'#a9eaff',boxSizing:'border-box',flexShrink:0}}>
-          <rect width="630" height="270" fill="#a7eaff"/>
-          <g opacity=".85" fill="#f5feff">
-            <ellipse cx="70" cy="36" rx="45" ry="11"/>
-            <ellipse cx="105" cy="43" rx="26" ry="10"/>
-            <ellipse cx="540" cy="48" rx="55" ry="13"/>
-            <ellipse cx="580" cy="41" rx="34" ry="12"/>
-          </g>
-          {board.rows.map((row,y)=>[...row].map((tile,x)=>tile==='#'?
-            <g key={'t-'+x+'-'+y}>
-              <rect x={x*CELL} y={y*CELL} width={CELL} height={CELL}
-                fill="#855537" stroke="#523224" strokeWidth="1.5"/>
-              <path d={`M${x*CELL+2} ${y*CELL+6}h25`}
-                stroke="#ac7d54" strokeWidth="2"/>
-            </g>:null))}
-          {board.grayObjects.map((p,i)=>{
-            const {x,y}=present(p);
-            return <g data-source-gray-object key={'g'+i} transform={`translate(${x} ${y})`}>
-              <rect x="-13" y="-13" width="26" height="26" rx="4"
-                fill="#9ca9b4" stroke="#506373" strokeWidth="2"/>
-              <text textAnchor="middle" y="5" fontSize="17" fontWeight="bold" fill="#304352">?</text>
-            </g>;
-          })}
-          {board.portal&&(()=>{
-            const {x,y}=present(board.portal!);
-            return <g data-source-portal transform={`translate(${x} ${y})`}>
-              <circle r="15" fill="#19283e" stroke="#9192bd" strokeWidth="3"/>
-              <path d="M-9 -3C-7 -15 13 -13 9 0S-5 10 -2 1"
-                fill="none" stroke="#c5d4ee" strokeWidth="2"/>
-            </g>;
-          })()}
-          {remaining.map((p,i)=>{
-            const {x,y}=present(p);
-            return <g data-source-apple key={'a'+i} transform={`translate(${x} ${y})`}>
-              <circle r="12" cy="1" fill="#e83330" stroke="#9b1621" strokeWidth="2"/>
-              <path d="M0 -8Q4 -17 11 -13" stroke="#2d8338" strokeWidth="3" fill="none"/>
-            </g>;
-          })}
-          {state.body.map((p,i)=>{
-            const {x,y}=present(p);
-            return <g data-source-worm key={'w'+i}>
-              <circle cx={x} cy={y} r="14" fill={i===0?'#72e340':'#56c932'}
-                stroke="#30982b" strokeWidth="2"/>
-              {i===0&&<g><circle cx={x+4} cy={y-5} r="4" fill="white"/>
-                <circle cx={x+5} cy={y-5} r="2" fill="#18361a"/></g>}
-            </g>;
-          })}
+            background:'#89ceef',boxSizing:'border-box',flexShrink:0}}>
+          <AppleWormReferenceScene board={board} body={state.body} remaining={remaining}/>
         </svg>
         <div style={{display:'flex',justifyContent:'space-between',flexWrap:'wrap',gap:7,fontSize:12}}>
           <span>{t('Moves','الحركات')}: {state.moves}</span>
-          <span>{t('Apples','التفاح')}: {state.collected.length}/{board.apples.length}</span>
+          <span>{t('Optional apples','التفاح الاختياري')}: {state.collected.length}/{board.apples.length}</span>
           <span>{t('Verified completions','الإنجازات المسجلة')}: {completed.length}/105</span>
-          <span>{state.phase==='won'?t('Win (provisional rules)','فوز وفق القواعد التجريبية'):
+          <span>{state.phase==='won'?t('Exit reached! Stage complete','وصلت للمخرج! اكتملت المرحلة'):
             state.phase==='lost'?t('Fell: restart','سقطت: أعد'):
             !board.canMove?t('Worm pose unresolved','وضع الدودة غير واضح'):
             t('Swipe or use arrows','اسحب أو استخدم الأسهم')}</span>
@@ -259,7 +211,7 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
         </div>
         {!!board.issues.length&&<p role="note" style={{margin:'2px 0',textAlign:'center',
           fontSize:11,color:'#efcda5'}}>
-          {t('Still to verify','بحاجة للتحقق')}: {board.issues.join(' · ')}
+          {t('Reference gaps','بيانات مرجعية غير مكتملة')}: {board.issues.join(' · ')}
         </p>}
         <footer style={{display:'flex',justifyContent:'center',gap:7,flexWrap:'wrap'}}>
           <button type="button" style={buttonStyle} onClick={onLegacy}>
