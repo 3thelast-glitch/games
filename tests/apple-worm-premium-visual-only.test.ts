@@ -26,7 +26,7 @@ test('all 105 premium scenes preserve approved geometry, fruit, head, portal and
     const terrainCount=board.rows.reduce((n,row)=>
       n+[...row].filter(cell=>cell==='#').length,0);
     assert.match(html,/class="worm-terrain"/,'Stage '+level+' needs premium terrain art');
-    assert.match(html,/class="worm-character"/,'Stage '+level+' needs connected premium worm art');
+    assert.match(html,/class="worm-character(?: |")/,'Stage '+level+' needs connected premium worm art');
     assert.match(html,/class="worm-clouds"/,'Stage '+level+' needs premium background');
     assert.match(html,new RegExp('data-terrain-cell-count="'+terrainCount+'"'));
     assert.equal(markerCount(html,'data-source-apple='),remaining.length,'Stage '+level+' apples changed');

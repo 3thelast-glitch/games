@@ -11,8 +11,8 @@ test('the 105 previously reference-only gallery stages are now the ONE interacti
   await expect(game).toHaveAttribute('data-source-stage-count','105');
   await expect(game).toHaveAttribute('data-pdf-reference','approved');
   await expect(game).toHaveAttribute('data-renderer','premium-gallery-game');
-  await expect(game).toHaveAttribute('data-visual-revision','PDF105-R5');
-  await expect(game.getByText('PDF105-R5')).toBeVisible();
+  await expect(game).toHaveAttribute('data-visual-revision','PDF105-R6');
+  await expect(game.getByText('PDF105-R6')).toBeVisible();
   await expect(game.getByText(/Reference snapshots|ليست قابلة للعب|غير معتمدة/)).toHaveCount(0);
   await expect(game.getByRole('button',{name:/Legacy 40|المراحل القديمة 40/})).toHaveCount(0);
   const board=game.locator('svg[data-source-level="1"]');
@@ -24,6 +24,9 @@ test('the 105 previously reference-only gallery stages are now the ONE interacti
   await expect(board.locator('.worm-character')).toHaveCount(1);
   await expect(board.locator('.worm-terrain')).toHaveCount(1);
   await expect(board.locator('.worm-clouds')).toHaveCount(1);
+  await expect(board.locator('[data-mouth-pose="idle"]')).toHaveCount(1);
+  await expect(board.locator('.worm-portal-orbit')).toHaveCount(1);
+  await expect(board.locator('.worm-portal-ready')).toHaveCount(1);
   await expect(board.locator('[data-source-worm]')).toHaveAttribute('data-body-length','3');
   await expect(board.locator('[data-source-apple]')).toHaveCount(0);
   await expect(board.locator('[data-source-gray-object]')).toHaveCount(0);
@@ -42,6 +45,7 @@ test('the 105 previously reference-only gallery stages are now the ONE interacti
   await expect(second.locator('[data-source-worm]')).toHaveAttribute('data-head-y','105');
   await expect(second.locator('[data-source-apple]')).toHaveCount(0);
   await expect(second.locator('[data-source-portal]')).toHaveAttribute('transform','translate(405 75)');
+  await expect(second.locator('.worm-portal-ready')).toHaveCount(1);
 
   await game.getByRole('button',{name:'Stage 10'}).click();
   const tenth=game.locator('svg[data-source-level="10"]');
@@ -53,6 +57,8 @@ test('the 105 previously reference-only gallery stages are now the ONE interacti
   await expect(fifteenth.locator('[data-source-apple]')).toHaveCount(1);
   await expect(fifteenth.locator('[data-source-worm]')).toHaveAttribute('data-body-length','3');
   await expect(fifteenth.locator('.worm-apple')).toHaveCount(1);
+  await expect(fifteenth.locator('.worm-fruit-aura')).toHaveCount(1);
+  await expect(fifteenth.locator('.worm-fruit-float')).toHaveCount(1);
 
   await game.getByRole('button',{name:'91–105'}).click();
   await game.getByRole('button',{name:'Stage 101'}).click();
