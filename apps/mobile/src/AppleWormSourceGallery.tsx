@@ -44,7 +44,7 @@ export function AppleWormSourceGallery({lang,onClose}:Props) {
       </div>
       <button type="button" onClick={onClose} style={{border:'1px solid #8fb3bf',
         background:'#204457',color:'white',borderRadius:10,padding:'9px 14px',fontSize:15}}>
-        {label('Close ×','إغلاق ×')}
+        {label('Legacy practice (40, not video) ↗','تجربة المراحل القديمة (40 غير معتمدة) ↗')}
       </button>
     </div>
     <div style={{width:'min(100%,930px)',background:'#96dff2',borderRadius:14,
