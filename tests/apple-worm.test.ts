@@ -140,7 +140,18 @@ test('Apple Worm progression reflects planning complexity rather than just longe
  assert.ok(Math.max(...solutions[3]!)>=35, 'late game must contain 35+ move challenges');
  assert.ok(Math.max(...fruitCounts)>=4,'later stages include 4-fruit routing');
 });
-test('collecting more than one fruit grows a permanent-head worm and exit only works after all fruit',()=>{
+test('legacy exit is always open, even without eating an apple',()=>{
+ const start=startWorm(1);
+ const board=wormLevel(1);
+ const ready={...start,body:[{x:board.portal.x-1,y:board.portal.y},
+   {x:board.portal.x-2,y:board.portal.y}]};
+ const end=moveWorm(ready,'right');
+ assert.equal(end.phase,'won');
+ assert.equal(end.eaten,false);
+ assert.deepEqual(restoreWorm(end),end);
+});
+
+test('collecting more than one fruit grows a permanent-head worm; fruit is optional for exit',()=>{
  const target=14;
  const board=wormLevel(target);
  assert.ok(board.apples.length>=2);
@@ -157,7 +168,7 @@ test('collecting more than one fruit grows a permanent-head worm and exit only w
    assert.equal(next.body.length,state.body.length+1);
    if(count<board.apples.length){
     assert.equal(next.eaten,false,'must collect all before portal activates');
-    assert.equal(next.phase,'playing');
+    assert.ok(['playing','won'].includes(next.phase));
    }
    picked=count;
   }
