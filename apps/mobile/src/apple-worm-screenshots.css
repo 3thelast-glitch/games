@@ -1,0 +1,24 @@
+.screenshot-worm-page.worm-page{position:fixed;inset:0;z-index:2000;display:flex;flex-direction:column;width:100%;height:100dvh;max-width:none;margin:0;padding:0;background:#62b4e6;color:#143a48;overflow:hidden;isolation:isolate;touch-action:manipulation;animation:none}
+.screenshot-worm-page *{box-sizing:border-box}
+.screenshot-worm-header{display:flex;align-items:center;gap:8px;padding: max(6px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) 6px max(8px,env(safe-area-inset-left));flex:none;background:#e9f8ffeb;border-bottom:1px solid #468eb33d}
+.screenshot-worm-page button{min-width:42px;min-height:42px;border:1px solid #38667b55;border-radius:10px;background:#f0faff;color:#173d4c;font:inherit;font-weight:750;padding:6px 10px;cursor:pointer;box-shadow:0 2px 0 #347b9a35;touch-action:manipulation}
+.screenshot-worm-page button:disabled{opacity:.45;cursor:default}
+.screenshot-worm-page button:focus-visible{outline:3px solid #214fa6;outline-offset:2px}
+.source-title{display:flex;flex-direction:column;flex:1;min-width:0;gap:2px}
+.source-title strong{font-size:16px}.source-title small{font-size:11px}
+.source-playfield{display:flex;align-items:center;justify-content:center;flex:1;min-height:0;min-width:0;overflow:hidden}
+.screenshot-worm-board{display:block;width:100%;height:100%;max-width:100%;max-height:100%;direction:ltr;touch-action:none;user-select:none}
+.screenshot-worm-footer{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;background:#e7f4dcf0;padding:6px max(8px,env(safe-area-inset-right)) max(6px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+.source-stats,.source-actions,.source-dpad{display:flex;align-items:center;gap:7px}
+.source-stats{font-size:12px;flex-wrap:wrap}.source-actions{margin-inline-start:auto}.source-dpad{gap:4px;margin-inline-start:6px}
+.source-note{flex-basis:100%;font-size:11px;text-align:center}
+.source-modal-backdrop{position:absolute;inset:0;background:#15314299;display:flex;align-items:center;justify-content:center;z-index:10;padding:12px;touch-action:pan-y}
+.source-modal{background:#f0f9ec;color:#163d45;border:2px solid #fff;border-radius:17px;width:min(570px,100%);max-height:100%;overflow:auto;padding:16px;box-shadow:0 10px 40px #17394b66;display:flex;flex-direction:column;gap:12px}
+.source-modal h2{font-size:18px;margin:0}.source-modal p{font-size:13px;line-height:1.6;margin:0}.source-modal-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.source-group-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px}.source-group-tabs button{font-size:12px;padding:4px}
+.source-group-tabs [aria-selected=true],.source-stage-grid [aria-current=step]{background:#26674e;color:white;border-color:#163c2e}
+.source-stage-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.source-stage-grid button{display:flex;justify-content:center;gap:5px;align-items:center;min-height:48px}.source-stage-grid span{font-size:12px}
+.source-practice{display:flex;align-items:center;gap:8px;font-size:13px}.source-practice input{width:20px;height:20px}
+.source-result{position:absolute;z-index:5;left:50%;top:50%;transform:translate(-50%,-50%);width:min(340px,calc(100% - 30px));display:flex;gap:10px;flex-wrap:wrap;justify-content:center;background:#edf9eaf5;padding:18px;border:2px solid white;border-radius:15px;box-shadow:0 8px 25px #173b4755}.source-result strong{width:100%;text-align:center}
+@media(max-width:430px){.source-title small{font-size:9px}.screenshot-worm-header{gap:5px}.screenshot-worm-page button{padding:5px 7px}.source-stats{justify-content:center;width:100%}.source-actions{margin:auto}.source-title strong{font-size:14px}}
+@media(max-height:460px) and (orientation:landscape){.screenshot-worm-header{padding-top:3px;padding-bottom:3px}.source-title small{display:none}.screenshot-worm-footer{padding-top:3px;padding-bottom:3px}.source-modal{padding:10px;gap:7px}.source-stage-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.source-stage-grid button{min-height:36px}.source-group-tabs{grid-template-columns:repeat(7,minmax(0,1fr))}.source-modal p{font-size:11px}}

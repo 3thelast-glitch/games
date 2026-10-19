@@ -13,7 +13,7 @@ import { App as NativeApp } from '@capacitor/app';
 import { createPortal } from 'react-dom';
 import { APPLE_WORM_GROUPS, APPLE_WORM_CHAPTERS } from '../../../packages/games/apple-worm/levels.ts';
 import { AppleWormSourceGallery } from './AppleWormSourceGallery.tsx';
-import { AppleWormScreenshotGame } from './AppleWormScreenshotGame.tsx';
+import { AppleWormScreenshotPage } from './AppleWormScreenshotPage.tsx';
 
 interface SavedWorm { unlocked: number; state: WormState }
 const SAVE_KEY = 'apple-worm-curated-40-v3';
@@ -349,6 +349,6 @@ function LegacyAppleWormPage({ onExit, settings, onToggleSound }: { onExit: () =
 export function AppleWormPage(props:{onExit:()=>void;settings:Settings;onToggleSound:()=>void}) {
   const [legacy,setLegacy]=useState(false);
   if(legacy)return <LegacyAppleWormPage {...props}/>;
-  return <AppleWormScreenshotGame onExit={props.onExit} settings={props.settings}
+  return <AppleWormScreenshotPage onExit={props.onExit} settings={props.settings} onToggleSound={props.onToggleSound}
     onLegacy={()=>setLegacy(true)}/>;
 }
