@@ -7,7 +7,7 @@ import {
 
 test('ten source-video stage starts use the traced 21x9 reference grid', () => {
   assert.equal(APPLE_WORM_VIDEO_TRACED_COUNT, 10);
-  const expectedBlocks = [12,10,6,18,14,22,17,15,17,23];
+  const expectedBlocks = [12,10,6,18,14,22,17,15,17,25];
   const expectedApples = [0,1,1,1,1,1,1,1,1,1];
   const maps = new Set<string>();
   for(let n=1;n<=10;n++) {
@@ -59,4 +59,6 @@ test('source stage-specific geometry is not silently replaced with old fake corr
   const eighth=appleWormVideoTracedStage(8);
   assert.deepEqual(eighth.exit,[15,7], 'source portal below the right-hand platform');
   assert.equal(appleWormVideoTracedStage(10).apples.length,1);
+  assert.equal(appleWormVideoTracedStage(10).rows[0]![10],'#');
+  assert.equal(appleWormVideoTracedStage(10).rows[0]![11],'#');
 });
