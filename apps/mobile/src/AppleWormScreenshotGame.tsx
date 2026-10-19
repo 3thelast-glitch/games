@@ -10,8 +10,10 @@ import { useI18n } from './i18n.tsx';
 import { storage, type Settings } from './platform.ts';
 import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
 
-interface SourceSave { level:number; state:ScreenshotState; completed:number[] }
+interface SourceSave { level:number; state:ScreenshotState; completed:number[]; visualRevision?:string }
 const SAVE_KEY='apple-worm-screenshot-source-105-v1';
+/** Increases when the reference rendering/initial layouts change. */
+export const APPLE_WORM_VISUAL_REVISION='PDF105-R2';
 const keyMap:Record<string,ScreenshotDirection>={
   arrowup:'up',w:'up',arrowdown:'down',s:'down',
   arrowleft:'left',a:'left',arrowright:'right',d:'right',
@@ -57,7 +59,10 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
         const n=resume?.level??saved.level;
         setLevel(n);
         setGroup(Math.floor((n-1)/15));
-        const next=resume??startScreenshotWorm(n);
+        // Retain completed stages, but do not revive an old on-board pose after
+        // a reference-art/geometry update. Show the corrected PDF start frame.
+        const next=resume&&saved.visualRevision===APPLE_WORM_VISUAL_REVISION
+          ?resume:startScreenshotWorm(n);
         stateRef.current=next;
         setState(next);
         if(Array.isArray(saved.completed))
@@ -68,7 +73,8 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
     return ()=>{mounted=false;};
   },[]);
   useEffect(()=>{
-    if(ready)void storage.set(SAVE_KEY,{level,state,completed} satisfies SourceSave);
+    if(ready)void storage.set(SAVE_KEY,{level,state,completed,
+      visualRevision:APPLE_WORM_VISUAL_REVISION} satisfies SourceSave);
   },[ready,level,state,completed]);
 
   const move=(direction:ScreenshotDirection)=>{
@@ -137,6 +143,7 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
   return createPortal(
     <main className="worm-page worm-immersive worm-source-play" dir={ar?'rtl':'ltr'} data-display="immersive-landscape"
       data-stage-origin="user-screenshot" data-pdf-reference="approved" data-source-stage-count={APPLE_WORM_SCREENSHOT_LEVEL_COUNT}
+      data-visual-revision={APPLE_WORM_VISUAL_REVISION}
       style={{position:'fixed',inset:0,zIndex:1100,overflowY:'auto',padding:'env(safe-area-inset-top) 10px env(safe-area-inset-bottom)',
         boxSizing:'border-box',background:'linear-gradient(180deg,#193c59,#326181)',color:'white'}}>
       <section aria-label={t('Apple Worm original stages','مراحل دودة التفاح من الصور')}
@@ -148,6 +155,7 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
           <div style={{textAlign:'center'}}>
             <strong>{t('Apple Worm','دودة التفاح')}</strong>
             <div style={{fontSize:12,color:'#b8d7e7'}}>{t('Level','المرحلة')} {String(level).padStart(3,'0')} / 105</div>
+            <div style={{fontSize:10,color:'#a6e4f0',fontWeight:700}}>{APPLE_WORM_VISUAL_REVISION}</div>
           </div>
           <button type="button" onClick={()=>setShowChoose(n=>!n)} aria-expanded={showChoose}
             style={buttonStyle}>{t('Choose stage','اختيار المرحلة')} ▦</button>
@@ -180,7 +188,9 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
             'المراحل الـ105 مرتبة بنفس ترتيب صور ملف PDF.')}</small>
         </div>}
         <svg role="img" aria-label={t('Swipe Apple Worm board','اسحب لتحريك الدودة')}
-          viewBox="0 0 640 360" data-source-level={level} preserveAspectRatio="xMidYMid meet"
+          viewBox="0 0 640 360" data-source-level={level}
+          data-terrain-cell-count={board.rows.reduce((n,row)=>n+[...row].filter(cell=>cell==='#').length,0)}
+          preserveAspectRatio="xMidYMid meet"
           onPointerDown={begin} onPointerUp={finish}
           onPointerCancel={()=>{swiping.current=null;}}
           onLostPointerCapture={()=>{swiping.current=null;}}
