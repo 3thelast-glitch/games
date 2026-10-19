@@ -3,7 +3,7 @@
 ## Source
 The user supplied the complete **47:53, 30 fps, 640×360** gameplay walkthrough, `Apple Worm - All Levels 1 - 105 / Solving All Levels - Full Game`. This document is based on inspection of the uploaded MP4, including a 12-second whole-video visual survey and frame-by-frame samples of the opening stages. `packages/games/apple-worm/reference-video.ts` indexes all 105 observed stages.
 
-**Status: 105 stages are indexed, NOT implemented.** Live NAQLA still uses 40 separately authored puzzles. The contact-sheet atlas and 105 video stills have been exported for developer reference and are not committed as copied sprites to this public repository.
+**Current status: 105 screenshot-derived stages are selectable in the live NAQLA Apple Worm mode**, using source-evidence grids and custom SVG artwork. These are provisional reconstructions, **not 105 verified original starting layouts or solved gameplay stages**. The 40 independently authored maps remain as a separate legacy practice mode. Reference contact sheets and video stills are used for comparison, not committed as copied sprites.
 
 ## Specific observed gameplay evidence
 | Time in original video | Stage | Direct observation | Consequence |
@@ -23,7 +23,7 @@ These observations are **not complete tile-by-tile transcriptions** and cannot p
 2. **Continuous segmented worm.** The source character is one visibly continuous bright-green shape with darker segment shading, two forward-facing eyes and magenta mouth; its body bends seamlessly around square-cell turns. Head motion is discrete grid navigation, visually interpolated, with segment order preserved. Never render disconnected circular beads or teleport during moves.
 3. **Apples and growth.** A collected red apple disappears and the worm lengthens by one grid unit. Stage 2 shows an **intentional vertical** pickup; distinguish that from the different question of passive gravity landing on an apple. Neither side-only pickup nor unconditional pickup-during-fall should be accepted without source-based route tests.
 4. **Gravity and support.** Reproduce the rigid, connected body's fall and stopping conditions, ledge catching, collision, turns, no instant 180-degree head reversal, and eventual failure/off-screen behavior by observing solutions. No arbitrary hidden invisible floor.
-5. **Black spiral portal.** The exit appears as a dark circular spiral resting near the end of the obstacle course, not a glowing turquoise fantasy portal. Activation should follow the **actual fruit requirement** for each stage, including zero-fruit cases. Confirm transition/end-of-level animations against footage.
+5. **Black spiral portal.** The exit appears as a dark circular spiral resting near the end of the obstacle course, not a glowing turquoise fantasy portal. **The exit is always active, independently of apple collection**, including stages with zero apples. Apple consumption only grows the worm. Confirm transition/end-of-level animations against footage.
 6. **Original 2D visual vocabulary.** Reference screenshot uses cyan-to-blue sky with wide radial beams; a low band of scalloped white clouds and green bushes along the bottom; solid chocolate-brown connected beveled terrain early on; brick terrain later; glossy red apples with brown stalk and green leaf. **No grassy caps, fantasy islands/waterfalls, unrelated gradients or scenic clutter** in the playable environment.
 7. **Landscape composition.** Keep the puzzle comfortably centred in a full-bleed landscape viewport, scenery filling screen edges, and original proportions/cell alignment without stretch. Existing swipe-only mobile input remains the product requirement; keyboard arrows/WASD may remain on desktop. The reference video's on-screen arrow pad is NOT a requirement to reinstate it.
 8. **Motion polish.** Precisely preserve phase ordering (press/swipe → grid move → growth/consumption → gravity settling → portal/win/loss); animate connected segment movement, corner turns, chewing cues and screen transitions without affecting deterministic logical state. Respect reduced-motion accessibility and pause/undo/restart.
@@ -41,9 +41,9 @@ Start with 1–10, then 11–25, 26–50, 51–75, 76–100, 101–105. Do not p
 
 ## Existing code gaps verified by inspection
 - `packages/games/apple-worm/levels.ts`: 40 original layouts, all with >=1 apple; no video level tiles.
-- `packages/games/apple-worm/engine.ts`: requires first apple and disallows head entry from up/down; zero-fruit source stage cannot be loaded as-is. Current ground/hazard support is less expressive than high-level source evidence.
-- `apps/mobile/src/AppleWormArt.tsx`: fantasy floating islands, grassy-capped blocks and related vector motifs differ from the actual user's provided screenshots. Visual replacements must be in **live game artwork**, not a mocked-up cover.
-- `apps/mobile/src/AppleWormPage.tsx`: live stage save namespace is still `apple-worm-curated-40-v3`; preserve existing player saves during a future migration.
+- `packages/games/apple-worm/engine.ts`: the separate legacy 40-stage pack still requires at least one fruit in its authored map schema, but its exit is now always open. The main 105-stage screenshot engine supports zero-fruit frames. Both physics engines still require route-by-route verification.
+- `apps/mobile/src/AppleWormReferenceScene.tsx`: the main 105-stage live board now draws connected worms, black spirals, brown/brick blocks, radial skies, clouds, bushes and apples instead of generic circles. Manual per-level reference comparisons and gray-hazard classification remain unfinished.
+- `apps/mobile/src/AppleWormPage.tsx`: the legacy practice mode retains `apple-worm-curated-40-v3`; the 105-stage screenshot mode uses a distinct save namespace to avoid corrupting old progress.
 
 This PR remains intentionally **DRAFT** until the gameplay maps, physics and matching tests are real.
 
