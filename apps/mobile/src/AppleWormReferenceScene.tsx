@@ -27,7 +27,12 @@ export function AppleWormReferenceScene({board,body,remaining}:{
   const ordered=body.slice().reverse();
   const points=ordered.map(p=>{const c=center(p);return c.x+','+c.y;}).join(' ');
   const head=body[0],neck=body[1];
-  const face=head&&neck
+  // The Level 002 PDF shows the mouth facing right on the upper bend,
+  // even though the next visible body section is below the head.
+  // Use this authored orientation only for the untouched reference pose.
+  const stageTwoInitial=board.number===2&&body.length===board.worm.length&&
+    body.every((p,i)=>p[0]===board.worm[i]![0]&&p[1]===board.worm[i]![1]);
+  const face=stageTwoInitial?0:head&&neck
     ? head[0]>neck[0]?0:head[0]<neck[0]?180:head[1]>neck[1]?90:-90
     : 0;
 
