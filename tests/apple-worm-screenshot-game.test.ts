@@ -71,3 +71,19 @@ test('state restoration validates source levels, coordinates and collected index
   assert.equal(restoreScreenshotWorm({...initial,body:[[999,5]]}),null);
   assert.equal(restoreScreenshotWorm({...initial,phase:'won'}),null);
 });
+
+test('screenshot stage 1 has an actual playable route on provisional rules',()=>{
+  const level=screenshotWormLevel(1);
+  assert.equal(level.apples.length,0);
+  assert.deepEqual(level.portal,[14,4]);
+  let current=startScreenshotWorm(1);
+  for(let i=0;i<9;i++){
+    const next=moveScreenshotWorm(current,'right');
+    assert.notEqual(next,current,'source stage 1 should move right');
+    current=next;
+  }
+  assert.equal(current.phase,'won','screenshot stage 1 reaches pictured portal');
+  assert.deepEqual(current.body[0],[14,4]);
+  assert.deepEqual(current.collected,[]);
+  assert.deepEqual(restoreScreenshotWorm(current),current);
+});
