@@ -24,7 +24,7 @@ test('all 105 screenshots yield bounded object candidates, without falsely certi
       assert.equal(coord.length,2);
       const [x,y]=coord;
       assert.ok(Number.isInteger(x)&&x>=0&&x<=20,`stage ${n} x`);
-      assert.ok(Number.isInteger(y)&&y>=-2&&y<=8,`stage ${n} y`);
+      assert.ok(Number.isInteger(y)&&y>=-2&&y<=9,`stage ${n} y`);
     }
     hasApples+=+(s.visibleApples.length>0);
     hasWorm+=+(s.visibleWormCells.length>0);
@@ -35,7 +35,7 @@ test('all 105 screenshots yield bounded object candidates, without falsely certi
   assert.equal(hasApples,97);
   assert.equal(hasWorm,102);
   assert.equal(hasGray,69);
-  assert.equal(hasExit,97,'50 additional black-spiral candidates found in sharper PDF');
+  assert.equal(hasExit,105,'all 105 contact-sheet black-spiral candidates now located');
   assert.throws(()=>appleWormImageEvidence(0),RangeError);
   assert.throws(()=>appleWormImageEvidence(106),RangeError);
 });
@@ -56,7 +56,10 @@ test('high stages with many apples and saws retain independently visible objects
   const s101=appleWormImageEvidence(101);
   assert.equal(s101.visibleApples.length,12); // two 6-apple rows in still
   assert.equal(s101.visibleWormCells.length,3);
-  assert.equal(s101.probablePortal,null); // not visible in that still, not truly absent
+  assert.deepEqual(s101.probablePortal,[17,-2]); // partially obscured at top edge
+  assert.deepEqual(appleWormImageEvidence(73).probablePortal,[6,9]); // lower edge
+  assert.deepEqual(appleWormImageEvidence(100).probablePortal,[6,9]); // lower edge
+  assert.deepEqual(appleWormImageEvidence(56).probablePortal,[9,-2]);
   assert.deepEqual(appleWormImageEvidence(12).probablePortal,[14,0]);
   assert.deepEqual(appleWormImageEvidence(33).probablePortal,[14,0]);
   assert.deepEqual(appleWormImageEvidence(105).probablePortal,[17,-1]);
