@@ -28,6 +28,7 @@ test('all 105 source snapshots load as actual gameplay geometry with zero invent
     assert.equal(state.moves,0);
     assert.equal(state.phase,'playing');
     assert.equal(board.sourceGeometry,'screenshot');
+    assert.equal(board.referenceFrameApproved,true);
     assert.equal(board.exactPhysicsVerified,false);
     assert.equal(board.exactVisualComparisonPassed,false);
     assert.deepEqual(new Set(state.body.map(key)),new Set(source.wormVisible.map(key)));
