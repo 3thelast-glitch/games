@@ -53,6 +53,10 @@ test('gravity stacks gray boxes without tunneling through terrain or worm',()=>{
     [[4,4],[4,5]]);
   assert.deepEqual(settleGrayBoxes([[4,2]],ground,[[4,4]]),[[4,3]]);
   assert.deepEqual(settleGrayBoxes([[4,3]],ground,[[4,4]]),[[4,3]]);
+  assert.deepEqual(settleGrayBoxes([[4,2]],new Set(),[],[[4,4]]),[[4,3]],
+    'uncollected apple must keep the gray box above it');
+  assert.deepEqual(settleGrayBoxes([[4,2]],new Set(),[],[]),[[4,9]],
+    'gray box drops after its fruit support is eaten');
 });
 
 test('updated stage positions can be saved, restored, undone and moved without changing source gray geometry',()=>{
