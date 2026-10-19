@@ -36,7 +36,7 @@ These 7 YES statuses are from actual `moveScreenshotWorm` routes replayed to `ph
 ### Additional source correction
 
 - **Stage 12:** reposition one gray block to the filmed opening (10,4) instead of the original mid-play still.
-- **Stage 30:** restore two bottom apples (nine? No: five total visible when added to the three originally recorded) and source-frame gray blocks (9,5) and (10,7). Stage 30 belongs in batch 1.
+- **Stage 30:** restore two bottom apples (five total apples after adding them to the three originally recorded) and source-frame gray blocks (9,5) and (10,7). Stage 30 belongs in batch 1.
 - **All 15:** preserve the already-approved terrain grid and known portal cell; no shortcut/automatic win.
 - Before this split an earlier draft accidentally touched Level 59 and caused CI failure. The current batch STRICTLY excludes 59 and all later levels.
 
