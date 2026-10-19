@@ -16,9 +16,9 @@ test('Apple Worm enters the actual 105-source screenshot game and preserves imag
   await expect(board.locator('[data-source-apple]')).toHaveCount(0);
   await expect(board.locator('[data-source-gray-object]')).toHaveCount(0);
   await expect(board.locator('[data-source-portal]')).toHaveCount(1);
-  await expect(board.locator('[data-source-worm]')).toHaveAttribute('transform',/^translate\(165 /);
+  await expect(board.locator('[data-source-worm]')).toHaveAttribute('transform',/^translate\(183 /);
   await game.getByRole('button',{name:'right'}).click();
-  await expect(board.locator('[data-source-worm]')).toHaveAttribute('transform',/^translate\(195 /);
+  await expect(board.locator('[data-source-worm]')).toHaveAttribute('transform',/^translate\(213 /);
   await game.locator('button[aria-expanded]').click();
   await game.getByRole('button',{name:'91–105'}).click();
   await game.getByRole('button',{name:/101/}).click();
