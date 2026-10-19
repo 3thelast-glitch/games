@@ -11,6 +11,7 @@
  * as faithfully solved original-game levels.
  */
 import { appleWormVisualSnapshot, APPLE_WORM_VISUAL_SNAPSHOT_COUNT } from './video-visual-snapshots-105.ts';
+import { appleWormVideoTracedStage } from './video-traced-stages.ts';
 
 export type ScreenshotPoint = readonly [number, number];
 export type ScreenshotDirection = 'up'|'right'|'down'|'left';
@@ -75,12 +76,14 @@ function traceVisibleWorm(points:readonly ScreenshotPoint[]):ScreenshotPoint[]|n
 export function screenshotWormLevel(level:number):ScreenshotLevel {
   const source=appleWormVisualSnapshot(level);
   const worm=traceVisibleWorm(source.wormVisible);
+  // The first 10 exits were manually traced from the walkthrough, and are
+  // more reliable than the still-image portal detector when it misses a swirl.
+  const portal=source.probablePortal??(level<=10?appleWormVideoTracedStage(level).exit:null);
   const issues:string[]=[];
   if(!worm)issues.push('worm-shape-unresolved');
   else if(worm.length===1)issues.push('single-segment-snapshot');
-  if(!source.probablePortal)issues.push('portal-unresolved');
-  if(source.probablePortal && (source.probablePortal[1]<0||
-    source.probablePortal[1]>=9))issues.push('portal-outside-play-grid');
+  if(!portal)issues.push('portal-unresolved');
+  if(portal && (portal[1]<0||portal[1]>=9))issues.push('portal-outside-play-grid');
   if(source.grayObjectsVisible.length)issues.push('gray-object-mechanics-unresolved');
   if(!source.applesVisible.length)issues.push('no-apples-visible-in-frame');
   issues.push('starting-head-and-physics-unverified');
@@ -89,7 +92,7 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
     rows:source.terrain,
     worm:worm??source.wormVisible,
     apples:source.applesVisible,
-    portal:source.probablePortal,
+    portal,
     grayObjects:source.grayObjectsVisible,
     canMove:worm!==null,
     issues,
