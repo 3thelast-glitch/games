@@ -206,3 +206,41 @@ body > .worm-immersive .worm-board{inset:0!important;width:100%!important;height
 
 .worm-immersive .worm-pack-caption{text-align:center;color:#52725a;font-weight:900;font-size:clamp(11px,1.7vw,14px);margin:0 0 8px;line-height:1.45}
 .worm-immersive .worm-game-goal{font-weight:900;background:#28586e70;border:1px solid #f6f4df80;border-radius:999px;padding:3px 13px}
+
+
+/*
+ * NEW screenshot-derived game is a scrollable interactive 105-stage source
+ * mode. The legacy fullscreen rules above are still needed by the separate
+ * 40-stage practice mode; do not apply their overflow:hidden lock to source.
+ * Contain the logical 21:9 screenshot board without warping its coordinates.
+ */
+body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] {
+  overflow-x:hidden!important;
+  overflow-y:auto!important;
+  overscroll-behavior-y:contain;
+  touch-action:pan-y!important;
+  background:linear-gradient(180deg,#112f48,#153e58)!important;
+  padding:env(safe-area-inset-top) 10px env(safe-area-inset-bottom)!important;
+  box-sizing:border-box;
+  scrollbar-gutter:stable;
+}
+body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] > section {
+  min-height:100%;
+}
+body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] svg[data-source-level] {
+  width:min(100%,126dvh)!important;
+  height:auto!important;
+  max-height:54dvh!important;
+  flex-shrink:0;
+  margin-inline:auto;
+  direction:ltr;
+  touch-action:none!important;
+  -webkit-user-select:none;
+  user-select:none;
+}
+@media(orientation:portrait) {
+  body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] {
+    padding-top:max(8px,env(safe-area-inset-top))!important;
+    padding-bottom:max(12px,env(safe-area-inset-bottom))!important;
+  }
+}
