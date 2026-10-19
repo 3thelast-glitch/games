@@ -2,6 +2,7 @@ import { useId } from 'react';
 import type { ScreenshotLevel, ScreenshotPoint } from '../../../packages/games/apple-worm/screenshot-game.ts';
 import { WormApple, WormCharacter, WormPortal, WormSky, WormTerrain }
   from './AppleWormArt.tsx';
+import { appleWormMouthCue } from './apple-worm-animation-cues.ts';
 
 /**
  * VISUAL-ONLY ART PASS — PDF105-R5.
@@ -19,12 +20,14 @@ const anchor=([x,y]:ScreenshotPoint)=>({
   x:(x+.5)*CELL,y:(y+.5)*CELL,
 });
 
-export function AppleWormReferenceScene({board,body,remaining}:{
+export function AppleWormReferenceScene({board,body,remaining,phase='playing',biteFx=null}:{
   board:ScreenshotLevel;
   body:readonly ScreenshotPoint[];
   remaining:readonly ScreenshotPoint[];
+  phase?:'playing'|'won'|'lost';
+  biteFx?:{key:number;apple:ScreenshotPoint}|null;
 }) {
-  const id=useId().replace(/:/g,'')+'-pdf105-r5';
+  const id=useId().replace(/:/g,'')+'-pdf105-r6';
   const blocks=board.rows.flatMap((row,y)=>[...row].flatMap((tile,x)=>
     tile==='#'?[{x,y}]:[]));
   const worm=body.map(([x,y])=>({x,y}));
@@ -34,7 +37,9 @@ export function AppleWormReferenceScene({board,body,remaining}:{
   // This is art direction ONLY; it does not change the worm body's direction.
   const stageTwoSourcePose=board.number===2&&body.length===board.worm.length&&
     body.every((p,i)=>p[0]===board.worm[i]![0]&&p[1]===board.worm[i]![1]);
-  const faceAngle=stageTwoSourcePose?0:undefined;
+  const cue=appleWormMouthCue(head,remaining,phase);
+  const faceAngle=cue.faceAngle??(stageTwoSourcePose?0:undefined);
+  const chewing=biteFx!==null&&phase!=='lost';
 
   return <>
     <WormSky width={630} height={270} id={id+'-sky'}/>
@@ -90,9 +95,28 @@ export function AppleWormReferenceScene({board,body,remaining}:{
       const {x,y}=anchor(board.portal);
       return <g key="portal" data-source-portal
         transform={'translate('+x+' '+y+')'}>
+        {/* Portal is active regardless of apples; effects never gate winning. */}
+        <g className="worm-portal-energy" aria-hidden="true">
+          <circle className="worm-portal-breath" r="19" fill="none"
+            stroke="#b7fff0" strokeWidth="1.5" opacity=".6"/>
+          <g className="worm-portal-orbit">
+            <circle r="21.5" fill="none" stroke="#75ebf7"
+              strokeWidth="1.6" strokeDasharray="2.5 9" opacity=".8"/>
+            <circle cx="21.5" cy="0" r="2.2" fill="#fffbd3"/>
+            <circle cx="-21.5" cy="0" r="1.4" fill="#85fcf3"/>
+          </g>
+          {[0,1,2,3].map(i=><circle key={'portal-spark-'+i}
+            className="worm-portal-spark" cx={Math.cos(i*Math.PI/2)*19}
+            cy={Math.sin(i*Math.PI/2)*19} r="1.5" fill="#eafffb"
+            style={{animationDelay:(i*.35)+'s'}}/>)}
+        </g>
         <g transform={'translate('+(-CELL/2)+' '+(-CELL/2)+')'}>
           <WormPortal x={0} y={0} tile={CELL} ready/>
         </g>
+        {phase==='won'&&<g className="worm-portal-victory" aria-hidden="true">
+          <circle r="16" fill="none" stroke="#fff7bd" strokeWidth="3"/>
+          <circle r="25" fill="none" stroke="#79ffe7" strokeWidth="2"/>
+        </g>}
       </g>;
     })()}
 
@@ -100,11 +124,38 @@ export function AppleWormReferenceScene({board,body,remaining}:{
       const {x,y}=anchor(p);
       return <g key={'apple-'+i} data-source-apple
         transform={'translate('+x+' '+y+')'}>
-        <g transform={'translate('+(-CELL/2)+' '+(-CELL/2)+')'}>
-          <WormApple x={0} y={0} tile={CELL}/>
+        <g className="worm-fruit-aura" aria-hidden="true">
+          <circle className="worm-fruit-pulse" r="17" fill="none"
+            stroke="#fff6a1" strokeWidth="1.6" opacity=".7"/>
+          <path d="M-19 -8l-3 -4M20 9l4 3M0 -20v-5"
+            stroke="#ffffff" strokeWidth="1.7" strokeLinecap="round"/>
+        </g>
+        <g className="worm-fruit-float">
+          <g transform={'translate('+(-CELL/2)+' '+(-CELL/2)+')'}>
+            <WormApple x={0} y={0} tile={CELL}/>
+          </g>
         </g>
       </g>;
     })}
+    {biteFx&&(()=>{
+      const {x,y}=anchor(biteFx.apple);
+      return <g key={'bite-fx-'+biteFx.key} data-apple-bite-fx
+        className="worm-apple-crumbs" aria-hidden="true"
+        transform={'translate('+x+' '+y+')'}>
+        <circle className="worm-bite-ring" r="5" fill="none"
+          stroke="#fff5ae" strokeWidth="2.3"/>
+        {[0,1,2,3,4,5,6,7].map(i=>{
+          const a=i*Math.PI/4;
+          return <g key={'crumb-'+i}
+            transform={'rotate('+(i*45)+')'}>
+            <path className="worm-bite-spark"
+              d="M0 -9Q2 -15 0 -21Q-2 -15 0 -9Z"
+              fill={i%2?'#e5ff88':'#ffcb5f'}/>
+          </g>;
+        })}
+        <circle r="3" fill="#fff7c7"/>
+      </g>;
+    })()}
 
     {headAnchor&&<g data-source-worm
       data-head-x={headAnchor.x} data-head-y={headAnchor.y}
@@ -112,6 +163,7 @@ export function AppleWormReferenceScene({board,body,remaining}:{
       data-neck-x={neck?anchor(neck).x:undefined}
       data-neck-y={neck?anchor(neck).y:undefined}>
       <WormCharacter body={worm} tile={CELL} id={id+'-worm'}
+        anticipating={cue.hungry&&!chewing} bite={chewing}
         faceAngle={faceAngle}/>
     </g>}
   </>;
