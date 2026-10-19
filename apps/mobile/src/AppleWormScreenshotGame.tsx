@@ -176,8 +176,8 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
                 {completed.includes(n)?'✓':''}{n}
               </button>)}
           </div>
-          <small style={{color:'#e7cba8'}}>{t('All screenshot references remain selectable because some missing exit data prevents reliable progression.',
-            'كل المراحل متاحة للاختيار لأن بعض المخارج الناقصة تمنع التقدم الطبيعي.')}</small>
+          <small style={{color:'#e7cba8'}}>{t('All PDF levels stay selectable while original physics and winning routes are being verified.',
+            'جميع مراحل PDF متاحة، لكن فيزياء اللعبة ومسارات الفوز الأصلية لم تُعتمد كاملة بعد.')}</small>
         </div>}
         <svg role="img" aria-label={t('Swipe Apple Worm board','اسحب لتحريك الدودة')}
           viewBox="0 0 640 360" data-source-level={level} preserveAspectRatio="xMidYMid meet"
