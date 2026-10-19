@@ -87,7 +87,7 @@ for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:
         const late=game.locator('svg[data-source-level="101"]');
         await expect(late).toBeVisible();
         await expect(late.locator('[data-source-apple]')).toHaveCount(12);
-        await expect(late.locator('[data-source-portal]')).toHaveCount(1);
+        await expect(late.locator('[data-source-portal]')).toHaveCount(0);
         await expectNoGlobalOverflow(page);
         await game.locator('header button').first().click();
         await expect(page.locator('.game-card.appleWorm .play-button')).toBeVisible();
