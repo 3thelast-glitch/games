@@ -12,6 +12,7 @@
  */
 import { appleWormVisualSnapshot, APPLE_WORM_VISUAL_SNAPSHOT_COUNT } from './video-visual-snapshots-105.ts';
 import { appleWormVideoTracedStage } from './video-traced-stages.ts';
+import { APPLE_WORM_VIDEO_START_POSES } from './video-start-poses-selected-33.ts';
 
 export type ScreenshotPoint = readonly [number, number];
 export type ScreenshotDirection = 'up'|'right'|'down'|'left';
@@ -92,7 +93,8 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
   const manualMatches=picturedOrder!==null&&picturedOrder.length===source.wormVisible.length&&
     picturedOrder.every(p=>source.wormVisible.some(q=>eq(p,q)))&&
     picturedOrder.every((p,i)=>i===0||touching(p,picturedOrder[i-1]!));
-  const worm=manualMatches?[...picturedOrder!]:traceVisibleWorm(source.wormVisible,
+  const videoStart=APPLE_WORM_VIDEO_START_POSES[level];
+  const worm=videoStart?[...videoStart.headToTail]:manualMatches?[...picturedOrder!]:traceVisibleWorm(source.wormVisible,
     level===2?[6,3]:level===59?[8,-2]:undefined);
   // The first 10 exits were manually traced from the walkthrough, and are
   // more reliable than the still-image portal detector when it misses a swirl.
@@ -104,15 +106,19 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
   if(portal && portal[1]<0)issues.push('portal-above-terrain-grid');
   if(portal && portal[1]>=9)issues.push('portal-below-terrain-grid');
   if(source.grayObjectsVisible.length)issues.push('gray-object-mechanics-unresolved');
-  if(!source.applesVisible.length)issues.push('no-apples-visible-in-frame');
+  const apples=videoStart?.extraInitialApples
+    ?[...source.applesVisible,...videoStart.extraInitialApples]:source.applesVisible;
+  const grayObjects=videoStart?.grayStartOverride??source.grayObjectsVisible;
+  if(videoStart)issues.push('video-clip-start-reconstructed');
+  if(!apples.length)issues.push('no-apples-visible-in-frame');
   issues.push('starting-head-and-physics-unverified');
   return {
     number:level,width:21,height:9,
     rows:source.terrain,
     worm:worm??source.wormVisible,
-    apples:source.applesVisible,
+    apples,
     portal,
-    grayObjects:source.grayObjectsVisible,
+    grayObjects,
     canMove:worm!==null,
     issues,
     sourceGeometry:'screenshot',referenceFrameApproved:true,
