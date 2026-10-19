@@ -6,10 +6,13 @@ import {
 import { APPLE_WORM_VIDEO_START_POSES } from '../packages/games/apple-worm/video-start-poses-selected-33.ts';
 import {
   screenshotWormLevel,startScreenshotWorm,SCREENSHOT_DIRECTIONS,moveScreenshotWorm,
+  type ScreenshotDirection,
 } from '../packages/games/apple-worm/screenshot-game.ts';
 import {
   solveAppleWormLevel,replayAppleWormRoute,
 } from '../packages/games/apple-worm/solvability.ts';
+import { BATCH_TWO_EXTENDED_WIN_ROUTES }
+  from './apple-worm-video-batch2-recovered-routes.test.ts';
 
 const key=(p:readonly[number,number])=>p[0]+','+p[1];
 
@@ -60,13 +63,17 @@ test('initial complete second-batch search truthfully logs win proofs and curren
   const results=BATCH_TWO_15.map(level=>
     solveAppleWormLevel(level,{maxStates:15000,maxMillis:550}));
   const proven:number[]=[],blocked:number[]=[],unresolved:number[]=[];
+  const certificates:Record<number,readonly ScreenshotDirection[]>={};
   for(const result of results){
-    if(result.status==='won'){
-      assert.ok(result.route);
-      const verified=replayAppleWormRoute(result.level,result.route);
-      assert.equal(verified.won,true);
-      assert.equal(verified.legalMoves,result.route.length);
+    const steps=result.route??BATCH_TWO_EXTENDED_WIN_ROUTES[result.level];
+    if(steps){
+      const verified=replayAppleWormRoute(result.level,steps);
+      assert.equal(verified.legalMoves,steps.length,
+        'stage '+result.level+' contains an illegal movement');
+      assert.equal(verified.won,true,
+        'stage '+result.level+' cannot be labelled won without real replay');
       proven.push(result.level);
+      certificates[result.level]=steps;
     }else if(result.status==='exhausted'||result.status==='missing-exit'){
       blocked.push(result.level);
     }else unresolved.push(result.level);
@@ -74,9 +81,14 @@ test('initial complete second-batch search truthfully logs win proofs and curren
   console.log('APPLE_WORM_VIDEO_BATCH_2_JSON='+JSON.stringify({
     batch:2,levels:[...BATCH_TWO_15],proven,blocked,unresolved,
     results:results.map(r=>({
-      level:r.level,status:r.status,explored:r.explored,
-      route:r.route?.join(',')??null,moves:r.routeLength,
+      level:r.level,status:certificates[r.level]?'won':r.status,
+      method:r.route?'BFS':certificates[r.level]?'full-move-replay':'unresolved',
+      explored:r.explored,
+      route:certificates[r.level]?.join(',')??null,
+      moves:certificates[r.level]?.length??null,
     })),
   }));
+  assert.deepEqual(proven,[...BATCH_TWO_15],
+    'do not declare batch 2 complete until ALL 15 have real replayed wins');
   assert.equal(results.length,15);
 });
