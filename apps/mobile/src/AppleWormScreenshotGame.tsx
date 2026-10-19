@@ -136,7 +136,7 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
 
   return createPortal(
     <main className="worm-page worm-immersive worm-source-play" dir={ar?'rtl':'ltr'} data-display="immersive-landscape"
-      data-stage-origin="user-screenshot" data-source-stage-count={APPLE_WORM_SCREENSHOT_LEVEL_COUNT}
+      data-stage-origin="user-screenshot" data-pdf-reference="approved" data-source-stage-count={APPLE_WORM_SCREENSHOT_LEVEL_COUNT}
       style={{position:'fixed',inset:0,zIndex:1100,overflowY:'auto',padding:'env(safe-area-inset-top) 10px env(safe-area-inset-bottom)',
         boxSizing:'border-box',background:'linear-gradient(180deg,#193c59,#326181)',color:'white'}}>
       <section aria-label={t('Apple Worm original stages','مراحل دودة التفاح من الصور')}
