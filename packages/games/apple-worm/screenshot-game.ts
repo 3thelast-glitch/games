@@ -224,7 +224,7 @@ export function restoreScreenshotWorm(value:unknown):ScreenshotState|null {
     boxes.some(p=>!Array.isArray(p)||p.length!==2||!onBoard(p)||
       !Number.isInteger(p[0])||!Number.isInteger(p[1]))||
     new Set(boxes.map(key)).size!==boxes.length||
-    boxes.some(p=>s.body!.some(b=>eq(p,b))))return null;
+    boxes.some(p=>s.body!.some(b=>eq(p,b)))))return null;
   return {level:s.level!,body:s.body.map(([x,y]):ScreenshotPoint=>[x,y]),
     collected:[...s.collected],moves:s.moves!,phase:s.phase!,
     ...(isBatchOneMovableGray(s.level!)?{grayPositions:(boxes??board.grayObjects)
