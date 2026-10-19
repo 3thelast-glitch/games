@@ -135,7 +135,8 @@ export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDir
       const falling:ScreenshotPoint[]=body.map(([x,y]):ScreenshotPoint=>[x,y+1]);
       if(remaining.some(p=>falling.some(b=>eq(b,p))))break;
       if(falling.some(p=>p[1]>=9||p[0]<0||p[0]>=21)){
-        phase='lost';body=falling;break;
+        // Keep the last in-bounds pose so losing states still restore safely.
+        phase='lost';break;
       }
       body=falling;
       if(win()){phase='won';break;}
