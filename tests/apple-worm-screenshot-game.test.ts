@@ -43,7 +43,7 @@ test('all 105 source snapshots load as actual gameplay geometry with zero invent
     }
   }
   assert.ok(motionCapable>=90,'the archive should support motion for most distinct worm shapes');
-  assert.equal(unresolvedPortals,0,'each PDF screenshot has a black spiral candidate');
+  assert.equal(unresolvedPortals,3,'keep unsighted exits unresolved instead of inventing them');
   assert.deepEqual(screenshotWormLevel(2).portal,[13,2]);
   assert.deepEqual(screenshotWormLevel(4).portal,[14,1]);
   assert.throws(()=>screenshotWormLevel(0),RangeError);
@@ -63,11 +63,11 @@ test('stage 48 retains all visible apples and all six gray unknown objects',()=>
   assert.equal(map.grayObjects.length,6);
   assert.ok(map.issues.includes('gray-object-mechanics-unresolved'));
 });
-test('stage 101 now recovers its partially obscured top-edge black spiral',()=>{
+test('stage 101 does not treat video UI icons as a source portal',()=>{
   const map=screenshotWormLevel(101);
   assert.equal(map.apples.length,12);
-  assert.deepEqual(map.portal,[17,-2]);
-  assert.ok(map.issues.includes('portal-above-terrain-grid'));
+  assert.equal(map.portal,null);
+  assert.ok(map.issues.includes('portal-unresolved'));
   assert.equal(map.exactVisualComparisonPassed,false);
 });
 test('exit candidates on the bottom source-image edge remain addressable',()=>{
