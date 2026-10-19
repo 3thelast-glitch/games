@@ -7,7 +7,7 @@
  * positions stay unchanged. The source contact-sheet snapshots were taken at
  * varying times and missed occluded green segments and some eaten fruits.
  *
- * IMPORTANT: 26 other requested stages are not claimed corrected here.
+ * IMPORTANT: 25 other requested stages are not claimed corrected here.
  * Green foreground occlusion and dynamic gray physics require frame tracing.
  */
 import type { ScreenshotPoint } from './screenshot-game.ts';
@@ -34,6 +34,11 @@ export const APPLE_WORM_VIDEO_START_POSES:Readonly<Record<number,OriginalVideoIn
   7:{
     stage:7,timestampSeconds:17,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
     headToTail:[[6,5],[7,5],[8,5]],
+    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
+  },
+  8:{
+    stage:8,timestampSeconds:25,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[6,5],[5,5],[4,5]],
     evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
   },
   30:{
