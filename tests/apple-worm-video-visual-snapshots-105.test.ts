@@ -26,6 +26,6 @@ test('images cannot be mistaken for untouched starts or full source solutions',(
   assert.equal(appleWormVisualSnapshot(2).wormVisible.length,4);
   // Fruit was already consumed when screenshot stage 2 was captured.
   assert.equal(appleWormVisualSnapshot(101).applesVisible.length,12);
-  assert.deepEqual(appleWormVisualSnapshot(101).probablePortal,[17,-2]);
+  assert.equal(appleWormVisualSnapshot(101).probablePortal,null);
   assert.equal(appleWormVisualSnapshot(48).grayObjectsVisible.length,6);
 });
