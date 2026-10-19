@@ -35,7 +35,7 @@ test('all 105 screenshots yield bounded object candidates, without falsely certi
   assert.equal(hasApples,97);
   assert.equal(hasWorm,102);
   assert.equal(hasGray,69);
-  assert.equal(hasExit,47);
+  assert.equal(hasExit,97,'50 additional black-spiral candidates found in sharper PDF');
   assert.throws(()=>appleWormImageEvidence(0),RangeError);
   assert.throws(()=>appleWormImageEvidence(106),RangeError);
 });
@@ -45,6 +45,7 @@ test('stage 2 screenshot is post-apple: image analysis must not call that a zero
   assert.equal(stage.visibleApples.length,0);
   assert.equal(stage.visibleWormCells.length,4); // Apple already consumed in still
   assert.equal(stage.sourceInitialStateVerified,false);
+  assert.deepEqual(stage.probablePortal,[13,2], 'PDF Level 002 exit above the L');
 });
 
 test('high stages with many apples and saws retain independently visible objects',()=>{
@@ -56,4 +57,7 @@ test('high stages with many apples and saws retain independently visible objects
   assert.equal(s101.visibleApples.length,12); // two 6-apple rows in still
   assert.equal(s101.visibleWormCells.length,3);
   assert.equal(s101.probablePortal,null); // not visible in that still, not truly absent
+  assert.deepEqual(appleWormImageEvidence(12).probablePortal,[14,0]);
+  assert.deepEqual(appleWormImageEvidence(33).probablePortal,[14,0]);
+  assert.deepEqual(appleWormImageEvidence(105).probablePortal,[17,-1]);
 });
