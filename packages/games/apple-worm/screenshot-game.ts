@@ -27,6 +27,8 @@ export interface ScreenshotLevel {
   readonly grayObjects:readonly ScreenshotPoint[];
   readonly canMove:boolean;
   readonly issues:readonly string[];
+  /** The PDF reference is approved; this is not a claim of visual parity. */
+  readonly referenceFrameApproved:true;
   readonly sourceGeometry:'screenshot';
   readonly exactPhysicsVerified:false;
   readonly exactVisualComparisonPassed:false;
@@ -113,7 +115,7 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
     grayObjects:source.grayObjectsVisible,
     canMove:worm!==null,
     issues,
-    sourceGeometry:'screenshot',
+    sourceGeometry:'screenshot',referenceFrameApproved:true,
     exactPhysicsVerified:false,exactVisualComparisonPassed:false,
   };
 }
