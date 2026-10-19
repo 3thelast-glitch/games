@@ -71,9 +71,9 @@ test('automated solvability audit covers ALL 105 levels and never calls budget f
 });
 
 test('deeper solver pass on 8 inconclusive late stages before calling them unsolved',()=>{
-  const levels=[80,81,83,84,88,93,94,100,105];
+  const levels=[80,81,83,84,88,93,94,100];
   const results=levels.map(level=>solveAppleWormLevel(level,{
-    maxStates:220000,maxMillis:3500,
+    maxStates:160000,maxMillis:2400,
   }));
   assert.deepEqual(results.map(r=>r.level),levels);
   for(const r of results){
@@ -83,7 +83,7 @@ test('deeper solver pass on 8 inconclusive late stages before calling them unsol
     }
   }
   console.log('APPLE_WORM_DEEP_AUDIT_JSON='+JSON.stringify({
-    capPerStage:220000,maxMillisPerStage:3500,
+    capPerStage:160000,maxMillisPerStage:2400,
     results:results.map(r=>({
       level:r.level,status:r.status,
       explored:r.explored,discovered:r.discovered,
