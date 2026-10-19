@@ -47,6 +47,8 @@ export const APPLE_WORM_VIDEO_BATCH_TWO_STARTS:Readonly<Record<number,OriginalVi
     stage:51,timestampSeconds:504,
     sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
     headToTail:[[8,-1],[8,0],[8,1]],
+    // The source opening still has a red fruit beside the upper head.
+    extraInitialApples:[[9,-1]],
     evidence:'direct-video-frame',
     initialFrameStatus:'visible-clip-frame',
   },
@@ -54,6 +56,8 @@ export const APPLE_WORM_VIDEO_BATCH_TWO_STARTS:Readonly<Record<number,OriginalVi
     stage:58,timestampSeconds:537,
     sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
     headToTail:[[10,4],[9,4],[9,3]],
+    // The source clip shows a fourth apple at the upper frame edge.
+    extraInitialApples:[[9,-2]],
     evidence:'direct-video-frame',
     initialFrameStatus:'visible-clip-frame',
   },
@@ -110,6 +114,11 @@ export const APPLE_WORM_VIDEO_BATCH_TWO_STARTS:Readonly<Record<number,OriginalVi
     stage:97,timestampSeconds:787,
     sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
     headToTail:[[7,4],[6,4],[5,4],[4,4]],
+    // Top fruit below hanging cube, and right-side fruit under second cube.
+    extraInitialApples:[[9,-1],[17,5]],
+    // Existing screenshot captured two gray items; opening video has two
+    // additional cubes overhead and on the right, in these SAME source cells.
+    grayStartOverride:[[9,-2],[9,0],[2,4],[17,4]],
     evidence:'direct-video-frame',
     initialFrameStatus:'visible-clip-frame',
   },
