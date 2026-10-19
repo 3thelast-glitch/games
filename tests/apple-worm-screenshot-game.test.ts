@@ -70,6 +70,16 @@ test('stage 101 does not treat video UI icons as a source portal',()=>{
   assert.ok(map.issues.includes('portal-unresolved'));
   assert.equal(map.exactVisualComparisonPassed,false);
 });
+test('green worm bodies on screenshots 59 91 95 are now movable',()=>{
+  const expectedHeads:[[number,number],number][]=[[[8,-2],59],[[13,-1],91],[[10,7],95]];
+  for(const [head,level] of expectedHeads){
+    const board=screenshotWormLevel(level);
+    assert.equal(board.canMove,true,'PDF worm must be playable on level '+level);
+    assert.deepEqual(board.worm[0],head);
+    const state=startScreenshotWorm(level);
+    assert.deepEqual(state.body[0],head);
+  }
+});
 test('exit candidates on the bottom source-image edge remain addressable',()=>{
   for(const n of [73,100]){
     const board=screenshotWormLevel(n);
