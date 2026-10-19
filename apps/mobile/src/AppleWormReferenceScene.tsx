@@ -2,7 +2,7 @@ import { useId } from 'react';
 import type { ScreenshotLevel, ScreenshotPoint } from '../../../packages/games/apple-worm/screenshot-game.ts';
 import { WormApple, WormCharacter, WormPortal, WormSky, WormTerrain }
   from './AppleWormArt.tsx';
-import { appleWormMouthCue } from './apple-worm-animation-cues.ts';
+import { appleWormFacingAngle, appleWormMouthCue } from './apple-worm-animation-cues.ts';
 
 /**
  * VISUAL-ONLY ART PASS — PDF105-R5.
@@ -37,8 +37,12 @@ export function AppleWormReferenceScene({board,body,remaining,phase='playing',bi
   // This is art direction ONLY; it does not change the worm body's direction.
   const stageTwoSourcePose=board.number===2&&body.length===board.worm.length&&
     body.every((p,i)=>p[0]===board.worm[i]![0]&&p[1]===board.worm[i]![1]);
-  const cue=appleWormMouthCue(head,remaining,phase);
-  const faceAngle=cue.faceAngle??(stageTwoSourcePose?0:undefined);
+  // The head always faces along its own body direction; NEVER toward fruit.
+  // Keep the original source-frame head pose as a cosmetic exception on L002.
+  const faceAngle=appleWormFacingAngle(body,stageTwoSourcePose);
+  const occupied:ScreenshotPoint[]=[...blocks.map(p=>[p.x,p.y] as const),
+    ...board.grayObjects,...body.slice(1)];
+  const cue=appleWormMouthCue(head,remaining,phase,faceAngle,occupied);
   const chewing=biteFx!==null&&phase!=='lost';
 
   return <>
@@ -161,7 +165,8 @@ export function AppleWormReferenceScene({board,body,remaining,phase='playing',bi
       data-head-x={headAnchor.x} data-head-y={headAnchor.y}
       data-body-length={body.length}
       data-neck-x={neck?anchor(neck).x:undefined}
-      data-neck-y={neck?anchor(neck).y:undefined}>
+      data-neck-y={neck?anchor(neck).y:undefined}
+      data-face-angle={faceAngle} data-mouth-target-distance={cue.distance??'none'}>
       <WormCharacter body={worm} tile={CELL} id={id+'-worm'}
         anticipating={cue.hungry&&!chewing} bite={chewing}
         faceAngle={faceAngle}/>
