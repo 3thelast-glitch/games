@@ -182,7 +182,7 @@ export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDir
   let phase:ScreenshotPhase=win()?'won':'playing';
   const remaining=stage.apples.filter((_,i)=>!collected.includes(i));
   // Simulate source-video gray box gravity only for the eight requested stages.
-  if(dynamic)boxes=settleGrayBoxes(boxes!,solid,body);
+  if(dynamic)boxes=settleGrayBoxes(boxes!,solid,body,remaining);
   const supported=()=>body.some(([x,y])=>solid.has(key([x,y+1]))||
     (boxes?.some(p=>eq(p,[x,y+1]))??false)||
     remaining.some(p=>eq(p,[x,y+1])));
