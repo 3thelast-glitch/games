@@ -1,9 +1,8 @@
 import {test,expect} from '@playwright/test';
 import {expectNoGlobalOverflow} from '../helpers/layout.ts';
 
-/** Source-image gameplay must work on narrow portrait screens and landscape.
- * Unlike the legacy 40-level view, the screenshot board can be interacted
- * with in either orientation, and 105 real source stages are navigable.
+/** The single premium Apple Worm game supports touch controls, RTL/LTR,
+ * and all 105 PDF-derived stage layouts in either screen orientation.
  */
 for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:'ltr'}] as const) {
   for(const shortSide of [320,360,390,430] as const) {
@@ -41,16 +40,15 @@ for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:
           expect(Math.abs(frame.width-shortSide)).toBeLessThan(2);
           expect(Math.abs(frame.height-longSide)).toBeLessThan(2);
         }
-        await expect(game).toHaveCSS('overflow-y','auto');
+        await expect(game).toHaveCSS('overflow-y','hidden');
+        await expect(game.getByRole('button',{name:/Legacy 40|المراحل القديمة 40/})).toHaveCount(0);
         await expectNoGlobalOverflow(page);
 
         await page.setViewportSize({width:longSide,height:shortSide});
         await expect(board).toBeVisible();
-        await expect.poll(async()=>board.evaluate(svg=>{
-          const b=svg.getBoundingClientRect();
-          const view=(svg as SVGSVGElement).viewBox.baseVal;
-          return Math.abs(view.width/view.height-b.width/b.height);
-        })).toBeLessThan(.02);
+        await expect(board).toHaveAttribute('viewBox','0 0 640 360');
+        await expect(board).toHaveAttribute('preserveAspectRatio','xMidYMid meet');
+        await expect(board.locator('.worm-terrain')).toHaveCount(1);
         const first=board.locator('[data-source-worm]');
         await expect(first).toHaveAttribute('transform',/^translate\(183 /);
         const rect=await board.boundingBox();

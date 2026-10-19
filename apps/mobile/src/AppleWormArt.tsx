@@ -224,13 +224,13 @@ export function WormPortal({ x, y, tile = 48, ready = false }: {
       cy={Math.sin(a*Math.PI/180)*(r+1.3)} r="2" fill="#fff1c5"/>)}
   </g>;
 }
-export function WormCharacter({ body, tile = 48, id, bite = false }: {
-  body: Point[]; tile?: number; id: string; bite?: boolean;
+export function WormCharacter({ body, tile = 48, id, bite = false, faceAngle }: {
+  body: Point[]; tile?: number; id: string; bite?: boolean; faceAngle?:number;
 }) {
   if(!body.length)return null;
   const outline=cellContour(body,tile,.31);
   const head=body[0]!,neck=body[1]??{x:head.x-1,y:head.y};
-  const angle=head.x<neck.x?180:head.y<neck.y?-90:head.y>neck.y?90:0;
+  const angle=faceAngle??(head.x<neck.x?180:head.y<neck.y?-90:head.y>neck.y?90:0);
   const hx=(head.x+.5)*tile,hy=(head.y+.5)*tile,c=tile/48;
   return <g className={bite ? "worm-character worm-character-biting" : "worm-character"} aria-hidden="true">
     <defs>

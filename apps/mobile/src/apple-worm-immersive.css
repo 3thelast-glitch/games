@@ -209,38 +209,48 @@ body > .worm-immersive .worm-board{inset:0!important;width:100%!important;height
 
 
 /*
- * NEW screenshot-derived game is a scrollable interactive 105-stage source
- * mode. The legacy fullscreen rules above are still needed by the separate
- * 40-stage practice mode; do not apply their overflow:hidden lock to source.
- * Contain the logical 21:9 screenshot board without warping its coordinates.
+ * ONE premium Apple Worm game on 105 reference stages.
+ * Fill the same immersive screen previously used by the separate polished
+ * 40-stage mode. Never shrink the 105-stage world into a mini scroll card.
  */
 body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] {
-  overflow-x:hidden!important;
-  overflow-y:auto!important;
-  overscroll-behavior-y:contain;
-  touch-action:pan-y!important;
-  background:linear-gradient(180deg,#112f48,#153e58)!important;
-  padding:env(safe-area-inset-top) 10px env(safe-area-inset-bottom)!important;
+  overflow:hidden!important;
+  touch-action:none!important;
+  background:#94dadd!important;
+  padding:0!important;
   box-sizing:border-box;
-  scrollbar-gutter:stable;
 }
 body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] > section {
-  min-height:100%;
+  position:relative;
+  height:100%!important;
+  min-height:100%!important;
+  width:100%!important;
+  max-width:none!important;
 }
 body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] svg[data-source-level] {
-  width:min(100%,124dvh)!important;
-  height:auto!important;
-  max-height:70dvh!important;
-  flex-shrink:0;
-  margin-inline:auto;
+  position:absolute!important;
+  inset:0!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  max-height:none!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:0!important;
   direction:ltr;
   touch-action:none!important;
   -webkit-user-select:none;
   user-select:none;
 }
-@media(orientation:portrait) {
-  body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] {
-    padding-top:max(8px,env(safe-area-inset-top))!important;
-    padding-bottom:max(12px,env(safe-area-inset-bottom))!important;
+body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] .worm-character{
+  transform-box:fill-box;
+}
+@media(max-height:410px) and (orientation:landscape){
+  body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] header{
+    padding-top:2px!important;padding-bottom:2px!important;
+  }
+  body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] button{
+    min-height:32px;
   }
 }
