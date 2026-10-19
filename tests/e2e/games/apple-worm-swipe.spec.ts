@@ -1,8 +1,8 @@
 import {test,expect} from '@playwright/test';
 import {expectNoGlobalOverflow} from '../helpers/layout.ts';
 
-/** The single premium Apple Worm game supports touch controls, RTL/LTR,
- * and all 105 PDF-derived stage layouts in either screen orientation.
+/** One approved 105-stage gallery-layout game supports movement,
+ * RTL/LTR, swipes, restart and stage selection on phone and PC.
  */
 for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:'ltr'}] as const) {
   for(const shortSide of [320,360,390,430] as const) {
@@ -40,17 +40,18 @@ for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:
           expect(Math.abs(frame.width-shortSide)).toBeLessThan(2);
           expect(Math.abs(frame.height-longSide)).toBeLessThan(2);
         }
-        await expect(game).toHaveCSS('overflow-y','hidden');
+        await expect(game).toHaveCSS('overflow-y','auto');
+        await expect(game).toHaveAttribute('data-renderer','approved-gallery-game');
         await expect(game.getByRole('button',{name:/Legacy 40|المراحل القديمة 40/})).toHaveCount(0);
         await expectNoGlobalOverflow(page);
 
         await page.setViewportSize({width:longSide,height:shortSide});
         await expect(board).toBeVisible();
-        await expect(board).toHaveAttribute('viewBox','0 0 640 360');
+        await expect(board).toHaveAttribute('viewBox','0 0 630 270');
         await expect(board).toHaveAttribute('preserveAspectRatio','xMidYMid meet');
-        await expect(board.locator('.worm-terrain')).toHaveCount(1);
-        const first=board.locator('[data-source-worm]');
-        await expect(first).toHaveAttribute('transform',/^translate\(183 /);
+        await expect(board.locator('[data-source-terrain="gallery-approved"]')).toHaveCount(1);
+        const first=board.locator('[data-worm-segment]').first();
+        await expect(first).toHaveAttribute('cx','165');
         const rect=await board.boundingBox();
         expect(rect).not.toBeNull();
         if(!rect)throw Error('No source stage board');
@@ -71,17 +72,16 @@ for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:
           await page.mouse.move(end,y,{steps:8});
           await page.mouse.up();
         }
-        await expect(first).toHaveAttribute('transform',/^translate\(213 /);
+        await expect(first).toHaveAttribute('cx','195');
         await game.getByRole('button',{name:locale.id==='ar'?'تراجع':'Undo'}).click();
-        await expect(first).toHaveAttribute('transform',/^translate\(183 /);
+        await expect(first).toHaveAttribute('cx','165');
 
         const choose=game.locator('button[aria-expanded]');
         await choose.click();
-        const dialog=game.getByRole('dialog');
-        await expect(dialog).toBeVisible();
-        await expect(dialog.getByRole('button',{name:'91–105'})).toBeVisible();
-        await dialog.getByRole('button',{name:'91–105'}).click();
-        await dialog.getByRole('button',{name:locale.id==='ar'?'المرحلة 101':'Stage 101'}).click();
+        const stages=game.getByRole('navigation',{name:locale.id==='ar'?'المراحل المعتمدة من 1 إلى 105':'Approved stages 1 to 105'});
+        await expect(stages).toBeVisible();
+        await stages.getByRole('button',{name:'91–105'}).click();
+        await stages.getByRole('button',{name:locale.id==='ar'?'المرحلة 101':'Stage 101'}).click();
         const late=game.locator('svg[data-source-level="101"]');
         await expect(late).toBeVisible();
         await expect(late.locator('[data-source-apple]')).toHaveCount(12);
