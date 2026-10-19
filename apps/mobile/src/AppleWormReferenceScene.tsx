@@ -10,7 +10,8 @@ import type { ScreenshotLevel, ScreenshotPoint } from '../../../packages/games/a
  * does not imply that mid-play screenshots are verified initial positions.
  */
 const CELL = 30;
-const center = ([x,y]:ScreenshotPoint) => ({x:x*CELL+CELL/2,y:y*CELL+CELL/2});
+/** Calibration to the reference 640×360 gameplay pixels: grid centres 33+30x, 73+30y. */
+const center = ([x,y]:ScreenshotPoint) => ({x:33+x*CELL,y:73+y*CELL});
 const touching = (a:ScreenshotPoint,b:ScreenshotPoint) =>
   Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1])===1;
 
@@ -59,7 +60,7 @@ export function AppleWormReferenceScene({board,body,remaining}:{
         <stop offset="100%" stopColor="#75808b"/>
       </linearGradient>
     </defs>
-    <rect x="0" y="-60" width="630" height="390" fill="url(#wormref-sky)"/>
+    <rect x="0" y="0" width="640" height="360" fill="url(#wormref-sky)"/>
     <g fill="#ffffff" opacity=".1" aria-hidden="true">
       <path d="M315 -70L0 205 0 148Z"/>
       <path d="M315 -70L0 95 0 62Z"/>
@@ -70,6 +71,7 @@ export function AppleWormReferenceScene({board,body,remaining}:{
       <path d="M315 -70L630 175 630 215Z"/>
       <path d="M315 -70L630 77 630 110Z"/>
     </g>
+    <g transform="translate(0 70)">
     <path d="M0 211 Q22 202 40 215 T88 211 T134 207 T181 220 T236 216 T283 207 T336 219 T387 214 T439 205 T493 215 T548 209 T601 212 T650 207 L650 290H0Z"
       fill="#effaff" opacity=".8"/>
     <path d="M-10 229 Q18 203 47 229 T102 232 T158 239 T211 233 T271 236 T329 241 T388 234 T446 232 T508 237 T565 228 T635 227 L635 285H-10Z"
@@ -78,8 +80,9 @@ export function AppleWormReferenceScene({board,body,remaining}:{
       fill="#80b983"/>
     <path d="M0 263 Q35 246 70 267 T139 268 T215 264 T292 269 T375 266 T449 268 T527 264 T630 269 L630 280H0Z"
       fill="#5ca263"/>
+    </g>
     {cells.map(({x,y})=><g key={'earth-'+x+'-'+y}
-      transform={'translate('+(x*CELL)+' '+(y*CELL)+')'}>
+      transform={'translate('+(18+x*CELL)+' '+(58+y*CELL)+')'}>
       <rect width={CELL} height={CELL} rx="1" fill={brick?'url(#wormref-brick)':'url(#wormref-earth)'}
         stroke={brick?'#653b2c':'#512c1d'} strokeWidth="1.5"/>
       {brick?<g fill="none" stroke="#6c3d2d" strokeWidth="1.5" opacity=".8">
