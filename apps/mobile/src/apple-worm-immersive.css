@@ -228,7 +228,7 @@ body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] > section 
   min-height:100%;
 }
 body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] svg[data-source-level] {
-  width:min(100%,163dvh)!important;
+  width:min(100%,124dvh)!important;
   height:auto!important;
   max-height:70dvh!important;
   flex-shrink:0;
