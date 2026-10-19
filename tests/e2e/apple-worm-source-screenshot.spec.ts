@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 
-test('Apple Worm enters the actual 105-source screenshot game and preserves image-derived objects',async({page})=>{
+test('the 105 previously reference-only gallery stages are now the ONE interactive Apple Worm game',async({page})=>{
   const uncaught:string[]=[];
   page.on('pageerror',error=>uncaught.push(error.message));
   await page.goto('/');
@@ -10,40 +10,47 @@ test('Apple Worm enters the actual 105-source screenshot game and preserves imag
   await expect(game).toBeVisible();
   await expect(game).toHaveAttribute('data-source-stage-count','105');
   await expect(game).toHaveAttribute('data-pdf-reference','approved');
-  await expect(game).toHaveAttribute('data-visual-revision','PDF105-R3');
-  await expect(game.getByText('PDF105-R3').first()).toBeVisible();
+  await expect(game).toHaveAttribute('data-renderer','approved-gallery-game');
+  await expect(game).toHaveAttribute('data-visual-revision','PDF105-R4');
+  await expect(game.getByText('PDF105-R4')).toBeVisible();
+  await expect(game.getByText(/Reference snapshots|ليست قابلة للعب|غير معتمدة/)).toHaveCount(0);
+  await expect(game.getByRole('button',{name:/Legacy 40|المراحل القديمة 40/})).toHaveCount(0);
   const board=game.locator('svg[data-source-level="1"]');
   await expect(board).toBeVisible();
-  await expect(board).toHaveAttribute('viewBox','0 0 640 360');
+  await expect(board).toHaveAttribute('viewBox','0 0 630 270');
   await expect(board).toHaveAttribute('data-terrain-cell-count','12');
-  await expect(board.locator('[data-source-terrain="continuous"]')).toHaveCount(1);
-  await expect(board.locator('[data-source-worm]')).toHaveCount(1);
-  await expect(board.locator('.worm-character')).toHaveCount(1);
-  await expect(board.locator('.worm-terrain')).toHaveCount(1);
-  await expect(board.locator('.worm-clouds')).toHaveCount(1);
-  await expect(game.getByRole('button',{name:/Legacy 40|المراحل القديمة 40/})).toHaveCount(0);
+  await expect(board.locator('[data-source-terrain="gallery-approved"]')).toHaveCount(1);
+  await expect(board.locator('[data-worm-segment]')).toHaveCount(3);
   await expect(board.locator('[data-source-apple]')).toHaveCount(0);
   await expect(board.locator('[data-source-gray-object]')).toHaveCount(0);
   await expect(board.locator('[data-source-portal]')).toHaveCount(1);
-  await expect(board.locator('[data-source-worm]')).toHaveAttribute('transform',/^translate\(183 /);
+  await expect(board.locator('[data-worm-segment]').first()).toHaveAttribute('cx','165');
   await game.getByRole('button',{name:'right'}).click();
-  await expect(board.locator('[data-source-worm]')).toHaveAttribute('transform',/^translate\(213 /);
-  await game.locator('button[aria-expanded]').click();
+  await expect(board.locator('[data-worm-segment]').first()).toHaveAttribute('cx','195');
+  await game.getByRole('button',{name:'Undo'}).click();
+  await expect(board.locator('[data-worm-segment]').first()).toHaveAttribute('cx','165');
+
   await game.getByRole('button',{name:'Stage 2'}).click();
   const second=game.locator('svg[data-source-level="2"]');
-  await expect(second).toHaveAttribute('viewBox','0 0 640 360');
+  await expect(second).toHaveAttribute('viewBox','0 0 630 270');
   await expect(second).toHaveAttribute('data-terrain-cell-count','10');
-  await expect(second.locator('[data-source-terrain="continuous"]')).toHaveCount(1);
-  await expect(second.locator('[data-source-worm]')).toHaveAttribute('transform','translate(213 163) rotate(0)');
+  await expect(second.locator('[data-worm-segment]').first()).toHaveAttribute('cx','195');
+  await expect(second.locator('[data-worm-segment]').first()).toHaveAttribute('cy','105');
   await expect(second.locator('[data-source-apple]')).toHaveCount(0);
-  await expect(second.locator('[data-source-portal]')).toHaveAttribute('transform','translate(423 133)');
-  await game.locator('button[aria-expanded]').click();
+  await expect(second.locator('[data-source-portal]')).toHaveAttribute('transform','translate(405 75)');
+
   await game.getByRole('button',{name:'Stage 10'}).click();
   const tenth=game.locator('svg[data-source-level="10"]');
   await expect(tenth).toHaveAttribute('data-terrain-cell-count','25');
-  await game.locator('button[aria-expanded]').click();
+
+  await game.getByRole('button',{name:'Stage 15'}).click();
+  const fifteenth=game.locator('svg[data-source-level="15"]');
+  await expect(fifteenth).toBeVisible();
+  await expect(fifteenth.locator('[data-source-apple]')).toHaveCount(1);
+  await expect(fifteenth.locator('[data-worm-segment]')).toHaveCount(3);
+
   await game.getByRole('button',{name:'91–105'}).click();
-  await game.getByRole('button',{name:/101/}).click();
+  await game.getByRole('button',{name:'Stage 101'}).click();
   const later=game.locator('svg[data-source-level="101"]');
   await expect(later).toBeVisible();
   await expect(later.locator('[data-source-apple]')).toHaveCount(12);
