@@ -13,7 +13,7 @@ import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
 interface SourceSave { level:number; state:ScreenshotState; completed:number[]; visualRevision?:string }
 const SAVE_KEY='apple-worm-screenshot-source-105-v1';
 /** Increases when the reference rendering/initial layouts change. */
-export const APPLE_WORM_VISUAL_REVISION='PDF105-R3';
+export const APPLE_WORM_VISUAL_REVISION='PDF105-R4';
 const keyMap:Record<string,ScreenshotDirection>={
   arrowup:'up',w:'up',arrowdown:'down',s:'down',
   arrowleft:'left',a:'left',arrowright:'right',d:'right',
@@ -140,108 +140,94 @@ export function AppleWormScreenshotGame({onExit,settings}:{
   const selectedGroupEnd=Math.min(105,selectedGroupFrom+14);
 
   return createPortal(
-    <main className="worm-page worm-immersive worm-source-play" dir={ar?'rtl':'ltr'} data-display="immersive-landscape"
-      data-stage-origin="user-screenshot" data-pdf-reference="approved" data-source-stage-count={APPLE_WORM_SCREENSHOT_LEVEL_COUNT}
-      data-visual-revision={APPLE_WORM_VISUAL_REVISION}
-      style={{position:'fixed',inset:0,zIndex:1100,overflow:'hidden',padding:0,
-        boxSizing:'border-box',background:'#a4e5ea',color:'white'}}>
-      <section aria-label={t('Apple Worm original stages','مراحل دودة التفاح من الصور')}
-        style={{width:'100%',height:'100%',position:'relative',maxWidth:'none',margin:0,display:'block'}}>
-        <header style={{position:'absolute',top:0,left:0,right:0,zIndex:9,display:'flex',
-          alignItems:'center',gap:8,justifyContent:'space-between',flexWrap:'wrap',
-          background:'linear-gradient(180deg,rgba(24,67,73,.62),transparent)',
-          padding:'max(5px,env(safe-area-inset-top)) 12px 5px'}}>
+    <main className="worm-page worm-immersive worm-source-play" dir={ar?'rtl':'ltr'}
+      data-display="immersive-landscape" data-stage-origin="user-screenshot"
+      data-pdf-reference="approved" data-source-stage-count={APPLE_WORM_SCREENSHOT_LEVEL_COUNT}
+      data-visual-revision={APPLE_WORM_VISUAL_REVISION} data-renderer="approved-gallery-game">
+      <section className="worm-source-page"
+        aria-label={t('Approved Apple Worm stages','مراحل دودة التفاح المعتمدة')}>
+        <header className="worm-source-heading">
           <button type="button" onClick={onExit} style={buttonStyle}>
             ↩ {t('Back to NAQLA','العودة لنقلة')}
           </button>
-          <div style={{textAlign:'center'}}>
-            <strong>{t('Apple Worm','دودة التفاح')}</strong>
-            <div style={{fontSize:12,color:'#b8d7e7'}}>{t('Level','المرحلة')} {String(level).padStart(3,'0')} / 105</div>
-            <div style={{fontSize:10,color:'#a6e4f0',fontWeight:700}}>{APPLE_WORM_VISUAL_REVISION}</div>
+          <div className="worm-source-title">
+            <h2>{t('105 original video stages','105 مراحل من الفيديو الأصلي')}</h2>
+            <p>{t('Approved game stages • one playable Apple Worm game',
+              'المراحل المعتمدة • لعبة دودة التفاح واحدة')}</p>
+            <small>{APPLE_WORM_VISUAL_REVISION}</small>
           </div>
-          <button type="button" onClick={()=>setShowChoose(n=>!n)} aria-expanded={showChoose}
+          <button type="button" onClick={()=>setShowChoose(open=>!open)}
+            aria-expanded={showChoose} aria-controls="worm-source-levels"
             style={buttonStyle}>{t('Choose stage','اختيار المرحلة')} ▦</button>
         </header>
-        <div style={{position:'absolute',top:76,left:0,right:0,zIndex:6,fontSize:12,
-          color:'#244e59',lineHeight:1.3,textAlign:'center',pointerEvents:'none'}} role="note">
-          {t('Reach the black exit to win · Apples are optional',
-            'ادخل المخرج الأسود للفوز · التفاح اختياري')}
+        <div className="worm-source-board-frame">
+          <svg role="img" aria-label={t('Swipe Apple Worm board','اسحب لتحريك الدودة')}
+            viewBox="0 0 630 270" data-source-level={level}
+            data-terrain-cell-count={board.rows.reduce((n,row)=>
+              n+[...row].filter(cell=>cell==='#').length,0)}
+            preserveAspectRatio="xMidYMid meet"
+            onPointerDown={begin} onPointerUp={finish}
+            onPointerCancel={()=>{swiping.current=null;}}
+            onLostPointerCapture={()=>{swiping.current=null;}}
+            style={{display:'block',width:'100%',height:'auto',touchAction:'none',direction:'ltr'}}>
+            <AppleWormReferenceScene board={board} body={state.body} remaining={remaining}/>
+          </svg>
         </div>
-        {showChoose && <div role="dialog" aria-label={t('Stage selector','اختيار المراحل')}
-          style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',
-            zIndex:20,width:'min(650px,92vw)',maxHeight:'75dvh',overflowY:'auto',
-            padding:12,background:'rgba(27,82,103,.97)',borderRadius:12,
-            display:'flex',flexDirection:'column',gap:9,boxShadow:'0 10px 35px #18394788'}}>
-          <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+        <div className="worm-source-stats" role="status">
+          <strong>{t('Stage','المرحلة')} {level}/{APPLE_WORM_SCREENSHOT_LEVEL_COUNT}</strong>
+          <span>{t('Visible apples','التفاح الظاهر')}: {remaining.length}</span>
+          <span>{t('Worm segments','أجزاء الدودة')}: {state.body.length}</span>
+          <span>{t('Gray obstacles','العوائق الرمادية')}: {board.grayObjects.length}</span>
+          <span>{t('Moves','الحركات')}: {state.moves}</span>
+          <span>{state.phase==='won'?t('Stage completed!','اكتملت المرحلة!'):
+            state.phase==='lost'?t('Restart to retry','أعد المحاولة'):
+            t('Enter the exit to win • apples optional',
+              'ادخل المخرج للفوز • التفاح اختياري')}</span>
+        </div>
+        {!board.portal&&<p className="worm-source-caveat" role="status">
+          {t('This stage is part of the approved 105-stage set. Its exit is not yet located in the available video frame.',
+            'هذه المرحلة من المراحل الـ105 المعتمدة، لكن مكان المخرج لم يُحدد بعد من لقطة الفيديو المتاحة.')}
+        </p>}
+        <nav className="worm-source-transport" aria-label={t('Stage and movement controls','التحكم بالمرحلة والدودة')}>
+          <button type="button" disabled={level<=1} onClick={()=>pick(level-1)} style={buttonStyle}>
+            {t('Previous','السابق')}</button>
+          <strong>{level}</strong>
+          <button type="button" disabled={level>=105} onClick={()=>pick(level+1)} style={buttonStyle}>
+            {t('Next','التالي')}</button>
+          <button type="button" onClick={undo} disabled={!history.length} style={buttonStyle}>
+            {t('Undo','تراجع')}</button>
+          <button type="button" onClick={reset} style={buttonStyle}>
+            {t('Restart','إعادة')}</button>
+          {controls.map(([dir,glyph])=><button type="button" key={dir}
+            onClick={()=>move(dir)} disabled={!board.canMove||state.phase!=='playing'}
+            style={buttonStyle} aria-label={dir}>{glyph}</button>)}
+        </nav>
+        <nav id="worm-source-levels" className="worm-source-levels"
+          data-open={showChoose?'true':'false'}
+          aria-label={t('Approved stages 1 to 105','المراحل المعتمدة من 1 إلى 105')}>
+          <div className="worm-source-packs">
             {Array.from({length:7},(_,i)=>i).map(i=><button type="button" key={i}
-              onClick={()=>setGroup(i)}
-              aria-pressed={group===i}
-              style={{...buttonStyle,background:group===i?'#1e9b7d':'#24536c',fontSize:12}}>
+              onClick={()=>setGroup(i)} aria-pressed={group===i}
+              style={{...buttonStyle,background:group===i?'#178f79':'#28546c'}}>
               {i*15+1}–{Math.min((i+1)*15,105)}
             </button>)}
           </div>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(5,minmax(0,1fr))',gap:3}}>
+          <div className="worm-source-level-grid">
             {Array.from({length:selectedGroupEnd-selectedGroupFrom+1},(_,i)=>i+selectedGroupFrom)
               .map(n=><button type="button" key={n} onClick={()=>pick(n)}
                 aria-label={t('Stage ','المرحلة ')+n}
                 aria-current={level===n?'step':undefined}
-                style={{...buttonStyle,minWidth:0,padding:'8px 0',fontSize:13,
-                  background:level===n?'#20a68b':completed.includes(n)?'#397e57':'#285167'}}>
-                {completed.includes(n)?'✓':''}{n}
+                style={{...buttonStyle,background:level===n?'#178f79':
+                  completed.includes(n)?'#367958':'#28546c'}}>
+                {completed.includes(n)?'✓ ':''}{n}
               </button>)}
           </div>
-          <small style={{color:'#e7cba8'}}>{t('All 105 stages follow the numbering of the supplied PDF.',
-            'المراحل الـ105 مرتبة بنفس ترتيب صور ملف PDF.')}</small>
-        </div>}
-        <svg role="img" aria-label={t('Swipe Apple Worm board','اسحب لتحريك الدودة')}
-          viewBox="0 0 640 360" data-source-level={level}
-          data-terrain-cell-count={board.rows.reduce((n,row)=>n+[...row].filter(cell=>cell==='#').length,0)}
-          preserveAspectRatio="xMidYMid meet"
-          onPointerDown={begin} onPointerUp={finish}
-          onPointerCancel={()=>{swiping.current=null;}}
-          onLostPointerCapture={()=>{swiping.current=null;}}
-          style={{position:'absolute',inset:0,display:'block',width:'100%',height:'100%',
-            maxHeight:'none',minHeight:0,touchAction:'none',border:'none',borderRadius:0,
-            background:'#a5e8ef',boxSizing:'border-box'}}>
-          <AppleWormReferenceScene board={board} body={state.body} remaining={remaining}/>
-        </svg>
-        <div style={{position:'absolute',bottom:70,left:12,right:12,zIndex:8,display:'flex',
-          justifyContent:'space-between',flexWrap:'wrap',gap:7,fontSize:12,
-          color:'#fff',textShadow:'0 1px 3px #275358',pointerEvents:'none'}}>
-          <span>{t('Moves','الحركات')}: {state.moves}</span>
-          <span>{t('Optional apples','التفاح الاختياري')}: {state.collected.length}/{board.apples.length}</span>
-          <span>{t('Verified completions','الإنجازات المسجلة')}: {completed.length}/105</span>
-          <span>{state.phase==='won'?t('Exit reached! Stage complete','وصلت للمخرج! اكتملت المرحلة'):
-            state.phase==='lost'?t('Fell: restart','سقطت: أعد'):
-            !board.canMove?t('Worm pose unresolved','وضع الدودة غير واضح'):
-            t('Swipe or use arrows','اسحب أو استخدم الأسهم')}</span>
-        </div>
-        <div style={{position:'absolute',bottom:12,left:12,right:12,zIndex:9,display:'flex',
-          gap:6,justifyContent:'center',flexWrap:'wrap',alignItems:'center'}}>
-          {controls.map(([dir,glyph])=>
-            <button type="button" key={dir} onClick={()=>move(dir)}
-              disabled={!board.canMove||state.phase!=='playing'}
-              style={{...buttonStyle,minWidth:45,fontSize:19}} aria-label={dir}>{glyph}</button>)}
-          <button type="button" onClick={undo} disabled={!history.length}
-            style={buttonStyle}>{t('Undo','تراجع')}</button>
-          <button type="button" onClick={reset} style={buttonStyle}>{t('Restart','إعادة')}</button>
-          <button type="button" onClick={()=>pick(Math.min(105,level+1))}
-            disabled={level>=105} style={buttonStyle}>{t('Next','التالي')} →</button>
-        </div>
-        {(!board.portal||!board.canMove)&&<p role="status" style={{position:'absolute',bottom:110,
-          left:0,right:0,zIndex:8,margin:0,textAlign:'center',fontSize:11,color:'#754829'}}>
-          {!board.portal?t('Exit position not yet reconstructed for this PDF frame.',
-            'لم يُحدد موقع المخرج في تنفيذ اللعبة لهذه الصورة بعد.'):
-            t('Worm controls need reconstruction for this PDF frame.',
-            'يحتاج موضع الدودة في تنفيذ اللعبة إلى تصحيح لهذه الصورة.')}
-        </p>}
-        <span style={{position:'absolute',bottom:6,right:8,zIndex:7,fontSize:9,
-          color:'#567c7c',pointerEvents:'none'}}>{settings.sound?'♪ ':''}{APPLE_WORM_VISUAL_REVISION}</span>
+        </nav>
       </section>
     </main>,document.body);
 }
 const buttonStyle={
-  border:'1px solid #91bbcb',borderRadius:9,
-  background:'#25516a',color:'#fff',cursor:'pointer',
-  padding:'8px 11px',fontSize:13,fontWeight:600 as const,
+  border:'1px solid #86aab8',borderRadius:8,
+  background:'#28546c',color:'#fff',cursor:'pointer',
+  padding:'8px 12px',fontSize:13,fontWeight:600 as const,
 };
