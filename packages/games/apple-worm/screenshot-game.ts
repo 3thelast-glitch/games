@@ -13,6 +13,7 @@
 import { appleWormVisualSnapshot, APPLE_WORM_VISUAL_SNAPSHOT_COUNT } from './video-visual-snapshots-105.ts';
 import { appleWormVideoTracedStage } from './video-traced-stages.ts';
 import { APPLE_WORM_VIDEO_START_POSES } from './video-start-poses-selected-33.ts';
+import { APPLE_WORM_VIDEO_BATCH_TWO_STARTS } from './video-start-poses-batch-2.ts';
 import { isBatchOneMovableGray, pushGrayBox, settleGrayBoxes } from './gray-box-physics-batch-1.ts';
 
 export type ScreenshotPoint = readonly [number, number];
@@ -96,7 +97,7 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
   const manualMatches=picturedOrder!==null&&picturedOrder.length===source.wormVisible.length&&
     picturedOrder.every(p=>source.wormVisible.some(q=>eq(p,q)))&&
     picturedOrder.every((p,i)=>i===0||touching(p,picturedOrder[i-1]!));
-  const videoStart=APPLE_WORM_VIDEO_START_POSES[level];
+  const videoStart=APPLE_WORM_VIDEO_START_POSES[level]??APPLE_WORM_VIDEO_BATCH_TWO_STARTS[level];
   const worm=videoStart?[...videoStart.headToTail]:manualMatches?[...picturedOrder!]:traceVisibleWorm(source.wormVisible,
     level===2?[6,3]:level===59?[8,-2]:undefined);
   // The first 10 exits were manually traced from the walkthrough, and are
