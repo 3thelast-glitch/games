@@ -27,6 +27,7 @@ Independent cell-centre sampling compared the reference PDF to `appleWormSourceT
 | Rendering | Changed from 630×270 to native 640×360; correct grid offset and 16:9 framing |
 | Level 002 head | Upper bend chosen as head and right-facing initial mouth restored |
 | Level 002 route | Regression test proves direct portal completion with zero collected apples |
+| Portal evidence | 97/105 image-level portal candidates, with 8 unresolved (after 50 new PDF detections) |
 
 The automated terrain classification is a **cell-occupancy check**, not a pixel-perfect render comparison. Brown terrain sprites extend across tile boundaries; a cell-centre match does not certify texture, bevel widths, colors, shadows or image-level 1:1 identity.
 
@@ -38,7 +39,7 @@ The following remain **unverified**:
 - Manual head and tail orientation on every level (the legacy rightmost-head heuristic still applies beyond the specifically audited stage)
 - Exact original apple-eating, gravity, saw, spike and movable-obstacle physics
 - Exact asset styles and animations
-- 51 still-unresolved portal positions after recovery from the first-ten manually traced references
+- Eight still-unresolved portal positions in the current source frames after recovering another 50 black-circle candidates from the sharper PDF. These detected positions remain provisional until manually checked against video and tested for solvable routes.
 - Complete original winning replay sequence and solvability for all 105 stages
 
 **Do not label 105 stages as 100% identical or fully solved on the strength of the terrain-grid check.** Review the original high-resolution per-stage frames and the source video before promoting `exactVisualComparisonPassed` or `exactPhysicsVerified` to true.
