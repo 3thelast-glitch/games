@@ -42,7 +42,7 @@ test('all 105 source snapshots load as actual gameplay geometry with zero invent
         'never mutate original snapshot initial pose');
     }
   }
-  assert.ok(motionCapable>=90,'the archive should support motion for most distinct worm shapes');
+  assert.equal(motionCapable,105,'all PDF screenshot worms must have an ordered visible pose');
   assert.equal(unresolvedPortals,3,'keep unsighted exits unresolved instead of inventing them');
   assert.deepEqual(screenshotWormLevel(2).portal,[13,2]);
   assert.deepEqual(screenshotWormLevel(4).portal,[14,1]);
@@ -78,6 +78,18 @@ test('green worm bodies on screenshots 59 91 95 are now movable',()=>{
     assert.deepEqual(board.worm[0],head);
     const state=startScreenshotWorm(level);
     assert.deepEqual(state.body[0],head);
+  }
+});
+test('overlapping U-shaped worms remain ordered and movable on levels 80 and 99',()=>{
+  const expected=new Map<number,readonly (readonly[number,number])[]>([
+    [80,[[9,5],[10,5],[11,5],[11,6],[10,6]]],
+    [99,[[3,2],[3,3],[3,4],[4,4],[4,3]]],
+  ]);
+  for(const [n,body] of expected){
+    const level=screenshotWormLevel(n);
+    assert.equal(level.canMove,true);
+    assert.deepEqual(level.worm,body);
+    assert.deepEqual(startScreenshotWorm(n).body,body);
   }
 });
 test('exit candidates on the bottom source-image edge remain addressable',()=>{
