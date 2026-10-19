@@ -32,6 +32,9 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
   const t=(en:string,arabic:string)=>ar?arabic:en;
   const [level,setLevel]=useState(1);
   const [state,setState]=useState<ScreenshotState>(()=>startScreenshotWorm());
+  // Keep movement side effects out of React state-updater functions (Strict Mode).
+  const stateRef=useRef(state);
+  stateRef.current=state;
   const [history,setHistory]=useState<ScreenshotState[]>([]);
   const [completed,setCompleted]=useState<number[]>([]);
   const [ready,setReady]=useState(false);
@@ -54,7 +57,9 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
         const n=resume?.level??saved.level;
         setLevel(n);
         setGroup(Math.floor((n-1)/15));
-        setState(resume??startScreenshotWorm(n));
+        const next=resume??startScreenshotWorm(n);
+        stateRef.current=next;
+        setState(next);
         if(Array.isArray(saved.completed))
           setCompleted(saved.completed.filter(x=>Number.isInteger(x)&&x>=1&&x<=105));
       }
@@ -67,28 +72,32 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
   },[ready,level,state,completed]);
 
   const move=(direction:ScreenshotDirection)=>{
-    setState(prev=>{
-      const next=moveScreenshotWorm(prev,direction);
-      if(next!==prev){
-        setHistory(h=>[...h.slice(-89),prev]);
-        if(next.phase==='won')setCompleted(c=>c.includes(prev.level)?c:[...c,prev.level]);
-      }
-      return next;
-    });
+    const previous=stateRef.current;
+    const next=moveScreenshotWorm(previous,direction);
+    if(next===previous)return;
+    stateRef.current=next;
+    setHistory(h=>[...h.slice(-89),previous]);
+    setState(next);
+    if(next.phase==='won')setCompleted(c=>c.includes(previous.level)?c:[...c,previous.level]);
   };
   const reset=()=>{
-    setState(startScreenshotWorm(level));setHistory([]);
+    const next=startScreenshotWorm(level);
+    stateRef.current=next;
+    setState(next);setHistory([]);
   };
   const undo=()=>{
     const prev=history.at(-1);
     if(!prev)return;
     setHistory(h=>h.slice(0,-1));
+    stateRef.current=prev;
     setState(prev);
   };
   const pick=(n:number)=>{
     if(!Number.isInteger(n)||n<1||n>105)return;
     setLevel(n);
-    setState(startScreenshotWorm(n));
+    const next=startScreenshotWorm(n);
+    stateRef.current=next;
+    setState(next);
     setGroup(Math.floor((n-1)/15));
     setHistory([]);
     setShowChoose(false);
