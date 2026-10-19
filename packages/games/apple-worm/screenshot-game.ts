@@ -52,7 +52,7 @@ const touching=(a:ScreenshotPoint,b:ScreenshotPoint)=>
  * Only an unambiguous non-branching chain is eligible for moving.
  * The choice of head is an unverified heuristic, never a source-fidelity claim.
  */
-function traceVisibleWorm(points:readonly ScreenshotPoint[]):ScreenshotPoint[]|null {
+function traceVisibleWorm(points:readonly ScreenshotPoint[], preferredHead?:ScreenshotPoint):ScreenshotPoint[]|null {
   if(!points.length)return null;
   const unique=new Map(points.map(p=>[key(p),p]));
   if(unique.size!==points.length)return null;
@@ -60,8 +60,11 @@ function traceVisibleWorm(points:readonly ScreenshotPoint[]):ScreenshotPoint[]|n
   const endpoints=points.filter(p=>points.filter(q=>touching(p,q)).length===1);
   if(endpoints.length!==2 ||
     points.some(p=>points.filter(q=>touching(p,q)).length>2))return null;
-  // Prefer the extreme right-most endpoint (a guess; direction must be audited).
-  const candidates=endpoints.sort((a,b)=>b[0]-a[0]||a[1]-b[1]);
+  // Stage 2's PDF frame visibly faces right from the top of the green bend;
+  // the old rightmost-endpoint heuristic wrongly put the head at its lower tail.
+  const candidates=endpoints.sort((a,b)=>
+    (preferredHead&&eq(a,preferredHead)?-1:preferredHead&&eq(b,preferredHead)?1:0)||
+    b[0]-a[0]||a[1]-b[1]);
   const chain:ScreenshotPoint[]=[candidates[0]!];
   const visited=new Set([key(chain[0]!)]);
   while(chain.length<points.length){
@@ -75,7 +78,8 @@ function traceVisibleWorm(points:readonly ScreenshotPoint[]):ScreenshotPoint[]|n
 }
 export function screenshotWormLevel(level:number):ScreenshotLevel {
   const source=appleWormVisualSnapshot(level);
-  const worm=traceVisibleWorm(source.wormVisible);
+  const worm=traceVisibleWorm(source.wormVisible,
+    level===2?[6,3]:undefined);
   // The first 10 exits were manually traced from the walkthrough, and are
   // more reliable than the still-image portal detector when it misses a swirl.
   const portal=source.probablePortal??(level<=10?appleWormVideoTracedStage(level).exit:null);
