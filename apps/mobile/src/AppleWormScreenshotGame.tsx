@@ -14,7 +14,7 @@ import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
 interface SourceSave { level:number; state:ScreenshotState; completed:number[]; visualRevision?:string }
 const SAVE_KEY='apple-worm-screenshot-source-105-v1';
 /** Increases when the reference rendering/initial layouts change. */
-export const APPLE_WORM_VISUAL_REVISION='PDF105-R8';
+export const APPLE_WORM_VISUAL_REVISION='PDF105-R9';
 const keyMap:Record<string,ScreenshotDirection>={
   arrowup:'up',w:'up',arrowdown:'down',s:'down',
   arrowleft:'left',a:'left',arrowright:'right',d:'right',
@@ -195,7 +195,8 @@ export function AppleWormScreenshotGame({onExit,settings}:{
             onLostPointerCapture={()=>{swiping.current=null;}}
             style={{display:'block',width:'100%',height:'auto',touchAction:'none',direction:'ltr'}}>
             <AppleWormReferenceScene board={board} body={state.body}
-              remaining={remaining} phase={state.phase} biteFx={biteFx}/>
+              remaining={remaining} grayPositions={state.grayPositions}
+              phase={state.phase} biteFx={biteFx}/>
           </svg>
         </div>
         <div className="worm-source-stats" role="status">
