@@ -1,0 +1,116 @@
+/**
+ * SECOND isolated batch of the player's 33 uploaded problem-stage video.
+ * Source: Apple_Worm_Selected_33_Levels(1).mp4, 640x360 at timestamps below.
+ * Head is first; the original stage images may represent mid-play snapshots.
+ * This file stores NO new terrain, fruit or portal coordinates, and does not
+ * presume that a video-observed body correction proves original mechanics.
+ */
+import type { OriginalVideoInitialPose } from './video-start-poses-selected-33.ts';
+export const BATCH_TWO_15=[39,40,42,44,49,51,58,59,71,72,73,76,86,96,97] as const;
+export const APPLE_WORM_VIDEO_BATCH_TWO_STARTS:Readonly<Record<number,OriginalVideoInitialPose>>={
+  39:{
+    stage:39,timestampSeconds:373,
+    sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[7,3],[6,3],[5,3],[4,3]],
+    evidence:'direct-video-frame',
+    initialFrameStatus:'visible-clip-frame',
+  },
+  40:{
+    stage:40,timestampSeconds:402,
+    sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[12,1],[13,1],[13,2]],
+    evidence:'direct-video-frame',
+    initialFrameStatus:'visible-clip-frame',
+  },
+  42:{
+    stage:42,timestampSeconds:432,
+    sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[11,5],[12,5],[13,5]],
+    evidence:'direct-video-frame',
+    initialFrameStatus:'visible-clip-frame',
+  },
+  44:{
+    stage:44,timestampSeconds:462,
+    sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[14,0],[15,0],[15,1]],
+    evidence:'direct-video-frame',
+    initialFrameStatus:'visible-clip-frame',
+  },
+  49:{
+    stage:49,timestampSeconds:481,
+    sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[16,2],[16,3],[16,4],[15,4]],
+    evidence:'direct-video-frame',
+    initialFrameStatus:'visible-clip-frame',
+  },
+  51:{
+    stage:51,timestampSeconds:504,
+    sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[8,-1],[8,0],[8,1]],
+    evidence:'direct-video-frame',
+    initialFrameStatus:'visible-clip-frame',
+  },
+  58:{
+    stage:58,timestampSeconds:537,
+    sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[10,4],[9,4],[9,3]],
+    evidence:'direct-video-frame',
+    initialFrameStatus:'visible-clip-frame',
+  },
+  59:{
+    stage:59,timestampSeconds:575,
+    sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[10,-2],[10,-1],[9,-1],[8,-1]],
+    evidence:'direct-video-frame',
+    initialFrameStatus:'visible-clip-frame',
+  },
+  71:{
+    stage:71,timestampSeconds:622,
+    sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[7,2],[8,2],[8,3]],
+    evidence:'direct-video-frame',
+    initialFrameStatus:'visible-clip-frame',
+  },
+  72:{
+    stage:72,timestampSeconds:667,
+    sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[11,2],[12,2],[12,3]],
+    evidence:'direct-video-frame',
+    initialFrameStatus:'visible-clip-frame',
+  },
+  73:{
+    stage:73,timestampSeconds:686,
+    sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[12,4],[13,4],[14,4]],
+    evidence:'direct-video-frame',
+    initialFrameStatus:'visible-clip-frame',
+  },
+  76:{
+    stage:76,timestampSeconds:727,
+    sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[13,3],[13,4],[12,4]],
+    evidence:'direct-video-frame',
+    initialFrameStatus:'visible-clip-frame',
+  },
+  86:{
+    stage:86,timestampSeconds:745,
+    sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[5,3],[4,3],[4,4],[5,4]],
+    evidence:'direct-video-frame',
+    initialFrameStatus:'visible-clip-frame',
+  },
+  96:{
+    stage:96,timestampSeconds:781,
+    sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[8,0],[7,0],[7,1],[7,2]],
+    evidence:'direct-video-frame',
+    initialFrameStatus:'visible-clip-frame',
+  },
+  97:{
+    stage:97,timestampSeconds:787,
+    sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[7,4],[6,4],[5,4],[4,4]],
+    evidence:'direct-video-frame',
+    initialFrameStatus:'visible-clip-frame',
+  },
+};
