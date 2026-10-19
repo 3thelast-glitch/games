@@ -7,6 +7,7 @@ import {
   type ScreenshotDirection, type ScreenshotState, type ScreenshotPoint,
 } from '../../../packages/games/apple-worm/screenshot-game.ts';
 import { APPLE_WORM_VIDEO_START_POSES } from '../../../packages/games/apple-worm/video-start-poses-selected-33.ts';
+import { APPLE_WORM_VIDEO_BATCH_TWO_STARTS } from '../../../packages/games/apple-worm/video-start-poses-batch-2.ts';
 import { useI18n } from './i18n.tsx';
 import { storage, type Settings } from './platform.ts';
 import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
@@ -14,7 +15,7 @@ import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
 interface SourceSave { level:number; state:ScreenshotState; completed:number[]; visualRevision?:string }
 const SAVE_KEY='apple-worm-screenshot-source-105-v1';
 /** Increases when the reference rendering/initial layouts change. */
-export const APPLE_WORM_VISUAL_REVISION='PDF105-R9';
+export const APPLE_WORM_VISUAL_REVISION='PDF105-R10';
 const keyMap:Record<string,ScreenshotDirection>={
   arrowup:'up',w:'up',arrowdown:'down',s:'down',
   arrowleft:'left',a:'left',arrowright:'right',d:'right',
@@ -75,7 +76,7 @@ export function AppleWormScreenshotGame({onExit,settings}:{
         // Real source-video starts were reconstructed for selected stages.
         // Do not resurrect an outdated two-/one-cell worm on those levels.
         // Preserve completion history and unmodified levels' saved positions.
-        const needsVideoStartMigration=!!APPLE_WORM_VIDEO_START_POSES[n]&&
+        const needsVideoStartMigration=!!(APPLE_WORM_VIDEO_START_POSES[n]||APPLE_WORM_VIDEO_BATCH_TWO_STARTS[n])&&
           saved.visualRevision!==APPLE_WORM_VISUAL_REVISION;
         const next=resume&&!needsVideoStartMigration?resume:startScreenshotWorm(n);
         stateRef.current=next;
