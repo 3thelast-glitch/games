@@ -383,3 +383,130 @@ body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"]{
 @media(prefers-reduced-motion:reduce){
   .worm-source-page button{transition:none!important;}
 }
+
+/* PDF105-R6 — APPLE WORM: presentation-only animation, never transforms
+   stage cell coordinates, collision hitboxes or portal-active state. */
+.worm-source-play .worm-character .worm-mouth{
+  transform-box:fill-box;
+  transform-origin:20% 12%;
+  transition:transform .21s cubic-bezier(.2,.8,.3,1),filter .21s ease;
+}
+.worm-source-play .worm-character-hungry .worm-mouth{
+  transform:translate(-3px,-5px) scale(1.38,1.98);
+  filter:drop-shadow(0 0 2px #ffb0ce7e);
+}
+.worm-source-play .worm-character-hungry .worm-mouth-inner{fill:#f88fac}
+.worm-source-play .worm-character-biting .worm-mouth{
+  animation:worm-r6-chew .72s cubic-bezier(.3,.15,.24,1) both!important;
+}
+@keyframes worm-r6-chew{
+  0%{transform:translate(-3px,-5px) scale(1.38,1.98)}
+  24%{transform:translate(-2px,-2px) scale(1.13,.55)}
+  43%{transform:translate(-3px,-6px) scale(1.4,1.85)}
+  59%{transform:translate(0,1px) scale(.9,.53)}
+  76%{transform:translate(-1px,-2px) scale(1.2,1.25)}
+  100%{transform:translate(0,0) scale(1,1)}
+}
+.worm-source-play .worm-fruit-float{
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:worm-r6-fruit-float 2.2s ease-in-out infinite;
+}
+@keyframes worm-r6-fruit-float{
+  0%,100%{transform:translateY(0) rotate(-3deg)}
+  50%{transform:translateY(-2.5px) rotate(3deg)}
+}
+.worm-source-play .worm-fruit-pulse{
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:worm-r6-fruit-pulse 1.65s ease-in-out infinite;
+}
+@keyframes worm-r6-fruit-pulse{
+  0%,100%{opacity:.3;transform:scale(.85)}
+  50%{opacity:.85;transform:scale(1.3)}
+}
+.worm-source-play .worm-apple-glow{
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:worm-r6-fruit-glimmer 2.5s ease-in-out infinite;
+}
+@keyframes worm-r6-fruit-glimmer{
+  0%,100%{opacity:.43;transform:scale(.9)}
+  50%{opacity:1;transform:scale(1.13)}
+}
+.worm-source-play .worm-portal-energy,
+.worm-source-play .worm-portal-victory,
+.worm-source-play [data-apple-bite-fx]{
+  pointer-events:none;
+}
+.worm-source-play .worm-portal-orbit{
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:worm-r6-portal-orbit 5.4s linear infinite;
+}
+@keyframes worm-r6-portal-orbit{
+  from{transform:rotate(0deg)}
+  to{transform:rotate(360deg)}
+}
+.worm-source-play .worm-portal-breath{
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:worm-r6-portal-breath 2s ease-in-out infinite;
+}
+@keyframes worm-r6-portal-breath{
+  0%,100%{opacity:.3;transform:scale(.87)}
+  50%{opacity:.95;transform:scale(1.16)}
+}
+.worm-source-play .worm-portal-spark{
+  animation:worm-r6-portal-spark 1.4s ease-in-out infinite;
+}
+@keyframes worm-r6-portal-spark{
+  0%,100%{opacity:.2}
+  50%{opacity:1}
+}
+.worm-source-play .worm-portal-victory{
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:worm-r6-portal-win .95s ease-out both;
+}
+@keyframes worm-r6-portal-win{
+  0%{opacity:.3;transform:scale(.45)}
+  30%{opacity:1;transform:scale(1.2)}
+  100%{opacity:0;transform:scale(2.1)}
+}
+.worm-source-play .worm-apple-crumbs{
+  animation:worm-r6-bite-burst .72s cubic-bezier(.18,.8,.24,1) both;
+}
+@keyframes worm-r6-bite-burst{
+  0%{opacity:0;scale:.2}
+  17%{opacity:1;scale:.8}
+  56%{opacity:1;scale:1.35}
+  100%{opacity:0;scale:1.95}
+}
+.worm-source-play .worm-bite-ring{
+  transform-box:fill-box;
+  transform-origin:center;
+  animation:worm-r6-bite-ring .72s ease-out both;
+}
+@keyframes worm-r6-bite-ring{
+  from{transform:scale(.35);opacity:1}
+  to{transform:scale(3.5);opacity:0}
+}
+@media(prefers-reduced-motion:reduce){
+  .worm-source-play .worm-fruit-float,
+  .worm-source-play .worm-fruit-pulse,
+  .worm-source-play .worm-apple-glow,
+  .worm-source-play .worm-portal-orbit,
+  .worm-source-play .worm-portal-breath,
+  .worm-source-play .worm-portal-spark,
+  .worm-source-play .worm-portal-victory,
+  .worm-source-play .worm-apple-crumbs,
+  .worm-source-play .worm-bite-ring,
+  .worm-source-play .worm-character-biting .worm-mouth{
+    animation:none!important;
+  }
+  .worm-source-play .worm-character .worm-mouth{
+    transition:none!important;
+  }
+  .worm-source-play .worm-apple-crumbs{opacity:0}
+}
