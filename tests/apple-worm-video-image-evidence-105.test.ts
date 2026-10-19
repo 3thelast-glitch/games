@@ -33,7 +33,7 @@ test('all 105 screenshots yield bounded object candidates, without falsely certi
   }
   assert.equal(images.size,105);
   assert.equal(hasApples,97);
-  assert.equal(hasWorm,102);
+  assert.equal(hasWorm,105,'recovered three initially unrecognized worms by manual PDF review');
   assert.equal(hasGray,69);
   assert.equal(hasExit,102,'three UI-overlay-only frames must not receive invented exits');
   assert.throws(()=>appleWormImageEvidence(0),RangeError);
@@ -65,4 +65,7 @@ test('high stages with many apples and saws retain independently visible objects
   assert.deepEqual(appleWormImageEvidence(12).probablePortal,[14,0]);
   assert.deepEqual(appleWormImageEvidence(33).probablePortal,[14,0]);
   assert.deepEqual(appleWormImageEvidence(105).probablePortal,[17,-1]);
+  assert.equal(appleWormImageEvidence(59).visibleWormCells.length,4);
+  assert.equal(appleWormImageEvidence(91).visibleWormCells.length,5);
+  assert.equal(appleWormImageEvidence(95).visibleWormCells.length,7);
 });
