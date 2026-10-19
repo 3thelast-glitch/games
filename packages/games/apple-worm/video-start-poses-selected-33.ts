@@ -7,7 +7,7 @@
  * positions stay unchanged. The source contact-sheet snapshots were taken at
  * varying times and missed occluded green segments and some eaten fruits.
  *
- * IMPORTANT: 28 other requested stages are not claimed corrected here.
+ * IMPORTANT: 27 other requested stages are not claimed corrected here.
  * Green foreground occlusion and dynamic gray physics require frame tracing.
  */
 import type { ScreenshotPoint } from './screenshot-game.ts';
@@ -23,7 +23,7 @@ export interface OriginalVideoInitialPose {
 }
 
 /** Source frames verified at 00:00, 00:17, 04:53, 13:44, 14:08.
- * Do not infer a head from green-area threshold alone: purple/mouth fixes the
+ * 15:16 for Level 105. Do not infer a head from green-area threshold alone: purple/mouth fixes the
  * head endpoint; contiguous green body pieces fix the original length. */
 export const APPLE_WORM_VIDEO_START_POSES:Readonly<Record<number,OriginalVideoInitialPose>>={
   5:{
@@ -52,6 +52,11 @@ export const APPLE_WORM_VIDEO_START_POSES:Readonly<Record<number,OriginalVideoIn
   104:{
     stage:104,timestampSeconds:848,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
     headToTail:[[6,7],[5,7],[5,6]],
+    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
+  },
+  105:{
+    stage:105,timestampSeconds:916,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[9,2],[10,2],[11,2]],
     evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
   },
 };
