@@ -129,14 +129,22 @@ export function startScreenshotWorm(level=1):ScreenshotState {
 // Original 640x360 contact frames can show a spiral above the ground
 // rows (y=-2) or at the lower visible edge (y=9). Keep 9 terrain rows.
 const onBoard=([x,y]:ScreenshotPoint)=>x>=0&&x<21&&y>=-2&&y<=9;
-export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDirection):ScreenshotState {
+// Solver audit can reuse an unchanged stage object and its exact collision mask.
+// This is an internal performance optimization, NOT a different movement rule.
+const solidCellsByStage=new WeakMap<ScreenshotLevel,Set<string>>();
+export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDirection,stageOverride?:ScreenshotLevel):ScreenshotState {
   if(state.phase!=='playing'||!Object.prototype.hasOwnProperty.call(DELTAS,direction))return state;
-  const stage=screenshotWormLevel(state.level);
+  const stage=stageOverride??screenshotWormLevel(state.level);
+  if(stage.number!==state.level)throw new RangeError('stage override does not match active level');
   if(!stage.canMove||!state.body.length)return state;
-  const solid=new Set<string>();
-  stage.rows.forEach((row,y)=>[...row].forEach((t,x)=>{if(t==='#')solid.add(key([x,y]));}));
-  // Untyped gray elements are collision blockers; never label saw/crate without evidence.
-  stage.grayObjects.forEach(p=>solid.add(key(p)));
+  let solid=solidCellsByStage.get(stage);
+  if(!solid){
+    solid=new Set<string>();
+    stage.rows.forEach((row,y)=>[...row].forEach((t,x)=>{if(t==='#')solid!.add(key([x,y]));}));
+    // Gray unknown objects remain blockers exactly as in the original engine.
+    stage.grayObjects.forEach(p=>solid!.add(key(p)));
+    solidCellsByStage.set(stage,solid);
+  }
   const [dx,dy]=DELTAS[direction], [hx,hy]=state.body[0]!;
   const head:ScreenshotPoint=[hx+dx,hy+dy];
   if(!onBoard(head)||solid.has(key(head))||state.body[1]&&eq(head,state.body[1]))return state;
