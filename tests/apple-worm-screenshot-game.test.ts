@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {appleWormVisualSnapshot} from '../packages/games/apple-worm/video-visual-snapshots-105.ts';
 import {appleWormVideoTracedStage} from '../packages/games/apple-worm/video-traced-stages.ts';
 import {APPLE_WORM_VIDEO_START_POSES, VIDEO_AUDIT_REQUESTED_33} from '../packages/games/apple-worm/video-start-poses-selected-33.ts';
+import {APPLE_WORM_VIDEO_BATCH_TWO_STARTS} from '../packages/games/apple-worm/video-start-poses-batch-2.ts';
 import {
   APPLE_WORM_SCREENSHOT_LEVEL_COUNT,
   SCREENSHOT_DIRECTIONS, screenshotWormLevel,
@@ -21,7 +22,7 @@ test('all 105 source snapshots load as actual gameplay geometry with zero invent
     assert.equal(board.width,21);
     assert.equal(board.height,9);
     assert.deepEqual(board.rows,source.terrain);
-    const video=APPLE_WORM_VIDEO_START_POSES[level];
+    const video=APPLE_WORM_VIDEO_START_POSES[level]??APPLE_WORM_VIDEO_BATCH_TWO_STARTS[level];
     assert.deepEqual(board.apples,video?.extraInitialApples
       ?[...source.applesVisible,...video.extraInitialApples]:source.applesVisible);
     assert.deepEqual(board.grayObjects,video?.grayStartOverride??source.grayObjectsVisible);
@@ -79,8 +80,8 @@ test('stage 101 does not treat video UI icons as a source portal',()=>{
   assert.ok(map.issues.includes('portal-unresolved'));
   assert.equal(map.exactVisualComparisonPassed,false);
 });
-test('green worm bodies on screenshots 59 91 95 are now movable',()=>{
-  const expectedHeads:[[number,number],number][]=[[[8,-2],59],[[13,-1],91],[[10,7],95]];
+test('video-refined 59 and still-image worms 91 and 95 are movable',()=>{
+  const expectedHeads:[[number,number],number][]=[[[10,-2],59],[[13,-1],91],[[10,7],95]];
   for(const [head,level] of expectedHeads){
     const board=screenshotWormLevel(level);
     assert.equal(board.canMove,true,'PDF worm must be playable on level '+level);
