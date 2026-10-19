@@ -7,7 +7,7 @@
  * positions stay unchanged. The source contact-sheet snapshots were taken at
  * varying times and missed occluded green segments and some eaten fruits.
  *
- * IMPORTANT: 20 other requested stages are not claimed corrected here.
+ * IMPORTANT: 12 other requested stages are not claimed corrected here.
  * Green foreground occlusion and dynamic gray physics require frame tracing.
  */
 import type { ScreenshotPoint } from './screenshot-game.ts';
@@ -73,6 +73,46 @@ export const APPLE_WORM_VIDEO_START_POSES:Readonly<Record<number,OriginalVideoIn
     // Two bottom apples have not yet been eaten at this filmed start.
     extraInitialApples:[[9,8],[11,8]],
     grayStartOverride:[[9,5],[10,7]],
+    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
+  },
+  17:{
+    stage:17,timestampSeconds:140,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[9,2],[9,3],[8,3]],
+    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
+  },
+  18:{
+    stage:18,timestampSeconds:169,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[10,4],[10,5],[10,6]],
+    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
+  },
+  19:{
+    stage:19,timestampSeconds:184,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[12,4],[12,3],[12,2],[12,1]],
+    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
+  },
+  20:{
+    stage:20,timestampSeconds:219,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[5,5],[6,5],[7,5]],
+    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
+  },
+  28:{
+    stage:28,timestampSeconds:263,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[7,4],[6,4],[5,4]],
+    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
+  },
+  39:{
+    stage:39,timestampSeconds:372,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[6,3],[5,3],[4,3]],
+    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
+  },
+  42:{
+    stage:42,timestampSeconds:432,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[11,5],[12,5],[13,5]],
+    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
+  },
+  51:{
+    stage:51,timestampSeconds:505,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[9,-1],[8,-1],[8,0],[8,1]],
     evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
   },
   44:{
