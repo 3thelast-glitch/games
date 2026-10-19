@@ -58,8 +58,8 @@ export const APPLE_WORM_VIDEO_START_POSES:Readonly<Record<number,OriginalVideoIn
     evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
   },
   14:{
-    stage:14,timestampSeconds:105,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[8,1],[7,1],[6,1]],
+    stage:14,timestampSeconds:104,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[7,1],[6,1],[5,1]],
     evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
   },
   15:{
@@ -73,8 +73,8 @@ export const APPLE_WORM_VIDEO_START_POSES:Readonly<Record<number,OriginalVideoIn
     evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
   },
   18:{
-    stage:18,timestampSeconds:169,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[10,4],[10,5],[10,6]],
+    stage:18,timestampSeconds:168,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[10,1],[9,1],[8,1]],
     evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
   },
   19:{
@@ -83,8 +83,8 @@ export const APPLE_WORM_VIDEO_START_POSES:Readonly<Record<number,OriginalVideoIn
     evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
   },
   20:{
-    stage:20,timestampSeconds:219,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[5,5],[6,5],[7,5]],
+    stage:20,timestampSeconds:217,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
+    headToTail:[[9,5],[8,5],[7,5]],
     evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
   },
   28:{
