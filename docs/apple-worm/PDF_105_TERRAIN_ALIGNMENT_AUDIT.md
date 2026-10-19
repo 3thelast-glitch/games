@@ -27,6 +27,7 @@ Independent cell-centre sampling compared the reference PDF to `appleWormSourceT
 | Rendering | Changed from 630×270 to native 640×360; correct grid offset and 16:9 framing |
 | Level 002 head | Upper bend chosen as head and right-facing initial mouth restored |
 | Level 002 route | Regression test proves direct portal completion with zero collected apples |
+| Worm start pose / movement eligibility | 105 / 105 source screenshots now have an ordered starting worm; source-motion and win route authenticity still unverified |
 | Portal evidence | **102/105 probable exits located**, three not visible (Levels 70, 95, 101) |
 
 The automated terrain classification is a **cell-occupancy check**, not a pixel-perfect render comparison. Brown terrain sprites extend across tile boundaries; a cell-centre match does not certify texture, bevel widths, colors, shadows or image-level 1:1 identity.
@@ -36,7 +37,7 @@ The automated terrain classification is a **cell-occupancy check**, not a pixel-
 The following remain **unverified**:
 
 - All 105 complete pixel-by-pixel initial-frame render comparisons
-- Manual head and tail orientation on every level (the legacy rightmost-head heuristic still applies beyond the specifically audited stage)
+- Exact original head and tail orientation and winning routes remain unverified on most levels. The obvious missed head/body cells in Levels 59, 91, 95 and 99 were retraced from enlarged screenshots, and ambiguous U-shaped bodies in Levels 80/99 were assigned visible connected orders. All 105 screenshot levels can now initialize an ordered worm, but this is NOT proof that they are originally solvable.
 - Exact original apple-eating, gravity, saw, spike and movable-obstacle physics
 - Exact asset styles and animations
 - Of eight initially ambiguous frames, enlarged PDF screenshots support five more portal positions: Levels 56, 66 and 96 near the upper terrain boundary, and Levels 73 and 100 at the lower visible edge (y=9). Initial coordinates for Levels 70, 95 and 101 were **retracted**: black rings at the upper-right are WatchON/control UI, not gameplay portals. Their exit locations remain unresolved.
