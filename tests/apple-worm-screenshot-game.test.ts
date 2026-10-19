@@ -181,7 +181,7 @@ test('PDF Level 002 has a reproducible winning route without any apples',()=>{
 });
 
 test('selected source video reconstructs explicit real worm starts, not screenshot-hidden single cells',()=>{
-  const levels=[5,7,8,9,12,13,14,15,17,18,19,20,28,30,39,42,44,51,98,104,105];
+  const levels=[5,7,8,9,12,13,14,15,17,18,19,20,28,30,34,39,40,42,44,49,51,58,59,71,73,96,97,98,104,105];
   const restored=levels.map(level=>{
     const record=APPLE_WORM_VIDEO_START_POSES[level]!;
     const stage=screenshotWormLevel(level);
@@ -216,10 +216,19 @@ test('selected source video reconstructs explicit real worm starts, not screensh
     {level:20,length:3},
     {level:28,length:3},
     {level:30,length:3},
+    {level:34,length:3},
     {level:39,length:3},
+    {level:40,length:3},
     {level:42,length:3},
     {level:44,length:3},
+    {level:49,length:4},
     {level:51,length:4},
+    {level:58,length:4},
+    {level:59,length:4},
+    {level:71,length:3},
+    {level:73,length:3},
+    {level:96,length:4},
+    {level:97,length:4},
     {level:98,length:5},
     {level:104,length:3},
     {level:105,length:3},
