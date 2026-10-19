@@ -183,7 +183,7 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
             'كل المراحل متاحة للاختيار لأن بعض المخارج الناقصة تمنع التقدم الطبيعي.')}</small>
         </div>}
         <svg role="img" aria-label={t('Swipe Apple Worm board','اسحب لتحريك الدودة')}
-          viewBox="0 0 630 270" preserveAspectRatio="xMidYMid meet"
+          viewBox="0 0 630 270" data-source-level={level} preserveAspectRatio="xMidYMid meet"
           onPointerDown={begin} onPointerUp={finish}
           onPointerCancel={()=>{swiping.current=null;}}
           onLostPointerCapture={()=>{swiping.current=null;}}
@@ -206,7 +206,7 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
             </g>:null))}
           {board.grayObjects.map((p,i)=>{
             const {x,y}=present(p);
-            return <g key={'g'+i} transform={`translate(${x} ${y})`}>
+            return <g data-source-gray-object key={'g'+i} transform={`translate(${x} ${y})`}>
               <rect x="-13" y="-13" width="26" height="26" rx="4"
                 fill="#9ca9b4" stroke="#506373" strokeWidth="2"/>
               <text textAnchor="middle" y="5" fontSize="17" fontWeight="bold" fill="#304352">?</text>
@@ -214,7 +214,7 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
           })}
           {board.portal&&(()=>{
             const {x,y}=present(board.portal!);
-            return <g transform={`translate(${x} ${y})`}>
+            return <g data-source-portal transform={`translate(${x} ${y})`}>
               <circle r="15" fill="#19283e" stroke="#9192bd" strokeWidth="3"/>
               <path d="M-9 -3C-7 -15 13 -13 9 0S-5 10 -2 1"
                 fill="none" stroke="#c5d4ee" strokeWidth="2"/>
@@ -222,14 +222,14 @@ export function AppleWormScreenshotGame({onExit,onLegacy,settings}:{
           })()}
           {remaining.map((p,i)=>{
             const {x,y}=present(p);
-            return <g key={'a'+i} transform={`translate(${x} ${y})`}>
+            return <g data-source-apple key={'a'+i} transform={`translate(${x} ${y})`}>
               <circle r="12" cy="1" fill="#e83330" stroke="#9b1621" strokeWidth="2"/>
               <path d="M0 -8Q4 -17 11 -13" stroke="#2d8338" strokeWidth="3" fill="none"/>
             </g>;
           })}
           {state.body.map((p,i)=>{
             const {x,y}=present(p);
-            return <g key={'w'+i}>
+            return <g data-source-worm key={'w'+i}>
               <circle cx={x} cy={y} r="14" fill={i===0?'#72e340':'#56c932'}
                 stroke="#30982b" strokeWidth="2"/>
               {i===0&&<g><circle cx={x+4} cy={y-5} r="4" fill="white"/>
