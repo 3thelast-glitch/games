@@ -421,7 +421,9 @@ export function appleWormVideoTracedStage(level: number): VideoTracedStage {
     throw new RangeError('Only source-traced Apple Worm stages 1–10 exist');
   }
   const snapshot = ENTRY[level-1]!;
-  const rows = ['.'.repeat(21), ...TERRAIN_ROWS[level-1]!];
+  // The sharper PDF confirms Level 010's column rises two cells into the
+  // top row that the earlier low-resolution trace left blank.
+  const rows = [level===10?'..........##.........':'.'.repeat(21), ...TERRAIN_ROWS[level-1]!];
   const blocks: VideoGridPoint[] = [];
   for (let y=0; y<rows.length; y++) {
     if (rows[y]!.length !== 21) throw new Error('Invalid source grid width');
