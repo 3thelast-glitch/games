@@ -1,17 +1,25 @@
-import { AppleWormScreenshotGame } from './AppleWormScreenshotGame.tsx';
-import { defaults } from './platform.ts';
+import { lazy, Suspense } from 'react';
 
 /**
- * Backwards-compatible entry for old deep links and cached desktop UI.
- * The reference-only gallery has been retired. The screenshot's actual
- * 105 PDF-based stages now render and play inside the ONE Apple Worm game.
- *
- * Do not resurrect "not playable" text or a second 40-level catalogue.
+ * Historical gallery entry: old desktop routes now load the very same ONE
+ * playable, approved 105-level game. No separate preview-only mode.
+ * Lazy-loading also keeps Node server-render tests free of native APIs.
  */
+const PlayableAppleWorm=lazy(async()=>{
+  const module=await import('./AppleWormScreenshotGame.tsx');
+  return {default:module.AppleWormScreenshotGame};
+});
+
 export function AppleWormSourceGallery({lang,onClose}:{
   lang:'ar'|'en';
   onClose:()=>void;
 }) {
-  return <AppleWormScreenshotGame onExit={onClose}
-    settings={{...defaults,lang}}/>;
+  return <Suspense fallback={<p role="status">
+    {lang==='ar'?'جارٍ فتح لعبة دودة التفاح بالمراحل الـ105 المعتمدة…':
+      'Opening the approved 105-stage Apple Worm game…'}
+  </p>}>
+    <PlayableAppleWorm onExit={onClose} settings={{
+      lang,sound:true,haptics:true,reduceMotion:false,notifications:true,
+    }}/>
+  </Suspense>;
 }
