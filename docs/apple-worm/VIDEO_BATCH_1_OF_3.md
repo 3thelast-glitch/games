@@ -1,59 +1,60 @@
-# Apple Worm — first of three 33-problem-stage batches
+# Apple Worm — source-video corrections, Batch 1 of 3 (15/15 winners)
 
-Source: user-supplied `Apple_Worm_Selected_33_Levels(1).mp4` (640×360, ~966.82s).
+**Source:** the user's `Apple_Worm_Selected_33_Levels(1).mp4` (640×360, ~966.8 s). These are improvements to **NAQLA's playable implementation**, not challenges to the user's approved reference.
 
-## Scope is EXACTLY 15 stages
-**Batch 1:** 5, 7, 8, 9, 12, 13, 14, 15, 17, 18, 19, 20, 28, 30, 34
+## Strict batch boundaries
 
-**Batch 2 (later):** 39, 40, 42, 44, 49, 51, 58, 59, 71, 72, 73, 76, 86, 96, 97
+**Batch 1 (15, completed in current NAQLA physics):** 5, 7, 8, 9, 12, 13, 14, 15, 17, 18, 19, 20, 28, 30, 34.
 
-**Batch 3 (later):** 98, 104, 105
+**Batch 2 (next, 15; no stage-start changes here):** 39, 40, 42, 44, 49, 51, 58, 59, 71, 72, 73, 76, 86, 96, 97.
 
-Neither batch 2 nor batch 3 is modified or certified in this PR. They are left on the pre-batch baseline. No merge to main until batch 1's quality gate is accepted.
+**Batch 3 (later, 3; unchanged here):** 98, 104, 105.
 
-## Verified video-body correction in batch 1
+The branch protects this boundary in `tests/apple-worm-video-batch-1.test.ts`.
 
-| Stage | Video timestamp (s) | New head-to-tail length | Present engine win? | Replay moves |
-|---:|---:|---:|---|---:|
-| 5 | 0 | 4 | **YES** | 13 |
-| 7 | 17 | 3 | **YES** | 13 |
-| 8 | 25 | 3 | **YES** | 17 |
-| 9 | 47 | 4 | **YES** | 8 |
-| 12 | 65 | 3 | **YES** | 13 |
-| 13 | 86 | 3 | **NO** (all reachable states explored) | — |
-| 14 | 105 | 3 | **NO** (all reachable states explored) | — |
-| 15 | 117 | 3 | **NO** (all reachable states explored) | — |
-| 17 | 140 | 3 | **NO** (all reachable states explored) | — |
-| 18 | 169 | 3 | **NO** (all reachable states explored) | — |
-| 19 | 184 | 4 | **NO** (all reachable states explored) | — |
-| 20 | 219 | 3 | **NO** (all reachable states explored) | — |
-| 28 | 263 | 3 | **NO** (all reachable states explored) | — |
-| 30 | 293 | 3 | **YES** | 19 |
-| 34 | 340 | 3 | **YES** | 19 |
+## Results — REAL replayed victory for every stage
 
-These 7 YES statuses are from actual `moveScreenshotWorm` routes replayed to `phase='won'` on the CURRENT NAQLA engine, not just geometric previews. The eight NO statuses are a diagnosis of the current provisional NAQLA implementation, not of the user-provided game's validity.
+The actual NAQLA game-state API `startScreenshotWorm` + `moveScreenshotWorm` is used to replay every route, asserting **every command is legal** and the final `phase === 'won'`. The live exit stays open without having to collect all apples.
 
-### Additional source correction
+| Stage | Video frame (seconds) | Initial worm pieces | Verified moves | Proof |
+|---:|---:|---:|---:|---|
+| 5 | 0 | 4 | 13 | BFS + replay |
+| 7 | 17 | 3 | 13 | BFS + replay |
+| 8 | 25 | 3 | 17 | BFS + replay |
+| 9 | 47 | 4 | 8 | BFS + replay |
+| 12 | 65 | 3 | 13 | BFS + replay |
+| 13 | 86 | 3 | 24 | BFS + replay |
+| 14 | 104 | 3 | 19 | BFS + replay |
+| 15 | 117 | 3 | 22 | BFS + replay |
+| 17 | 140 | 3 | 13 | BFS + replay |
+| 18 | 168 | 3 | 23 | BFS + replay |
+| 19 | 184 | 4 | 9 | BFS + replay |
+| 20 | 217 | 3 | 64 | Deterministic route replay |
+| 28 | 263 | 3 | 17 | BFS + replay |
+| 30 | 293 | 3 | 19 | BFS + replay |
+| 34 | 340 | 3 | 19 | BFS + replay |
 
-- **Stage 12:** reposition one gray block to the filmed opening (10,4) instead of the original mid-play still.
-- **Stage 30:** restore two bottom apples (five total apples after adding them to the three originally recorded) and source-frame gray blocks (9,5) and (10,7). Stage 30 belongs in batch 1.
-- **All 15:** preserve the already-approved terrain grid and known portal cell; no shortcut/automatic win.
-- Before this split an earlier draft accidentally touched Level 59 and caused CI failure. The current batch STRICTLY excludes 59 and all later levels.
+**Result: 15/15 replay-proven winners.** The stage-20 shortest budgeted BFS run remains *undetermined at 12,000 explored states*, but its 64-step real-state route is verified independently and is a genuine winner; search-time cutoff is not a gameplay failure.
 
-### Verified physics defect from stage 18 sequence
+## What was implemented and WHY
 
-Inspect the ~169–181 second section of the user's video: the worm uses gray cubes in a tight enclosed room as physical support/steps and then escapes toward the exit. The current NAQLA screenshot engine treats gray candidates as *immobile blockers*. That is not enough to match the video. Don't move original terrain or place arbitrary worm body pieces; implement and verify the actual source box-support/movement behavior, then prove winning replay.
+1. **Video-accurate 15 worm opening poses:** recovered head location, head-to-tail sequence and length, including the actual opening source frame for 14, 18 and 20. The previous draft mistakenly chose moving/winning intermediate poses for some stages.
+2. **Moving gray crates in ONLY the eight failing stage IDs** `13,14,15,17,18,19,20,28`. The crates can be pushed when a neighboring grid cell is vacant, fall when unsupported, and provide physical support to the worm. Their current positions travel with the saved game state; undo and restart restore them correctly. The other 97 source stages retain previous static-gray behavior unchanged.
+3. **Apples physically support crates while uncollected.** At 104–114 seconds (Stage 14), the gray crate visibly rests above a red apple; at 168–179 seconds (Stage 18), the initial gray crate also rests over an apple. An earlier implementation incorrectly dropped boxes straight through apples. When the fruit is eaten, the box can fall as shown by the video.
+4. **Level 12:** source initial gray box at (10,4). **Level 30:** preserve two additional source-visible apples (five total), with source starting gray boxes at (9,5) and (10,7).
+5. **Apple and portal data are otherwise unchanged.** No level terrain cells, source portal coordinates or stage numbering were edited; no forced completion, teleport or invulnerability shortcuts added.
+6. **R9 UI:** actual changing gray-box locations are displayed in the one premium game. State restore and movement history keep box positions. A prior stale save for a corrected stage is reset to its new frame-derived opening pose without erasing completed levels.
+7. **Solver state correctness:** BFS now hashes the positions of gray boxes as well as worm body and collected apples. Without this, different crate arrangements were being incorrectly treated as the same game state.
 
-## Release and continuation gates
+## CI and regression protection
 
-1. Unit test `apple-worm-video-batch-1.test.ts` enforces exactly these 15 source overrides and 7 already known replayable wins.
-2. **Batch 1 remains incomplete until all 15 source stages have replayed real winning routes.** The video and screenshot source layouts are not rejected because engine searches fail.
-3. Resolve the remaining eight in this batch only: **13, 14, 15, 17, 18, 19, 20, 28**.
-4. Only after batch 1 passes 15/15: merge it, build Android, then start batch 2's 15 levels.
-5. Batch 3 has exactly 3: 98, 104, 105. None is changed in this PR.
+- `tests/apple-worm-video-batch-1.test.ts`: asserts exactly the first 15 video pose overrides and all 15 real replay wins. Log marker `APPLE_WORM_VIDEO_BATCH_1_JSON` includes each stage.
+- `tests/apple-worm-video-batch1-recovered-routes.test.ts`: explicit 14, 18 and 20 gameplay inputs verified from restart.
+- `tests/apple-worm-gray-box-physics-batch-1.test.ts`: moving crates, falling/stacking, fruit-as-support, restore, and isolation from the remaining 97 stages.
+- Existing source visual and 105-stage audits remain enabled.
 
-## Actual GitHub files
-- `packages/games/apple-worm/video-start-poses-selected-33.ts` — only 15 source-frame poses, numbered above.
-- `packages/games/apple-worm/screenshot-game.ts` — only stage-start overrides, while retaining all 105 terrains and exits.
-- `apps/mobile/src/AppleWormScreenshotGame.tsx` — `PDF105-R8` marker and migration that does not resurrect stale saved positions on changed stages.
-- `tests/apple-worm-screenshot-game.test.ts`, `tests/apple-worm-video-batch-1.test.ts` — exact source rows, stage parity and replayed wins.
+**Evidence:** [Validate NAQLA — success](https://github.com/3thelast-glitch/games/actions/runs/39339818369), including 15/15 verified winner logging.
+
+## Remaining limitations / next steps
+
+The 15 actual NAQLA game levels can win, but this does **not** certify that *every intermediary frame* precisely matches the commercial Apple Worm video or that its crate/worm animations use identical timing. Source physics beyond this batch remains provisional. Batch 2 (15 levels) starts separately after merge. The full 105-level win audit Issue #130 remains open for the other 18 troublesome levels and unresolved three other exit locations.
