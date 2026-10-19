@@ -7,7 +7,7 @@
  * positions stay unchanged. The source contact-sheet snapshots were taken at
  * varying times and missed occluded green segments and some eaten fruits.
  *
- * IMPORTANT: 3 other requested stages are not claimed corrected here.
+ * IMPORTANT: Only the FIRST BATCH of 15 is in this PR; 18 later stages are untouched.
  * Green foreground occlusion and dynamic gray physics require frame tracing.
  */
 import type { ScreenshotPoint } from './screenshot-game.ts';
@@ -22,166 +22,24 @@ export interface OriginalVideoInitialPose {
   readonly initialFrameStatus:'visible-clip-frame';
 }
 
-/** Source frames verified at 00:00, 00:17, 04:53, 13:44, 14:08.
- * 15:16 for Level 105. Do not infer a head from green-area threshold alone: purple/mouth fixes the
- * head endpoint; contiguous green body pieces fix the original length. */
+/** Visible clip evidence must be verified against the original video; purple face fixes the head endpoint and contiguous green cells fix length. */
 export const APPLE_WORM_VIDEO_START_POSES:Readonly<Record<number,OriginalVideoInitialPose>>={
   5:{
-    stage:5,timestampSeconds:0,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[8,4],[9,4],[9,3],[9,2]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
   7:{
-    stage:7,timestampSeconds:17,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[6,5],[7,5],[8,5]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
   8:{
-    stage:8,timestampSeconds:25,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[6,5],[5,5],[4,5]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
   9:{
-    stage:9,timestampSeconds:47,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[8,4],[7,4],[6,4],[5,4]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
   12:{
-    stage:12,timestampSeconds:65,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[11,4],[12,4],[13,4]],
-    grayStartOverride:[[10,4]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
   13:{
-    stage:13,timestampSeconds:86,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[8,5],[7,5],[6,5]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
   14:{
-    stage:14,timestampSeconds:105,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[8,1],[7,1],[6,1]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
   15:{
-    stage:15,timestampSeconds:117,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[8,4],[7,4],[7,5]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
-  30:{
-    stage:30,timestampSeconds:293,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[11,6],[12,6],[12,7]],
-    // Two bottom apples have not yet been eaten at this filmed start.
-    extraInitialApples:[[9,8],[11,8]],
-    grayStartOverride:[[9,5],[10,7]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
   17:{
-    stage:17,timestampSeconds:140,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[9,2],[9,3],[8,3]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
   18:{
-    stage:18,timestampSeconds:169,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[10,4],[10,5],[10,6]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
   19:{
-    stage:19,timestampSeconds:184,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[12,4],[12,3],[12,2],[12,1]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
   20:{
-    stage:20,timestampSeconds:219,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[5,5],[6,5],[7,5]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
   28:{
-    stage:28,timestampSeconds:263,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[7,4],[6,4],[5,4]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
-  39:{
-    stage:39,timestampSeconds:372,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[6,3],[5,3],[4,3]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
-  42:{
-    stage:42,timestampSeconds:432,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[11,5],[12,5],[13,5]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
-  51:{
-    stage:51,timestampSeconds:505,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[9,-1],[8,-1],[8,0],[8,1]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
-  44:{
-    stage:44,timestampSeconds:462,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    // Purple face at [14,0]; lower-right segment at [15,1] anchors the
-    // worm against the brick wall below [14,0].
-    headToTail:[[14,0],[15,0],[15,1]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
+  30:{
   34:{
-    stage:34,timestampSeconds:340,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[6,5],[6,6],[7,6]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
-  40:{
-    stage:40,timestampSeconds:403,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[9,2],[10,2],[11,2]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
-  49:{
-    stage:49,timestampSeconds:483,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[15,5],[16,5],[16,6],[16,7]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
-  58:{
-    stage:58,timestampSeconds:539,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[10,7],[11,7],[12,7],[12,6]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
-  59:{
-    stage:59,timestampSeconds:584,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[12,4],[11,4],[11,5],[10,5]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
-  71:{
-    stage:71,timestampSeconds:620,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[8,3],[9,3],[9,4]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
-  73:{
-    stage:73,timestampSeconds:686,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[12,4],[13,4],[14,4]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
-  96:{
-    stage:96,timestampSeconds:780,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[7,-1],[7,0],[7,1],[7,2]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
-  97:{
-    stage:97,timestampSeconds:792,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[9,1],[8,1],[7,1],[6,1]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
-  98:{
-    stage:98,timestampSeconds:824,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[11,-1],[12,-1],[13,-1],[14,-1],[15,-1]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
-  104:{
-    stage:104,timestampSeconds:848,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[6,7],[5,7],[5,6]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
-  105:{
-    stage:105,timestampSeconds:916,sourceVideo:'Apple_Worm_Selected_33_Levels(1).mp4',
-    headToTail:[[9,2],[10,2],[11,2]],
-    evidence:'direct-video-frame',initialFrameStatus:'visible-clip-frame',
-  },
+
 };
 
 export const VIDEO_AUDIT_REQUESTED_33=Object.freeze([
