@@ -153,7 +153,7 @@ export function restoreScreenshotWorm(value:unknown):ScreenshotState|null {
     !Array.isArray(s.collected)||!['playing','won','lost'].includes(s.phase??''))return null;
   const board=screenshotWormLevel(s.level!);
   if(!board.canMove||s.body.some(p=>!Array.isArray(p)||p.length!==2||
-     !Number.isInteger(p[0])||!Number.isInteger(p[1])||!onBoard(p)))return null;
+     !Number.isInteger(p[0])||!Number.isInteger(p[1])||!onBoard([p[0],p[1]])))return null;
   if(new Set(s.body.map(key)).size!==s.body.length)return null;
   if(s.body.some((p,i)=>i>0&&!touching(p,s.body![i-1]!)))return null;
   if(s.collected.some(i=>!Number.isInteger(i)||i<0||i>=board.apples.length)||
