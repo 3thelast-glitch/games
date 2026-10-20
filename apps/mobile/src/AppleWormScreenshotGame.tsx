@@ -80,7 +80,7 @@ export function AppleWormScreenshotGame({onExit,settings}:{
         // Only reset an in-progress level whose SOURCE opening pose was
         // added after the saved revision. Previous completed/source stages
         // must NOT be silently reset just because the cosmetic marker changed.
-        const savedRevision=Number(saved.visualRevision?.match(/^PDF105-R(\\d+)$/)?.[1]??0);
+        const savedRevision=Number(saved.visualRevision?.match(/^PDF105-R(\d+)$/)?.[1]??0);
         const needsVideoStartMigration=
           (!!APPLE_WORM_VIDEO_START_POSES[n]&&savedRevision<9)||
           (!!APPLE_WORM_VIDEO_BATCH_TWO_STARTS[n]&&savedRevision<10)||
