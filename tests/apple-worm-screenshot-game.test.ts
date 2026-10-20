@@ -4,6 +4,7 @@ import {appleWormVisualSnapshot} from '../packages/games/apple-worm/video-visual
 import {appleWormVideoTracedStage} from '../packages/games/apple-worm/video-traced-stages.ts';
 import {APPLE_WORM_VIDEO_START_POSES, VIDEO_AUDIT_REQUESTED_33} from '../packages/games/apple-worm/video-start-poses-selected-33.ts';
 import {APPLE_WORM_VIDEO_BATCH_TWO_STARTS} from '../packages/games/apple-worm/video-start-poses-batch-2.ts';
+import {APPLE_WORM_VIDEO_BATCH_THREE_STARTS} from '../packages/games/apple-worm/video-start-poses-batch-3.ts';
 import {
   APPLE_WORM_SCREENSHOT_LEVEL_COUNT,
   SCREENSHOT_DIRECTIONS, screenshotWormLevel,
@@ -22,7 +23,8 @@ test('all 105 source snapshots load as actual gameplay geometry with zero invent
     assert.equal(board.width,21);
     assert.equal(board.height,9);
     assert.deepEqual(board.rows,source.terrain);
-    const video=APPLE_WORM_VIDEO_START_POSES[level]??APPLE_WORM_VIDEO_BATCH_TWO_STARTS[level];
+    const video=APPLE_WORM_VIDEO_START_POSES[level]??APPLE_WORM_VIDEO_BATCH_TWO_STARTS[level]??
+      APPLE_WORM_VIDEO_BATCH_THREE_STARTS[level];
     assert.deepEqual(board.apples,video?.extraInitialApples
       ?[...source.applesVisible,...video.extraInitialApples]:source.applesVisible);
     assert.deepEqual(board.grayObjects,video?.grayStartOverride??source.grayObjectsVisible);
