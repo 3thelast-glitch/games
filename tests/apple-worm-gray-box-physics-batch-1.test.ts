@@ -16,14 +16,15 @@ import {
 import { replayAppleWormRoute }
   from '../packages/games/apple-worm/solvability.ts';
 
-test('ONLY the eight unresolved batch-1 levels get dynamic gray-box physics',()=>{
+test('only the original eight batch-1 stages and isolated stage-104 crate are movable',()=>{
   const intended=[13,14,15,17,18,19,20,28];
   assert.deepEqual([...APPLE_WORM_MOVABLE_GRAY_BATCH_1].sort((a,b)=>a-b),intended);
   for(let level=1;level<=105;level++){
     assert.equal(isBatchOneMovableGray(level),intended.includes(level));
     const map=screenshotWormLevel(level),state=startScreenshotWorm(level);
-    assert.equal('grayPositions' in state,intended.includes(level));
+    assert.equal('grayPositions' in state,intended.includes(level)||level===104);
     if(intended.includes(level))assert.deepEqual(state.grayPositions,map.grayObjects);
+    else if(level===104)assert.deepEqual(state.grayPositions,[[7,7]]);
     else assert.equal(state.grayPositions,undefined);
   }
 });
