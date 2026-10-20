@@ -8,6 +8,7 @@ import {
 } from '../../../packages/games/apple-worm/screenshot-game.ts';
 import { APPLE_WORM_VIDEO_START_POSES } from '../../../packages/games/apple-worm/video-start-poses-selected-33.ts';
 import { APPLE_WORM_VIDEO_BATCH_TWO_STARTS } from '../../../packages/games/apple-worm/video-start-poses-batch-2.ts';
+import { APPLE_WORM_VIDEO_BATCH_THREE_STARTS } from '../../../packages/games/apple-worm/video-start-poses-batch-3.ts';
 import { useI18n } from './i18n.tsx';
 import { storage, type Settings } from './platform.ts';
 import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
@@ -15,7 +16,7 @@ import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
 interface SourceSave { level:number; state:ScreenshotState; completed:number[]; visualRevision?:string }
 const SAVE_KEY='apple-worm-screenshot-source-105-v1';
 /** Increases when the reference rendering/initial layouts change. */
-export const APPLE_WORM_VISUAL_REVISION='PDF105-R10';
+export const APPLE_WORM_VISUAL_REVISION='PDF105-R11';
 const keyMap:Record<string,ScreenshotDirection>={
   arrowup:'up',w:'up',arrowdown:'down',s:'down',
   arrowleft:'left',a:'left',arrowright:'right',d:'right',
@@ -76,8 +77,14 @@ export function AppleWormScreenshotGame({onExit,settings}:{
         // Real source-video starts were reconstructed for selected stages.
         // Do not resurrect an outdated two-/one-cell worm on those levels.
         // Preserve completion history and unmodified levels' saved positions.
-        const needsVideoStartMigration=!!(APPLE_WORM_VIDEO_START_POSES[n]||APPLE_WORM_VIDEO_BATCH_TWO_STARTS[n])&&
-          saved.visualRevision!==APPLE_WORM_VISUAL_REVISION;
+        // Only reset an in-progress level whose SOURCE opening pose was
+        // added after the saved revision. Previous completed/source stages
+        // must NOT be silently reset just because the cosmetic marker changed.
+        const savedRevision=Number(saved.visualRevision?.match(/^PDF105-R(\\d+)$/)?.[1]??0);
+        const needsVideoStartMigration=
+          (!!APPLE_WORM_VIDEO_START_POSES[n]&&savedRevision<9)||
+          (!!APPLE_WORM_VIDEO_BATCH_TWO_STARTS[n]&&savedRevision<10)||
+          (!!APPLE_WORM_VIDEO_BATCH_THREE_STARTS[n]&&savedRevision<11);
         const next=resume&&!needsVideoStartMigration?resume:startScreenshotWorm(n);
         stateRef.current=next;
         setState(next);
