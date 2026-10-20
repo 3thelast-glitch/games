@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import type { ScreenshotLevel, ScreenshotPoint } from '../../../packages/games/apple-worm/screenshot-game.ts';
+import { displayGrayPositions } from '../../../packages/games/apple-worm/gray-box-physics-batch-3.ts';
 import { WormApple, WormCharacter, WormPortal, WormSky, WormTerrain }
   from './AppleWormArt.tsx';
 import { appleWormFacingAngle, appleWormMouthCue } from './apple-worm-animation-cues.ts';
@@ -29,7 +30,8 @@ export function AppleWormReferenceScene({board,body,remaining,grayPositions,phas
   biteFx?:{key:number;apple:ScreenshotPoint}|null;
 }) {
   const id=useId().replace(/:/g,'')+'-pdf105-r9';
-  const currentGray=grayPositions??board.grayObjects;
+  // Retain the seven fixed gray pillar cells while animating Stage 104's crate.
+  const currentGray=displayGrayPositions(board.number,board.grayObjects,grayPositions);
   const blocks=board.rows.flatMap((row,y)=>[...row].flatMap((tile,x)=>
     tile==='#'?[{x,y}]:[]));
   const worm=body.map(([x,y])=>({x,y}));
