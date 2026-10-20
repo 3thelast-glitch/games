@@ -14,8 +14,10 @@ import { appleWormVisualSnapshot, APPLE_WORM_VISUAL_SNAPSHOT_COUNT } from './vid
 import { appleWormVideoTracedStage } from './video-traced-stages.ts';
 import { APPLE_WORM_VIDEO_START_POSES } from './video-start-poses-selected-33.ts';
 import { APPLE_WORM_VIDEO_BATCH_TWO_STARTS } from './video-start-poses-batch-2.ts';
+import { APPLE_WORM_VIDEO_BATCH_THREE_STARTS } from './video-start-poses-batch-3.ts';
 import { supportsBatchTwoSideContact } from './wall-support-batch-2.ts';
 import { isBatchOneMovableGray, pushGrayBox, settleGrayBoxes } from './gray-box-physics-batch-1.ts';
+import { isBatchThreeMovableGray, fixedGrayForBatchThree, initialMovableGray } from './gray-box-physics-batch-3.ts';
 
 export type ScreenshotPoint = readonly [number, number];
 export type ScreenshotDirection = 'up'|'right'|'down'|'left';
@@ -41,7 +43,7 @@ export interface ScreenshotState {
   readonly level:number;
   readonly body:readonly ScreenshotPoint[];
   readonly collected:readonly number[];
-  /** Dynamic gray crates only on the eight problem stages in video batch 1. */
+  /** Dynamic gray crates on the eight batch-1 stages and single crate on stage 104. */
   readonly grayPositions?:readonly ScreenshotPoint[];
   readonly phase:ScreenshotPhase;
   readonly moves:number;
@@ -53,6 +55,7 @@ const DELTAS:Record<ScreenshotDirection,ScreenshotPoint>={
 };
 const eq=(a:ScreenshotPoint,b:ScreenshotPoint)=>a[0]===b[0]&&a[1]===b[1];
 const key=(p:ScreenshotPoint)=>p[0]+','+p[1];
+const hasMovableGray=(stage:number)=>isBatchOneMovableGray(stage)||isBatchThreeMovableGray(stage);
 const touching=(a:ScreenshotPoint,b:ScreenshotPoint)=>
   Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1])===1;
 
@@ -98,7 +101,8 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
   const manualMatches=picturedOrder!==null&&picturedOrder.length===source.wormVisible.length&&
     picturedOrder.every(p=>source.wormVisible.some(q=>eq(p,q)))&&
     picturedOrder.every((p,i)=>i===0||touching(p,picturedOrder[i-1]!));
-  const videoStart=APPLE_WORM_VIDEO_START_POSES[level]??APPLE_WORM_VIDEO_BATCH_TWO_STARTS[level];
+  const videoStart=APPLE_WORM_VIDEO_START_POSES[level]??
+    APPLE_WORM_VIDEO_BATCH_TWO_STARTS[level]??APPLE_WORM_VIDEO_BATCH_THREE_STARTS[level];
   const worm=videoStart?[...videoStart.headToTail]:manualMatches?[...picturedOrder!]:traceVisibleWorm(source.wormVisible,
     level===2?[6,3]:level===59?[8,-2]:undefined);
   // The first 10 exits were manually traced from the walkthrough, and are
@@ -135,7 +139,7 @@ export function startScreenshotWorm(level=1):ScreenshotState {
   return {
     level,body:map.worm.map(([x,y]):ScreenshotPoint=>[x,y]),
     collected:[],phase:'playing',moves:0,
-    ...(isBatchOneMovableGray(level)?{grayPositions:map.grayObjects.map(
+    ...(hasMovableGray(level)?{grayPositions:initialMovableGray(level,map.grayObjects).map(
       ([x,y]):ScreenshotPoint=>[x,y])}:{})
   };
 }
@@ -154,17 +158,20 @@ export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDir
   if(!solid){
     solid=new Set<string>();
     stage.rows.forEach((row,y)=>[...row].forEach((t,x)=>{if(t==='#')solid!.add(key([x,y]));}));
-    // Gray boxes remain static blockers outside the eight problem stages.
-    if(!isBatchOneMovableGray(stage.number))
+    // Stage 104 has seven fixed pillar cells and exactly one movable crate;
+    // the original eight batch-1 movable-box levels remain unchanged.
+    if(isBatchThreeMovableGray(stage.number))
+      fixedGrayForBatchThree(stage.number,stage.grayObjects).forEach(p=>solid!.add(key(p)));
+    else if(!isBatchOneMovableGray(stage.number))
       stage.grayObjects.forEach(p=>solid!.add(key(p)));
     solidCellsByStage.set(stage,solid);
   }
   const [dx,dy]=DELTAS[direction], [hx,hy]=state.body[0]!;
   const head:ScreenshotPoint=[hx+dx,hy+dy];
   if(!onBoard(head)||solid.has(key(head))||state.body[1]&&eq(head,state.body[1]))return state;
-  const dynamic=isBatchOneMovableGray(stage.number);
+  const dynamic=hasMovableGray(stage.number);
   let boxes:readonly ScreenshotPoint[]|undefined=dynamic
-    ?(state.grayPositions??stage.grayObjects):undefined;
+    ?(state.grayPositions??initialMovableGray(stage.number,stage.grayObjects)):undefined;
   if(dynamic){
     const afterPush=pushGrayBox({boxes:boxes!,headTarget:head,direction,
       terrain:solid,body:state.body,
@@ -183,7 +190,7 @@ export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDir
   const win=()=>stage.portal!==null&&eq(body[0]!,stage.portal);
   let phase:ScreenshotPhase=win()?'won':'playing';
   const remaining=stage.apples.filter((_,i)=>!collected.includes(i));
-  // Simulate source-video gray box gravity only for the eight requested stages.
+  // Simulate source-video gray box gravity only on explicitly verified stages.
   if(dynamic)boxes=settleGrayBoxes(boxes!,solid,body,remaining);
   const supported=()=>body.some(([x,y])=>solid.has(key([x,y+1]))||
     (boxes?.some(p=>eq(p,[x,y+1]))??false)||
@@ -224,15 +231,15 @@ export function restoreScreenshotWorm(value:unknown):ScreenshotState|null {
   if(s.collected.some(i=>!Number.isInteger(i)||i<0||i>=board.apples.length)||
     new Set(s.collected).size!==s.collected.length)return null;
   if(s.phase==='won'&&(!board.portal||!eq(s.body[0]!,board.portal)))return null;
-  const boxes=isBatchOneMovableGray(s.level!)?s.grayPositions:undefined;
+  const boxes=hasMovableGray(s.level!)?s.grayPositions:undefined;
   if(boxes!==undefined&&(!Array.isArray(boxes)||
-    boxes.length!==board.grayObjects.length||
+    boxes.length!==initialMovableGray(s.level!,board.grayObjects).length||
     boxes.some(p=>!Array.isArray(p)||p.length!==2||!onBoard([p[0],p[1]])||
       !Number.isInteger(p[0])||!Number.isInteger(p[1]))||
     new Set(boxes.map(key)).size!==boxes.length||
     boxes.some(p=>s.body!.some(b=>eq(p,b)))))return null;
   return {level:s.level!,body:s.body.map(([x,y]):ScreenshotPoint=>[x,y]),
     collected:[...s.collected],moves:s.moves!,phase:s.phase!,
-    ...(isBatchOneMovableGray(s.level!)?{grayPositions:(boxes??board.grayObjects)
+    ...(hasMovableGray(s.level!)?{grayPositions:(boxes??initialMovableGray(s.level!,board.grayObjects))
       .map(([x,y]):ScreenshotPoint=>[x,y])}:{})};
 }
