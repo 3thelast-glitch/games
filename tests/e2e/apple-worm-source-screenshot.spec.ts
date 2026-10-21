@@ -12,7 +12,7 @@ test('original 105-stage gameplay follows title → stage select → fullscreen 
   const game=page.locator('body > [data-stage-origin="user-screenshot"]');
   await expect(game).toBeVisible();
   await expect(game).toHaveAttribute('data-source-stage-count','105');
-  await expect(game).toHaveAttribute('data-visual-revision','PDF105-R14');
+  await expect(game).toHaveAttribute('data-visual-revision','PDF105-R15');
   await expect(game).toHaveAttribute('data-worm-screen','home');
   await expect(game.locator('.worm3-title-logo')).toBeVisible();
   await expect(game.locator('svg[data-source-level]')).toHaveCount(0);
@@ -20,10 +20,11 @@ test('original 105-stage gameplay follows title → stage select → fullscreen 
   await game.locator('.worm3-play-button').click();
   await expect(game).toHaveAttribute('data-worm-screen','levels');
   await expect(game.locator('.worm3-level-tile')).toHaveCount(15);
-  await expect(game.locator('.worm3-level-tile').nth(10)).toBeEnabled();
-  await expect(game.locator('.worm3-level-tile[data-locked="true"]')).toHaveCount(0);
-  await game.getByRole('button',{name:'Next level page'}).click();
   await expect(game.locator('.worm3-level-tile').first()).toBeEnabled();
+  await expect(game.locator('.worm3-level-tile').nth(10)).toBeDisabled();
+  await expect(game.locator('.worm3-level-tile[data-locked="true"]')).toHaveCount(14);
+  await game.getByRole('button',{name:'Next level page'}).click();
+  await expect(game.locator('.worm3-level-tile').first()).toBeDisabled();
   await game.getByRole('button',{name:'Previous level page'}).click();
 
   await game.getByRole('button',{name:'Level 1'}).click();
@@ -49,11 +50,12 @@ test('original 105-stage gameplay follows title → stage select → fullscreen 
   await game.getByRole('button',{name:'Undo'}).click();
   await game.getByRole('button',{name:'Level Select'}).click();
   await expect(game).toHaveAttribute('data-worm-screen','levels');
-  await game.getByRole('button',{name:'Level 2'}).click();
-  const second=game.locator('svg[data-source-level="2"]');
-  await expect(second).toBeVisible();
-  await expect(second.locator('[data-source-portal]')).toHaveCount(1);
-  await expect(second.locator('[data-source-worm]')).toHaveCount(1);
+  await expect(game.getByRole('button',{name:'Level 2 locked'})).toBeDisabled();
+  await game.getByRole('button',{name:'Level 1'}).click();
+  const restarted=game.locator('svg[data-source-level="1"]');
+  await expect(restarted).toBeVisible();
+  await expect(restarted.locator('[data-source-portal]')).toHaveCount(1);
+  await expect(restarted.locator('[data-source-worm]')).toHaveCount(1);
   await expect(game.locator('.worm-video-gallery')).toHaveCount(0);
   expect(uncaught).toEqual([]);
 });

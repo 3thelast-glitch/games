@@ -28,8 +28,9 @@ for (const {name,width,height} of [
     await expect(app).toHaveAttribute('data-worm-screen','levels');
     await expect(app.locator('.worm3-level-grid .worm3-level-tile')).toHaveCount(15);
     await expect(app.locator('svg[data-source-level]')).toHaveCount(0);
-    await expect(app.locator('.worm3-level-tile').nth(10)).toBeEnabled();
-    await expect(app.locator('.worm3-level-tile[data-locked="true"]')).toHaveCount(0);
+    await expect(app.locator('.worm3-level-tile').first()).toBeEnabled();
+    await expect(app.locator('.worm3-level-tile').nth(10)).toBeDisabled();
+    await expect(app.locator('.worm3-level-tile[data-locked="true"]')).toHaveCount(14);
 
     await app.locator('.worm3-level-tile').first().click();
     await expect(app).toHaveAttribute('data-worm-screen','game');

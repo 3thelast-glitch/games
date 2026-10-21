@@ -14,6 +14,10 @@ import { APPLE_WORM_FULL_VIDEO_EARLY_POSES } from '../../../packages/games/apple
 import { useI18n } from './i18n.tsx';
 import { storage, type Settings } from './platform.ts';
 import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
+import {
+  cleanCompletedStages, highestUnlockedStage, isStageUnlocked,
+  resumableUnlockedStage,
+} from '../../../packages/games/apple-worm/progression.ts';
 
 interface SourceSave { level:number; state:ScreenshotState; completed:number[]; visualRevision?:string }
 const SAVE_KEY='apple-worm-screenshot-source-105-v1';
@@ -75,8 +79,12 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
     void storage.get<SourceSave|null>(SAVE_KEY,null).then(saved=>{
       if(!mounted)return;
       if(saved && Number.isInteger(saved.level)&&saved.level>=1&&saved.level<=105){
+        const verifiedCompletions=cleanCompletedStages(saved.completed);
         const resume=restoreScreenshotWorm(saved.state);
-        const n=resume?.level??saved.level;
+        // Legacy QA releases allowed opening L105 without clearing L1.
+        // Selecting a stage is NOT evidence of beating its predecessors.
+        const n=resumableUnlockedStage(resume?.level??saved.level,verifiedCompletions);
+        const allowedResume=resume?.level===n?resume:null;
         setLevel(n);
         setGroup(Math.floor((n-1)/15));
         // A visual-only release MUST NOT reset the player's in-progress worm.
@@ -94,14 +102,14 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
           (!!APPLE_WORM_VIDEO_BATCH_THREE_STARTS[n]&&savedRevision<11)||
           // A new early-video pose must not erase legitimate gameplay progress.
           // Only migrate saved untouched stages, never moves already played.
-          (!!APPLE_WORM_FULL_VIDEO_EARLY_POSES[n]&&savedRevision<13&&resume?.moves===0)||
+          (!!APPLE_WORM_FULL_VIDEO_EARLY_POSES[n]&&savedRevision<13&&allowedResume?.moves===0)||
           // L85 2x2 U traversal clarified by the first filmed move in R14.
-          (n===85&&savedRevision<14&&resume?.moves===0);
-        const next=resume&&!needsVideoStartMigration?resume:startScreenshotWorm(n);
+          (n===85&&savedRevision<14&&allowedResume?.moves===0);
+        const next=allowedResume&&!needsVideoStartMigration
+          ?allowedResume:startScreenshotWorm(n);
         stateRef.current=next;
         setState(next);
-        if(Array.isArray(saved.completed))
-          setCompleted(saved.completed.filter(x=>Number.isInteger(x)&&x>=1&&x<=105));
+        setCompleted(verifiedCompletions);
       }
       setReady(true);
     }).catch(()=>{if(mounted)setReady(true);});
@@ -142,7 +150,8 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
     setState(prev);
   };
   const pick=(n:number)=>{
-    if(!Number.isInteger(n)||n<1||n>105)return;
+    // Guard the game entrypoint itself, not merely the disabled stage card.
+    if(!isStageUnlocked(n,completed))return;
     // Opening the same in-progress level from the new selector must preserve
     // the saved worm location; replaying a completed/lost level restarts.
     const preserve=n===level&&stateRef.current.phase==='playing';
@@ -218,12 +227,34 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
   const remaining=board.apples.filter((_,i)=>!state.collected.includes(i));
   const selectedGroupFrom=group*15+1;
   const selectedGroupEnd=Math.min(105,selectedGroupFrom+14);
-  // Testing/review mode: every source-video stage is directly selectable.
-  // Completion stars still reflect only actual victories in saved progress.
+  // A fresh player may enter ONLY L1. Real consecutive victories unlock
+  // L2, L3 ... L105; saved out-of-order QA wins cannot skip earlier stages.
+  const unlocked=highestUnlockedStage(completed);
   const getStars=(n:number)=>completed.includes(n)?'★★★':'☆☆☆';
   const toLevels=()=>{setGroup(Math.floor((level-1)/15));setShowOptions(false);setScreen('levels');};
   const toHome=()=>{setShowOptions(false);setScreen('home');};
-  const goNext=()=>{if(level<APPLE_WORM_SCREENSHOT_LEVEL_COUNT)pick(level+1);};
+  const goNext=()=>{
+    if(stateRef.current.phase==='won'&&level<APPLE_WORM_SCREENSHOT_LEVEL_COUNT
+      &&isStageUnlocked(level+1,completed))pick(level+1);
+  };
+
+  // Winning L<n> opens L<n+1> permanently AND advances automatically
+  // after a short victory celebration. Returning home cancels the transition.
+  useEffect(()=>{
+    if(screen!=='game'||state.phase!=='won'||level>=APPLE_WORM_SCREENSHOT_LEVEL_COUNT
+      ||!completed.includes(level)||!isStageUnlocked(level+1,completed))return;
+    const timer=window.setTimeout(()=>{
+      const nextLevel=level+1;
+      const next=startScreenshotWorm(nextLevel);
+      stateRef.current=next;
+      setLevel(nextLevel);
+      setGroup(Math.floor((nextLevel-1)/15));
+      setBiteFx(null);setMotion(null);
+      setState(next);setHistory([]);
+      setShowOptions(false);setShowHelp(false);
+    },1800);
+    return ()=>window.clearTimeout(timer);
+  },[screen,state.phase,level,completed]);
 
   return createPortal(
     <main className="worm-page worm-immersive worm-source-play worm3"
@@ -272,22 +303,26 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
             type="button" aria-label={t('Previous level page','صفحة المراحل السابقة')}
             disabled={group===0} onClick={()=>setGroup(g=>Math.max(0,g-1))}>◀</button>
           <div className="worm3-level-grid">
-            {Array.from({length:Math.min(15,APPLE_WORM_SCREENSHOT_LEVEL_COUNT-group*15)},(_,i)=>group*15+i+1).map(n=>
-              <button className="worm3-level-tile" type="button" key={n}
-                onClick={()=>pick(n)}
-                aria-label={t('Level','المرحلة')+' '+n}
+            {Array.from({length:Math.min(15,APPLE_WORM_SCREENSHOT_LEVEL_COUNT-group*15)},(_,i)=>group*15+i+1).map(n=>{
+              const locked=n>unlocked;
+              return <button className="worm3-level-tile" type="button" key={n}
+                disabled={locked} onClick={()=>pick(n)}
+                aria-label={t('Level','المرحلة')+' '+n+(locked?t(' locked',' مغلقة'):'')}
                 aria-current={n===level?'step':undefined}
-                data-locked="false">
-                <span className="worm3-tile-stars" aria-hidden="true">{getStars(n)}</span>
+                data-locked={locked?'true':'false'}>
+                {locked?<span className="worm3-padlock" aria-hidden="true">🔒</span>:
+                  <span className="worm3-tile-stars" aria-hidden="true">{getStars(n)}</span>}
                 <span className="worm3-tile-number">{n}</span>
-              </button>
-            )}
+              </button>;
+            })}
           </div>
           <button className="worm3-page-arrow worm3-page-next"
             type="button" aria-label={t('Next level page','صفحة المراحل التالية')}
             disabled={group===6} onClick={()=>setGroup(g=>Math.min(6,g+1))}>▶</button>
         </div>
-        <div className="worm3-page-label">{t('All 105 levels unlocked for testing','جميع المراحل الـ105 مفتوحة للاختبار')} · {group+1} / 7</div>
+        <div className="worm3-page-label">
+          {t('Unlocked level','المرحلة المفتوحة')}: {unlocked} · {group+1} / 7
+        </div>
       </section>}
       {screen==='game'&&<section className="worm3-game"
         aria-label={t('Apple Worm gameplay','لعبة دودة التفاح')}>
