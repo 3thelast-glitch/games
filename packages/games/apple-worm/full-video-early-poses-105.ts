@@ -11,12 +11,14 @@
  * visible and locates its endpoint. Five occluded/edge starts were manually
  * traced from the user's video; early positions for 44/51 are backtracked
  * from the video frames BEFORE their first obvious mouth-position change.
- * Stage 85 still has ambiguous 2x2 body order. No arbitrary appended segments.
+ * Stage 85's touching 2x2 body order was resolved by comparing the first
+ * move at 2196.85s (left) with 2195.85s: tail cell (12,4) disappears.
+ * No arbitrary appended segments.
  *
  * Caveat: the first OBSERVABLE pose can differ from the first untouched game
  * state because the original walkthrough sometimes starts moving instantly.
  * "video-pose-evidence" does NOT mean physics or original winning route
- * verified. The six ambiguous levels are NOT overwritten or guessed.
+ * verified. Level 85 now has video-motion evidence, not an invented path.
  *
  * Encoded fields: level | absolute video seconds | hex cell indices where
  * index=(y+2)*21+x. Cells are ordered HEAD first. Non-game pixels/screenshots
@@ -27,7 +29,7 @@ export interface FullVideoWormPose {
   readonly stage:number;
   readonly timestampSeconds:number;
   readonly headToTail:readonly ScreenshotPoint[];
-  readonly evidence:'mouth-visible-early-frame'|'mouth-visible-manual-trace'|'first-motion-backtracked';
+  readonly evidence:'mouth-visible-early-frame'|'mouth-visible-manual-trace'|'first-motion-backtracked'|'first-step-body-tracked';
   readonly untouchedOpeningVerified:false;
   readonly solutionVerified:false;
 }
@@ -132,7 +134,8 @@ const VIDEO_START_RECORDS=`1|0.18|838297
 105|2812.18|767560`.trim().split(/\n/);
 /** Manually verified in the same FULL original video near each listed stage
  * boundary after green-only pixel voting hid the mouth-bearing cell.
- * Do not infer L85's U-shaped body traversal from a visually touching 2x2 square.
+ * For stage 85 the initially touching 2x2 cells are disambiguated by a real
+ * left move at ~2196.85s, proving the old top-right cell was the tail.
  */
 const MANUAL_VISIBLE_OPENINGS=[
   {stage:54,timestampSeconds:1267.91,headToTail:[[6,4],[6,5],[6,6]]},
@@ -140,10 +143,11 @@ const MANUAL_VISIBLE_OPENINGS=[
   {stage:74,timestampSeconds:1891.86,headToTail:[[16,7],[15,7],[14,7]]},
   {stage:80,timestampSeconds:2011.15,headToTail:[[10,5],[10,6],[10,7]]},
   {stage:83,timestampSeconds:2119.86,headToTail:[[8,-2],[7,-2],[6,-2]]},
+  {stage:85,timestampSeconds:2195.85,headToTail:[[11,4],[11,5],[12,5],[12,4]]},
 ] as const;
 export const FULL_VIDEO_EARLY_POSE_COUNT=
   VIDEO_START_RECORDS.length+MANUAL_VISIBLE_OPENINGS.length;
-export const FULL_VIDEO_AMBIGUOUS_LEVELS=[85] as const;
+export const FULL_VIDEO_AMBIGUOUS_LEVELS=[] as const;
 const decode=(hex:string):ScreenshotPoint[]=>{
   if(hex.length%2!==0)throw Error('Broken source video record');
   const result:ScreenshotPoint[]=[];
@@ -173,7 +177,7 @@ export const APPLE_WORM_FULL_VIDEO_EARLY_POSES:
         stage:data.stage,
         timestampSeconds:data.timestampSeconds,
         headToTail:data.headToTail as readonly ScreenshotPoint[],
-        evidence:'mouth-visible-manual-trace',
+        evidence:data.stage===85?'first-step-body-tracked':'mouth-visible-manual-trace',
         untouchedOpeningVerified:false,
         solutionVerified:false,
       } satisfies FullVideoWormPose] as const),

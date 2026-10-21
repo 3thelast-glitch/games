@@ -11,10 +11,10 @@ import {
 } from '../packages/games/apple-worm/full-video-early-apples-105.ts';
 import {screenshotWormLevel,startScreenshotWorm} from '../packages/games/apple-worm/screenshot-game.ts';
 
-test('complete source video yields 104 directly observed contiguous early worms (99 automatic + 5 manual)',()=>{
-  assert.equal(FULL_VIDEO_EARLY_POSE_COUNT,104);
-  assert.equal(Object.keys(APPLE_WORM_FULL_VIDEO_EARLY_POSES).length,104);
-  assert.deepEqual(FULL_VIDEO_AMBIGUOUS_LEVELS,[85]);
+test('complete source video yields all 105 directly observed early worms (99 automatic + 6 traced)',()=>{
+  assert.equal(FULL_VIDEO_EARLY_POSE_COUNT,105);
+  assert.equal(Object.keys(APPLE_WORM_FULL_VIDEO_EARLY_POSES).length,105);
+  assert.deepEqual(FULL_VIDEO_AMBIGUOUS_LEVELS,[]);
   for(let n=1;n<=105;n++){
     const e=APPLE_WORM_FULL_VIDEO_EARLY_POSES[n];
     const stage=screenshotWormLevel(n);
@@ -58,6 +58,8 @@ test('99 early fruit frames restore eaten apples without inventing absent object
   assert.deepEqual(screenshotWormLevel(5).worm,[[7,2],[6,2],[6,3]]);
   assert.deepEqual(screenshotWormLevel(54).worm,[[6,4],[6,5],[6,6]]);
   assert.deepEqual(screenshotWormLevel(83).worm,[[8,-2],[7,-2],[6,-2]]);
+  assert.deepEqual(screenshotWormLevel(85).worm,[[11,4],[11,5],[12,5],[12,4]]);
+  assert.equal(APPLE_WORM_FULL_VIDEO_EARLY_POSES[85]?.evidence,'first-step-body-tracked');
 });
 
 test('source video evidence preserves unresolved confidence flags, no fake winning-route validation',()=>{
