@@ -61,4 +61,29 @@
 .arithmetica .play-button:hover{background:#f3c989}
 @media(max-width:900px){.arithmetica-layout{grid-template-columns:minmax(0,1fr)}.arithmetica-wood,.arithmetica-sidebar{max-width:760px;width:100%;margin:0 auto}}
 @media(max-width:500px){.arithmetica-page{padding:7px}.arithmetica-heading{gap:7px}.arithmetica-heading .button{font-size:11px;padding:8px}.arithmetica-wood{padding:9px}.arithmetica-blackboard{aspect-ratio:1/1.06}.arithmetica-board-header{padding:11px 12px 0}.arithmetica-question{font-size:clamp(33px,8.6vw,51px)}.arithmetica-answer-grid{padding:0 13% 24px;gap:13%}.arithmetica-answer{max-width:100px;font-size:clamp(27px,8vw,42px)}.arithmetica-stars{gap:6px;font-size:clamp(20px,6vw,29px)}.arithmetica-time{min-width:88px;height:25px}.arithmetica-sidebar{padding:16px}}
+
+/* Playability pass: visible pause access, precise feedback and low-width layouts. */
+.arithmetica-timer-controls{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex:1;min-width:0;max-width:420px}
+.arithmetica-timer-controls .arithmetica-time{flex:1;min-width:72px;max-width:none}
+.arithmetica-board-pause{width:42px;height:40px;flex:0 0 42px;border:2px solid #a5aaa8;border-radius:9px;background:#3a4142;color:#fff;font:800 20px/1 system-ui,sans-serif;cursor:pointer;touch-action:manipulation}
+.arithmetica-board-pause:hover:not(:disabled){background:#576061;border-color:#f5e7c0}
+.arithmetica-board-pause:disabled{opacity:.35;cursor:default}
+.arithmetica-time.urgent{border-color:#e9ab88}
+.arithmetica-time.urgent .arithmetica-time-fill{background:linear-gradient(#efaf77,#c55542);animation:arithmetica-urgency .75s ease-in-out infinite alternate}
+@keyframes arithmetica-urgency{to{filter:brightness(1.25)}}
+.arithmetica-announcement{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:500px){
+  .arithmetica-timer-controls{gap:7px}
+  .arithmetica-timer-controls .arithmetica-time{min-width:66px}
+  .arithmetica-board-pause{height:34px;width:35px;flex-basis:35px;font-size:18px}
+}
+@media(max-width:340px){
+  .arithmetica-board-header{gap:7px}
+  .arithmetica-level{font-size:16px}
+  .arithmetica-timer-controls{gap:5px}
+  .arithmetica-timer-controls .arithmetica-time{min-width:58px;height:23px;border-width:3px}
+  .arithmetica-board-pause{height:30px;width:31px;flex-basis:31px;font-size:16px}
+  .arithmetica-question{font-size:clamp(26px,8.2vw,37px);gap:4px}
+  .arithmetica-answer-grid{padding-bottom:16px}
+}
 @media(prefers-reduced-motion:reduce){.arithmetica-page *{animation:none!important;transition:none!important}}
