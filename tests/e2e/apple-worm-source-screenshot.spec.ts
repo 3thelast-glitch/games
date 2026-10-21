@@ -48,7 +48,7 @@ test('original 105-stage gameplay follows title → stage select → fullscreen 
   await expect(game.locator('.worm3-game')).toBeVisible();
   await game.getByRole('button',{name:'Game menu'}).click();
   await game.getByRole('button',{name:'Undo'}).click();
-  await game.locator('.worm3-game-hud .worm3-icon-button[aria-label="Choose a level"]').click();
+  await game.locator('.worm3-game .worm3-top-left .worm3-icon-button').first().click();
   await expect(game).toHaveAttribute('data-worm-screen','levels');
   await expect(game.getByRole('button',{name:'Level 2 locked'})).toBeDisabled();
   await game.getByRole('button',{name:'Level 1', exact:true}).click();
