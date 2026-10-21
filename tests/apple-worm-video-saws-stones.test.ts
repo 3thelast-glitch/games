@@ -55,7 +55,7 @@ test('level 32 retains all SIX confirmed filmed saws, including the one initiall
   assert.equal((html.match(/data-source-saw="/g)||[]).length,6,
     'six filmed discs should spin at their actual source grid anchors');
   assert.equal((html.match(/class="worm-source-saw-spinning"/g)||[]).length,6);
-  assert.equal((html.match(/data-saw-rotation-marker=""/g)||[]).length,6);
+  assert.equal((html.match(/data-saw-rotation-marker="true"/g)||[]).length,6);
   assert.equal((html.match(/data-source-spike="/g)||[]).length,0,
     'no black triangular spikes were visible in the level-32 film');
 });
