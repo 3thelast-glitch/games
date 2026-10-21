@@ -17,7 +17,7 @@ test('every stage has typed video objects, never confuse lethal discs with gray 
   for(let level=1;level<=105;level++){
     const map=screenshotWormLevel(level);
     assert.deepEqual(map.saws,sourceSawStarts(level));
-    assert.deepEqual(map.spikes,sourceSpikeStarts(level));
+    assert.deepEqual(map.spikes,[...sourceSpikeStarts(level),...userMarkedThornCells(level)]);
     assert.ok(map.saws.every(p=>!map.grayObjects.some(q=>p[0]===q[0]&&p[1]===q[1])),
       'a lethal wheel became a pushable rock L'+level);
     assert.ok(map.grayObjects.every(([x,y])=>Number.isInteger(x)&&Number.isInteger(y)));
