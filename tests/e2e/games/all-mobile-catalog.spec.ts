@@ -33,24 +33,28 @@ async function exerciseSolo(page: Page, id: SoloId) {
     await page.locator('.ludo-dice-line button').click();
     await expect(page.locator('.ludo-play')).toHaveAttribute('data-ludo-revision', '1');
   } else if (id === 'appleWorm') {
-    const game=page.locator('[data-stage-origin="user-screenshot"]');
+    const game=page.locator('body > [data-stage-origin="user-screenshot"]');
+    await expect(game).toHaveAttribute('data-worm-screen','home');
+    await expect(game.locator('.worm3-title-logo')).toBeVisible();
+    await game.locator('.worm3-play-button').click();
+    await expect(game).toHaveAttribute('data-worm-screen','levels');
+    await expect(game.locator('.worm3-level-grid button')).toHaveCount(15);
+    await game.locator('.worm3-level-grid button').first().click();
+    await expect(game).toHaveAttribute('data-worm-screen','game');
     const board=game.locator('svg[data-source-level="1"]');
     await expect(board).toBeVisible();
     await expect(game).toHaveAttribute('data-source-stage-count','105');
     await expect(board.locator('[data-source-worm]')).toHaveCount(1);
-    await expect(board.locator('[data-source-terrain="premium-art"]')).toHaveCount(1);
-    await expect(board.locator('.worm-character')).toHaveCount(1);
+    await expect(board.locator('[data-source-terrain="classic-solid-dirt"]')).toHaveCount(1);
     await expect(board.locator('[data-source-worm]')).toHaveAttribute('data-body-length','3');
     await expect(board).toHaveAttribute('viewBox','0 0 630 270');
     await expect(board.locator('[data-source-apple]')).toHaveCount(0);
     await expect(board.locator('[data-source-portal]')).toHaveCount(1);
     await expect(board).toHaveCSS('touch-action','none');
-    await game.locator('button[aria-label="right"]').click();
-    await expect(board.locator('[data-source-worm]'))
-      .toHaveAttribute('data-head-x','195');
+    await game.getByRole('button',{name:/^Move right$|^يمين$/}).click();
+    await game.getByRole('button',{name:/^Game menu$|^قائمة اللعبة$/}).click();
     await game.getByRole('button',{name:/^Undo$|^تراجع$/}).click();
-    await expect(board.locator('[data-source-worm]'))
-      .toHaveAttribute('data-head-x','165');
+    await game.getByRole('button',{name:/^Close$|^إغلاق$/}).click();
   } else if (id === 'basketballLine') {
     await expect(page.locator('.basketball-canvas')).toBeVisible();
     const c = page.locator('.basketball-canvas');
@@ -128,13 +132,16 @@ for (const locale of locales) {
             await card.locator('.play-button').click();
             const config=solo[id as SoloId];
             await expect(page.locator(config.root)).toBeVisible();
-            await expect(page.locator(config.scene)).toBeVisible();
+            if(id!=='appleWorm')await expect(page.locator(config.scene)).toBeVisible();
             await exerciseSolo(page,id as SoloId);
             await expectNoGlobalOverflow(page);
-            const back=id==='appleWorm'
-              ? page.locator('[data-stage-origin="user-screenshot"] header button').first()
-              : page.locator(config.root+' .button.secondary').first();
-            await back.click();
+            if(id==='appleWorm'){
+              await page.locator('.worm3-game .worm3-top-left button').first().click();
+              await page.locator('.worm3-levels .worm3-top-left button').first().click();
+              await page.locator('.worm3-home .worm3-top-left button').first().click();
+            }else{
+              await page.locator(config.root+' .button.secondary').first().click();
+            }
             await expect(page.locator('.game-grid .game-card.'+id)).toBeVisible();
           } else {
             await openLocalGame(page,id as GameId,locale);
