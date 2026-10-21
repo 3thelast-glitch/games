@@ -37,16 +37,20 @@ test('automated solvability audit covers ALL 105 levels and never calls budget f
       const replay=replayAppleWormRoute(r.level,r.route);
       assert.equal(replay.won,true,'route must really win Stage '+r.level);
       assert.equal(replay.legalMoves,r.route.length);
-      assert.deepEqual(replay.state.body[0],screenshotWormLevel(r.level).portal);
+      const level=screenshotWormLevel(r.level);
+      if(level.exitMode==='top-boundary')
+        assert.equal(replay.state.body[0]![1],-3,'video upper-edge win L'+r.level);
+      else assert.deepEqual(replay.state.body[0],level.portal);
     }else if(r.status==='missing-exit')counts.missingExit++;
     else if(r.status==='exhausted')counts.exhausted++;
     else counts.budget++;
   }
   assert.equal(results.find(r=>r.level===1)?.status,'won');
   assert.equal(results.find(r=>r.level===2)?.status,'won');
-  assert.equal(counts.missingExit,3,'do not fabricate source exits for 70, 95, 101');
-  assert.deepEqual(results.filter(r=>r.status==='missing-exit').map(r=>r.level),
-    [70,95,101]);
+  assert.equal(counts.missingExit,0,'the full source video shows valid upper-edge exits in 70,95,101');
+  for(const n of [70,95,101])
+    assert.equal(results.find(r=>r.level===n)?.status,'won',
+      'video top exit must be reachable from initial game state L'+n);
   const batches=Array.from({length:7},(_,i)=>{
     const rows=results.slice(i*15,(i+1)*15);
     return {

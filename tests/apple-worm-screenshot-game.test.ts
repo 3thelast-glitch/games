@@ -85,7 +85,8 @@ test('stage 101 does not treat video UI icons as a source portal',()=>{
   const map=screenshotWormLevel(101);
   assert.equal(map.apples.length,12);
   assert.equal(map.portal,null);
-  assert.ok(map.issues.includes('portal-unresolved'));
+  assert.equal(map.exitMode,'top-boundary');
+  assert.equal(map.issues.includes('portal-unresolved'),false);
   assert.equal(map.exactVisualComparisonPassed,false);
 });
 test('video-refined 59 and still-image worms 91 and 95 are movable',()=>{
