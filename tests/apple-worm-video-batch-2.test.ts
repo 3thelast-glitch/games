@@ -32,7 +32,7 @@ test('second batch contains precisely the 15 agreed stages with no overlap with 
 test('each filmed second-batch worm pose is connected and avoids every approved terrain brick',()=>{
   for(const level of BATCH_TWO_15){
     const reference=APPLE_WORM_VIDEO_BATCH_TWO_STARTS[level]!;
-    const stage=screenshotWormLevel(level),state=startScreenshotWorm(level);
+    const stage=screenshotWormLevel(level,'legacy'),state=startScreenshotWorm(level,'legacy');
     assert.deepEqual(state.body,reference.headToTail);
     assert.equal(stage.portal!==null,true,'known level '+level+' must retain exit');
     assert.equal(stage.canMove,true);
@@ -52,22 +52,22 @@ test('each filmed second-batch worm pose is connected and avoids every approved 
       }
     }
     for(const d of SCREENSHOT_DIRECTIONS){
-      const next=moveScreenshotWorm(state,d);
+      const next=moveScreenshotWorm(state,d,stage);
       assert.equal(next.level,level);
       assert.ok(next.moves===0||next.moves===1);
     }
   }
 });
 
-test('initial complete second-batch search truthfully logs win proofs and current-engine blockers',()=>{
+test('historical clip fixture second-batch solver routes remain reproducible independently of new openings',()=>{
   const results=BATCH_TWO_15.map(level=>
-    solveAppleWormLevel(level,{maxStates:15000,maxMillis:550}));
+    solveAppleWormLevel(level,{maxStates:15000,maxMillis:550,source:'legacy'}));
   const proven:number[]=[],blocked:number[]=[],unresolved:number[]=[];
   const certificates:Record<number,readonly ScreenshotDirection[]>={};
   for(const result of results){
     const steps=result.route??BATCH_TWO_EXTENDED_WIN_ROUTES[result.level];
     if(steps){
-      const verified=replayAppleWormRoute(result.level,steps);
+      const verified=replayAppleWormRoute(result.level,steps,{source:'legacy'});
       assert.equal(verified.legalMoves,steps.length,
         'stage '+result.level+' contains an illegal movement');
       assert.equal(verified.won,true,
