@@ -4,11 +4,13 @@
  * immediately below it. This is a narrowly scoped provisional physics fix;
  * no source terrain, apple, hazard, portal or worm coordinates are changed.
  *
+ * In the newly supplied COMPLETE 105-level video, L58 also demonstrably
+ * climbs while pressed sideways against the right wall (~1363–1377s).
  * Do NOT enable for the first batch (15 already replay-proven wins) or other
  * levels without matching source-footage evidence.
  */
 export const BATCH_TWO_WALL_CONTACT_STAGES=new Set<number>([
-  49,59,71,73,97,
+  49,58,59,71,73,97,
 ]);
 export function supportsBatchTwoSideContact(level:number){
   return BATCH_TWO_WALL_CONTACT_STAGES.has(level);
