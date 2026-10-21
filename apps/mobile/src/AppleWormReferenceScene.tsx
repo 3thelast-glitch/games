@@ -81,24 +81,63 @@ export function AppleWormReferenceScene({board,body,remaining,grayPositions,phas
       <WormTerrain blocks={blocks} tile={CELL}/>
     </g>
 
+    {/* Source-video CUBE stones. The plain stone body is always recognizable
+         and no longer displays the misleading '?' for saws / loose crates. */}
     {currentGray.map((point,i)=>{
       const {x,y}=anchor(point);
-      return <g key={'obstacle-'+i} data-source-gray-object
+      const canPush=grayPositions?.some(p=>p[0]===point[0]&&p[1]===point[1])??false;
+      return <g key={'stone-'+i} data-source-gray-object
+        data-pushable={canPush?'true':'false'}
         transform={'translate('+x+' '+y+')'}>
-        <rect x="-13" y="-12" width="26" height="26" rx="6" fill="#203f4c" opacity=".24"
-          transform="translate(1 3)"/>
+        <rect x="-13" y="-12" width="26" height="26" rx="5.5"
+          fill="#243848" opacity=".25" transform="translate(1.5 3)"/>
         <rect x="-13" y="-13" width="26" height="26" rx="6"
-          fill={'url(#'+id+'-metal)'} stroke="#456274" strokeWidth="1.8"/>
-        <rect x="-10.5" y="-10.5" width="21" height="21" rx="4.5"
-          fill={'url(#'+id+'-metal-inset)'} stroke="#e7f4f7" strokeWidth="1"/>
-        <path d="M-9-9h15" stroke="#ffffff" strokeWidth="1.7"
-          strokeLinecap="round" opacity=".8"/>
-        <path d="M-6-3Q-6-8 0-8Q6-8 6-3Q6 0 1 2L1 4"
-          fill="none" stroke="#395a6a" strokeWidth="2.1"
-          strokeLinecap="round" strokeLinejoin="round"/>
-        <circle cx="1" cy="8" r="1.5" fill="#395a6a"/>
-        <circle cx="-9" cy="9" r="1" fill="#f2ffff"/>
-        <circle cx="9" cy="-9" r="1" fill="#f2ffff"/>
+          fill={'url(#'+id+'-metal)'} stroke="#42576d" strokeWidth="1.9"/>
+        <rect x="-10.5" y="-10.5" width="21" height="21" rx="3.8"
+          fill={'url(#'+id+'-metal-inset)'} stroke="#e8f7ff" strokeWidth=".85"/>
+        <path d="M-9 -7l4 -3h11M-8 5l-1 3h11l3 -3"
+          fill="none" stroke="#f9ffff" strokeOpacity=".57"
+          strokeWidth="1.8" strokeLinecap="round"/>
+        <path d="M8 -7l2 7l-3 7" fill="none" stroke="#4c7083"
+          strokeOpacity=".64" strokeWidth="1.2"/>
+      </g>;
+    })}
+
+    {/* Serrated saws from the original walkthrough. Their TEETH are lethal.
+        Spin is visual-only; logical collisions remain deterministic cells. */}
+    {board.saws.map((point,i)=>{
+      const {x,y}=anchor(point);
+      const teeth=Array.from({length:16},(_,j)=>{
+        const t=j*Math.PI/8, outer=t+Math.PI/16;
+        const x1=Math.cos(t)*12.3,y1=Math.sin(t)*12.3;
+        const xo=Math.cos(outer)*15.3,yo=Math.sin(outer)*15.3;
+        const x2=Math.cos(t+Math.PI/8)*12.3,y2=Math.sin(t+Math.PI/8)*12.3;
+        return 'L'+x1.toFixed(2)+' '+y1.toFixed(2)+'L'+xo.toFixed(2)+' '+yo.toFixed(2)+
+          'L'+x2.toFixed(2)+' '+y2.toFixed(2);
+      }).join('');
+      return <g key={'saw-'+i} data-source-saw
+        data-grid-x={point[0]} data-grid-y={point[1]}
+        transform={'translate('+x+' '+y+')'}>
+        <circle r="17.7" fill="#fff7cf" opacity=".12"/>
+        <g className="worm-source-saw-spinning">
+          <path d={'M12.3 0'+teeth+'Z'} fill="#aebac5"
+            stroke="#405d76" strokeWidth=".9"/>
+          <circle r="10.8" fill="#667e91" stroke="#d6e2ec" strokeWidth="1.5"/>
+          <circle r="7.8" fill="#8193a3" stroke="#314658" strokeWidth="1.2"/>
+          {[0,1,2,3,4,5].map(j=><circle key={j}
+            cx={Math.cos(j*Math.PI/3)*5.5} cy={Math.sin(j*Math.PI/3)*5.5}
+            r="1.2" fill="#c9d5df"/>)}
+          <circle r="3.1" fill="#405265" stroke="#d3e8f6" strokeWidth="1"/>
+        </g>
+      </g>;
+    })}
+    {board.spikes.map((point,i)=>{
+      const {x,y}=anchor(point);
+      return <g key={'spike-'+i} data-source-spike
+        transform={'translate('+x+' '+y+')'}>
+        {[0,1,2].map(j=><path key={j}
+          d={'M'+(-13+j*9)+' 11l4.5 -21l4.5 21Z'}
+          fill="#aebdc7" stroke="#40586d" strokeWidth="1.4"/>)}
       </g>;
     })}
 
