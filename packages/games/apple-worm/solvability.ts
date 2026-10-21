@@ -85,7 +85,7 @@ export function solveAppleWormLevel(level:number,options:{
   const maxStates=options.maxStates??8000;
   const maxMillis=options.maxMillis??500;
   if(!Number.isInteger(maxStates)||maxStates<1)throw new RangeError('maxStates must be positive');
-  if(!stage.portal)return {
+  if(stage.exitMode==='unknown')return {
     level,status:'missing-exit',explored:0,discovered:0,route:null,
     routeLength:null,elapsedMs:Date.now()-started,maxStates,portal:null,
   };
@@ -97,7 +97,9 @@ export function solveAppleWormLevel(level:number,options:{
   const nodes:SearchNode[]=[{state:initial,parent:-1,via:null}];
   const seen=new Set<string>([stateKey(initial)]);
   let explored=0;
-  const target=stage.portal;
+  // The 3 filmed top-escape stages have NO spiral; prioritize the upper
+  // boundary while still exploring all reachable states under BFS.
+  const target:readonly[number,number]=stage.portal??[initial.body[0]![0],-3];
   while(explored<nodes.length){
     if(explored>=maxStates||(
       explored%64===0&&Date.now()-started>=maxMillis
