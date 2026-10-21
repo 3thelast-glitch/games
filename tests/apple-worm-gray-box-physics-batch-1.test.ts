@@ -15,6 +15,7 @@ import {
 } from '../packages/games/apple-worm/screenshot-game.ts';
 import { replayAppleWormRoute }
   from '../packages/games/apple-worm/solvability.ts';
+import {sourceStoneStarts} from '../packages/games/apple-worm/video-source-obstacles-105.ts';
 
 test('only the original eight batch-1 stages and isolated stage-104 crate are movable',()=>{
   const intended=[13,14,15,17,18,19,20,28];
@@ -22,9 +23,11 @@ test('only the original eight batch-1 stages and isolated stage-104 crate are mo
   for(let level=1;level<=105;level++){
     assert.equal(isBatchOneMovableGray(level),intended.includes(level));
     const map=screenshotWormLevel(level),state=startScreenshotWorm(level);
-    assert.equal('grayPositions' in state,intended.includes(level)||level===104);
-    if(intended.includes(level))assert.deepEqual(state.grayPositions,map.grayObjects);
-    else if(level===104)assert.deepEqual(state.grayPositions,[[7,7]]);
+    const typedStone=sourceStoneStarts(level).length>0;
+    assert.equal('grayPositions' in state,intended.includes(level)||typedStone||level===104);
+    if(level===104)assert.deepEqual(state.grayPositions,[[6,7]]);
+    else if(intended.includes(level)||typedStone)
+      assert.deepEqual(state.grayPositions,map.grayObjects);
     else assert.equal(state.grayPositions,undefined);
   }
 });
