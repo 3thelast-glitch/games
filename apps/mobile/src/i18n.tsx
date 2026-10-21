@@ -108,6 +108,16 @@ const en: Record<string, string> = {
   'forty-move-rule': '40 turns per player without a capture or moving an uncrowned man.',
 
   library: 'Game library',
+  libraryDiscover: 'Choose a game and jump right in.',
+  librarySearch: 'Search games...',
+  libraryCategories: 'Game categories',
+  libraryCategory_all: 'All',
+  libraryCategory_strategy: 'Strategy',
+  libraryCategory_puzzle: 'Puzzles',
+  libraryCategory_casual: 'Casual',
+  libraryCategory_favorites: 'Favorites',
+  libraryEmpty: 'No games match your search.',
+  libraryReset: 'Show all games',
   arena: 'The arena',
   profile: 'My profile',
   profileEyebrow: 'YOUR ARENA',
@@ -579,6 +589,16 @@ const ar: Record<string, string> = {
   'forty-move-rule': 'مرّ 40 دورًا لكل لاعب دون أخذ أو تحريك قطعة غير متوّجة.',
 
   library: 'مكتبة الألعاب',
+  libraryDiscover: 'اختر لعبتك واستمتع بتجربة جديدة.',
+  librarySearch: 'ابحث عن لعبة...',
+  libraryCategories: 'تصنيفات الألعاب',
+  libraryCategory_all: 'الكل',
+  libraryCategory_strategy: 'استراتيجية',
+  libraryCategory_puzzle: 'ألغاز',
+  libraryCategory_casual: 'خفيفة',
+  libraryCategory_favorites: 'المفضلة',
+  libraryEmpty: 'لا توجد ألعاب مطابقة للبحث.',
+  libraryReset: 'عرض جميع الألعاب',
   arena: 'الساحة',
   profile: 'ملفي الشخصي',
   profileEyebrow: 'ساحتك الخاصة',
@@ -969,3 +989,8 @@ export function I18n({ lang, children }: { lang: Language; children: ReactNode }
   );
 }
 export const useI18n = () => useContext(Context);
+
+/** Both localizations are indexed so a game can be found in either language. */
+export function gameSearchAliases(key: string): string {
+  return `${en[key] ?? ''} ${ar[key] ?? ''}`;
+}
