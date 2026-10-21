@@ -131,7 +131,7 @@ export function AppleWormReferenceScene({board,body,remaining,grayPositions,phas
                perfectly periodic teeth/dots looked stationary on phones. */}
           <path d="M0 -3.1L6 -8.5L7.3 -7L2.1 0Z"
             fill="#fbe3a2" stroke="#8d6339" strokeWidth=".5"
-            data-saw-rotation-marker/>
+            data-saw-rotation-marker="true"/>
           <circle r="3.1" fill="#405265" stroke="#d3e8f6" strokeWidth="1"/>
         </g>
       </g>;
