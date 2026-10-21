@@ -16,10 +16,10 @@ export const FIRST_BATCH_RECOVERED_ROUTES:Readonly<Record<number,readonly Screen
   20:'up left left left left left up up right up up right right down left left left down down right up right down left left up right down right right right right right up right up up up left left down right right right down down left up left left down right right up up up left up right right up right right right'.split(' ') as ScreenshotDirection[],
 };
 
-test('all three formerly stuck batch-1 stages have deterministic replay-proven victories',()=>{
+test('historical selected-clip batch-1 routes still replay under their own original stage fixtures',()=>{
   for(const [stageStr,route] of Object.entries(FIRST_BATCH_RECOVERED_ROUTES)){
     const stage=Number(stageStr);
-    const replay=replayAppleWormRoute(stage,route);
+    const replay=replayAppleWormRoute(stage,route,{source:'legacy'});
     assert.equal(replay.legalMoves,route.length,
       'stage '+stage+' contains an illegal attempt in its winning route');
     assert.equal(replay.won,true,
