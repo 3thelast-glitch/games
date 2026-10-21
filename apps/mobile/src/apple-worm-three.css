@@ -302,3 +302,16 @@ body > .worm-immersive.worm3[data-stage-origin="user-screenshot"] .worm3-board-z
 @media(prefers-reduced-motion:reduce){
   .worm3 .worm3-worm-step-motion {animation:none!important;}
 }
+
+/* Full-video obstacle fidelity. Spinning blade teeth are real lethal gameplay
+ * cells, unlike the old gray '?' placeholder which was treated as a wall.
+ */
+@keyframes worm-source-saw-turn {to{transform:rotate(360deg)}}
+.worm3 .worm-source-saw-spinning {
+  transform-origin:center;
+  animation:worm-source-saw-turn 1.05s linear infinite;
+  filter:drop-shadow(1px 2px 1px rgba(26,44,59,.28));
+}
+@media (prefers-reduced-motion: reduce) {
+  .worm3 .worm-source-saw-spinning {animation:none!important}
+}
