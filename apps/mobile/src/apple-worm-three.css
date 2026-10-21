@@ -308,9 +308,13 @@ body > .worm-immersive.worm3[data-stage-origin="user-screenshot"] .worm3-board-z
  */
 @keyframes worm-source-saw-turn {to{transform:rotate(360deg)}}
 .worm3 .worm-source-saw-spinning {
-  transform-origin:center;
-  animation:worm-source-saw-turn 1.05s linear infinite;
+  /* SVG transform-box is required by some Chromium/Capacitor WebViews:
+     without it spinning can happen around the page rather than each saw. */
+  transform-box:fill-box;
+  transform-origin:50% 50%;
+  animation:worm-source-saw-turn .85s linear infinite;
   filter:drop-shadow(1px 2px 1px rgba(26,44,59,.28));
+  will-change:transform;
 }
 @media (prefers-reduced-motion: reduce) {
   .worm3 .worm-source-saw-spinning {animation:none!important}
