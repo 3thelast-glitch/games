@@ -20,9 +20,10 @@ test('original 105-stage gameplay follows title → stage select → fullscreen 
   await game.locator('.worm3-play-button').click();
   await expect(game).toHaveAttribute('data-worm-screen','levels');
   await expect(game.locator('.worm3-level-tile')).toHaveCount(15);
-  await expect(game.locator('.worm3-level-tile').nth(10)).toBeDisabled();
+  await expect(game.locator('.worm3-level-tile').nth(10)).toBeEnabled();
+  await expect(game.locator('.worm3-level-tile[data-locked="true"]')).toHaveCount(0);
   await game.getByRole('button',{name:'Next level page'}).click();
-  await expect(game.locator('.worm3-level-tile').first()).toBeDisabled();
+  await expect(game.locator('.worm3-level-tile').first()).toBeEnabled();
   await game.getByRole('button',{name:'Previous level page'}).click();
 
   await game.getByRole('button',{name:'Level 1'}).click();
