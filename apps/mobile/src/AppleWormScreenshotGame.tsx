@@ -18,7 +18,7 @@ import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
 interface SourceSave { level:number; state:ScreenshotState; completed:number[]; visualRevision?:string }
 const SAVE_KEY='apple-worm-screenshot-source-105-v1';
 /** Increases when the reference rendering/initial layouts change. */
-export const APPLE_WORM_VISUAL_REVISION='PDF105-R13';
+export const APPLE_WORM_VISUAL_REVISION='PDF105-R14';
 export type WormScreen='home'|'levels'|'game';
 const keyMap:Record<string,ScreenshotDirection>={
   arrowup:'up',w:'up',arrowdown:'down',s:'down',
@@ -94,7 +94,9 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
           (!!APPLE_WORM_VIDEO_BATCH_THREE_STARTS[n]&&savedRevision<11)||
           // A new early-video pose must not erase legitimate gameplay progress.
           // Only migrate saved untouched stages, never moves already played.
-          (!!APPLE_WORM_FULL_VIDEO_EARLY_POSES[n]&&savedRevision<13&&resume?.moves===0);
+          (!!APPLE_WORM_FULL_VIDEO_EARLY_POSES[n]&&savedRevision<13&&resume?.moves===0)||
+          // L85 2x2 U traversal clarified by the first filmed move in R14.
+          (n===85&&savedRevision<14&&resume?.moves===0);
         const next=resume&&!needsVideoStartMigration?resume:startScreenshotWorm(n);
         stateRef.current=next;
         setState(next);
