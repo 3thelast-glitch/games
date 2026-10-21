@@ -19,14 +19,14 @@ test('batch 1 contains EXACTLY the first 15 selected stages; no cross-batch sour
     .map(Number).sort((a,b)=>a-b),[...FIRST_VIDEO_BATCH_15].sort((a,b)=>a-b));
 });
 
-test('batch 1: record all 15 actual engine win paths without falsely certifying the remaining eight',()=>{
+test('batch 1: preserve original selected-clip solver certificates, separate from newly lethal full-video saws',()=>{
   const results=FIRST_VIDEO_BATCH_15.map(level=>
-    solveAppleWormLevel(level,{maxStates:12000,maxMillis:450}));
+    solveAppleWormLevel(level,{maxStates:12000,maxMillis:450,source:'legacy'}));
   // For longer mazes, a deterministic replayable route is as strong a win
   // certificate as BFS, without requiring unlimited CI search resources.
   const verified=results.map(r=>{
     const route=r.status==='won'?r.route:FIRST_BATCH_RECOVERED_ROUTES[r.level];
-    const replay=route?replayAppleWormRoute(r.level,route):null;
+    const replay=route?replayAppleWormRoute(r.level,route,{source:'legacy'}):null;
     return {level:r.level,route,won:!!replay?.won&&replay.legalMoves===route!.length,
       via:r.status==='won'?'bfs':'source-model-replay'};
   });
