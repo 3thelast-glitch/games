@@ -61,8 +61,8 @@ test('Apple Worm 105-level production-engine solvability report', {timeout:12000
  * deliberately larger but STILL NOT a proof of impossible gameplay.
  * Every win is certified by replay; unresolved levels stay explicitly listed.
  */
-test('deeper route search on 16 budget-limited video levels',{timeout:120000},()=>{
-  const candidates=[20,64,77,80,81,83,84,88,89,90,92,93,94,97,100,105];
+test('deeper route search on 17 budget-limited video levels',{timeout:120000},()=>{
+  const candidates=[20,58,64,77,80,81,83,84,88,89,90,92,93,94,97,100,105];
   const results=[] as Array<{n:number;status:string;explored:number;steps:number|null;route:string|null}>;
   for(const n of candidates){
     const outcome=solveAppleWormLevel(n,{maxStates:24000,maxMillis:1800,source:'full-video'});
