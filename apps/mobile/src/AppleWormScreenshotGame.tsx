@@ -134,13 +134,18 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
   };
   const pick=(n:number)=>{
     if(!Number.isInteger(n)||n<1||n>105)return;
+    // Opening the same in-progress level from the new selector must preserve
+    // the saved worm location; replaying a completed/lost level restarts.
+    const preserve=n===level&&stateRef.current.phase==='playing';
     setLevel(n);
     setBiteFx(null);
-    const next=startScreenshotWorm(n);
-    stateRef.current=next;
-    setState(next);
+    if(!preserve){
+      const next=startScreenshotWorm(n);
+      stateRef.current=next;
+      setState(next);
+      setHistory([]);
+    }
     setGroup(Math.floor((n-1)/15));
-    setHistory([]);
     setScreen('game');setShowOptions(false);setShowHelp(false);
   };
   useEffect(()=>{
