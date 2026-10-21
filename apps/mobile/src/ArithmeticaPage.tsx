@@ -18,6 +18,8 @@ export function ArithmeticaPage({ onExit, settings }: {onExit:()=>void; settings
   const [view,setView] = useState<MathRun>(run.current);
   const [stats,setStats] = useState<MathRecord>(record.current);
   const [showHelp,setShowHelp] = useState(false);
+  const [announcement,setAnnouncement] = useState('');
+  const inputLockedUntil = useRef(0);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
   const processed = useRef(false);
@@ -51,22 +53,34 @@ export function ArithmeticaPage({ onExit, settings }: {onExit:()=>void; settings
       if(last===0)last=now;
       const raw = Math.max(0,(now-last));
       last=now;
-      // A returning tab does not consume the whole timer in a single frame.
-      if(document.visibilityState==='visible' && raw<2000 && run.current.phase==='playing'){
-        carry+=Math.min(raw,200);
-        if(carry>=30){
-          const dt=carry;carry=0;
-          run.current=tickMathRun(run.current,Math.min(1000,dt));
-          if(now-lastUpdate.current>50 || run.current.phase==='gameover'){
-            lastUpdate.current=now;sync();
+      // Foreground slow frames must still consume real elapsed time.
+      // Very long stalls pause the run instead of quietly forfeiting it.
+      if(document.visibilityState==='visible' && run.current.phase==='playing'){
+        if(raw>2000){
+          carry=0;
+          run.current=pauseMathRun(run.current);
+          sync();
+        }else{
+          carry+=raw;
+          if(carry>=30){
+            let remaining=carry;carry=0;
+            while(remaining>0 && run.current.phase==='playing'){
+              const step=Math.min(1000,remaining);
+              run.current=tickMathRun(run.current,step);
+              remaining-=step;
+            }
+            if(now-lastUpdate.current>50 || run.current.phase==='gameover'){
+              lastUpdate.current=now;sync();
+            }
+            if(run.current.phase==='gameover')complete();
           }
-          if(run.current.phase==='gameover')complete();
         }
-      } else carry=0;
+      }else carry=0;
       frame=requestAnimationFrame(animate);
     };
     frame=requestAnimationFrame(animate);
     const visibility=()=>{
+      last=0;carry=0;
       if(document.visibilityState==='hidden'&&run.current.phase==='playing'){
         run.current=pauseMathRun(run.current);sync();
       }
@@ -75,13 +89,15 @@ export function ArithmeticaPage({ onExit, settings }: {onExit:()=>void; settings
     return ()=>{cancelAnimationFrame(frame);document.removeEventListener('visibilitychange',visibility);};
   },[loaded,sync,complete]);
   const answer=useCallback((index:number)=>{
-    if(!loaded || run.current.phase!=='playing')return;
+    if(!loaded || run.current.phase!=='playing' || performance.now()<inputLockedUntil.current)return;
+    inputLockedUntil.current=performance.now()+140; // Avoid accidental double taps on a changing question.
     const correct=run.current.question.correctIndex===index;
     run.current=answerMathRun(run.current,index);
+    setAnnouncement(t(correct?'arithmeticaAnswerCorrect':'arithmeticaAnswerWrong')+' · '+t('arithmeticaScore')+': '+run.current.score);
     if(correct)feedback(settingsRef.current,'move');
     sync();
     if(run.current.phase==='gameover')complete();
-  },[loaded,sync,complete]);
+  },[loaded,sync,complete,t]);
   useEffect(()=>{
     const onKey=(e:KeyboardEvent)=>{
       if(e.altKey||e.ctrlKey||e.metaKey||e.repeat)return;
@@ -101,6 +117,8 @@ export function ArithmeticaPage({ onExit, settings }: {onExit:()=>void; settings
   const restart=()=>{
     run.current=startMathRun(Date.now());
     processed.current=false;
+    inputLockedUntil.current=0;
+    setAnnouncement('');
     setShowHelp(false);
     sync();
   };
@@ -117,6 +135,7 @@ export function ArithmeticaPage({ onExit, settings }: {onExit:()=>void; settings
   const chalkStars=Array.from({length:5},(_,i)=>i<view.stars);
   const timePercent=Math.max(0,view.timeMs/MAX_TIME_MS*100);
   const ended=view.phase==='gameover',paused=view.phase==='paused';
+  const accuracy=view.answered>0?Math.round(view.correct/view.answered*100)+'%':'—';
   return <main className="arithmetica-page page-enter" dir={lang==='ar'?'rtl':'ltr'}>
     <header className="arithmetica-heading">
       <div><span className="eyebrow">NAQLA · MENTAL MATH</span>
@@ -131,18 +150,24 @@ export function ArithmeticaPage({ onExit, settings }: {onExit:()=>void; settings
           <div className="arithmetica-chalk-noise" aria-hidden="true"/>
           <div className="arithmetica-board-header">
             <strong className="arithmetica-level">{t('arithmeticaLevel')} {view.level}</strong>
-            <div className="arithmetica-time" role="progressbar"
-              aria-label={t('arithmeticaTime')}
-              aria-valuemin={0} aria-valuemax={MAX_TIME_MS}
-              aria-valuenow={Math.round(view.timeMs)}>
-              <div className="arithmetica-time-fill" style={{width:timePercent+'%'}}/>
+            <div className="arithmetica-timer-controls">
+              <div className={'arithmetica-time'+(view.timeMs<=8000&&view.phase==='playing'?' urgent':'')} role="progressbar"
+                aria-label={t('arithmeticaTime')}
+                aria-valuemin={0} aria-valuemax={MAX_TIME_MS}
+                aria-valuenow={Math.round(view.timeMs)} aria-valuetext={formatTime(view.timeMs)+' s'}>
+                <div className="arithmetica-time-fill" style={{width:timePercent+'%'}}/>
+              </div>
+              <button className="arithmetica-board-pause" type="button" onClick={togglePause}
+                disabled={view.phase==='ready'||ended}
+                aria-label={t(paused?'arithmeticaResume':'arithmeticaPause')}
+                title={t(paused?'arithmeticaResume':'arithmeticaPause')}>{paused?'▶':'Ⅱ'}</button>
             </div>
           </div>
           <div className="arithmetica-stars" aria-label={view.stars+' / 5'}>
             {chalkStars.map((filled,i)=><span key={i}
               className={filled?'earned':''} aria-hidden="true">{filled?'★':'☆'}</span>)}
           </div>
-          <div className={'arithmetica-question '+(view.feedback??'')} aria-live="polite">
+          <div key={'question-'+view.question.id} className={'arithmetica-question '+(view.feedback??'')} aria-live="polite">
             <span>{view.question.left}</span><span className="arithmetica-operation">{view.question.op}</span>
             <span>{view.question.right}</span><span>=</span><span>?</span>
           </div>
@@ -154,6 +179,7 @@ export function ArithmeticaPage({ onExit, settings }: {onExit:()=>void; settings
                 {value}
               </button>)}
           </div>
+          <p className="arithmetica-announcement" aria-live="polite" aria-atomic="true">{announcement}</p>
           <div className="arithmetica-chalk-footer">
             <span>{t('arithmeticaScore')}: <b>{view.score}</b></span>
             <span>{formatTime(view.timeMs)}s</span>
@@ -186,6 +212,7 @@ export function ArithmeticaPage({ onExit, settings }: {onExit:()=>void; settings
           <span>{t('arithmeticaBestLevel')}<b>{stats.bestLevel}</b></span>
           <span>{t('arithmeticaSolved')}<b>{stats.totalSolved}</b></span>
           <span>{t('arithmeticaStreak')}<b>{view.streak}</b></span>
+          <span>{t('arithmeticaAccuracy')}<b>{accuracy}</b></span>
         </div>
         <div className="arithmetica-actions">
           <button type="button" onClick={togglePause}
