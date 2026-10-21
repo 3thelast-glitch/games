@@ -10,6 +10,7 @@ import {
   moveScreenshotWorm,restoreScreenshotWorm,
 } from '../packages/games/apple-worm/screenshot-game.ts';
 import {AppleWormReferenceScene} from '../apps/mobile/src/AppleWormReferenceScene.tsx';
+import {userMarkedThornCells} from '../packages/games/apple-worm/user-marked-black-thorns-21-30.ts';
 
 test('every stage has typed video objects, never confuse lethal discs with gray solid placeholders',()=>{
   assert.equal(VIDEO_SAW_STAGE_COUNT,54);
