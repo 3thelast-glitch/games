@@ -137,7 +137,7 @@ export function AppleWormReferenceScene({board,body,remaining,grayPositions,phas
         transform={'translate('+x+' '+y+')'}>
         {[0,1,2].map(j=><path key={j}
           d={'M'+(-13+j*9)+' 11l4.5 -21l4.5 21Z'}
-          fill="#aebdc7" stroke="#40586d" strokeWidth="1.4"/>)}
+          fill="#20252d" stroke="#080b0f" strokeWidth="1.4"/>)}
       </g>;
     })}
 
