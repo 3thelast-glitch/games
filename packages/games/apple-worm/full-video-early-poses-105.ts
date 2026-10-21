@@ -9,7 +9,9 @@
  * Segments were accepted when (1) the worm-green cells form ONE
  * unambiguous adjacent head-to-tail path and (2) the purple original mouth is
  * visible and locates its endpoint. Five occluded/edge starts were manually
- * traced from the user's video; stage 85 still has ambiguous 2x2 body order. No arbitrary appended segments.
+ * traced from the user's video; early positions for 44/51 are backtracked
+ * from the video frames BEFORE their first obvious mouth-position change.
+ * Stage 85 still has ambiguous 2x2 body order. No arbitrary appended segments.
  *
  * Caveat: the first OBSERVABLE pose can differ from the first untouched game
  * state because the original walkthrough sometimes starts moving instantly.
@@ -25,7 +27,7 @@ export interface FullVideoWormPose {
   readonly stage:number;
   readonly timestampSeconds:number;
   readonly headToTail:readonly ScreenshotPoint[];
-  readonly evidence:'mouth-visible-early-frame'|'mouth-visible-manual-trace';
+  readonly evidence:'mouth-visible-early-frame'|'mouth-visible-manual-trace'|'first-motion-backtracked';
   readonly untouchedOpeningVerified:false;
   readonly solutionVerified:false;
 }
@@ -72,14 +74,14 @@ const VIDEO_START_RECORDS=`1|0.18|838297
 41|915.50|9b9a99
 42|956.53|a09f9e
 43|986.93|848382
-44|1005.57|333231
+44|1005.20|31302f
 45|1023.96|848382
 46|1051.05|9a9998
 47|1089.26|4a4948
 48|1103.21|737271
 49|1135.18|a1a09f
 50|1158.70|4b4a49
-51|1185.98|474645
+51|1185.78|464544
 52|1218.50|5d5c5b
 53|1235.45|605f5e
 55|1285.86|868788
@@ -162,7 +164,7 @@ export const APPLE_WORM_FULL_VIDEO_EARLY_POSES:
         const headToTail=decode(fields[2]!);
         return [stage,{
           stage,timestampSeconds,headToTail,
-          evidence:'mouth-visible-early-frame',
+          evidence:stage===44||stage===51?'first-motion-backtracked':'mouth-visible-early-frame',
           untouchedOpeningVerified:false,
           solutionVerified:false,
         } satisfies FullVideoWormPose] as const;
