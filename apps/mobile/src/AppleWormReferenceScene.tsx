@@ -127,6 +127,11 @@ export function AppleWormReferenceScene({board,body,remaining,grayPositions,phas
           {[0,1,2,3,4,5].map(j=><circle key={j}
             cx={Math.cos(j*Math.PI/3)*5.5} cy={Math.sin(j*Math.PI/3)*5.5}
             r="1.2" fill="#c9d5df"/>)}
+          {/* An ASYMMETRIC spoke makes true rotation visible; the former
+               perfectly periodic teeth/dots looked stationary on phones. */}
+          <path d="M0 -3.1L6 -8.5L7.3 -7L2.1 0Z"
+            fill="#fbe3a2" stroke="#8d6339" strokeWidth=".5"
+            data-saw-rotation-marker/>
           <circle r="3.1" fill="#405265" stroke="#d3e8f6" strokeWidth="1"/>
         </g>
       </g>;
@@ -134,10 +139,18 @@ export function AppleWormReferenceScene({board,body,remaining,grayPositions,phas
     {board.spikes.map((point,i)=>{
       const {x,y}=anchor(point);
       return <g key={'spike-'+i} data-source-spike
+        data-spike-type="video-pointed-brick-cap"
+        data-grid-x={point[0]} data-grid-y={point[1]}
         transform={'translate('+x+' '+y+')'}>
+        {/* Distinct DARK downward-facing sharp teeth with a reddish
+             attachment lip, based on the filmed brick-attached hazard. */}
+        <rect x="-14" y="-13" width="28" height="6" rx="2"
+          fill="#7d2421" stroke="#250a0b" strokeWidth="1.2"/>
         {[0,1,2].map(j=><path key={j}
-          d={'M'+(-13+j*9)+' 11l4.5 -21l4.5 21Z'}
-          fill="#20252d" stroke="#080b0f" strokeWidth="1.4"/>)}
+          d={'M'+(-13+j*9)+' -9l4.5 21l4.5 -21Z'}
+          fill="#171b22" stroke="#050609" strokeWidth="1.5"/>)}
+        <path d="M-12 -8H12" stroke="#cf5650" strokeWidth="1.4"
+          strokeOpacity=".8"/>
       </g>;
     })}
 
