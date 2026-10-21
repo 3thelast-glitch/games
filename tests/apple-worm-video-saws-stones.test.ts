@@ -30,6 +30,40 @@ test('every stage has typed video objects, never confuse lethal discs with gray 
   assert.deepEqual(stage68.saws,[[7,1],[9,1],[11,1],[10,3],[7,5]]);
 });
 
+test('level 32 retains ALL FIVE original filmed saws, not only the three detected by the early template',()=>{
+  const map=screenshotWormLevel(32);
+  assert.deepEqual(map.saws,[[15,0],[13,2],[4,4],[8,4],[9,4]]);
+  assert.equal(map.saws.length,5);
+  assert.equal(map.exitMode,'spiral');
+  const state=startScreenshotWorm(32);
+  const html=renderToStaticMarkup(createElement(AppleWormReferenceScene,{
+    board:map,body:state.body,remaining:map.apples,
+    grayPositions:state.grayPositions,showSky:false,
+  }));
+  assert.equal((html.match(/data-source-saw="/g)||[]).length,5,
+    'five filmed discs should spin at their logical cell anchors');
+  assert.equal((html.match(/class="worm-source-saw-spinning"/g)||[]).length,5);
+  assert.equal((html.match(/data-source-spike="/g)||[]).length,0,
+    'no black triangular spikes were visible in the level-32 film');
+});
+
+test('the worm dies upon entering a saw cell even if terrain underneath it is solid',()=>{
+  const map=screenshotWormLevel(32);
+  const state={...startScreenshotWorm(32),
+    body:[[7,4],[6,4],[5,4]] as const};
+  // The source video has a saw at (8,4) embedded on the brick platform.
+  // Old code checked terrain first and silently refused the move.
+  const lost=moveScreenshotWorm(state,'right',map);
+  assert.notEqual(lost,state);
+  assert.equal(lost.phase,'lost');
+  assert.deepEqual(lost.body[0],[8,4]);
+  assert.equal(restoreScreenshotWorm(lost)?.phase,'lost');
+  // Solid terrain WITHOUT a blade should remain impassable, not deadly.
+  const plain={...map,saws:[] as typeof map.saws};
+  const blocked=moveScreenshotWorm(state,'right',plain);
+  assert.equal(blocked,state);
+});
+
 test('worm dies on a filmed spinning disc instead of bouncing against an old gray wall',()=>{
   const board=screenshotWormLevel(48);
   const state={...startScreenshotWorm(48),body:[[8,4],[7,4],[6,4]] as const};
