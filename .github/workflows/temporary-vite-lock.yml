@@ -1,0 +1,32 @@
+name: Temporary Vite Lockfile Regeneration
+on:
+  push:
+    branches:
+      - fix/naqla-vite-audit-apk-20261021
+    paths:
+      - .github/workflows/temporary-vite-lock.yml
+      - package.json
+permissions:
+  contents: read
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Generate exact reproducible Vite 8.3.5 lock data
+        run: |
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund --save-dev --save-exact vite@8.3.5
+          git diff --stat
+          echo 'LOCK_DIFF_BEGIN'
+          git diff -- package-lock.json
+          echo 'LOCK_DIFF_END'
+          npm audit --audit-level=moderate
+      - uses: actions/upload-artifact@v7
+        with:
+          name: vite-8-3-5-generated-lock
+          path: package-lock.json
+          if-no-files-found: error
+          retention-days: 2
