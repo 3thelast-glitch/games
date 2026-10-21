@@ -79,7 +79,7 @@ test('a worm touching a black thorn loses immediately (even if the surface has t
 
 test('falling worm segments also die on the player-annotated thorns',()=>{
   const map=screenshotWormLevel(21);
-  const empty={...map,rows:Array.from({length:9},()=>'.'.repeat(21)),saws:[]};
+  const empty={...map,rows:Array.from({length:9},()=>'.'.repeat(21)),apples:[],grayObjects:[],saws:[]};
   const state={...startScreenshotWorm(21),body:[[8,1],[9,1],[10,1]] as const};
   const result=moveScreenshotWorm(state,'left',empty);
   assert.equal(result.phase,'lost');
