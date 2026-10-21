@@ -16,6 +16,7 @@ import { APPLE_WORM_VIDEO_START_POSES } from './video-start-poses-selected-33.ts
 import { APPLE_WORM_VIDEO_BATCH_TWO_STARTS } from './video-start-poses-batch-2.ts';
 import { APPLE_WORM_VIDEO_BATCH_THREE_STARTS } from './video-start-poses-batch-3.ts';
 import { APPLE_WORM_FULL_VIDEO_EARLY_POSES } from './full-video-early-poses-105.ts';
+import { APPLE_WORM_FULL_VIDEO_VISIBLE_APPLES } from './full-video-early-apples-105.ts';
 import { supportsBatchTwoSideContact } from './wall-support-batch-2.ts';
 import { isBatchOneMovableGray, pushGrayBox, settleGrayBoxes } from './gray-box-physics-batch-1.ts';
 import { isBatchThreeMovableGray, fixedGrayForBatchThree, initialMovableGray } from './gray-box-physics-batch-3.ts';
@@ -119,12 +120,17 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
   if(portal && portal[1]<0)issues.push('portal-above-terrain-grid');
   if(portal && portal[1]>=9)issues.push('portal-below-terrain-grid');
   if(source.grayObjectsVisible.length)issues.push('gray-object-mechanics-unresolved');
-  const apples=videoStart?.extraInitialApples
+  // Positive detections from the UNTOUCHED full-video opening take precedence
+  // over later gallery frames (which may show the fruit already consumed).
+  // Empty detections are not proof of absence; retain older source evidence.
+  const earlyApples=APPLE_WORM_FULL_VIDEO_VISIBLE_APPLES[level];
+  const apples=earlyApples?[...earlyApples]:videoStart?.extraInitialApples
     ?[...source.applesVisible,...videoStart.extraInitialApples]:source.applesVisible;
   const grayObjects=videoStart?.grayStartOverride??source.grayObjectsVisible;
   if(fullVideoStart)issues.push('full-video-early-pose-mouth-confirmed');
   else issues.push('full-video-opening-pose-needs-manual-review');
   if(videoStart)issues.push('video-clip-start-reconstructed');
+  if(earlyApples)issues.push('full-video-early-apples-visible');
   if(!apples.length)issues.push('no-apples-visible-in-frame');
   issues.push('starting-head-and-physics-unverified');
   return {
