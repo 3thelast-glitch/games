@@ -28,6 +28,7 @@ export type ScreenshotSourceMode='full-video'|'legacy';
 export type ScreenshotPhase = 'playing'|'won'|'lost';
 export interface ScreenshotLevel {
   readonly number:number;
+  readonly sourceMode:ScreenshotSourceMode;
   readonly width:21;
   readonly height:9;
   readonly rows:readonly string[];
@@ -145,7 +146,7 @@ export function screenshotWormLevel(level:number,sourceMode:ScreenshotSourceMode
   if(!apples.length)issues.push('no-apples-visible-in-frame');
   issues.push('starting-head-and-physics-unverified');
   return {
-    number:level,width:21,height:9,
+    number:level,sourceMode,width:21,height:9,
     rows:source.terrain,
     worm:worm??source.wormVisible,
     apples,
@@ -230,7 +231,8 @@ export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDir
     remaining.some(p=>eq(p,[x,y+1]))||
     // The source video shows side-hanging contact in just five Batch 2
     // stages. The existing down-support rule is UNCHANGED elsewhere.
-    (supportsBatchTwoSideContact(stage.number)&&(
+    ((supportsBatchTwoSideContact(stage.number)||
+      stage.sourceMode==='full-video'&&stage.number===58)&&(
       solid.has(key([x-1,y]))||solid.has(key([x+1,y])))));
   // Gravity starts only after a legal move; the untouched screenshot is never changed.
   if(phase==='playing'){
