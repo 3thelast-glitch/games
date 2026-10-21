@@ -29,7 +29,7 @@ for(const viewport of [{width:390,height:844},{width:844,height:390},{width:1366
       await expect(app).toHaveAttribute('data-worm-screen','game');
       await expect(app.locator('svg[data-source-level="30"] [data-user-marked="true"]')).toHaveCount(18);
       await expect(app.locator('svg[data-source-level="30"] [data-thorn-facing]')).toHaveCount(22);
-      await expect(app.locator('svg[data-source-level="30"] [data-thorn-facing="left"]')).toHaveCount(4);
+      await expect(app.locator('svg[data-source-level="30"] [data-thorn-facing="left"]')).toHaveCount(8);
       await expect(app.locator('svg[data-source-level="30"] [data-thorn-facing="right"]')).toHaveCount(8);
       await expect(app.locator('svg[data-source-level="30"] [data-thorn-facing="down"]')).toHaveCount(4);
       await expect(app.locator('svg[data-source-level="30"] [data-thorn-facing="up"]')).toHaveCount(2);
