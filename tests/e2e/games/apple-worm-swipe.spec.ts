@@ -80,7 +80,7 @@ for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:
         await game.getByRole('button',{name:locale.id==='ar'?'قائمة اللعبة':'Game menu'}).click();
         await game.getByRole('button',{name:locale.id==='ar'?'تراجع':'Undo'}).click();
         await expect(first).toHaveAttribute('data-head-x','165');
-        await game.getByRole('button',{name:locale.id==='ar'?'اختيار المرحلة':'Level Select'}).click();
+        await game.locator('.worm3-game-hud .worm3-icon-button').filter({hasText:'⌂'}).click();
         await expect(game).toHaveAttribute('data-worm-screen','levels');
         await game.getByRole('button',{name:locale.id==='ar'?'القائمة الرئيسية':'Main menu'}).click();
         await expect(game).toHaveAttribute('data-worm-screen','home');
