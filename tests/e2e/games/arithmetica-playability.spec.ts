@@ -24,7 +24,7 @@ test('Arithmetica exposes a responsive in-board pause button and accessible answ
   await page.waitForTimeout(200);
   await expect(board.locator('.arithmetica-time')).toHaveAttribute('aria-valuenow', stoppedTime!);
 
-  await pause.click();
+  await board.locator('.arithmetica-overlay button').click();
   await expect(board.locator('.arithmetica-overlay')).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(board.locator('.arithmetica-overlay')).toBeVisible();
