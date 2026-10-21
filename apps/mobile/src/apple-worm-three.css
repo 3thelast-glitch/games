@@ -242,7 +242,7 @@ body > .worm-immersive.worm3[data-stage-origin="user-screenshot"] .worm3-board-z
 @media(max-height:470px) and (orientation:landscape) {
   .worm3 .worm3-title-logo {top:0;}
   .worm3 .worm3-title-apple,.worm3 .worm3-title-worm {
-    font-size:clamp(48px,10.3dvh,90px);letter-spacing:-.06em;
+    font-size:clamp(65px,24dvh,118px);letter-spacing:-.06em;
   }
   .worm3 .worm3-play-button {top:76%;width:clamp(70px,17dvh,90px);height:clamp(70px,17dvh,90px);font-size:clamp(42px,10dvh,54px);}
   .worm3 .worm3-level-panel {width:min(64vw,760px);height:93dvh;}
