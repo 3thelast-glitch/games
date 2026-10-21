@@ -87,7 +87,7 @@ test('existing proven level-1 and level-2 routes are not altered by the opt-in c
   assert.equal(one.state.grayPositions,undefined);
   const two=replayAppleWormRoute(2,[
     'right','right','right','up','up','up','right','right','right','right',
-  ]);
+  ],{source:'legacy'});
   assert.equal(two.won,true);
   assert.equal(two.state.grayPositions,undefined);
 });

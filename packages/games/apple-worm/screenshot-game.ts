@@ -15,12 +15,16 @@ import { appleWormVideoTracedStage } from './video-traced-stages.ts';
 import { APPLE_WORM_VIDEO_START_POSES } from './video-start-poses-selected-33.ts';
 import { APPLE_WORM_VIDEO_BATCH_TWO_STARTS } from './video-start-poses-batch-2.ts';
 import { APPLE_WORM_VIDEO_BATCH_THREE_STARTS } from './video-start-poses-batch-3.ts';
+import { APPLE_WORM_FULL_VIDEO_EARLY_POSES } from './full-video-early-poses-105.ts';
+import { APPLE_WORM_FULL_VIDEO_VISIBLE_APPLES } from './full-video-early-apples-105.ts';
 import { supportsBatchTwoSideContact } from './wall-support-batch-2.ts';
 import { isBatchOneMovableGray, pushGrayBox, settleGrayBoxes } from './gray-box-physics-batch-1.ts';
 import { isBatchThreeMovableGray, fixedGrayForBatchThree, initialMovableGray } from './gray-box-physics-batch-3.ts';
 
 export type ScreenshotPoint = readonly [number, number];
 export type ScreenshotDirection = 'up'|'right'|'down'|'left';
+/** Historical fixture only: preserves selected-clip replays in regression tests. */
+export type ScreenshotSourceMode='full-video'|'legacy';
 export type ScreenshotPhase = 'playing'|'won'|'lost';
 export interface ScreenshotLevel {
   readonly number:number;
@@ -87,7 +91,7 @@ function traceVisibleWorm(points:readonly ScreenshotPoint[], preferredHead?:Scre
   }
   return chain;
 }
-export function screenshotWormLevel(level:number):ScreenshotLevel {
+export function screenshotWormLevel(level:number,sourceMode:ScreenshotSourceMode='full-video'):ScreenshotLevel {
   const source=appleWormVisualSnapshot(level);
   // Some screenshots have a uniquely visible forward-facing mouth which
   // the generic rightmost-endpoint guess cannot infer (stages 2 and 59).
@@ -101,9 +105,12 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
   const manualMatches=picturedOrder!==null&&picturedOrder.length===source.wormVisible.length&&
     picturedOrder.every(p=>source.wormVisible.some(q=>eq(p,q)))&&
     picturedOrder.every((p,i)=>i===0||touching(p,picturedOrder[i-1]!));
+  const fullVideoStart=sourceMode==='full-video'?APPLE_WORM_FULL_VIDEO_EARLY_POSES[level]:undefined;
   const videoStart=APPLE_WORM_VIDEO_START_POSES[level]??
     APPLE_WORM_VIDEO_BATCH_TWO_STARTS[level]??APPLE_WORM_VIDEO_BATCH_THREE_STARTS[level];
-  const worm=videoStart?[...videoStart.headToTail]:manualMatches?[...picturedOrder!]:traceVisibleWorm(source.wormVisible,
+  // The user-supplied COMPLETE 105-stage recording has priority over older
+  // cropped problem clips and mid-solution stills for mouth-confirmed poses.
+  const worm=fullVideoStart?[...fullVideoStart.headToTail]:videoStart?[...videoStart.headToTail]:manualMatches?[...picturedOrder!]:traceVisibleWorm(source.wormVisible,
     level===2?[6,3]:level===59?[8,-2]:undefined);
   // The first 10 exits were manually traced from the walkthrough, and are
   // more reliable than the still-image portal detector when it misses a swirl.
@@ -115,10 +122,19 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
   if(portal && portal[1]<0)issues.push('portal-above-terrain-grid');
   if(portal && portal[1]>=9)issues.push('portal-below-terrain-grid');
   if(source.grayObjectsVisible.length)issues.push('gray-object-mechanics-unresolved');
-  const apples=videoStart?.extraInitialApples
+  // Positive detections from the UNTOUCHED full-video opening take precedence
+  // over later gallery frames (which may show the fruit already consumed).
+  // Empty detections are not proof of absence; retain older source evidence.
+  const earlyApples=sourceMode==='full-video'?APPLE_WORM_FULL_VIDEO_VISIBLE_APPLES[level]:undefined;
+  const apples=earlyApples?[...earlyApples]:videoStart?.extraInitialApples
     ?[...source.applesVisible,...videoStart.extraInitialApples]:source.applesVisible;
   const grayObjects=videoStart?.grayStartOverride??source.grayObjectsVisible;
+  if(sourceMode==='full-video'){
+    if(fullVideoStart)issues.push('full-video-early-pose-mouth-confirmed');
+    else issues.push('full-video-opening-pose-needs-manual-review');
+  }
   if(videoStart)issues.push('video-clip-start-reconstructed');
+  if(earlyApples)issues.push('full-video-early-apples-visible');
   if(!apples.length)issues.push('no-apples-visible-in-frame');
   issues.push('starting-head-and-physics-unverified');
   return {
@@ -134,8 +150,8 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
     exactPhysicsVerified:false,exactVisualComparisonPassed:false,
   };
 }
-export function startScreenshotWorm(level=1):ScreenshotState {
-  const map=screenshotWormLevel(level);
+export function startScreenshotWorm(level=1,sourceMode:ScreenshotSourceMode='full-video'):ScreenshotState {
+  const map=screenshotWormLevel(level,sourceMode);
   return {
     level,body:map.worm.map(([x,y]):ScreenshotPoint=>[x,y]),
     collected:[],phase:'playing',moves:0,

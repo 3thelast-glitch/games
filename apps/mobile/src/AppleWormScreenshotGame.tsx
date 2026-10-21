@@ -10,6 +10,7 @@ import {
 import { APPLE_WORM_VIDEO_START_POSES } from '../../../packages/games/apple-worm/video-start-poses-selected-33.ts';
 import { APPLE_WORM_VIDEO_BATCH_TWO_STARTS } from '../../../packages/games/apple-worm/video-start-poses-batch-2.ts';
 import { APPLE_WORM_VIDEO_BATCH_THREE_STARTS } from '../../../packages/games/apple-worm/video-start-poses-batch-3.ts';
+import { APPLE_WORM_FULL_VIDEO_EARLY_POSES } from '../../../packages/games/apple-worm/full-video-early-poses-105.ts';
 import { useI18n } from './i18n.tsx';
 import { storage, type Settings } from './platform.ts';
 import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
@@ -17,7 +18,7 @@ import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
 interface SourceSave { level:number; state:ScreenshotState; completed:number[]; visualRevision?:string }
 const SAVE_KEY='apple-worm-screenshot-source-105-v1';
 /** Increases when the reference rendering/initial layouts change. */
-export const APPLE_WORM_VISUAL_REVISION='PDF105-R12';
+export const APPLE_WORM_VISUAL_REVISION='PDF105-R13';
 export type WormScreen='home'|'levels'|'game';
 const keyMap:Record<string,ScreenshotDirection>={
   arrowup:'up',w:'up',arrowdown:'down',s:'down',
@@ -43,6 +44,8 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
   const stateRef=useRef(state);
   stateRef.current=state;
   const [history,setHistory]=useState<ScreenshotState[]>([]);
+  const [motion,setMotion]=useState<{from:ScreenshotPoint;key:number}|null>(null);
+  const lastKeyRepeat=useRef(0);
   const biteSequence=useRef(0);
   const [biteFx,setBiteFx]=useState<{key:number;apple:ScreenshotPoint}|null>(null);
   const [completed,setCompleted]=useState<number[]>([]);
@@ -51,7 +54,7 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
   const [screen,setScreen]=useState<WormScreen>('home');
   const [showOptions,setShowOptions]=useState(false);
   const [showHelp,setShowHelp]=useState(false);
-  const swiping=useRef<{id:number;x:number;y:number}|null>(null);
+  const swiping=useRef<{id:number;x:number;y:number;startX:number;startY:number;steps:number}|null>(null);
   const board=screenshotWormLevel(level);
 
   // Cosmetic one-shot feedback; never persists or changes stage state.
@@ -88,7 +91,10 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
         const needsVideoStartMigration=
           (!!APPLE_WORM_VIDEO_START_POSES[n]&&savedRevision<9)||
           (!!APPLE_WORM_VIDEO_BATCH_TWO_STARTS[n]&&savedRevision<10)||
-          (!!APPLE_WORM_VIDEO_BATCH_THREE_STARTS[n]&&savedRevision<11);
+          (!!APPLE_WORM_VIDEO_BATCH_THREE_STARTS[n]&&savedRevision<11)||
+          // A new early-video pose must not erase legitimate gameplay progress.
+          // Only migrate saved untouched stages, never moves already played.
+          (!!APPLE_WORM_FULL_VIDEO_EARLY_POSES[n]&&savedRevision<13&&resume?.moves===0);
         const next=resume&&!needsVideoStartMigration?resume:startScreenshotWorm(n);
         stateRef.current=next;
         setState(next);
@@ -115,13 +121,14 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
       if(apple)setBiteFx({key:++biteSequence.current,apple});
     }
     setHistory(h=>[...h.slice(-89),previous]);
+    setMotion({from:previous.body[0]!,key:next.moves});
     setState(next);
     if(next.phase==='won')setCompleted(c=>c.includes(previous.level)?c:[...c,previous.level]);
   };
   const reset=()=>{
     const next=startScreenshotWorm(level);
     stateRef.current=next;
-    setBiteFx(null);
+    setBiteFx(null);setMotion(null);
     setState(next);setHistory([]);
   };
   const undo=()=>{
@@ -129,7 +136,7 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
     if(!prev)return;
     setHistory(h=>h.slice(0,-1));
     stateRef.current=prev;
-    setBiteFx(null);
+    setBiteFx(null);setMotion(null);
     setState(prev);
   };
   const pick=(n:number)=>{
@@ -138,7 +145,7 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
     // the saved worm location; replaying a completed/lost level restarts.
     const preserve=n===level&&stateRef.current.phase==='playing';
     setLevel(n);
-    setBiteFx(null);
+    setBiteFx(null);setMotion(null);
     if(!preserve){
       const next=startScreenshotWorm(n);
       stateRef.current=next;
@@ -150,31 +157,61 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
   };
   useEffect(()=>{
     const callback=(e:KeyboardEvent)=>{
-      if(e.repeat||e.altKey||e.ctrlKey||e.metaKey||screen!=='game'||showOptions||
+      if(e.altKey||e.ctrlKey||e.metaKey||screen!=='game'||showOptions||
          (e.target as HTMLElement|null)?.closest('input,textarea,select,[contenteditable="true"]'))return;
       const k=e.key.toLowerCase(), direction=keyMap[k];
-      if(direction){e.preventDefault();move(direction);}
+      if(direction){
+        e.preventDefault();
+        // Let held arrows/WASD advance steadily rather than ignoring repeats;
+        // cap repeats so browsers with fast keyboard repeat cannot flood turns.
+        const now=performance.now();
+        if(e.repeat&&now-lastKeyRepeat.current<95)return;
+        lastKeyRepeat.current=now;
+        move(direction);
+      }
       else if(k==='r'){e.preventDefault();reset();}
       else if(k==='z'){e.preventDefault();undo();}
     };
     window.addEventListener('keydown',callback);
     return ()=>window.removeEventListener('keydown',callback);
   });
+  // Trigger a first swipe quickly, without the previously sluggish 24px wait.
+  // A deliberate >100px drag may repeat moves. Small touch jitter does not.
+  const swipeStep=(target:SVGSVGElement)=>
+    Math.max(16,Math.min(30,target.getBoundingClientRect().width/21*.80));
   const begin=(event:PointerEvent<SVGSVGElement>)=>{
     if(swiping.current||!event.isPrimary||
        (event.pointerType==='mouse'&&event.button!==0))return;
-    swiping.current={id:event.pointerId,x:event.clientX,y:event.clientY};
+    swiping.current={id:event.pointerId,x:event.clientX,y:event.clientY,
+      startX:event.clientX,startY:event.clientY,steps:0};
     event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const drag=(event:PointerEvent<SVGSVGElement>)=>{
+    const gesture=swiping.current;
+    if(!gesture||gesture.id!==event.pointerId||screen!=='game')return;
+    const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
+    const horizontal=Math.abs(dx)>=Math.abs(dy);
+    const distance=horizontal?Math.abs(dx):Math.abs(dy);
+    // After the first responsive step, require a purposeful long sweep for
+    // more movement. A single fast 80px flick must not skip several levels.
+    const threshold=gesture.steps===0?swipeStep(event.currentTarget):
+      Math.max(100,swipeStep(event.currentTarget)*4);
+    if(distance<threshold)return;
+    const direction:ScreenshotDirection=horizontal
+      ?dx>0?'right':'left':dy>0?'down':'up';
+    move(direction);
+    gesture.steps++;
+    // Anchor the next step at the current pointer location to prevent
+    // dispatch jitter from creating extra/unwanted turns.
+    gesture.x=event.clientX;gesture.y=event.clientY;
   };
   const finish=(event:PointerEvent<SVGSVGElement>)=>{
     const gesture=swiping.current;
     if(!gesture||gesture.id!==event.pointerId)return;
+    drag(event);
     swiping.current=null;
     if(event.currentTarget.hasPointerCapture(event.pointerId))
       event.currentTarget.releasePointerCapture(event.pointerId);
-    const dx=event.clientX-gesture.x,dy=event.clientY-gesture.y;
-    if(Math.max(Math.abs(dx),Math.abs(dy))<24)return;
-    move(Math.abs(dx)>=Math.abs(dy)?dx>0?'right':'left':dy>0?'down':'up');
   };
   const remaining=board.apples.filter((_,i)=>!state.collected.includes(i));
   const selectedGroupFrom=group*15+1;
@@ -274,13 +311,15 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
             data-terrain-cell-count={board.rows.reduce((n,row)=>
               n+[...row].filter(cell=>cell==='#').length,0)}
             preserveAspectRatio="xMidYMid meet"
-            onPointerDown={begin} onPointerUp={finish}
+            onPointerDown={begin} onPointerMove={drag} onPointerUp={finish}
             onPointerCancel={()=>{swiping.current=null;}}
             onLostPointerCapture={()=>{swiping.current=null;}}
             style={{display:'block',width:'100%',height:'100%',touchAction:'none',direction:'ltr'}}>
             <AppleWormReferenceScene board={board} body={state.body}
               remaining={remaining} grayPositions={state.grayPositions}
-              phase={state.phase} biteFx={biteFx} showSky={false}/>
+              phase={state.phase} biteFx={biteFx} showSky={false}
+              previousWormHead={motion?.key===state.moves?motion.from:null}
+              wormMotionKey={state.moves}/>
           </svg>
         </div>
         <div className="worm3-move-pad" aria-label={t('Movement controls','أزرار التحريك')}>
