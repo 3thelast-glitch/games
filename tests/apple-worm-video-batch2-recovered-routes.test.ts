@@ -41,23 +41,23 @@ test('only five source-video batch-two stages gain side-wall support',()=>{
 test('replay seven formerly unplayable second-batch stages to real in-engine victory',()=>{
   for(const [n,directions] of Object.entries(BATCH_TWO_EXTENDED_WIN_ROUTES)){
     const level=Number(n);
-    const game=replayAppleWormRoute(level,directions);
+    const game=replayAppleWormRoute(level,directions,{source:'legacy'});
     assert.equal(game.legalMoves,directions.length,
       'all moves must be accepted by actual engine, stage '+level);
     assert.equal(game.won,true,'real portal victory needed on stage '+level);
     assert.equal(game.state.phase,'won');
-    assert.deepEqual(game.state.body[0],screenshotWormLevel(level).portal);
+    assert.deepEqual(game.state.body[0],screenshotWormLevel(level,'legacy').portal);
     assert.ok(directions.length>=10);
   }
 });
 
 test('video start fruit and gray blockers are present before gameplay, not invented during play',()=>{
-  assert.deepEqual(screenshotWormLevel(51).apples.at(-1),[9,-1]);
-  assert.deepEqual(screenshotWormLevel(58).apples.at(-1),[9,-2]);
-  assert.deepEqual(screenshotWormLevel(97).apples.slice(-2),[[9,-1],[17,5]]);
-  assert.deepEqual(screenshotWormLevel(97).grayObjects,
+  assert.deepEqual(screenshotWormLevel(51,'legacy').apples.at(-1),[9,-1]);
+  assert.deepEqual(screenshotWormLevel(58,'legacy').apples.at(-1),[9,-2]);
+  assert.deepEqual(screenshotWormLevel(97,'legacy').apples.slice(-2),[[9,-1],[17,5]]);
+  assert.deepEqual(screenshotWormLevel(97,'legacy').grayObjects,
     [[9,-2],[9,0],[2,4],[17,4]]);
-  const original=startScreenshotWorm(49);
+  const original=startScreenshotWorm(49,'legacy');
   assert.equal(original.body.length,4);
-  assert.ok(moveScreenshotWorm(original,'up')!==original);
+  assert.ok(moveScreenshotWorm(original,'up',screenshotWormLevel(49,'legacy'))!==original);
 });
