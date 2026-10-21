@@ -60,8 +60,15 @@ test('the worm dies upon entering a saw cell even if terrain underneath it is so
   assert.equal(restoreScreenshotWorm(lost)?.phase,'lost');
   // Solid terrain WITHOUT a blade should remain impassable, not deadly.
   const plain={...map,saws:[] as typeof map.saws};
-  const blocked=moveScreenshotWorm(state,'right',plain);
-  assert.equal(blocked,state);
+  const plainMove=moveScreenshotWorm(state,'right',plain);
+  assert.notEqual(plainMove.phase,'lost',
+    'without the blade this position must not kill the worm');
+  // Test a genuinely impassable brick, not merely assume that all filmed
+  // gear positions also coincide with the reconstructed terrain mask.
+  const walled={...plain,rows:plain.rows.map((row,y)=>y===4
+    ?row.slice(0,8)+'#'+row.slice(9):row)};
+  const blocked=moveScreenshotWorm(state,'right',walled);
+  assert.equal(blocked,state,'ordinary brick remains blocked and nonlethal');
 });
 
 test('worm dies on a filmed spinning disc instead of bouncing against an old gray wall',()=>{
