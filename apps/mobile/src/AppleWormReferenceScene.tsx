@@ -32,7 +32,7 @@ export function AppleWormReferenceScene({board,body,remaining,grayPositions,phas
   previousWormHead?:ScreenshotPoint|null;
   wormMotionKey?:number;
 }) {
-  const id=useId().replace(/:/g,'')+'-pdf105-r9';
+  const id=useId().replace(/:/g,'')+'-pdf105-r15';
   // Retain the seven fixed gray pillar cells while animating Stage 104's crate.
   const currentGray=displayGrayPositions(board.number,board.grayObjects,grayPositions);
   const blocks=board.rows.flatMap((row,y)=>[...row].flatMap((tile,x)=>
@@ -115,42 +115,65 @@ export function AppleWormReferenceScene({board,body,remaining,grayPositions,phas
         return 'L'+x1.toFixed(2)+' '+y1.toFixed(2)+'L'+xo.toFixed(2)+' '+yo.toFixed(2)+
           'L'+x2.toFixed(2)+' '+y2.toFixed(2);
       }).join('');
+      // The world-space group NEVER rotates or translates. Each rotor gets its
+      // own local viewBox centered on (0,0): even Chromium/Capacitor cannot use
+      // a varying path bounding box as a pivot and visibly drift off its cell.
       return <g key={'saw-'+i} data-source-saw
         data-grid-x={point[0]} data-grid-y={point[1]}
+        data-saw-fixed-frame="true"
         transform={'translate('+x+' '+y+')'}>
-        <circle r="17.7" fill="#fff7cf" opacity=".12"/>
-        <g className="worm-source-saw-spinning">
-          <path d={'M12.3 0'+teeth+'Z'} fill="#aebac5"
-            stroke="#405d76" strokeWidth=".9"/>
-          <circle r="10.8" fill="#667e91" stroke="#d6e2ec" strokeWidth="1.5"/>
-          <circle r="7.8" fill="#8193a3" stroke="#314658" strokeWidth="1.2"/>
-          {[0,1,2,3,4,5].map(j=><circle key={j}
-            cx={Math.cos(j*Math.PI/3)*5.5} cy={Math.sin(j*Math.PI/3)*5.5}
-            r="1.2" fill="#c9d5df"/>)}
-          {/* An ASYMMETRIC spoke makes true rotation visible; the former
-               perfectly periodic teeth/dots looked stationary on phones. */}
-          <path d="M0 -3.1L6 -8.5L7.3 -7L2.1 0Z"
-            fill="#fbe3a2" stroke="#8d6339" strokeWidth=".5"
-            data-saw-rotation-marker="true"/>
-          <circle r="3.1" fill="#405265" stroke="#d3e8f6" strokeWidth="1"/>
+        <g className="worm-source-saw-fixed">
+          <circle r="17.7" fill="#111923" opacity=".18"/>
+          <circle r="15.5" fill="none" stroke="#0b1420" strokeWidth=".9"
+            strokeOpacity=".65"/>
         </g>
+        <svg x="-17" y="-17" width="34" height="34"
+          viewBox="-17 -17 34 34" overflow="visible"
+          data-saw-local-origin="0,0" aria-hidden="true">
+          <g className="worm-source-saw-spinning">
+            <path d={'M12.3 0'+teeth+'Z'} fill="#171d27"
+              stroke="#06090d" strokeWidth="1.1"/>
+            <circle r="10.8" fill="#596e82" stroke="#d6e2ec" strokeWidth="1.4"/>
+            <circle r="7.8" fill="#8a9eb0" stroke="#273b4c" strokeWidth="1.2"/>
+            {[0,1,2,3,4,5].map(j=><circle key={j}
+              cx={Math.cos(j*Math.PI/3)*5.5} cy={Math.sin(j*Math.PI/3)*5.5}
+              r="1.2" fill="#d6e3f0"/>)}
+            {/* Deliberately asymmetric marker: rotating gear, stationary center. */}
+            <path d="M0 -3.1L6 -8.5L7.3 -7L2.1 0Z"
+              fill="#fbe3a2" stroke="#8d6339" strokeWidth=".5"
+              data-saw-rotation-marker="true"/>
+          </g>
+        </svg>
+        <circle r="3.1" fill="#304455" stroke="#d3e8f6" strokeWidth="1"/>
       </g>;
     })}
     {board.spikes.map((point,i)=>{
       const {x,y}=anchor(point);
+      // Spike cells represent fixed, lethal hazards, not rotating saws.
+      // Only the orientation adapts to the supporting platform; no animation
+      // is ever applied to this group, and its logical cell is unchanged.
+      const [sx,sy]=point;
+      const tile=(tx:number,ty:number)=>board.rows[ty]?.[tx]==='#';
+      const face=tile(sx,sy-1)&&!tile(sx,sy+1)?'down':
+        tile(sx-1,sy)&&!tile(sx+1,sy)?'right':
+        tile(sx+1,sy)&&!tile(sx-1,sy)?'left':'up';
+      const angle=face==='down'?180:face==='right'?90:face==='left'?-90:0;
       return <g key={'spike-'+i} data-source-spike
-        data-spike-type="video-pointed-brick-cap"
-        data-grid-x={point[0]} data-grid-y={point[1]}
+        data-spike-type="stationary-black-thorns"
+        data-spike-face={face}
+        data-grid-x={sx} data-grid-y={sy}
         transform={'translate('+x+' '+y+')'}>
-        {/* Distinct DARK downward-facing sharp teeth with a reddish
-             attachment lip, based on the filmed brick-attached hazard. */}
-        <rect x="-14" y="-13" width="28" height="6" rx="2"
-          fill="#7d2421" stroke="#250a0b" strokeWidth="1.2"/>
-        {[0,1,2].map(j=><path key={j}
-          d={'M'+(-13+j*9)+' -9l4.5 21l4.5 -21Z'}
-          fill="#171b22" stroke="#050609" strokeWidth="1.5"/>)}
-        <path d="M-12 -8H12" stroke="#cf5650" strokeWidth="1.4"
-          strokeOpacity=".8"/>
+        <g transform={'rotate('+angle+')'} className="worm-source-spike-fixed">
+          <rect x="-14" y="10" width="28" height="4" rx="1"
+            fill="#0b0c12" stroke="#272c32" strokeWidth="1"/>
+          {[0,1,2,3].map(j=><g key={j}>
+            <path d={'M'+(-14+j*7)+' 11L'+(-10.5+j*7)+' -12L'+(-7+j*7)+' 11Z'}
+              fill={j%2===0?'#08090d':'#13151b'}
+              stroke="#030406" strokeWidth=".85" strokeLinejoin="round"/>
+            <path d={'M'+(-12.8+j*7)+' 8L'+(-10.5+j*7)+' -7'}
+              stroke="#515760" strokeOpacity=".55" strokeWidth=".65"/>
+          </g>)}
+        </g>
       </g>;
     })}
 
