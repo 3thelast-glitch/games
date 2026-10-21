@@ -158,9 +158,9 @@ export function ArithmeticaPage({ onExit, settings }: {onExit:()=>void; settings
                 <div className="arithmetica-time-fill" style={{width:timePercent+'%'}}/>
               </div>
               <button className="arithmetica-board-pause" type="button" onClick={togglePause}
-                disabled={view.phase==='ready'||ended}
-                aria-label={t(paused?'arithmeticaResume':'arithmeticaPause')}
-                title={t(paused?'arithmeticaResume':'arithmeticaPause')}>{paused?'▶':'Ⅱ'}</button>
+                disabled={view.phase!=='playing'}
+                aria-label={t('arithmeticaPause')}
+                title={t('arithmeticaPause')}>Ⅱ</button>
             </div>
           </div>
           <div className="arithmetica-stars" aria-label={view.stars+' / 5'}>
