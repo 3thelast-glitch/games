@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { AppleWormReferenceScene } from './AppleWormReferenceScene.tsx';
+import { AppleWormClassicBoard } from './AppleWormClassicBoard.tsx';
 import { AppleWormForest } from './AppleWormForest.tsx';
 import {
   APPLE_WORM_SCREENSHOT_LEVEL_COUNT, screenshotWormLevel,
@@ -278,9 +278,9 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
             onPointerCancel={()=>{swiping.current=null;}}
             onLostPointerCapture={()=>{swiping.current=null;}}
             style={{display:'block',width:'100%',height:'100%',touchAction:'none',direction:'ltr'}}>
-            <AppleWormReferenceScene board={board} body={state.body}
+            <AppleWormClassicBoard board={board} body={state.body}
               remaining={remaining} grayPositions={state.grayPositions}
-              showSky={false} phase={state.phase} biteFx={biteFx}/>
+              biteFx={biteFx}/>
           </svg>
         </div>
         <div className="worm3-move-pad" aria-label={t('Movement controls','أزرار التحريك')}>
