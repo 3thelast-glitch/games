@@ -62,7 +62,7 @@ test('premium black spikes visually use EXACT PDF-marked cells and faces',()=>{
       assert.ok(group.length,'spike missing from chosen logical cell L'+n+':'+cell);
       assert.ok(html.includes('data-thorn-facing="'+face+'"'),'thorn face '+face+' missing L'+n);
     }
-    assert.ok(html.includes('#050608')||html.includes('#171a20'),
+    assert.ok(html.includes('#08090d')&&html.includes('#13151b'),
       'authored thorn art must stay black');
   }
 });
