@@ -13,6 +13,7 @@ Object.assign(globalThis, {
   HTMLElement: dom.window.HTMLElement,
   HTMLDialogElement: dom.window.HTMLDialogElement,
   MutationObserver: dom.window.MutationObserver,
+  matchMedia: () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} }),
   IS_REACT_ACT_ENVIRONMENT: true,
 });
 Object.defineProperty(globalThis, 'navigator', { value: dom.window.navigator, configurable: true });
