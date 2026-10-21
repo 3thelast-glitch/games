@@ -9,10 +9,11 @@ import type { Settings } from './platform.ts';
  * were removed from the player's entry flow. All previously polished
  * premium art now belongs to the same 105-stage engine.
  */
-export function AppleWormPage({onExit,settings}:{
+export function AppleWormPage({onExit,settings,onToggleSound}:{
   onExit:()=>void;
   settings:Settings;
   onToggleSound:()=>void;
 }) {
-  return <AppleWormScreenshotGame onExit={onExit} settings={settings}/>;
+  return <AppleWormScreenshotGame onExit={onExit} settings={settings}
+    onToggleSound={onToggleSound}/>;
 }

@@ -21,13 +21,14 @@ const anchor=([x,y]:ScreenshotPoint)=>({
   x:(x+.5)*CELL,y:(y+.5)*CELL,
 });
 
-export function AppleWormReferenceScene({board,body,remaining,grayPositions,phase='playing',biteFx=null}:{
+export function AppleWormReferenceScene({board,body,remaining,grayPositions,phase='playing',biteFx=null,showSky=true}:{
   board:ScreenshotLevel;
   body:readonly ScreenshotPoint[];
   remaining:readonly ScreenshotPoint[];
   grayPositions?:readonly ScreenshotPoint[];
   phase?:'playing'|'won'|'lost';
   biteFx?:{key:number;apple:ScreenshotPoint}|null;
+  showSky?:boolean;
 }) {
   const id=useId().replace(/:/g,'')+'-pdf105-r9';
   // Retain the seven fixed gray pillar cells while animating Stage 104's crate.
@@ -50,7 +51,7 @@ export function AppleWormReferenceScene({board,body,remaining,grayPositions,phas
   const chewing=biteFx!==null&&phase!=='lost';
 
   return <>
-    <WormSky width={630} height={270} id={id+'-sky'}/>
+    {showSky&&<WormSky width={630} height={270} id={id+'-sky'}/> }
     <defs>
       <radialGradient id={id+'-gleam'} cx=".5" cy=".5" r=".5">
         <stop stopColor="#ffffff" stopOpacity=".7"/>

@@ -1,0 +1,282 @@
+/* Apple Worm: one cohesive three-screen mobile game.
+ * 1. Splash/title -> 2. 15-stage selector -> 3. uninterrupted fullscreen puzzle.
+ * Art is original vector/CSS. Source-video game maps and physics are unchanged.
+ */
+body > .worm-immersive.worm-page.worm3[data-stage-origin="user-screenshot"] {
+  position:fixed!important; inset:0!important; width:100vw!important;
+  height:100dvh!important; max-width:none!important; max-height:none!important;
+  overflow:hidden!important; padding:0!important; margin:0!important;
+  background:#8ac5e6!important; border:0!important;
+  touch-action:manipulation!important; overscroll-behavior:none;
+  isolation:isolate; color:#fff;
+  font-family:system-ui,"Segoe UI",sans-serif;
+}
+.worm3, .worm3 * { box-sizing:border-box; }
+.worm3 .worm3-forest {
+  position:absolute; inset:0; display:block; width:100%; height:100%;
+  pointer-events:none; z-index:0;
+}
+.worm3 > section {position:absolute;inset:0;z-index:1;overflow:hidden;}
+.worm3 button {touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.worm3 button:disabled {cursor:not-allowed;}
+.worm3 button:focus-visible {outline:3px solid #fff8a4;outline-offset:4px;}
+.worm3 .worm3-top-left, .worm3 .worm3-top-right {
+  position:absolute;top:clamp(9px,2.2dvh,23px);
+  display:flex;flex-direction:row;gap:clamp(5px,.8vw,12px);z-index:6;
+}
+.worm3 .worm3-top-left {left:clamp(10px,4.5vw,85px);direction:ltr;}
+.worm3 .worm3-top-right {right:clamp(10px,4.6vw,85px);direction:ltr;}
+.worm3 .worm3-icon-button {
+  display:flex;align-items:center;justify-content:center;
+  width:clamp(40px,4.2vw,65px);height:clamp(40px,4.2vw,65px);
+  border:3px solid #fffefa;border-radius:17px;
+  background:linear-gradient(145deg,#fffefa,#ebe5d7);
+  box-shadow:0 5px 0 #a0afb1a6,0 7px 14px #447a993d,inset 0 2px 3px #fff;
+  font-size:clamp(23px,2.5vw,33px);color:#d87823;
+  text-shadow:0 1px 0 #fff;line-height:1;
+}
+.worm3 .worm3-icon-button:active {transform:translateY(2px);}
+.worm3 .worm3-home .worm3-title-logo {
+  position:absolute;left:50%;top:4%;transform:translateX(-50%);
+  width:min(59vw,650px);max-height:64%;
+  display:flex;align-items:center;flex-direction:column;line-height:.84;
+  font-weight:1000;letter-spacing:-.04em;white-space:nowrap;
+  text-align:center;direction:ltr;
+  filter:drop-shadow(0 11px 3px #27547042);
+}
+.worm3 .worm3-title-apple,.worm3 .worm3-title-worm {
+  font-family:system-ui,"Arial Black",sans-serif;
+  -webkit-text-stroke:clamp(2px,.38vw,6px) #7a290c;
+  paint-order:stroke fill;
+  text-shadow:0 4px 0 #b96b09,0 7px 0 #6e2610,
+    1px 10px 8px #3d302a66,1px -2px 0 #fff6c96e;
+}
+.worm3 .worm3-title-apple {
+  display:block;
+  font-size:clamp(71px,11.6vw,178px);
+  background:linear-gradient(180deg,#ff9b9d 0%,#ed344a 32%,#b7002d 58%,#910c2e 85%);
+  background-clip:text;-webkit-background-clip:text;color:transparent;
+  transform:rotate(-1.5deg);
+}
+.worm3 .worm3-title-worm {
+  display:block;
+  margin-top:clamp(4px,.3vh,8px);
+  font-size:clamp(75px,11.6vw,171px);
+  -webkit-text-stroke-color:#287007;
+  background:linear-gradient(180deg,#f3ff50 0%,#88df15 32%,#4ab706 60%,#248312 96%);
+  background-clip:text;-webkit-background-clip:text;color:transparent;
+  transform:rotate(1deg);
+}
+.worm3 .worm3-logo-leaf {
+  position:absolute;top:34%;left:53%;font-size:clamp(18px,3vw,52px);
+  transform:rotate(28deg);filter:drop-shadow(1px 2px 0 #367b2c);
+}
+.worm3 .worm3-play-button {
+  position:absolute;left:50%;top:70%;transform:translate(-50%,-50%);
+  width:clamp(95px,9vw,144px);height:clamp(92px,9vw,144px);
+  border-radius:24%;background:linear-gradient(160deg,#fffcf2,#e9e2d5);
+  border:5px solid #fffefc;box-shadow:0 6px 0 #a0a8a27d,0 10px 20px #506d8e45,inset 0 1px 3px #fff;
+  color:#69ca1c;font-size:clamp(48px,5.6vw,88px);font-weight:900;
+  display:grid;place-items:center;padding-left:8px;
+  text-shadow:0 3px 0 #38992c,0 5px 4px #6b9b4e80;
+}
+.worm3 .worm3-play-button:hover:not(:disabled){
+  transform:translate(-50%,-52%) scale(1.03);
+}
+.worm3 .worm3-play-button:disabled {opacity:.6;}
+.worm3 .worm3-levels {
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+}
+.worm3 .worm3-level-panel {
+  position:relative;width:min(54vw,810px);height:min(80dvh,575px);
+  min-width:min(78vw,445px);
+  padding:clamp(6px,.8vw,14px);
+  border-radius:clamp(22px,4vw,60px);
+  border:clamp(6px,.9vw,15px) solid #6d94b986;
+  background:#6c9bb38a;
+  box-shadow:inset 0 2px 14px #c1faff44,0 14px 35px #4983a824;
+  display:flex;flex-direction:column;
+}
+.worm3 .worm3-level-heading {
+  background:linear-gradient(#ed9c65,#dc7645 65%,#c86342);
+  border:clamp(4px,.75vw,11px) solid #fffdf4;
+  border-bottom:none;border-radius:clamp(18px,3vw,36px) clamp(18px,3vw,36px) 0 0;
+  color:#fff;text-align:center;font-weight:950;
+  font-size:clamp(22px,3vw,46px);line-height:1.25;letter-spacing:.01em;
+  padding:clamp(2px,.65vh,10px) 8px;
+  box-shadow:0 3px 0 #6b555b66;
+  flex-shrink:0;
+}
+.worm3 .worm3-level-grid {
+  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+  grid-template-rows:repeat(3,minmax(0,1fr));
+  width:100%;flex:1;gap:clamp(5px,.9vw,17px);
+  padding:clamp(7px,1vw,15px) clamp(3px,.7vw,13px);
+  direction:ltr;min-height:0;
+}
+.worm3 .worm3-level-tile {
+  position:relative;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;border-radius:clamp(9px,1.5vw,22px);
+  border:clamp(2px,.34vw,5px) solid #fff;
+  background:linear-gradient(155deg,#fffdf5,#eee8db);
+  box-shadow:0 3px 2px #6c7679a6,0 5px 10px #5d727a6b;
+  min-height:0;min-width:0;color:#9e6663;
+}
+.worm3 .worm3-level-tile[data-locked="true"] {
+  background:linear-gradient(155deg,#f8f5e9,#e2e2dc);opacity:.93;
+}
+.worm3 .worm3-tile-number {
+  font-weight:900;font-size:clamp(17px,3.2vw,55px);line-height:1;
+  color:#9f6b69;
+}
+.worm3 .worm3-level-tile[data-locked="true"] .worm3-tile-number {
+  position:absolute;top:5%;font-size:clamp(11px,1.7vw,25px);color:#9e9da0;
+}
+.worm3 .worm3-tile-stars {
+  position:absolute;top:-13%;left:0;right:0;text-align:center;
+  white-space:nowrap;letter-spacing:-.075em;
+  font-size:clamp(13px,2.2vw,36px);
+  line-height:1;color:#ffa426;
+  -webkit-text-stroke:1px #fff0bb;
+  text-shadow:0 2px 0 #ba702c,0 2px 5px #8a5d36a0;
+}
+.worm3 .worm3-padlock {
+  display:block;margin-top:14%;font-size:clamp(23px,3.2vw,49px);
+  filter:drop-shadow(0 3px 1px #c9c3b79a);
+}
+.worm3 .worm3-level-tile[aria-current="step"] {
+  box-shadow:0 0 0 3px #ffe49f,0 4px 8px #567a85;
+}
+.worm3 .worm3-page-arrow {
+  position:absolute;top:47%;z-index:2;
+  width:clamp(37px,4vw,65px);height:clamp(60px,7vw,105px);
+  background:linear-gradient(155deg,#fffdf4,#f4ede0);
+  border:4px solid #fffcf7;border-radius:19px;
+  color:#eab787;box-shadow:0 3px 4px #477b9154;
+  font-size:clamp(28px,3.4vw,54px);line-height:1;
+  transform:translateY(-50%);
+}
+.worm3 .worm3-page-arrow:disabled {opacity:.45;}
+.worm3 .worm3-page-prev {left:calc(-1 * clamp(46px,7vw,98px));}
+.worm3 .worm3-page-next {right:calc(-1 * clamp(46px,7vw,98px));}
+.worm3 .worm3-page-label {
+  position:absolute;bottom:1%;left:50%;transform:translateX(-50%);
+  padding:3px 18px;border-radius:18px;background:#568b9a73;color:#fff;
+  font-size:12px;font-weight:900;letter-spacing:.1em;
+}
+.worm3 .worm3-game {overflow:hidden;}
+.worm3 .worm3-goal {
+  position:absolute;top:clamp(55px,10dvh,105px);left:50%;
+  transform:translateX(-50%);color:#fff8e3;
+  opacity:.7;font-size:clamp(21px,3vw,43px);font-weight:900;
+  text-shadow:0 3px 6px #31769877;white-space:nowrap;
+}
+.worm3 .worm3-board-zone {
+  position:absolute;left:15%;top:23%;width:60%;height:64%;
+  display:flex;align-items:center;justify-content:center;
+  overflow:visible;direction:ltr;
+}
+body > .worm-immersive.worm3[data-stage-origin="user-screenshot"] .worm3-board-zone svg[data-source-level] {
+  width:100%!important;height:100%!important;
+  max-height:100%!important;position:static!important;
+  min-height:0!important;overflow:visible!important;
+  background:transparent!important;touch-action:none!important;
+}
+.worm3 .worm3-move-pad {
+  position:absolute;right:clamp(13px,3.4vw,60px);bottom:clamp(11px,7dvh,65px);
+  width:clamp(138px,24vw,340px);height:clamp(132px,42dvh,328px);
+  display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);
+  gap:clamp(4px,.5vw,9px);direction:ltr;
+}
+.worm3 .worm3-move-pad button {
+  background:#f5fffc3a;border:clamp(2px,.3vw,4px) solid #fffdf6cf;
+  border-radius:50%;color:#fff;font-weight:900;
+  font-size:clamp(26px,4.6vw,62px);text-shadow:0 2px 4px #3d7b8c50;
+  display:grid;place-items:center;box-shadow:0 2px 8px #42737a30;
+  backdrop-filter:blur(1px);min-width:0;min-height:0;
+}
+.worm3 .worm3-pad-up {grid-area:1/2;}
+.worm3 .worm3-pad-left {grid-area:2/1;}
+.worm3 .worm3-pad-right {grid-area:2/3;}
+.worm3 .worm3-pad-down {grid-area:3/2;}
+.worm3 .worm3-move-pad button:active:not(:disabled){
+  background:#fffefa77;transform:scale(.96);
+}
+.worm3 .worm3-move-pad button:disabled {opacity:.34;}
+.worm3 .worm3-current-level {
+  position:absolute;bottom:clamp(10px,4dvh,36px);left:clamp(20px,5.2vw,87px);
+  font-size:clamp(30px,4.2vw,58px);color:#fff;font-weight:900;
+  text-shadow:0 3px 8px #537d7b66;direction:ltr;
+}
+.worm3 .worm3-options,.worm3 .worm3-help {
+  position:absolute;z-index:9;max-width:min(320px,80vw);padding:14px;
+  display:flex;flex-direction:column;gap:8px;
+  border-radius:18px;border:2px solid #fff9d5;
+  background:#f5faf0ed;color:#31645c;
+  box-shadow:0 8px 24px #2e697c86;text-align:start;
+}
+.worm3 .worm3-options button,.worm3 .worm3-help button {
+  border:2px solid #d4e3d5;border-radius:11px;padding:9px 16px;
+  background:#fffcf3;color:#315a54;font-weight:800;
+  font-size:clamp(11px,1.2vw,15px);
+}
+.worm3 .worm3-home-options {top:14%;left:4%;}
+.worm3 .worm3-game-options {right:4%;top:15%;}
+.worm3 .worm3-help {bottom:2%;left:50%;transform:translateX(-50%);
+  flex-direction:row;align-items:center;font-size:12px;text-align:center;}
+.worm3 .worm3-unknown {bottom:12%;width:min(480px,72vw);}
+.worm3 .worm3-result {
+  position:absolute;inset:0;background:#285e7870;
+  z-index:8;display:grid;place-items:center;
+}
+.worm3 .worm3-result-card {
+  padding:clamp(18px,3vw,42px);
+  min-width:240px;text-align:center;border-radius:26px;
+  border:6px solid white;background:linear-gradient(150deg,#ffe3a4,#f6f0dd);
+  box-shadow:0 15px 35px #2a657f75;color:#9c4f32;
+}
+.worm3 .worm3-result-card h2 {margin:0 0 12px;font-size:clamp(22px,3vw,38px);}
+.worm3 .worm3-result-stars {color:#ffad2e;font-size:36px;}
+.worm3 .worm3-result-actions {display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin-top:15px;}
+.worm3 .worm3-result-actions button {padding:9px 14px;border-radius:11px;border:2px solid white;background:#f5b367;font-weight:900;color:#663b2c;}
+@media(max-height:470px) and (orientation:landscape) {
+  .worm3 .worm3-title-logo {top:0;}
+  .worm3 .worm3-title-apple,.worm3 .worm3-title-worm {
+    font-size:clamp(65px,24dvh,118px);letter-spacing:-.06em;
+  }
+  .worm3 .worm3-play-button {top:76%;width:clamp(70px,17dvh,90px);height:clamp(70px,17dvh,90px);font-size:clamp(42px,10dvh,54px);}
+  .worm3 .worm3-level-panel {width:min(64vw,760px);height:93dvh;}
+  .worm3 .worm3-level-heading {font-size:clamp(16px,4.5dvh,24px);}
+  .worm3 .worm3-level-grid {gap:5px;padding:4px;}
+  .worm3 .worm3-level-tile {border-width:2px;border-radius:9px;}
+  .worm3 .worm3-tile-number {font-size:clamp(16px,6dvh,29px);}
+  .worm3 .worm3-tile-stars {font-size:clamp(12px,4dvh,18px);}
+  .worm3 .worm3-padlock {font-size:clamp(16px,5dvh,29px);}
+  .worm3 .worm3-page-arrow {height:56px;width:37px;font-size:27px;}
+  .worm3 .worm3-board-zone {left:12%;top:22%;width:64%;height:73%;}
+  .worm3 .worm3-move-pad {right:2%;bottom:7%;height:48dvh;width:clamp(120px,22vw,205px);}
+  .worm3 .worm3-goal {top:10%;font-size:20px;}
+  .worm3 .worm3-current-level {font-size:28px;bottom:3%;}
+  .worm3 .worm3-icon-button {width:37px;height:37px;font-size:23px;border-width:2px;border-radius:12px;}
+}
+@media(orientation:portrait) and (max-width:650px){
+  .worm3 .worm3-title-logo {top:28%;width:95vw;}
+  .worm3 .worm3-title-apple,.worm3 .worm3-title-worm {font-size:clamp(63px,19vw,110px);}
+  .worm3 .worm3-play-button {top:70%;}
+  .worm3 .worm3-level-panel {width:88vw;height:min(58dvh,540px);min-width:0;}
+  .worm3 .worm3-level-heading {font-size:24px;}
+  .worm3 .worm3-level-grid {gap:6px;padding:7px;}
+  .worm3 .worm3-level-tile {border-width:2px;}
+  .worm3 .worm3-tile-stars {font-size:clamp(11px,3vw,20px);}
+  .worm3 .worm3-tile-number {font-size:clamp(19px,6vw,31px);}
+  .worm3 .worm3-page-arrow {top:calc(100% + 19px);height:35px;width:45px;font-size:20px;}
+  .worm3 .worm3-page-prev {left:25%;}
+  .worm3 .worm3-page-next {right:25%;}
+  .worm3 .worm3-board-zone {left:3%;top:22%;width:94%;height:43%;}
+  .worm3 .worm3-move-pad {right:11%;bottom:2%;width:180px;height:180px;}
+  .worm3 .worm3-goal {top:10%;font-size:27px;}
+  .worm3 .worm3-current-level {bottom:4%;left:7%;}
+}
+@media(prefers-reduced-motion:reduce){
+  .worm3 *, .worm3 *::before,.worm3 *::after {animation:none!important;transition:none!important;}
+}

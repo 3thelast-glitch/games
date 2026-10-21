@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { AppleWormReferenceScene } from './AppleWormReferenceScene.tsx';
+import { AppleWormClassicBoard } from './AppleWormClassicBoard.tsx';
+import { AppleWormForest } from './AppleWormForest.tsx';
 import {
   APPLE_WORM_SCREENSHOT_LEVEL_COUNT, screenshotWormLevel,
   startScreenshotWorm, moveScreenshotWorm, restoreScreenshotWorm,
@@ -17,6 +18,7 @@ interface SourceSave { level:number; state:ScreenshotState; completed:number[]; 
 const SAVE_KEY='apple-worm-screenshot-source-105-v1';
 /** Increases when the reference rendering/initial layouts change. */
 export const APPLE_WORM_VISUAL_REVISION='PDF105-R11';
+export type WormScreen='home'|'levels'|'game';
 const keyMap:Record<string,ScreenshotDirection>={
   arrowup:'up',w:'up',arrowdown:'down',s:'down',
   arrowleft:'left',a:'left',arrowright:'right',d:'right',
@@ -29,8 +31,8 @@ const controls:readonly [ScreenshotDirection,string][]=[
  * Geometry and visible objects come only from the source archive. Where head,
  * portal or gray-object behavior is unclear, call it provisional, never solved.
  */
-export function AppleWormScreenshotGame({onExit,settings}:{
-  onExit:()=>void;settings:Settings;
+export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
+  onExit:()=>void;settings:Settings;onToggleSound?:()=>void;
 }) {
   const {lang}=useI18n();
   const ar=lang==='ar';
@@ -46,7 +48,9 @@ export function AppleWormScreenshotGame({onExit,settings}:{
   const [completed,setCompleted]=useState<number[]>([]);
   const [ready,setReady]=useState(false);
   const [group,setGroup]=useState(0);
-  const [showChoose,setShowChoose]=useState(false);
+  const [screen,setScreen]=useState<WormScreen>('home');
+  const [showOptions,setShowOptions]=useState(false);
+  const [showHelp,setShowHelp]=useState(false);
   const swiping=useRef<{id:number;x:number;y:number}|null>(null);
   const board=screenshotWormLevel(level);
 
@@ -130,18 +134,23 @@ export function AppleWormScreenshotGame({onExit,settings}:{
   };
   const pick=(n:number)=>{
     if(!Number.isInteger(n)||n<1||n>105)return;
+    // Opening the same in-progress level from the new selector must preserve
+    // the saved worm location; replaying a completed/lost level restarts.
+    const preserve=n===level&&stateRef.current.phase==='playing';
     setLevel(n);
     setBiteFx(null);
-    const next=startScreenshotWorm(n);
-    stateRef.current=next;
-    setState(next);
+    if(!preserve){
+      const next=startScreenshotWorm(n);
+      stateRef.current=next;
+      setState(next);
+      setHistory([]);
+    }
     setGroup(Math.floor((n-1)/15));
-    setHistory([]);
-    setShowChoose(false);
+    setScreen('game');setShowOptions(false);setShowHelp(false);
   };
   useEffect(()=>{
     const callback=(e:KeyboardEvent)=>{
-      if(e.repeat||e.altKey||e.ctrlKey||e.metaKey||showChoose||
+      if(e.repeat||e.altKey||e.ctrlKey||e.metaKey||screen!=='game'||showOptions||
          (e.target as HTMLElement|null)?.closest('input,textarea,select,[contenteditable="true"]'))return;
       const k=e.key.toLowerCase(), direction=keyMap[k];
       if(direction){e.preventDefault();move(direction);}
@@ -170,29 +179,96 @@ export function AppleWormScreenshotGame({onExit,settings}:{
   const remaining=board.apples.filter((_,i)=>!state.collected.includes(i));
   const selectedGroupFrom=group*15+1;
   const selectedGroupEnd=Math.min(105,selectedGroupFrom+14);
+  const unlocked=Math.min(105,Math.max(10,level,...completed.map(n=>n+1)));
+  const getStars=(n:number)=>completed.includes(n)?'★★★':n<=unlocked?'☆☆☆':'';
+  const toLevels=()=>{setGroup(Math.floor((level-1)/15));setShowOptions(false);setScreen('levels');};
+  const toHome=()=>{setShowOptions(false);setScreen('home');};
+  const goNext=()=>{if(level<105&&level+1<=unlocked)pick(level+1);};
 
   return createPortal(
-    <main className="worm-page worm-immersive worm-source-play" dir={ar?'rtl':'ltr'}
+    <main className="worm-page worm-immersive worm-source-play worm3"
+      dir={ar?'rtl':'ltr'}
       data-display="immersive-landscape" data-stage-origin="user-screenshot"
-      data-pdf-reference="approved" data-source-stage-count={APPLE_WORM_SCREENSHOT_LEVEL_COUNT}
-      data-visual-revision={APPLE_WORM_VISUAL_REVISION} data-renderer="premium-gallery-game">
-      <section className="worm-source-page"
-        aria-label={t('Approved Apple Worm stages','مراحل دودة التفاح المعتمدة')}>
-        <header className="worm-source-heading">
-          <button type="button" onClick={onExit} style={buttonStyle}>
-            ↩ {t('Back to NAQLA','العودة لنقلة')}
-          </button>
-          <div className="worm-source-title">
-            <h2>{t('105 original video stages','105 مراحل من الفيديو الأصلي')}</h2>
-            <p>{t('Approved game stages • one playable Apple Worm game',
-              'المراحل المعتمدة • لعبة دودة التفاح واحدة')}</p>
-            <small>{APPLE_WORM_VISUAL_REVISION}</small>
+      data-source-stage-count={APPLE_WORM_SCREENSHOT_LEVEL_COUNT}
+      data-visual-revision={APPLE_WORM_VISUAL_REVISION}
+      data-worm-screen={screen}>
+      <AppleWormForest/>
+      {screen==='home'&&<section className="worm3-home"
+        aria-label={t('Apple Worm start screen','شاشة بداية دودة التفاح')}>
+        <div className="worm3-top-left">
+          <button className="worm3-icon-button" type="button"
+            aria-label={t('Back to NAQLA','العودة إلى نقلة')} title={t('Back to NAQLA','العودة إلى نقلة')}
+            onClick={onExit}>⌂</button>
+          <button className="worm3-icon-button" type="button"
+            aria-label={t('Settings','الإعدادات')} onClick={()=>setShowOptions(v=>!v)}>⚙️</button>
+        </div>
+        <div className="worm3-title-logo" aria-label="Apple Worm">
+          <span className="worm3-title-apple">Apple</span>
+          <span className="worm3-title-worm">Worm</span>
+          <span className="worm3-logo-leaf" aria-hidden="true">🍃</span>
+        </div>
+        <button type="button" className="worm3-play-button" disabled={!ready}
+          onClick={()=>{setShowOptions(false);setScreen('levels');}}
+          aria-label={t('Play Apple Worm','العب دودة التفاح')}>
+          <span aria-hidden="true">▶</span>
+        </button>
+        {showOptions&&<div className="worm3-options worm3-home-options" role="dialog"
+          aria-label={t('Options','الخيارات')}>
+          {onToggleSound&&<button type="button" onClick={onToggleSound}>
+            {settings.sound?'🔊':'🔇'} {t('Sound','الصوت')}</button>}
+          <button type="button" onClick={onExit}>{t('Back to NAQLA','العودة إلى نقلة')}</button>
+          <button type="button" onClick={()=>setShowOptions(false)}>{t('Close','إغلاق')}</button>
+        </div>}
+      </section>}
+      {screen==='levels'&&<section className="worm3-levels"
+        aria-label={t('Level Select','اختيار المرحلة')}>
+        <div className="worm3-top-left">
+          <button type="button" className="worm3-icon-button"
+            onClick={toHome} aria-label={t('Main menu','القائمة الرئيسية')}>⌂</button>
+        </div>
+        <div className="worm3-level-panel">
+          <div className="worm3-level-heading">{t('Level Select','اختيار المرحلة')}</div>
+          <button className="worm3-page-arrow worm3-page-prev"
+            type="button" aria-label={t('Previous level page','صفحة المراحل السابقة')}
+            disabled={group===0} onClick={()=>setGroup(g=>Math.max(0,g-1))}>◀</button>
+          <div className="worm3-level-grid">
+            {Array.from({length:Math.min(15,105-group*15)},(_,i)=>group*15+i+1).map(n=>{
+              const locked=n>unlocked;
+              return <button className="worm3-level-tile" type="button" key={n}
+                disabled={locked} onClick={()=>pick(n)}
+                aria-label={t('Level','المرحلة')+' '+n+(locked?t(' locked',' مغلقة'):'')}
+                aria-current={n===level?'step':undefined}
+                data-locked={locked?'true':'false'}>
+                {locked?<span className="worm3-padlock" aria-hidden="true">🔒</span>:
+                  <span className="worm3-tile-stars" aria-hidden="true">{getStars(n)}</span>}
+                <span className="worm3-tile-number">{n}</span>
+              </button>;
+            })}
           </div>
-          <button type="button" onClick={()=>setShowChoose(open=>!open)}
-            aria-expanded={showChoose} aria-controls="worm-source-levels"
-            style={buttonStyle}>{t('Choose stage','اختيار المرحلة')} ▦</button>
-        </header>
-        <div className="worm-source-board-frame">
+          <button className="worm3-page-arrow worm3-page-next"
+            type="button" aria-label={t('Next level page','صفحة المراحل التالية')}
+            disabled={group===6} onClick={()=>setGroup(g=>Math.min(6,g+1))}>▶</button>
+        </div>
+        <div className="worm3-page-label">{group+1} / 7</div>
+      </section>}
+      {screen==='game'&&<section className="worm3-game"
+        aria-label={t('Apple Worm gameplay','لعبة دودة التفاح')}>
+        <div className="worm3-top-left">
+          <button className="worm3-icon-button" type="button" onClick={toLevels}
+            aria-label={t('Choose a level','اختيار المرحلة')} title={t('Choose a level','اختيار المرحلة')}>⌂</button>
+          {onToggleSound&&<button className="worm3-icon-button" type="button"
+            onClick={onToggleSound} aria-label={t('Sound','الصوت')}>{settings.sound?'🔊':'🔇'}</button>}
+        </div>
+        <div className="worm3-top-right">
+          <button className="worm3-icon-button" type="button"
+            onClick={()=>setShowHelp(v=>!v)} aria-label={t('Help','مساعدة')}>💡</button>
+          <button className="worm3-icon-button" type="button"
+            onClick={reset} aria-label={t('Restart stage','إعادة المرحلة')}>↻</button>
+          <button className="worm3-icon-button" type="button"
+            onClick={()=>setShowOptions(v=>!v)} aria-label={t('Game menu','قائمة اللعبة')}>☰</button>
+        </div>
+        <div className="worm3-goal" aria-hidden="true">🐛 → 🌀</div>
+        <div className="worm3-board-zone">
           <svg role="img" aria-label={t('Swipe Apple Worm board','اسحب لتحريك الدودة')}
             viewBox="0 0 630 270" data-source-level={level}
             data-terrain-cell-count={board.rows.reduce((n,row)=>
@@ -201,67 +277,52 @@ export function AppleWormScreenshotGame({onExit,settings}:{
             onPointerDown={begin} onPointerUp={finish}
             onPointerCancel={()=>{swiping.current=null;}}
             onLostPointerCapture={()=>{swiping.current=null;}}
-            style={{display:'block',width:'100%',height:'auto',touchAction:'none',direction:'ltr'}}>
-            <AppleWormReferenceScene board={board} body={state.body}
+            style={{display:'block',width:'100%',height:'100%',touchAction:'none',direction:'ltr'}}>
+            <AppleWormClassicBoard board={board} body={state.body}
               remaining={remaining} grayPositions={state.grayPositions}
-              phase={state.phase} biteFx={biteFx}/>
+              biteFx={biteFx}/>
           </svg>
         </div>
-        <div className="worm-source-stats" role="status">
-          <strong>{t('Stage','المرحلة')} {level}/{APPLE_WORM_SCREENSHOT_LEVEL_COUNT}</strong>
-          <span>{t('Visible apples','التفاح الظاهر')}: {remaining.length}</span>
-          <span>{t('Worm segments','أجزاء الدودة')}: {state.body.length}</span>
-          <span>{t('Gray obstacles','العوائق الرمادية')}: {board.grayObjects.length}</span>
-          <span>{t('Moves','الحركات')}: {state.moves}</span>
-          <span>{state.phase==='won'?t('Stage completed!','اكتملت المرحلة!'):
-            state.phase==='lost'?t('Restart to retry','أعد المحاولة'):
-            t('Enter the exit to win • apples optional',
-              'ادخل المخرج للفوز • التفاح اختياري')}</span>
-        </div>
-        {!board.portal&&<p className="worm-source-caveat" role="status">
-          {t('This stage is part of the approved 105-stage set. Its exit is not yet located in the available video frame.',
-            'هذه المرحلة من المراحل الـ105 المعتمدة، لكن مكان المخرج لم يُحدد بعد من لقطة الفيديو المتاحة.')}
-        </p>}
-        <nav className="worm-source-transport" aria-label={t('Stage and movement controls','التحكم بالمرحلة والدودة')}>
-          <button type="button" disabled={level<=1} onClick={()=>pick(level-1)} style={buttonStyle}>
-            {t('Previous','السابق')}</button>
-          <strong>{level}</strong>
-          <button type="button" disabled={level>=105} onClick={()=>pick(level+1)} style={buttonStyle}>
-            {t('Next','التالي')}</button>
-          <button type="button" onClick={undo} disabled={!history.length} style={buttonStyle}>
-            {t('Undo','تراجع')}</button>
-          <button type="button" onClick={reset} style={buttonStyle}>
-            {t('Restart','إعادة')}</button>
+        <div className="worm3-move-pad" aria-label={t('Movement controls','أزرار التحريك')}>
           {controls.map(([dir,glyph])=><button type="button" key={dir}
-            onClick={()=>move(dir)} disabled={!board.canMove||state.phase!=='playing'}
-            style={buttonStyle} aria-label={dir}>{glyph}</button>)}
-        </nav>
-        <nav id="worm-source-levels" className="worm-source-levels"
-          data-open={showChoose?'true':'false'}
-          aria-label={t('Approved stages 1 to 105','المراحل المعتمدة من 1 إلى 105')}>
-          <div className="worm-source-packs">
-            {Array.from({length:7},(_,i)=>i).map(i=><button type="button" key={i}
-              onClick={()=>setGroup(i)} aria-pressed={group===i}
-              style={{...buttonStyle,background:group===i?'#178f79':'#28546c'}}>
-              {i*15+1}–{Math.min((i+1)*15,105)}
-            </button>)}
+            className={'worm3-pad-'+dir} onClick={()=>move(dir)}
+            disabled={!board.canMove||state.phase!=='playing'}
+            aria-label={t(dir==='up'?'Move up':dir==='down'?'Move down':
+              dir==='left'?'Move left':'Move right',dir==='up'?'أعلى':dir==='down'?'أسفل':
+              dir==='left'?'يسار':'يمين')}>{glyph}</button>)}
+        </div>
+        <span className="worm3-current-level">{String(level).padStart(2,'0')}</span>
+        {showHelp&&<div className="worm3-help" role="status">
+          {t('Swipe on the puzzle to move the worm. Reach the spiral exit. Some source objects are still under verification.',
+             'اسحب على اللوحة لتحريك الدودة والوصول إلى الدوامة. بعض عناصر المراحل الأصلية لا تزال قيد التحقق.')}
+          <button type="button" onClick={()=>setShowHelp(false)}>✕</button>
+        </div>}
+        {!board.portal&&<div className="worm3-help worm3-unknown" role="status">
+          {t('Exit location not yet verified for this stage',
+            'مكان المخرج لم يُتحقق منه لهذه المرحلة بعد')}</div>}
+        {showOptions&&<div className="worm3-options worm3-game-options" role="dialog"
+          aria-label={t('Game menu','قائمة اللعبة')}>
+          <button type="button" onClick={toLevels}>{t('Level Select','اختيار المرحلة')}</button>
+          <button type="button" onClick={reset}>{t('Restart','إعادة')}</button>
+          <button type="button" onClick={undo} disabled={!history.length}>{t('Undo','تراجع')}</button>
+          <button type="button" onClick={toHome}>{t('Main menu','القائمة الرئيسية')}</button>
+          <button type="button" onClick={onExit}>{t('Back to NAQLA','العودة إلى نقلة')}</button>
+          <button type="button" onClick={()=>setShowOptions(false)}>{t('Close','إغلاق')}</button>
+        </div>}
+        {state.phase!=='playing'&&<div className="worm3-result" role="status">
+          <div className="worm3-result-card">
+            <h2>{state.phase==='won'?t('Level Complete!','اكتملت المرحلة!'):
+              t('Try Again','حاول مرة أخرى')}</h2>
+            {state.phase==='won'&&<span className="worm3-result-stars">★★★</span>}
+            <div className="worm3-result-actions">
+              <button type="button" onClick={reset}>{t('Retry','إعادة')}</button>
+              <button type="button" onClick={toLevels}>{t('Levels','المراحل')}</button>
+              {state.phase==='won'&&level<105&&
+                <button type="button" onClick={goNext}>{t('Next','التالي')}</button>}
+            </div>
           </div>
-          <div className="worm-source-level-grid">
-            {Array.from({length:selectedGroupEnd-selectedGroupFrom+1},(_,i)=>i+selectedGroupFrom)
-              .map(n=><button type="button" key={n} onClick={()=>pick(n)}
-                aria-label={t('Stage ','المرحلة ')+n}
-                aria-current={level===n?'step':undefined}
-                style={{...buttonStyle,background:level===n?'#178f79':
-                  completed.includes(n)?'#367958':'#28546c'}}>
-                {completed.includes(n)?'✓ ':''}{n}
-              </button>)}
-          </div>
-        </nav>
-      </section>
-    </main>,document.body);
+        </div>}
+      </section>}
+    </main>,document.body
+  );
 }
-const buttonStyle={
-  border:'1px solid #86aab8',borderRadius:8,
-  background:'#28546c',color:'#fff',cursor:'pointer',
-  padding:'8px 12px',fontSize:13,fontWeight:600 as const,
-};
