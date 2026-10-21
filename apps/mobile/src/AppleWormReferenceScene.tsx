@@ -1,6 +1,7 @@
 import { useId, type CSSProperties } from 'react';
 import type { ScreenshotLevel, ScreenshotPoint } from '../../../packages/games/apple-worm/screenshot-game.ts';
 import { displayGrayPositions } from '../../../packages/games/apple-worm/gray-box-physics-batch-3.ts';
+import {userMarkedThornFaces, type MarkedSpikeFace} from '../../../packages/games/apple-worm/user-marked-black-thorns-21-30.ts';
 import { WormApple, WormCharacter, WormPortal, WormSky, WormTerrain }
   from './AppleWormArt.tsx';
 import { appleWormFacingAngle, appleWormMouthCue } from './apple-worm-animation-cues.ts';
@@ -149,31 +150,36 @@ export function AppleWormReferenceScene({board,body,remaining,grayPositions,phas
     })}
     {board.spikes.map((point,i)=>{
       const {x,y}=anchor(point);
-      // Spike cells represent fixed, lethal hazards, not rotating saws.
-      // Only the orientation adapts to the supporting platform; no animation
-      // is ever applied to this group, and its logical cell is unchanged.
       const [sx,sy]=point;
       const tile=(tx:number,ty:number)=>board.rows[ty]?.[tx]==='#';
-      const face=tile(sx,sy-1)&&!tile(sx,sy+1)?'down':
+      // User-authored drawings are authoritative for direction. Do not infer
+      // "up" for wall/ceiling thorns or drop an extra corner orientation.
+      const inferredFace:MarkedSpikeFace=tile(sx,sy-1)&&!tile(sx,sy+1)?'down':
         tile(sx-1,sy)&&!tile(sx+1,sy)?'right':
         tile(sx+1,sy)&&!tile(sx-1,sy)?'left':'up';
-      const angle=face==='down'?180:face==='right'?90:face==='left'?-90:0;
+      const markedFaces=userMarkedThornFaces(board.number,point);
+      const faces=markedFaces.length?markedFaces:[inferredFace];
       return <g key={'spike-'+i} data-source-spike
         data-spike-type="stationary-black-thorns"
-        data-spike-face={face}
+        data-spike-face={faces.join('+')}
+        data-user-marked={markedFaces.length?'true':'false'}
         data-grid-x={sx} data-grid-y={sy}
         transform={'translate('+x+' '+y+')'}>
-        <g transform={'rotate('+angle+')'} className="worm-source-spike-fixed">
-          <rect x="-14" y="10" width="28" height="4" rx="1"
-            fill="#0b0c12" stroke="#272c32" strokeWidth="1"/>
-          {[0,1,2,3].map(j=><g key={j}>
-            <path d={'M'+(-14+j*7)+' 11L'+(-10.5+j*7)+' -12L'+(-7+j*7)+' 11Z'}
-              fill={j%2===0?'#08090d':'#13151b'}
-              stroke="#030406" strokeWidth=".85" strokeLinejoin="round"/>
-            <path d={'M'+(-12.8+j*7)+' 8L'+(-10.5+j*7)+' -7'}
-              stroke="#515760" strokeOpacity=".55" strokeWidth=".65"/>
-          </g>)}
-        </g>
+        {faces.map((face,j)=>{
+          const angle=face==='down'?180:face==='right'?90:face==='left'?-90:0;
+          return <g key={face+'-'+j} transform={'rotate('+angle+')'}
+            className="worm-source-spike-fixed" data-thorn-facing={face}>
+            <path d="M-14 11H14L11.8 14H-12Z"
+              fill="#090b10" stroke="#333841" strokeWidth="1"/>
+            {[0,1,2,3].map(k=><g key={k}>
+              <path d={'M'+(-14+k*7)+' 11L'+(-10.5+k*7)+' -12L'+(-7+k*7)+' 11Z'}
+                fill={k%2===0?'#050608':'#171a20'}
+                stroke="#020304" strokeWidth="1.1" strokeLinejoin="round"/>
+              <path d={'M'+(-12.8+k*7)+' 8L'+(-10.5+k*7)+' -7'}
+                stroke="#5a606b" strokeOpacity=".48" strokeWidth=".7"/>
+            </g>)}
+          </g>;
+        })}
       </g>;
     })}
 
