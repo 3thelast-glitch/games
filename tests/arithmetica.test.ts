@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   answerMathRun, beginMathRun, defaultMathRecord, INITIAL_TIME_MS,
   makeQuestion, MAX_TIME_MS, pauseMathRun, QUESTIONS_PER_LEVEL,
-  readMathRecord, RIGHT_BONUS_MS, startMathRun, summarizeMathRun,
+  readMathRecord, recordMathMilestone, RIGHT_BONUS_MS, startMathRun, summarizeMathRun,
   tickMathRun, WRONG_PENALTY_MS,
 } from '../packages/games/arithmetica/engine.ts';
 
@@ -119,4 +119,51 @@ test('Saved high scores survive replay while malformed stored data is sanitized'
   assert.deepEqual(readMathRecord({bestScore:-45,bestLevel:NaN,bestStreak:'10',totalSolved:Infinity,plays:1.5}),
     defaultMathRecord());
   assert.deepEqual(readMathRecord(combined),combined);
+});
+
+test('Returning players can resume their unlocked level without replaying earlier ones',()=>{
+  const seed=1000;
+  const resumed=startMathRun(seed,7);
+  assert.equal(resumed.phase,'ready');
+  assert.equal(resumed.startLevel,7);
+  assert.equal(resumed.level,7);
+  assert.equal(resumed.question.level,7);
+  assert.equal(resumed.correct,0);
+  assert.equal(resumed.score,0);
+  assert.equal(startMathRun(seed,-7).startLevel,1);
+  assert.equal(startMathRun(seed,Number.NaN).startLevel,1);
+  assert.equal(startMathRun(seed,1000000).startLevel,100000);
+  let run=beginMathRun(resumed);
+  for(let i=0;i<QUESTIONS_PER_LEVEL-1;i++){
+    run=answerMathRun(run,run.question.correctIndex);
+    assert.equal(run.level,7);
+    assert.equal(run.stars,i+1);
+  }
+  run=answerMathRun(run,run.question.correctIndex);
+  assert.equal(run.level,8);
+  assert.equal(run.stars,0);
+  assert.equal(run.question.level,8);
+});
+
+test('Every reached level is an immediate high-water mark, even before the timer ends',()=>{
+  let record=defaultMathRecord();
+  let run=beginMathRun(startMathRun(918,1));
+  assert.equal(recordMathMilestone(record,run),record);
+  for(let i=0;i<QUESTIONS_PER_LEVEL;i++)
+    run=answerMathRun(run,run.question.correctIndex);
+  record=recordMathMilestone(record,run);
+  assert.equal(record.bestLevel,2);
+  assert.equal(run.phase,'playing');
+  // Failed attempts and replays never reduce the saved achievement.
+  const replay=beginMathRun(startMathRun(919,1));
+  assert.equal(recordMathMilestone(record,replay),record);
+  const saved=readMathRecord(JSON.parse(JSON.stringify(record)));
+  assert.equal(saved.bestLevel,2);
+  run=beginMathRun(startMathRun(920,saved.bestLevel));
+  for(let i=0;i<QUESTIONS_PER_LEVEL;i++)
+    run=answerMathRun(run,run.question.correctIndex);
+  record=recordMathMilestone(saved,run);
+  assert.equal(record.bestLevel,3);
+  assert.equal(readMathRecord(record).bestLevel,3);
+  assert.equal(recordMathMilestone(record,beginMathRun(startMathRun(921,2))),record);
 });
