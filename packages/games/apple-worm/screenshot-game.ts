@@ -34,6 +34,8 @@ export interface ScreenshotLevel {
   readonly worm:readonly ScreenshotPoint[];
   readonly apples:readonly ScreenshotPoint[];
   readonly portal:ScreenshotPoint | null;
+  /** In the complete source video L70/95/101 finish by leaving the TOP of the field. */
+  readonly exitMode:'spiral'|'top-boundary'|'unknown';
   readonly grayObjects:readonly ScreenshotPoint[];
   readonly canMove:boolean;
   readonly issues:readonly string[];
@@ -60,6 +62,9 @@ const DELTAS:Record<ScreenshotDirection,ScreenshotPoint>={
 const eq=(a:ScreenshotPoint,b:ScreenshotPoint)=>a[0]===b[0]&&a[1]===b[1];
 const key=(p:ScreenshotPoint)=>p[0]+','+p[1];
 const hasMovableGray=(stage:number)=>isBatchOneMovableGray(stage)||isBatchThreeMovableGray(stage);
+/** Observed in the player's complete 105-level video, NOT invented spirals.
+ * L70 ~1779s, L95 ~2570s, L101 ~2707s finish above visible playfield. */
+const TOP_BOUNDARY_EXIT_STAGES=new Set([70,95,101]);
 const touching=(a:ScreenshotPoint,b:ScreenshotPoint)=>
   Math.abs(a[0]-b[0])+Math.abs(a[1]-b[1])===1;
 
@@ -115,10 +120,12 @@ export function screenshotWormLevel(level:number,sourceMode:ScreenshotSourceMode
   // The first 10 exits were manually traced from the walkthrough, and are
   // more reliable than the still-image portal detector when it misses a swirl.
   const portal=source.probablePortal??(level<=10?appleWormVideoTracedStage(level).exit:null);
+  const exitMode=portal?'spiral':sourceMode==='full-video'&&TOP_BOUNDARY_EXIT_STAGES.has(level)
+    ?'top-boundary':'unknown';
   const issues:string[]=[];
   if(!worm)issues.push('worm-shape-unresolved');
   else if(worm.length===1)issues.push('single-segment-snapshot');
-  if(!portal)issues.push('portal-unresolved');
+  if(exitMode==='unknown')issues.push('portal-unresolved');
   if(portal && portal[1]<0)issues.push('portal-above-terrain-grid');
   if(portal && portal[1]>=9)issues.push('portal-below-terrain-grid');
   if(source.grayObjectsVisible.length)issues.push('gray-object-mechanics-unresolved');
@@ -142,7 +149,7 @@ export function screenshotWormLevel(level:number,sourceMode:ScreenshotSourceMode
     rows:source.terrain,
     worm:worm??source.wormVisible,
     apples,
-    portal,
+    portal,exitMode,
     grayObjects,
     canMove:worm!==null,
     issues,
@@ -184,6 +191,16 @@ export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDir
   }
   const [dx,dy]=DELTAS[direction], [hx,hy]=state.body[0]!;
   const head:ScreenshotPoint=[hx+dx,hy+dy];
+  // In the original video L70/95/101 the worm exits above the top of
+  // the visible grid with apples remaining. This is the recorded win trigger,
+  // NOT a replacement or imaginary spiral portal.
+  if(stage.exitMode==='top-boundary'&&head[1]===-3&&
+    head[0]>=0&&head[0]<21&&direction==='up'){
+    const body:ScreenshotPoint[]=[head,...state.body.slice(0,-1)];
+    return {level:state.level,body,collected:[...state.collected],
+      phase:'won',moves:state.moves+1,
+      ...(state.grayPositions?{grayPositions:state.grayPositions.map(p=>[...p] as ScreenshotPoint)}:{})};
+  }
   if(!onBoard(head)||solid.has(key(head))||state.body[1]&&eq(head,state.body[1]))return state;
   const dynamic=hasMovableGray(stage.number);
   let boxes:readonly ScreenshotPoint[]|undefined=dynamic
@@ -240,13 +257,16 @@ export function restoreScreenshotWorm(value:unknown):ScreenshotState|null {
     !Array.isArray(s.body)||!s.body.length||s.body.length>30||
     !Array.isArray(s.collected)||!['playing','won','lost'].includes(s.phase??''))return null;
   const board=screenshotWormLevel(s.level!);
-  if(!board.canMove||s.body.some(p=>!Array.isArray(p)||p.length!==2||
-     !Number.isInteger(p[0])||!Number.isInteger(p[1])||!onBoard([p[0],p[1]])))return null;
+  if(!board.canMove||s.body.some((p,i)=>!Array.isArray(p)||p.length!==2||
+     !Number.isInteger(p[0])||!Number.isInteger(p[1])||
+     !(onBoard([p[0],p[1]])||(i===0&&s.phase==='won'&&
+       board.exitMode==='top-boundary'&&p[1]===-3&&p[0]>=0&&p[0]<21))))return null;
   if(new Set(s.body.map(key)).size!==s.body.length)return null;
   if(s.body.some((p,i)=>i>0&&!touching(p,s.body![i-1]!)))return null;
   if(s.collected.some(i=>!Number.isInteger(i)||i<0||i>=board.apples.length)||
     new Set(s.collected).size!==s.collected.length)return null;
-  if(s.phase==='won'&&(!board.portal||!eq(s.body[0]!,board.portal)))return null;
+  if(s.phase==='won'&&!(board.exitMode==='spiral'&&!!board.portal&&eq(s.body[0]!,board.portal)||
+    board.exitMode==='top-boundary'&&s.body[0]![1]===-3))return null;
   const boxes=hasMovableGray(s.level!)?s.grayPositions:undefined;
   if(boxes!==undefined&&(!Array.isArray(boxes)||
     boxes.length!==initialMovableGray(s.level!,board.grayObjects).length||
