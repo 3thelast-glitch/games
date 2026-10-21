@@ -31,9 +31,9 @@ export const BATCH_TWO_EXTENDED_WIN_ROUTES:
     Object.fromEntries(Object.entries(CODED_ROUTES).map(([n,encoded])=>
       [Number(n),[...encoded].map(char=>key[char]!)]));
 
-test('six visibly wall-hanging stages gain side-wall support',()=>{
+test('only five source-video batch-two stages gain side-wall support',()=>{
   assert.deepEqual([...BATCH_TWO_WALL_CONTACT_STAGES].sort((a,b)=>a-b),
-    [49,58,59,71,73,97]);
+    [49,59,71,73,97]);
   assert.ok([...BATCH_TWO_WALL_CONTACT_STAGES].every(n=>
     BATCH_TWO_15.includes(n as typeof BATCH_TWO_15[number])));
 });
