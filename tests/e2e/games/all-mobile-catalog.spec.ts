@@ -45,7 +45,7 @@ async function exerciseSolo(page: Page, id: SoloId) {
     await expect(board).toBeVisible();
     await expect(game).toHaveAttribute('data-source-stage-count','105');
     await expect(board.locator('[data-source-worm]')).toHaveCount(1);
-    await expect(board.locator('[data-source-terrain="classic-solid-dirt"]')).toHaveCount(1);
+    await expect(board.locator('[data-source-terrain="premium-art"]')).toHaveCount(1);
     await expect(board.locator('[data-source-worm]')).toHaveAttribute('data-body-length','3');
     await expect(board).toHaveAttribute('viewBox','0 0 630 270');
     await expect(board.locator('[data-source-apple]')).toHaveCount(0);
