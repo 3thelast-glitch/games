@@ -6,9 +6,10 @@
  *
  * Earliest observable frames were sampled at video stage-boundary +0.18s, or
  * in a handful of cases <=0.55s when a title animation hid the worm's mouth.
- * Segments were accepted ONLY when (1) the worm-green cells form ONE
+ * Segments were accepted when (1) the worm-green cells form ONE
  * unambiguous adjacent head-to-tail path and (2) the purple original mouth is
- * visible and locates its endpoint. No arbitrary appended segments.
+ * visible and locates its endpoint. Five occluded/edge starts were manually
+ * traced from the user's video; stage 85 still has ambiguous 2x2 body order. No arbitrary appended segments.
  *
  * Caveat: the first OBSERVABLE pose can differ from the first untouched game
  * state because the original walkthrough sometimes starts moving instantly.
@@ -24,7 +25,7 @@ export interface FullVideoWormPose {
   readonly stage:number;
   readonly timestampSeconds:number;
   readonly headToTail:readonly ScreenshotPoint[];
-  readonly evidence:'mouth-visible-early-frame';
+  readonly evidence:'mouth-visible-early-frame'|'mouth-visible-manual-trace';
   readonly untouchedOpeningVerified:false;
   readonly solutionVerified:false;
 }
@@ -127,8 +128,20 @@ const VIDEO_START_RECORDS=`1|0.18|838297
 103|2725.55|5a5958
 104|2743.93|1a192e
 105|2812.18|767560`.trim().split(/\n/);
-export const FULL_VIDEO_EARLY_POSE_COUNT=VIDEO_START_RECORDS.length;
-export const FULL_VIDEO_AMBIGUOUS_LEVELS=[54,62,74,80,83,85] as const;
+/** Manually verified in the same FULL original video near each listed stage
+ * boundary after green-only pixel voting hid the mouth-bearing cell.
+ * Do not infer L85's U-shaped body traversal from a visually touching 2x2 square.
+ */
+const MANUAL_VISIBLE_OPENINGS=[
+  {stage:54,timestampSeconds:1267.91,headToTail:[[6,4],[6,5],[6,6]]},
+  {stage:62,timestampSeconds:1474.90,headToTail:[[7,3],[6,3],[5,3]]},
+  {stage:74,timestampSeconds:1891.86,headToTail:[[16,7],[15,7],[14,7]]},
+  {stage:80,timestampSeconds:2011.15,headToTail:[[10,5],[10,6],[10,7]]},
+  {stage:83,timestampSeconds:2119.86,headToTail:[[8,-2],[7,-2],[6,-2]]},
+] as const;
+export const FULL_VIDEO_EARLY_POSE_COUNT=
+  VIDEO_START_RECORDS.length+MANUAL_VISIBLE_OPENINGS.length;
+export const FULL_VIDEO_AMBIGUOUS_LEVELS=[85] as const;
 const decode=(hex:string):ScreenshotPoint[]=>{
   if(hex.length%2!==0)throw Error('Broken source video record');
   const result:ScreenshotPoint[]=[];
@@ -140,17 +153,27 @@ const decode=(hex:string):ScreenshotPoint[]=>{
 };
 export const APPLE_WORM_FULL_VIDEO_EARLY_POSES:
   Readonly<Record<number,FullVideoWormPose>>=Object.fromEntries(
-    VIDEO_START_RECORDS.map(line=>{
-      const fields=line.split('|');
-      if(fields.length!==3)throw Error('Broken source video record');
-      const stage=Number(fields[0]);
-      const timestampSeconds=Number(fields[1]);
-      const headToTail=decode(fields[2]!);
-      return [stage,{
-        stage,timestampSeconds,headToTail,
-        evidence:'mouth-visible-early-frame',
+    [
+      ...VIDEO_START_RECORDS.map(line=>{
+        const fields=line.split('|');
+        if(fields.length!==3)throw Error('Broken source video record');
+        const stage=Number(fields[0]);
+        const timestampSeconds=Number(fields[1]);
+        const headToTail=decode(fields[2]!);
+        return [stage,{
+          stage,timestampSeconds,headToTail,
+          evidence:'mouth-visible-early-frame',
+          untouchedOpeningVerified:false,
+          solutionVerified:false,
+        } satisfies FullVideoWormPose] as const;
+      }),
+      ...MANUAL_VISIBLE_OPENINGS.map(data=>[data.stage,{
+        stage:data.stage,
+        timestampSeconds:data.timestampSeconds,
+        headToTail:data.headToTail as readonly ScreenshotPoint[],
+        evidence:'mouth-visible-manual-trace',
         untouchedOpeningVerified:false,
         solutionVerified:false,
-      } satisfies FullVideoWormPose];
-    }),
+      } satisfies FullVideoWormPose] as const),
+    ],
   );
