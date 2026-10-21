@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { AppleWormClassicBoard } from './AppleWormClassicBoard.tsx';
+import { AppleWormReferenceScene } from './AppleWormReferenceScene.tsx';
 import { AppleWormForest } from './AppleWormForest.tsx';
 import {
   APPLE_WORM_SCREENSHOT_LEVEL_COUNT, screenshotWormLevel,
@@ -17,7 +17,7 @@ import { enterGameLandscape, leaveGameLandscape } from './immersive-game.ts';
 interface SourceSave { level:number; state:ScreenshotState; completed:number[]; visualRevision?:string }
 const SAVE_KEY='apple-worm-screenshot-source-105-v1';
 /** Increases when the reference rendering/initial layouts change. */
-export const APPLE_WORM_VISUAL_REVISION='PDF105-R11';
+export const APPLE_WORM_VISUAL_REVISION='PDF105-R12';
 export type WormScreen='home'|'levels'|'game';
 const keyMap:Record<string,ScreenshotDirection>={
   arrowup:'up',w:'up',arrowdown:'down',s:'down',
@@ -278,9 +278,9 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
             onPointerCancel={()=>{swiping.current=null;}}
             onLostPointerCapture={()=>{swiping.current=null;}}
             style={{display:'block',width:'100%',height:'100%',touchAction:'none',direction:'ltr'}}>
-            <AppleWormClassicBoard board={board} body={state.body}
+            <AppleWormReferenceScene board={board} body={state.body}
               remaining={remaining} grayPositions={state.grayPositions}
-              biteFx={biteFx}/>
+              phase={state.phase} biteFx={biteFx} showSky={false}/>
           </svg>
         </div>
         <div className="worm3-move-pad" aria-label={t('Movement controls','أزرار التحريك')}>

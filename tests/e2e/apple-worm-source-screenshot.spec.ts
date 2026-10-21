@@ -12,7 +12,7 @@ test('original 105-stage gameplay follows title → stage select → fullscreen 
   const game=page.locator('body > [data-stage-origin="user-screenshot"]');
   await expect(game).toBeVisible();
   await expect(game).toHaveAttribute('data-source-stage-count','105');
-  await expect(game).toHaveAttribute('data-visual-revision','PDF105-R11');
+  await expect(game).toHaveAttribute('data-visual-revision','PDF105-R12');
   await expect(game).toHaveAttribute('data-worm-screen','home');
   await expect(game.locator('.worm3-title-logo')).toBeVisible();
   await expect(game.locator('svg[data-source-level]')).toHaveCount(0);
@@ -31,7 +31,11 @@ test('original 105-stage gameplay follows title → stage select → fullscreen 
   await expect(board).toBeVisible();
   await expect(board).toHaveAttribute('viewBox','0 0 630 270');
   await expect(board).toHaveAttribute('data-terrain-cell-count','12');
-  await expect(board.locator('[data-source-terrain="classic-solid-dirt"]')).toHaveCount(1);
+  await expect(board.locator('[data-source-terrain="premium-art"]')).toHaveCount(1);
+  await expect(board.locator('.worm-character')).toHaveCount(1);
+  await expect(board.locator('.worm-terrain')).toHaveCount(1);
+  await expect(board.locator('.worm-portal-ready')).toHaveCount(1);
+  await expect(board.locator('.worm-clouds')).toHaveCount(0); // forest remains fullscreen background
   await expect(board.locator('[data-source-worm]')).toHaveAttribute('data-body-length','3');
   await expect(board.locator('[data-source-apple]')).toHaveCount(0);
   await expect(board.locator('[data-source-portal]')).toHaveCount(1);
