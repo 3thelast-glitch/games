@@ -7,6 +7,7 @@ import {APPLE_WORM_VIDEO_BATCH_TWO_STARTS} from '../packages/games/apple-worm/vi
 import {APPLE_WORM_VIDEO_BATCH_THREE_STARTS} from '../packages/games/apple-worm/video-start-poses-batch-3.ts';
 import {APPLE_WORM_FULL_VIDEO_EARLY_POSES} from '../packages/games/apple-worm/full-video-early-poses-105.ts';
 import {APPLE_WORM_FULL_VIDEO_VISIBLE_APPLES} from '../packages/games/apple-worm/full-video-early-apples-105.ts';
+import {sourceSawStarts,sourceStoneStarts} from '../packages/games/apple-worm/video-source-obstacles-105.ts';
 import {
   APPLE_WORM_SCREENSHOT_LEVEL_COUNT,
   SCREENSHOT_DIRECTIONS, screenshotWormLevel,
@@ -31,7 +32,10 @@ test('all 105 source snapshots load as actual gameplay geometry with zero invent
     const earlyApples=APPLE_WORM_FULL_VIDEO_VISIBLE_APPLES[level];
     assert.deepEqual(board.apples,earlyApples??(video?.extraInitialApples
       ?[...source.applesVisible,...video.extraInitialApples]:source.applesVisible));
-    assert.deepEqual(board.grayObjects,video?.grayStartOverride??source.grayObjectsVisible);
+    const saws=sourceSawStarts(level),stones=sourceStoneStarts(level);
+    assert.deepEqual(board.saws,saws);
+    assert.deepEqual(board.grayObjects,saws.length||stones.length
+      ?stones:video?.grayStartOverride??source.grayObjectsVisible);
     assert.deepEqual(board.portal,source.probablePortal??
       (level<=10?appleWormVideoTracedStage(level).exit:null));
     assert.deepEqual(state.collected,[]);
@@ -75,11 +79,12 @@ test('stage 2 uses the full walkthrough untouched apple and early three-cell wor
   assert.deepEqual(board.worm,[[7,5],[6,5],[6,6]], 'head follows mouth in full stage opening');
   assert.deepEqual(board.portal,[13,2], 'exit sits above right-side platform');
 });
-test('stage 48 uses five early apples and retains six gray unknown objects',()=>{
+test('stage 48 uses five early apples and six actual lethal saw blades, not gray boxes',()=>{
   const map=screenshotWormLevel(48);
   assert.equal(map.apples.length,5);
-  assert.equal(map.grayObjects.length,6);
-  assert.ok(map.issues.includes('gray-object-mechanics-unresolved'));
+  assert.equal(map.grayObjects.length,0);
+  assert.equal(map.saws.length,6);
+  assert.ok(map.issues.includes('filmed-serrated-saw-hazards'));
 });
 test('stage 101 does not treat video UI icons as a source portal',()=>{
   const map=screenshotWormLevel(101);
