@@ -83,7 +83,9 @@ export function AppleWormClassicBoard({board,body,remaining,grayPositions,biteFx
       <path d="M0 -9q1 -9 6 -10M1 -14q6 -7 11 -2"
         stroke="#46762e" fill="none" strokeWidth="2.3" strokeLinecap="round"/>
     </g>)}
-    <g data-source-worm data-body-length={body.length}>
+    <g data-source-worm data-body-length={body.length}
+      data-head-x={head?(head[0]+.5)*CELL:undefined}
+      data-head-y={head?(head[1]+.5)*CELL:undefined}>
       {body.map(([x,y],i)=><g key={'seg'+i}>
         <rect x={x*CELL+.2} y={y*CELL+.2} width={CELL-.4} height={CELL-.4}
           rx="4.5" fill={'url(#'+id+'worm)'}/>
