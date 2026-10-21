@@ -21,6 +21,7 @@ import { supportsBatchTwoSideContact } from './wall-support-batch-2.ts';
 import { isBatchOneMovableGray, pushGrayBox, settleGrayBoxes } from './gray-box-physics-batch-1.ts';
 import { isBatchThreeMovableGray, fixedGrayForBatchThree, initialMovableGray } from './gray-box-physics-batch-3.ts';
 import {sourceSawStarts,sourceStoneStarts,sourceSpikeStarts,STATIONARY_STONES} from './video-source-obstacles-105.ts';
+import {userMarkedThornCells} from './user-marked-black-thorns-21-30.ts';
 
 export type ScreenshotPoint = readonly [number, number];
 export type ScreenshotDirection = 'up'|'right'|'down'|'left';
@@ -147,11 +148,17 @@ export function screenshotWormLevel(level:number,sourceMode:ScreenshotSourceMode
   // Use the user's early VIDEO as the primary object-type evidence. Never
   // turn a serrated wheel into a static solid/question-mark block.
   const saws=sourceMode==='full-video'?sourceSawStarts(level):[];
-  const spikes=sourceMode==='full-video'?sourceSpikeStarts(level):[];
+  // The user annotated BLACK THORN locations directly on screenshots of
+  // OUR GAME (pages 13-17, levels 21-30). Treat those drawings as authoring
+  // instructions, separate from the original-video automatic detector.
+  const spikes=sourceMode==='full-video'
+    ?[...sourceSpikeStarts(level),...userMarkedThornCells(level)]:[];
   const filmedStones=sourceMode==='full-video'?sourceStoneStarts(level):[];
   const grayObjects=sourceMode==='full-video'&&(saws.length||filmedStones.length)
     ?filmedStones:videoStart?.grayStartOverride??source.grayObjectsVisible;
   if(saws.length)issues.push('filmed-serrated-saw-hazards');
+  if(userMarkedThornCells(level).length&&sourceMode==='full-video')
+    issues.push('user-annotated-lethal-black-thorns');
   if(filmedStones.length)issues.push('filmed-typed-stones');
   if(sourceMode==='full-video'){
     if(fullVideoStart)issues.push('full-video-early-pose-mouth-confirmed');
