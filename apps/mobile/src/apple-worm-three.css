@@ -303,19 +303,30 @@ body > .worm-immersive.worm3[data-stage-origin="user-screenshot"] .worm3-board-z
   .worm3 .worm3-worm-step-motion {animation:none!important;}
 }
 
-/* Full-video obstacle fidelity. Spinning blade teeth are real lethal gameplay
- * cells, unlike the old gray '?' placeholder which was treated as a wall.
- */
-@keyframes worm-source-saw-turn {to{transform:rotate(360deg)}}
+/* L001–L105: rotate ONLY the local gear rotor. Its own 34px SVG viewBox
+ * always has center (0,0); the translated world-space anchor stays immutable.
+ * fill-box must NOT be used here: Chromium/Android may compute it differently
+ * as teeth/spokes rotate, visibly sliding wheels off their stage coordinates. */
+@keyframes worm-source-saw-turn {
+  from {transform:rotate(0deg)}
+  to {transform:rotate(360deg)}
+}
+.worm3 .worm-source-saw-fixed {
+  filter:drop-shadow(1px 2px 1px rgba(17,22,30,.35));
+}
 .worm3 .worm-source-saw-spinning {
-  /* SVG transform-box is required by some Chromium/Capacitor WebViews:
-     without it spinning can happen around the page rather than each saw. */
-  transform-box:fill-box;
+  transform-box:view-box;
   transform-origin:50% 50%;
   animation:worm-source-saw-turn .85s linear infinite;
-  filter:drop-shadow(1px 2px 1px rgba(26,44,59,.28));
   will-change:transform;
+}
+.worm3 .worm-source-spike-fixed {
+  /* Black thorn beds never bob, drift or rotate; only the chosen face differs. */
+  pointer-events:none;
 }
 @media (prefers-reduced-motion: reduce) {
   .worm3 .worm-source-saw-spinning {animation:none!important}
+}
+:root[data-reduce-motion='true'] .worm3 .worm-source-saw-spinning {
+  animation:none!important;
 }
