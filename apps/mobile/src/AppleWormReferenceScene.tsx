@@ -173,7 +173,7 @@ export function AppleWormReferenceScene({board,body,remaining,grayPositions,phas
               fill="#090b10" stroke="#333841" strokeWidth="1"/>
             {[0,1,2,3].map(k=><g key={k}>
               <path d={'M'+(-14+k*7)+' 11L'+(-10.5+k*7)+' -12L'+(-7+k*7)+' 11Z'}
-                fill={k%2===0?'#08090d':'#171a20'}
+                fill={k%2===0?'#08090d':'#13151b'}
                 stroke="#020304" strokeWidth="1.1" strokeLinejoin="round"/>
               <path d={'M'+(-12.8+k*7)+' 8L'+(-10.5+k*7)+' -7'}
                 stroke="#5a606b" strokeOpacity=".48" strokeWidth=".7"/>
