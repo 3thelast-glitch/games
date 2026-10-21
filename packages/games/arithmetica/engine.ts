@@ -13,7 +13,7 @@ export type Phase = 'ready' | 'playing' | 'gameover' | 'paused';
 export type Feedback = 'correct' | 'wrong' | null;
 export interface MathRun {
   seed: number; score: number; correct: number; mistakes: number;
-  level: number; stars: number; timeMs: number; maxTimeMs: number;
+  level: number; startLevel: number; stars: number; timeMs: number; maxTimeMs: number;
   phase: Phase; feedback: Feedback; question: Question;
   answered: number; elapsedMs: number; streak: number; maxStreak: number;
 }
@@ -76,12 +76,14 @@ export function makeQuestion(seed: number, id: number, selectedLevel?: number): 
     choices: correctIndex === 0 ? [result, foil] : [foil, result],
   };
 }
-export function startMathRun(seed = 12345): MathRun {
+/** Resume from an earned level without gifting progress or score. */
+export function startMathRun(seed = 12345, startingLevel = 1): MathRun {
   const safeSeed = Number.isFinite(seed) ? (Math.floor(seed) | 0) : 12345;
+  const startLevel = Number.isSafeInteger(startingLevel) ? clamp(startingLevel, 1, 100000) : 1;
   return {
     seed: safeSeed, score: 0, correct: 0, mistakes: 0,
-    level: 1, stars: 0, timeMs: INITIAL_TIME_MS, maxTimeMs: MAX_TIME_MS,
-    phase: 'ready', feedback: null, question: makeQuestion(safeSeed, 0),
+    level: startLevel, startLevel, stars: 0, timeMs: INITIAL_TIME_MS, maxTimeMs: MAX_TIME_MS,
+    phase: 'ready', feedback: null, question: makeQuestion(safeSeed, 0, startLevel),
     answered: 0, elapsedMs: 0, streak: 0, maxStreak: 0,
   };
 }
@@ -108,7 +110,7 @@ export function answerMathRun(run: MathRun, index: number): MathRun {
   const correctCount = run.correct + (correct ? 1 : 0);
   const mistakes = run.mistakes + (correct ? 0 : 1);
   const streak = correct ? run.streak + 1 : 0;
-  const level = 1 + Math.floor(correctCount / QUESTIONS_PER_LEVEL);
+  const level = Math.min(100000, run.startLevel + Math.floor(correctCount / QUESTIONS_PER_LEVEL));
   // Five-star line representing current group of solved answers.
   const stars = correctCount % QUESTIONS_PER_LEVEL;
   const timeMs = clamp(run.timeMs + (correct ? RIGHT_BONUS_MS : -WRONG_PENALTY_MS), 0, MAX_TIME_MS);
@@ -119,6 +121,11 @@ export function answerMathRun(run: MathRun, index: number): MathRun {
     phase: timeMs <= 0 ? 'gameover' : 'playing',
     question: makeQuestion(run.seed, nextAnswered, level),
   };
+}
+/** Persist a new level immediately after the fifth correct answer, not only on game over. */
+export function recordMathMilestone(record: MathRecord, run: MathRun): MathRecord {
+  if (run.correct < QUESTIONS_PER_LEVEL || run.level <= record.bestLevel) return record;
+  return {...record, bestLevel: run.level};
 }
 export function summarizeMathRun(record: MathRecord, run: MathRun): MathRecord {
   if (run.phase !== 'gameover') return record;
