@@ -141,8 +141,14 @@ export function screenshotWormLevel(level:number,sourceMode:ScreenshotSourceMode
   // over later gallery frames (which may show the fruit already consumed).
   // Empty detections are not proof of absence; retain older source evidence.
   const earlyApples=sourceMode==='full-video'?APPLE_WORM_FULL_VIDEO_VISIBLE_APPLES[level]:undefined;
-  const apples=earlyApples?[...earlyApples]:videoStart?.extraInitialApples
+  // Positive image segmentation formerly counted multiple brick-attached
+  // pointed traps as fruit simply because both are RED. Their tops have no
+  // green apple leaf; source-positive dark-pointed thorns override fruit.
+  const sourceFruit=earlyApples?[...earlyApples]:videoStart?.extraInitialApples
     ?[...source.applesVisible,...videoStart.extraInitialApples]:source.applesVisible;
+  const videoThorns=sourceMode==='full-video'?sourceSpikeStarts(level):[];
+  const thornCells=new Set(videoThorns.map(p=>p[0]+','+p[1]));
+  const apples=sourceFruit.filter(p=>!thornCells.has(p[0]+','+p[1]));
   // The original image-only detector grouped *saw wheels* with gray stones.
   // Use the user's early VIDEO as the primary object-type evidence. Never
   // turn a serrated wheel into a static solid/question-mark block.
@@ -152,6 +158,8 @@ export function screenshotWormLevel(level:number,sourceMode:ScreenshotSourceMode
   const grayObjects=sourceMode==='full-video'&&(saws.length||filmedStones.length)
     ?filmedStones:videoStart?.grayStartOverride??source.grayObjectsVisible;
   if(saws.length)issues.push('filmed-serrated-saw-hazards');
+  if(spikes.length)issues.push('filmed-black-pointed-thorn-hazards');
+  if(sourceFruit.length!==apples.length)issues.push('red-pointed-traps-removed-from-fruit');
   if(filmedStones.length)issues.push('filmed-typed-stones');
   if(sourceMode==='full-video'){
     if(fullVideoStart)issues.push('full-video-early-pose-mouth-confirmed');
