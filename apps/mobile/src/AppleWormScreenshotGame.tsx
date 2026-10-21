@@ -218,11 +218,12 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
   const remaining=board.apples.filter((_,i)=>!state.collected.includes(i));
   const selectedGroupFrom=group*15+1;
   const selectedGroupEnd=Math.min(105,selectedGroupFrom+14);
-  const unlocked=Math.min(105,Math.max(10,level,...completed.map(n=>n+1)));
-  const getStars=(n:number)=>completed.includes(n)?'★★★':n<=unlocked?'☆☆☆':'';
+  // Testing/review mode: every source-video stage is directly selectable.
+  // Completion stars still reflect only actual victories in saved progress.
+  const getStars=(n:number)=>completed.includes(n)?'★★★':'☆☆☆';
   const toLevels=()=>{setGroup(Math.floor((level-1)/15));setShowOptions(false);setScreen('levels');};
   const toHome=()=>{setShowOptions(false);setScreen('home');};
-  const goNext=()=>{if(level<105&&level+1<=unlocked)pick(level+1);};
+  const goNext=()=>{if(level<APPLE_WORM_SCREENSHOT_LEVEL_COUNT)pick(level+1);};
 
   return createPortal(
     <main className="worm-page worm-immersive worm-source-play worm3"
@@ -271,24 +272,22 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
             type="button" aria-label={t('Previous level page','صفحة المراحل السابقة')}
             disabled={group===0} onClick={()=>setGroup(g=>Math.max(0,g-1))}>◀</button>
           <div className="worm3-level-grid">
-            {Array.from({length:Math.min(15,105-group*15)},(_,i)=>group*15+i+1).map(n=>{
-              const locked=n>unlocked;
-              return <button className="worm3-level-tile" type="button" key={n}
-                disabled={locked} onClick={()=>pick(n)}
-                aria-label={t('Level','المرحلة')+' '+n+(locked?t(' locked',' مغلقة'):'')}
+            {Array.from({length:Math.min(15,APPLE_WORM_SCREENSHOT_LEVEL_COUNT-group*15)},(_,i)=>group*15+i+1).map(n=>
+              <button className="worm3-level-tile" type="button" key={n}
+                onClick={()=>pick(n)}
+                aria-label={t('Level','المرحلة')+' '+n}
                 aria-current={n===level?'step':undefined}
-                data-locked={locked?'true':'false'}>
-                {locked?<span className="worm3-padlock" aria-hidden="true">🔒</span>:
-                  <span className="worm3-tile-stars" aria-hidden="true">{getStars(n)}</span>}
+                data-locked="false">
+                <span className="worm3-tile-stars" aria-hidden="true">{getStars(n)}</span>
                 <span className="worm3-tile-number">{n}</span>
-              </button>;
-            })}
+              </button>
+            )}
           </div>
           <button className="worm3-page-arrow worm3-page-next"
             type="button" aria-label={t('Next level page','صفحة المراحل التالية')}
             disabled={group===6} onClick={()=>setGroup(g=>Math.min(6,g+1))}>▶</button>
         </div>
-        <div className="worm3-page-label">{group+1} / 7</div>
+        <div className="worm3-page-label">{t('All 105 levels unlocked for testing','جميع المراحل الـ105 مفتوحة للاختبار')} · {group+1} / 7</div>
       </section>}
       {screen==='game'&&<section className="worm3-game"
         aria-label={t('Apple Worm gameplay','لعبة دودة التفاح')}>
