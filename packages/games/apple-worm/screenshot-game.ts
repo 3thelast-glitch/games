@@ -23,6 +23,8 @@ import { isBatchThreeMovableGray, fixedGrayForBatchThree, initialMovableGray } f
 
 export type ScreenshotPoint = readonly [number, number];
 export type ScreenshotDirection = 'up'|'right'|'down'|'left';
+/** Historical fixture only: preserves selected-clip replays in regression tests. */
+export type ScreenshotSourceMode='full-video'|'legacy';
 export type ScreenshotPhase = 'playing'|'won'|'lost';
 export interface ScreenshotLevel {
   readonly number:number;
@@ -89,7 +91,7 @@ function traceVisibleWorm(points:readonly ScreenshotPoint[], preferredHead?:Scre
   }
   return chain;
 }
-export function screenshotWormLevel(level:number):ScreenshotLevel {
+export function screenshotWormLevel(level:number,sourceMode:ScreenshotSourceMode='full-video'):ScreenshotLevel {
   const source=appleWormVisualSnapshot(level);
   // Some screenshots have a uniquely visible forward-facing mouth which
   // the generic rightmost-endpoint guess cannot infer (stages 2 and 59).
@@ -103,7 +105,7 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
   const manualMatches=picturedOrder!==null&&picturedOrder.length===source.wormVisible.length&&
     picturedOrder.every(p=>source.wormVisible.some(q=>eq(p,q)))&&
     picturedOrder.every((p,i)=>i===0||touching(p,picturedOrder[i-1]!));
-  const fullVideoStart=APPLE_WORM_FULL_VIDEO_EARLY_POSES[level];
+  const fullVideoStart=sourceMode==='full-video'?APPLE_WORM_FULL_VIDEO_EARLY_POSES[level]:undefined;
   const videoStart=APPLE_WORM_VIDEO_START_POSES[level]??
     APPLE_WORM_VIDEO_BATCH_TWO_STARTS[level]??APPLE_WORM_VIDEO_BATCH_THREE_STARTS[level];
   // The user-supplied COMPLETE 105-stage recording has priority over older
@@ -123,12 +125,14 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
   // Positive detections from the UNTOUCHED full-video opening take precedence
   // over later gallery frames (which may show the fruit already consumed).
   // Empty detections are not proof of absence; retain older source evidence.
-  const earlyApples=APPLE_WORM_FULL_VIDEO_VISIBLE_APPLES[level];
+  const earlyApples=sourceMode==='full-video'?APPLE_WORM_FULL_VIDEO_VISIBLE_APPLES[level]:undefined;
   const apples=earlyApples?[...earlyApples]:videoStart?.extraInitialApples
     ?[...source.applesVisible,...videoStart.extraInitialApples]:source.applesVisible;
   const grayObjects=videoStart?.grayStartOverride??source.grayObjectsVisible;
-  if(fullVideoStart)issues.push('full-video-early-pose-mouth-confirmed');
-  else issues.push('full-video-opening-pose-needs-manual-review');
+  if(sourceMode==='full-video'){
+    if(fullVideoStart)issues.push('full-video-early-pose-mouth-confirmed');
+    else issues.push('full-video-opening-pose-needs-manual-review');
+  }
   if(videoStart)issues.push('video-clip-start-reconstructed');
   if(earlyApples)issues.push('full-video-early-apples-visible');
   if(!apples.length)issues.push('no-apples-visible-in-frame');
@@ -146,8 +150,8 @@ export function screenshotWormLevel(level:number):ScreenshotLevel {
     exactPhysicsVerified:false,exactVisualComparisonPassed:false,
   };
 }
-export function startScreenshotWorm(level=1):ScreenshotState {
-  const map=screenshotWormLevel(level);
+export function startScreenshotWorm(level=1,sourceMode:ScreenshotSourceMode='full-video'):ScreenshotState {
+  const map=screenshotWormLevel(level,sourceMode);
   return {
     level,body:map.worm.map(([x,y]):ScreenshotPoint=>[x,y]),
     collected:[],phase:'playing',moves:0,
