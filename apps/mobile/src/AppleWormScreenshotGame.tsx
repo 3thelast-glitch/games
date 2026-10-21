@@ -306,7 +306,9 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
           <button className="worm3-icon-button" type="button"
             onClick={()=>setShowOptions(v=>!v)} aria-label={t('Game menu','قائمة اللعبة')}>☰</button>
         </div>
-        <div className="worm3-goal" aria-hidden="true">🐛 → 🌀</div>
+        <div className="worm3-goal" aria-hidden="true">
+          {board.exitMode==='top-boundary'?'🐛 → ↑':'🐛 → 🌀'}
+        </div>
         <div className="worm3-board-zone">
           <svg role="img" aria-label={t('Swipe Apple Worm board','اسحب لتحريك الدودة')}
             viewBox="0 0 630 270" data-source-level={level}
@@ -334,11 +336,14 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
         </div>
         <span className="worm3-current-level">{String(level).padStart(2,'0')}</span>
         {showHelp&&<div className="worm3-help" role="status">
-          {t('Swipe on the puzzle to move the worm. Reach the spiral exit. Some source objects are still under verification.',
-             'اسحب على اللوحة لتحريك الدودة والوصول إلى الدوامة. بعض عناصر المراحل الأصلية لا تزال قيد التحقق.')}
+          {board.exitMode==='top-boundary'
+            ?t('Move the worm ABOVE the top of the screen to win this filmed stage.',
+              'حرّك الدودة للخروج من أعلى الشاشة للفوز بهذه المرحلة كما في الفيديو.')
+            :t('Swipe on the puzzle to move the worm. Reach the spiral exit. Some source objects are still under verification.',
+                'اسحب على اللوحة لتحريك الدودة والوصول إلى الدوامة. بعض عناصر المراحل الأصلية لا تزال قيد التحقق.')}
           <button type="button" onClick={()=>setShowHelp(false)}>✕</button>
         </div>}
-        {!board.portal&&<div className="worm3-help worm3-unknown" role="status">
+        {board.exitMode==='unknown'&&<div className="worm3-help worm3-unknown" role="status">
           {t('Exit location not yet verified for this stage',
             'مكان المخرج لم يُتحقق منه لهذه المرحلة بعد')}</div>}
         {showOptions&&<div className="worm3-options worm3-game-options" role="dialog"
