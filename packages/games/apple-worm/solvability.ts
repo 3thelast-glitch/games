@@ -14,6 +14,7 @@ import {
   moveScreenshotWorm,
   type ScreenshotDirection,
   type ScreenshotState,
+  type ScreenshotSourceMode,
 } from './screenshot-game.ts';
 
 export type SolvabilityStatus='won'|'missing-exit'|'exhausted'|'budget';
@@ -49,11 +50,13 @@ function reconstruct(nodes:SearchNode[],nodeIndex:number,direction:ScreenshotDir
   path.reverse();
   return path;
 }
-export function replayAppleWormRoute(level:number,route:readonly ScreenshotDirection[]):{
+export function replayAppleWormRoute(level:number,route:readonly ScreenshotDirection[],
+  options:{source?:ScreenshotSourceMode}={}):{
   won:boolean;state:ScreenshotState;legalMoves:number;
 } {
-  const stage=screenshotWormLevel(level);
-  let state=startScreenshotWorm(level),legalMoves=0;
+  const mode=options.source??'full-video';
+  const stage=screenshotWormLevel(level,mode);
+  let state=startScreenshotWorm(level,mode),legalMoves=0;
   for(const direction of route){
     const next=moveScreenshotWorm(state,direction,stage);
     if(next===state)return {won:false,state,legalMoves};
@@ -74,8 +77,10 @@ export function replayAppleWormRoute(level:number,route:readonly ScreenshotDirec
 export function solveAppleWormLevel(level:number,options:{
   maxStates?:number;
   maxMillis?:number;
+  source?:ScreenshotSourceMode;
 }={}):AppleWormSolvability {
-  const stage=screenshotWormLevel(level);
+  const mode=options.source??'full-video';
+  const stage=screenshotWormLevel(level,mode);
   const started=Date.now();
   const maxStates=options.maxStates??8000;
   const maxMillis=options.maxMillis??500;
@@ -84,7 +89,7 @@ export function solveAppleWormLevel(level:number,options:{
     level,status:'missing-exit',explored:0,discovered:0,route:null,
     routeLength:null,elapsedMs:Date.now()-started,maxStates,portal:null,
   };
-  const initial=startScreenshotWorm(level);
+  const initial=startScreenshotWorm(level,mode);
   if(initial.phase==='won')return {
     level,status:'won',explored:0,discovered:1,route:[],
     routeLength:0,elapsedMs:Date.now()-started,maxStates,portal:stage.portal,
@@ -112,7 +117,7 @@ export function solveAppleWormLevel(level:number,options:{
       if(next===current||next.phase==='lost')continue;
       if(next.phase==='won'){
         const route=reconstruct(nodes,index,direction);
-        const checked=replayAppleWormRoute(level,route);
+        const checked=replayAppleWormRoute(level,route,{source:mode});
         if(!checked.won||checked.legalMoves!==route.length)
           throw new Error('solver found an invalid winning route for stage '+level);
         return {
@@ -135,7 +140,7 @@ export function solveAppleWormLevel(level:number,options:{
 }
 export function auditAppleWormLevels(
   first=1,last=APPLE_WORM_SCREENSHOT_LEVEL_COUNT,
-  options:{maxStates?:number;maxMillis?:number}={},
+  options:{maxStates?:number;maxMillis?:number;source?:ScreenshotSourceMode}={},
 ):AppleWormSolvability[] {
   if(!Number.isInteger(first)||!Number.isInteger(last)||
     first<1||last>APPLE_WORM_SCREENSHOT_LEVEL_COUNT||last<first)
