@@ -12,7 +12,7 @@ import {
 import {AppleWormReferenceScene} from '../apps/mobile/src/AppleWormReferenceScene.tsx';
 
 test('every stage has typed video objects, never confuse lethal discs with gray solid placeholders',()=>{
-  assert.equal(VIDEO_SAW_STAGE_COUNT,53);
+  assert.equal(VIDEO_SAW_STAGE_COUNT,54);
   for(let level=1;level<=105;level++){
     const map=screenshotWormLevel(level);
     assert.deepEqual(map.saws,sourceSawStarts(level));
@@ -22,6 +22,15 @@ test('every stage has typed video objects, never confuse lethal discs with gray 
     assert.ok(map.grayObjects.every(([x,y])=>Number.isInteger(x)&&Number.isInteger(y)));
     assert.ok(map.saws.every(([x,y])=>Number.isInteger(x)&&Number.isInteger(y)));
   }
+  const discovered=screenshotWormLevel(39);
+  assert.deepEqual(discovered.saws,[[3,3]],
+    'full-video audit identified a previously missed saw-bearing level');
+  assert.equal(screenshotWormLevel(31).saws.length,5);
+  assert.equal(screenshotWormLevel(55).saws.length,7);
+  assert.equal(screenshotWormLevel(89).saws.length,6);
+  assert.equal(screenshotWormLevel(100).saws.length,5);
+  assert.ok(screenshotWormLevel(32).spikes.length===0,
+    'the dark circular portal and red edible apples are NOT black thorns');
   const stage48=screenshotWormLevel(48);
   assert.deepEqual(stage48.saws,
     [[9,4],[11,4],[9,5],[11,5],[9,6],[11,6]]);
@@ -30,19 +39,23 @@ test('every stage has typed video objects, never confuse lethal discs with gray 
   assert.deepEqual(stage68.saws,[[7,1],[9,1],[11,1],[10,3],[7,5]]);
 });
 
-test('level 32 retains ALL FIVE original filmed saws, not only the three detected by the early template',()=>{
+test('level 32 retains all SIX confirmed filmed saws, including the one initially fruit-obscured',()=>{
   const map=screenshotWormLevel(32);
-  assert.deepEqual(map.saws,[[15,0],[13,2],[4,4],[8,4],[9,4]]);
-  assert.equal(map.saws.length,5);
+  assert.deepEqual(new Set(map.saws.map(p=>p.join(','))),
+    new Set(['15,0','13,2','4,4','8,4','9,4','5,1']));
+  assert.equal(map.saws.length,6);
+  assert.ok(map.apples.some(([x,y])=>x===5&&y===2),
+    'red fruit eaten under the saw remains an apple, NOT a fake spike');
   assert.equal(map.exitMode,'spiral');
   const state=startScreenshotWorm(32);
   const html=renderToStaticMarkup(createElement(AppleWormReferenceScene,{
     board:map,body:state.body,remaining:map.apples,
     grayPositions:state.grayPositions,showSky:false,
   }));
-  assert.equal((html.match(/data-source-saw="/g)||[]).length,5,
-    'five filmed discs should spin at their logical cell anchors');
-  assert.equal((html.match(/class="worm-source-saw-spinning"/g)||[]).length,5);
+  assert.equal((html.match(/data-source-saw="/g)||[]).length,6,
+    'six filmed discs should spin at their actual source grid anchors');
+  assert.equal((html.match(/class="worm-source-saw-spinning"/g)||[]).length,6);
+  assert.equal((html.match(/data-saw-rotation-marker="true"/g)||[]).length,6);
   assert.equal((html.match(/data-source-spike="/g)||[]).length,0,
     'no black triangular spikes were visible in the level-32 film');
 });
