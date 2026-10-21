@@ -218,6 +218,17 @@ export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDir
       phase:'won',moves:state.moves+1,
       ...(state.grayPositions?{grayPositions:state.grayPositions.map(p=>[...p] as ScreenshotPoint)}:{})};
   }
+  // The source saw wheel is lethal even when embedded in a brick platform.
+  // Check contact BEFORE solid-wall rejection; otherwise a saw sharing a
+  // terrain cell behaves like a harmless immovable wall (e.g. Level 32).
+  if(stage.saws.some(p=>eq(p,head))||stage.spikes.some(p=>eq(p,head))){
+    const body:ScreenshotPoint[]=[head,...state.body.slice(0,-1)];
+    return {
+      level:state.level,body,collected:[...state.collected],
+      phase:'lost',moves:state.moves+1,
+      ...(state.grayPositions?{grayPositions:state.grayPositions.map(p=>[...p] as ScreenshotPoint)}:{})
+    };
+  }
   if(!onBoard(head)||solid.has(key(head))||state.body[1]&&eq(head,state.body[1]))return state;
   const dynamic=hasMovableGray(stage.number,stage.sourceMode);
   let boxes:readonly ScreenshotPoint[]|undefined=dynamic
