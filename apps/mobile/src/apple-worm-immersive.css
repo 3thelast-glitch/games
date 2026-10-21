@@ -293,6 +293,15 @@ body > .worm-immersive.worm-page[data-stage-origin="user-screenshot"] svg[data-s
   width:100%;display:flex;flex-direction:column;
   align-items:center;gap:8px;padding:2px 0 16px;
 }
+/* Launch directly into the board on ALL viewports. Previously this selector
+   was hidden only for width <=600px; Android in landscape exposed the whole
+   stage-selection page even when showChoose was false. */
+.worm-source-levels[data-open="false"]{
+  display:none!important;
+}
+.worm-source-levels[data-open="true"]{
+  display:flex!important;
+}
 .worm-source-packs{
   display:flex;gap:5px;flex-wrap:wrap;align-items:center;
   justify-content:center;width:100%;
