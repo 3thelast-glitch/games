@@ -16,9 +16,9 @@
  * Level 104's seven-stone pillar (4,1..7) is stationary; its free crate is
  * (6,7) in the original early frame (not the older image's 7,7).
  *
- * Brick-attached red pointed caps WITH DARK OUTLINES were detected in 40
- * stages and are modeled as lethal black-tipped thorns, not red apples.
- * These are distinct from the black circular spiral (the winning exit).
+ * Red teardrops under platforms can be EDIBLE apples, as verified by filmed
+ * bite/growth in Stage 32. Do not reclassify them as black spikes by appearance.
+ * The black circular spiral is the exit, not a lethal black hazard.
  */
 import type {ScreenshotPoint} from './screenshot-game.ts';
 const SAWS=`
@@ -119,64 +119,18 @@ export const VIDEO_SAW_STARTS=parse(SAWS);
 export const VIDEO_STONE_STARTS=parse(STONES);
 export const VIDEO_SAW_STAGE_COUNT=Object.keys(VIDEO_SAW_STARTS).length;
 /**
- * Separate source-video DARK-OUTLINED POINTED CAPS underneath brick ledges.
- * These were previously falsely detected as edible red apples because both
- * shapes contain similar red pixels. Each listed cell was visibly attached to
- * a brown brick above it and lacked the green apple stem/leaf, as verified
- * from the actual source opening image and cell-local silhouette comparison.
- * Positive-only classification: ambiguous or occluded candidates stay out.
- * Render a visible charcoal/black thorn with a dark-red warning core.
+ * No separate BLACK, triangular lethal spikes are verified in the supplied
+ * 105-stage source video. Their source-coordinate inventory remains EMPTY.
  *
- * IMPORTANT: these are the 40 stage groups / 63 definite visible caps in
- * source. This does not certify every hidden thorn or the entire physics of
- * dynamic source stages; don't invent other black obstacles from portals.
+ * Critical temporal evidence: in L32 (t=654→669s) a red object hanging below
+ * the upper saw disappears when the worm EATS it. It is an apple, not a spike,
+ * regardless of whether its green leaf was occluded in a single video frame.
+ * Similar red drop-shaped objects MUST NOT be converted into lethal hazards
+ * on color detection alone. Need actual contact/death evidence before adding.
  */
-const SOURCE_POINTED_THORNS=`
-18|9:5
-26|7:3
-28|8:3
-30|9:6
-32|5:2
-33|5:2
-39|8:5
-40|14:4
-45|9:3
-47|13:3
-49|15:3
-51|8:3 10:3
-52|6:1 13:4
-53|7:3
-54|7:4 9:4
-55|11:3
-56|8:5
-58|9:6 11:7
-59|10:2
-62|10:4 7:5
-66|9:3
-68|6:4 8:4 9:6 11:6 6:8 8:8
-69|9:7
-73|8:5 9:5 10:5 11:6 9:8
-74|9:5
-76|12:3
-78|4:3
-79|10:3
-83|7:0 11:0 8:3 10:3
-87|12:4
-88|13:5
-90|11:5
-91|8:3
-93|11:5
-96|9:4
-97|9:-1 2:5 16:5
-98|15:1
-100|8:4 9:4 10:4 11:5 9:7
-102|12:3
-103|7:2
-`.trim();
-export const VIDEO_TRIANGULAR_SPIKES=parse(SOURCE_POINTED_THORNS);
-export const VIDEO_THORN_STAGE_COUNT=Object.keys(VIDEO_TRIANGULAR_SPIKES).length;
-export const VIDEO_THORN_CELL_COUNT=Object.values(VIDEO_TRIANGULAR_SPIKES)
-  .reduce((sum,cells)=>sum+cells.length,0);
+export const VIDEO_TRIANGULAR_SPIKES:Readonly<Record<number,readonly ScreenshotPoint[]>>={};
+export const VIDEO_THORN_STAGE_COUNT=0;
+export const VIDEO_THORN_CELL_COUNT=0;
 /** Source-informed exception: stage 104 seven-cell tower is unmovable.
  * Stage 104 single loose stone is at (6,7); all other typed solo/loose
  * stones use push & gravity. Confirmation of exact future stone motion needs
