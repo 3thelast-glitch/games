@@ -23,7 +23,7 @@ test('Apple Worm 105-level production-engine solvability report', {timeout:12000
   assert.equal(APPLE_WORM_SCREENSHOT_LEVEL_COUNT,105);
   const rows=[] as Array<{
     n:number;status:string;route:string|null;steps:number|null;
-    explored:number;portal:readonly[number,number]|null;issues:string[];
+    explored:number;portal:readonly[number,number]|null;exitMode:string;issues:string[];
   }>;
   for(let n=1;n<=105;n++){
     const stage=screenshotWormLevel(n);
@@ -35,11 +35,13 @@ test('Apple Worm 105-level production-engine solvability report', {timeout:12000
       assert.equal(replay.legalMoves,result.route!.length,'blocked source move L'+n);
       assert.equal(replay.won,true,'no true engine win L'+n);
       assert.equal(replay.state.phase,'won','not won L'+n);
-      assert.deepEqual(replay.state.body[0],stage.portal,'not at portal L'+n);
+      if(stage.exitMode==='top-boundary')
+        assert.equal(replay.state.body[0]![1],-3,'did not leave top of screen L'+n);
+      else assert.deepEqual(replay.state.body[0],stage.portal,'not at portal L'+n);
     }
     rows.push({n,status:result.status,route:result.route?.map(d=>({up:'U',right:'R',down:'D',left:'L'})[d]).join('')??null,
       steps:result.routeLength,explored:result.explored,portal:stage.portal,
-      issues:[...stage.issues].filter(s=>s.includes('unresolved'))});
+      exitMode:stage.exitMode,issues:[...stage.issues].filter(s=>s.includes('unresolved'))});
     if(n%15===0)console.log('APPLE_WORM_105_AUDIT_BATCH='+JSON.stringify(rows.slice(-15)));
   }
   const tally=Object.fromEntries(['won','missing-exit','exhausted','budget'].map(status=>
