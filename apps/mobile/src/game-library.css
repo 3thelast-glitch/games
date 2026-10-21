@@ -1,0 +1,354 @@
+/* NAQLA game library: compact app-launcher experience.
+   Scoped classes keep match boards and the legacy rules/mode dialogs unchanged. */
+.naqla-library {
+  isolation: isolate;
+  position: relative;
+  min-width: 0;
+}
+.naqla-library::before {
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+  content: '';
+  inset: -34px -18px auto;
+  height: 280px;
+  background: radial-gradient(ellipse at 78% 12%, #3651b91e, transparent 62%),
+              radial-gradient(ellipse at 20% 18%, #7646ce14, transparent 60%);
+}
+.naqla-library-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  margin: 0 0 21px;
+  min-width: 0;
+}
+.naqla-library-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #9ba9de;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.naqla-library-kicker::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #87a6ff;
+  box-shadow: 0 0 16px #7e9cff99;
+}
+.naqla-library-hero h1 {
+  margin: 7px 0 6px;
+  font-size: clamp(27px, 3vw, 42px);
+  letter-spacing: -.04em;
+  line-height: 1.2;
+  font-weight: 800;
+  color: #f6f8ff;
+}
+.naqla-library-hero p {
+  margin: 0;
+  max-width: 520px;
+  color: #a7b3d2;
+  line-height: 1.6;
+  font-size: 13px;
+}
+.naqla-library-count {
+  flex: 0 0 auto;
+  font: 700 13px ui-monospace, SFMono-Regular, monospace;
+  padding: 9px 12px;
+  border-radius: 11px;
+  border: 1px solid #5164a454;
+  background: #192746b9;
+  color: #becaf5;
+}
+.naqla-library-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.naqla-library-search {
+  flex: 1 1 240px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.naqla-library-search > svg {
+  position: absolute;
+  inset-inline-start: 15px;
+  z-index: 1;
+  pointer-events: none;
+  stroke: #8e9dbf;
+  fill: none;
+  stroke-width: 1.75;
+}
+.naqla-library-search input {
+  width: 100%;
+  height: 44px;
+  min-width: 0;
+  padding-block: 8px;
+  padding-inline: 43px 14px;
+  border-radius: 13px;
+  border: 1px solid #34446a;
+  outline-offset: 3px;
+  background: #111b30eb;
+  color: #eef3ff;
+  font-size: 13px;
+}
+.naqla-library-search input::placeholder { color: #8897b8; }
+.naqla-library-search input:focus { border-color: #688eff; box-shadow: 0 0 0 3px #5d7ef322; }
+.naqla-library-filters {
+  display: flex;
+  flex: 1 1 420px;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+  overflow-x: auto;
+  padding: 2px 1px 5px;
+  scrollbar-width: thin;
+}
+.naqla-library-filter {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #303e61;
+  border-radius: 999px;
+  background: #131d32cf;
+  color: #b3bed9;
+  padding: 10px 15px;
+  font-size: 12px;
+  font-weight: 650;
+  min-height: 40px;
+  transition: background 180ms, border-color 180ms, color 180ms, transform 180ms;
+}
+.naqla-library-filter:hover { color: white; border-color: #7a91cb; }
+.naqla-library-filter[aria-pressed='true'] {
+  border-color: #6a8aff;
+  background: linear-gradient(125deg,#2f67e7,#563cdc);
+  color: #fff;
+  box-shadow: 0 5px 18px #3266fd30;
+}
+.game-grid.naqla-app-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 23px 17px;
+  align-items: start;
+  margin-bottom: 35px;
+}
+.game-grid.naqla-app-grid > .game-card.naqla-icon-tile {
+  position: relative;
+  justify-self: center;
+  width: 100%;
+  max-width: 152px;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+  transform: none;
+}
+.game-grid.naqla-app-grid > .game-card.naqla-icon-tile:hover {
+  border: 0;
+  box-shadow: none;
+  transform: none;
+}
+.naqla-icon-launch.play-button {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  min-height: 0;
+  background: transparent;
+  text-align: center;
+  color: #eef3ff;
+  text-decoration: none;
+}
+.naqla-icon-frame {
+  position: relative;
+  display: block;
+  isolation: isolate;
+  overflow: hidden;
+  aspect-ratio: 1;
+  width: 100%;
+  border-radius: 24%;
+  border: 2px solid #899bdb61;
+  background:
+    radial-gradient(circle at 27% 13%, var(--icon-glow, #5b83d5aa), transparent 61%),
+    linear-gradient(145deg, var(--icon-bg-a,#254677), var(--icon-bg-b,#13172f));
+  box-shadow: inset 0 1px 2px #fff5, 0 7px 18px #0006, 0 1px 0 #95baff31;
+  transition: transform 190ms cubic-bezier(.2,.8,.2,1), box-shadow 190ms ease, border-color 190ms ease;
+  -webkit-backface-visibility: hidden;
+}
+.naqla-icon-frame::after {
+  position: absolute;
+  pointer-events: none;
+  content: '';
+  inset: 2px;
+  z-index: 3;
+  border-radius: 22%;
+  border: 1px solid #ffffff30;
+  box-shadow: inset 0 0 18px #00000015;
+}
+.naqla-icon-launch:hover .naqla-icon-frame,
+.naqla-icon-launch:focus-visible .naqla-icon-frame {
+  transform: translateY(-4px) scale(1.045);
+  border-color: #aec5ffbf;
+  box-shadow: inset 0 1px 3px #fff6, 0 12px 22px #0009, 0 0 23px #647bff38;
+}
+.naqla-icon-launch:active .naqla-icon-frame { transform: scale(.965); }
+.naqla-icon-frame .game-art {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  position: absolute;
+  inset: 0;
+}
+.naqla-icon-frame .game-art > svg {
+  width: 112%;
+  height: 112%;
+  max-height: none;
+  max-width: none;
+  flex: 0 0 auto;
+  object-fit: contain;
+  transform: translateY(1%) scale(1);
+  filter: drop-shadow(0 5px 7px #0007);
+}
+.naqla-icon-frame .game-art.quoridor > svg,
+.naqla-icon-frame .game-art.dominoes > svg,
+.naqla-icon-frame .game-art.dotsAndBoxes > svg {
+  width: 116%;
+  height: 116%;
+  max-height: none;
+  transform: translateY(1%);
+}
+.naqla-icon-frame .game-art .art-orbit { display: none; }
+.naqla-icon-frame .game-art .art-halo {
+  width: 90%;
+  height: 80%;
+  top: 5%;
+  left: 4%;
+  filter: blur(22px);
+  opacity: .8;
+}
+.naqla-icon-label {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  min-height: 36px;
+  margin-top: 9px;
+  padding: 0 1px;
+  font-weight: 750;
+  font-size: clamp(11px,1.15vw,13px);
+  line-height: 1.38;
+  overflow-wrap: anywhere;
+  text-align: center;
+  color: #edf2ff;
+}
+.naqla-icon-info, .naqla-icon-favorite {
+  position: absolute;
+  z-index: 5;
+  top: 7px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  width: 31px;
+  height: 31px;
+  min-height: 31px;
+  border-radius: 11px;
+  border: 1px solid #aebdf05c;
+  background: #0d1739ba;
+  color: #f5f7ff;
+  backdrop-filter: blur(7px);
+  transition: background 180ms, transform 180ms;
+}
+.naqla-icon-info { inset-inline-start: 7px; }
+.naqla-icon-favorite { inset-inline-end: 7px; }
+.naqla-icon-info:hover, .naqla-icon-favorite:hover { background: #2c427c; transform: scale(1.06); }
+.naqla-icon-favorite[aria-pressed='true'] { color: #ff94b6; background: #502140d9; }
+.naqla-icon-favorite[aria-pressed='true'] svg { fill: #f26a96; }
+.naqla-library-empty {
+  padding: 42px 20px;
+  text-align: center;
+  border: 1px dashed #405077;
+  border-radius: 18px;
+  background: #111b2c;
+  color: #b7c3dd;
+}
+.naqla-library-empty strong { display: block; margin-bottom: 14px; }
+.naqla-library-empty button {
+  border: 1px solid #617df4;
+  border-radius: 12px;
+  background: #243a83;
+  padding: 10px 16px;
+  font-weight: 650;
+  color: white;
+}
+/* Unique art direction per game; the existing authored SVG scene is the artwork source. */
+.naqla-icon-tile.ludo { --icon-bg-a:#6436bf; --icon-bg-b:#171244; --icon-glow:#b34afaa3; }
+.naqla-icon-tile.appleWorm { --icon-bg-a:#53c9eb; --icon-bg-b:#228c64; --icon-glow:#9beefad6; }
+.naqla-icon-tile.basketballLine { --icon-bg-a:#46aff1; --icon-bg-b:#185fbd; --icon-glow:#8de1ffcc; }
+.naqla-icon-tile.backroomBill { --icon-bg-a:#b8ab68; --icon-bg-b:#625d36; --icon-glow:#e7d9999e; }
+.naqla-icon-tile.arithmetica { --icon-bg-a:#bd8750; --icon-bg-b:#3c251e; --icon-glow:#ffe68c8c; }
+.naqla-icon-tile.survivalBuilder { --icon-bg-a:#22c5c0; --icon-bg-b:#146a8c; --icon-glow:#abf7ad8c; }
+.naqla-icon-tile.towerDestiny { --icon-bg-a:#7182df; --icon-bg-b:#28194c; --icon-glow:#d4abff99; }
+.naqla-icon-tile.gasStation { --icon-bg-a:#eeae59; --icon-bg-b:#79482e; --icon-glow:#ffe698aa; }
+.naqla-icon-tile.checkers { --icon-bg-a:#af6f59; --icon-bg-b:#352331; --icon-glow:#f2b47e77; }
+.naqla-icon-tile.gomoku { --icon-bg-a:#9a8067; --icon-bg-b:#3c2a20; --icon-glow:#f1cf8d8c; }
+.naqla-icon-tile.nineMensMorris { --icon-bg-a:#35b59b; --icon-bg-b:#183b48; --icon-glow:#88ffd28c; }
+.naqla-icon-tile.connectFour { --icon-bg-a:#437adf; --icon-bg-b:#162759; --icon-glow:#72cdffac; }
+.naqla-icon-tile.reversi { --icon-bg-a:#53bf83; --icon-bg-b:#16454a; --icon-glow:#abffc18c; }
+.naqla-icon-tile.dotsAndBoxes { --icon-bg-a:#32bce8; --icon-bg-b:#163c80; --icon-glow:#73fcf8a6; }
+.naqla-icon-tile.dominoes { --icon-bg-a:#31a4a5; --icon-bg-b:#173341; --icon-glow:#8eeddb9c; }
+.naqla-icon-tile.navalBattle { --icon-bg-a:#3689c8; --icon-bg-b:#0a2450; --icon-glow:#78c1f7ad; }
+.naqla-icon-tile.digitalGame { --icon-bg-a:#e5a44f; --icon-bg-b:#4b2871; --icon-glow:#e6caffaa; }
+.naqla-icon-tile.abalone { --icon-bg-a:#7881b2; --icon-bg-b:#1c264b; --icon-glow:#d3ddff99; }
+.naqla-icon-tile.quoridor { --icon-bg-a:#b98c63; --icon-bg-b:#395c60; --icon-glow:#d1c99b8c; }
+.naqla-icon-tile.chess { --icon-bg-a:#b49bcb; --icon-bg-b:#34265a; --icon-glow:#eac9ffad; }
+
+@media (min-width: 1500px) {
+  .game-grid.naqla-app-grid { grid-template-columns:repeat(auto-fill,minmax(125px,1fr)); gap: 28px 20px; }
+}
+@media (max-width: 700px) {
+  .naqla-library-hero { margin-bottom: 18px; }
+  .naqla-library-hero h1 { font-size: 29px; }
+  .naqla-library-hero p { font-size: 12px; }
+  .naqla-library-toolbar { gap: 9px; margin-bottom: 17px; }
+  .naqla-library-search { flex-basis: 100%; }
+  .naqla-library-filters { flex-basis: 100%; }
+  .game-grid.naqla-app-grid {
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap: 17px 11px;
+  }
+  .naqla-icon-label { font-size: 11px; min-height: 31px; }
+  .naqla-icon-info,.naqla-icon-favorite { width: 27px; height: 27px; min-height: 27px; border-radius: 9px; top: 5px; }
+  .naqla-icon-info { inset-inline-start: 5px; }
+  .naqla-icon-favorite { inset-inline-end: 5px; }
+  .naqla-icon-info svg,.naqla-icon-favorite svg { width: 14px; height: 14px; }
+}
+@media (min-width: 460px) and (max-width: 700px) {
+  .game-grid.naqla-app-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+}
+@media (min-width: 701px) and (max-width: 850px) {
+  .game-grid.naqla-app-grid { grid-template-columns:repeat(5,minmax(0,1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .naqla-icon-frame, .naqla-library-filter, .naqla-icon-info, .naqla-icon-favorite { transition:none; }
+  .naqla-icon-launch:hover .naqla-icon-frame { transform:none; }
+}
