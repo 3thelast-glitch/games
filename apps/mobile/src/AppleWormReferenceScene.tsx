@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, type CSSProperties } from 'react';
 import type { ScreenshotLevel, ScreenshotPoint } from '../../../packages/games/apple-worm/screenshot-game.ts';
 import { displayGrayPositions } from '../../../packages/games/apple-worm/gray-box-physics-batch-3.ts';
 import { WormApple, WormCharacter, WormPortal, WormSky, WormTerrain }
@@ -21,7 +21,7 @@ const anchor=([x,y]:ScreenshotPoint)=>({
   x:(x+.5)*CELL,y:(y+.5)*CELL,
 });
 
-export function AppleWormReferenceScene({board,body,remaining,grayPositions,phase='playing',biteFx=null,showSky=true}:{
+export function AppleWormReferenceScene({board,body,remaining,grayPositions,phase='playing',biteFx=null,showSky=true,previousWormHead=null,wormMotionKey=0}:{
   board:ScreenshotLevel;
   body:readonly ScreenshotPoint[];
   remaining:readonly ScreenshotPoint[];
@@ -29,6 +29,8 @@ export function AppleWormReferenceScene({board,body,remaining,grayPositions,phas
   phase?:'playing'|'won'|'lost';
   biteFx?:{key:number;apple:ScreenshotPoint}|null;
   showSky?:boolean;
+  previousWormHead?:ScreenshotPoint|null;
+  wormMotionKey?:number;
 }) {
   const id=useId().replace(/:/g,'')+'-pdf105-r9';
   // Retain the seven fixed gray pillar cells while animating Stage 104's crate.
@@ -172,9 +174,16 @@ export function AppleWormReferenceScene({board,body,remaining,grayPositions,phas
       data-neck-x={neck?anchor(neck).x:undefined}
       data-neck-y={neck?anchor(neck).y:undefined}
       data-face-angle={faceAngle} data-mouth-target-distance={cue.distance??'none'}>
-      <WormCharacter body={worm} tile={CELL} id={id+'-worm'}
-        anticipating={cue.hungry&&!chewing} bite={chewing}
-        faceAngle={faceAngle}/>
+      <g key={wormMotionKey}
+        className={previousWormHead&&head?'worm3-worm-step-motion':''}
+        style={previousWormHead&&head?{
+          '--worm-motion-dx':(Math.max(-2.5,Math.min(2.5,previousWormHead[0]-head[0]))*CELL)+'px',
+          '--worm-motion-dy':(Math.max(-2.5,Math.min(2.5,previousWormHead[1]-head[1]))*CELL)+'px',
+        } as CSSProperties:undefined}>
+        <WormCharacter body={worm} tile={CELL} id={id+'-worm'}
+          anticipating={cue.hungry&&!chewing} bite={chewing}
+          faceAngle={faceAngle}/>
+      </g>
     </g>}
   </>;
 }
