@@ -27,7 +27,7 @@ test('original 105-stage gameplay follows title → stage select → fullscreen 
   await expect(game.locator('.worm3-level-tile').first()).toBeDisabled();
   await game.getByRole('button',{name:'Previous level page'}).click();
 
-  await game.getByRole('button',{name:'Level 1'}).click();
+  await game.getByRole('button',{name:'Level 1', exact:true}).click();
   await expect(game).toHaveAttribute('data-worm-screen','game');
   const board=game.locator('svg[data-source-level="1"]');
   await expect(board).toBeVisible();
@@ -48,10 +48,10 @@ test('original 105-stage gameplay follows title → stage select → fullscreen 
   await expect(game.locator('.worm3-game')).toBeVisible();
   await game.getByRole('button',{name:'Game menu'}).click();
   await game.getByRole('button',{name:'Undo'}).click();
-  await game.getByRole('button',{name:'Level Select'}).click();
+  await game.locator('.worm3-game .worm3-top-left .worm3-icon-button').first().click();
   await expect(game).toHaveAttribute('data-worm-screen','levels');
   await expect(game.getByRole('button',{name:'Level 2 locked'})).toBeDisabled();
-  await game.getByRole('button',{name:'Level 1'}).click();
+  await game.getByRole('button',{name:'Level 1', exact:true}).click();
   const restarted=game.locator('svg[data-source-level="1"]');
   await expect(restarted).toBeVisible();
   await expect(restarted.locator('[data-source-portal]')).toHaveCount(1);

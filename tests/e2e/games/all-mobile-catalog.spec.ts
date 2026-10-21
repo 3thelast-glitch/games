@@ -15,7 +15,7 @@ const solo = {
   appleWorm: { root: '[data-stage-origin="user-screenshot"]', scene: 'svg[data-source-level]' },
   basketballLine: { root: '.basketball-page', scene: '.basketball-canvas' },
   backroomBill: { root: '.backroom-page', scene: '.backroom-canvas' },
-  arithmetica: { root: '.arithmetica-page', scene: '.arithmetica-blackboard' },
+  arithmetica: { root: '.arithmetica-immersive', scene: '.arithmetica-start-screen' },
   survivalBuilder: { root: '.survival-builder-page', scene: '.survival-island-scene' },
   towerDestiny: { root: '.tower-destiny-page', scene: '.tower-destiny-canvas' },
   gasStation: { root: '.gas-page', scene: '.gas-station-scene' },
@@ -72,8 +72,9 @@ async function exerciseSolo(page: Page, id: SoloId) {
     await page.locator('.backroom-panel-buttons button').first().click();
     await expect(page.locator('.backroom-floor-grid')).toBeVisible();
   } else if (id === 'arithmetica') {
-    await expect(page.locator('.arithmetica-overlay')).toBeVisible();
-    await page.locator('.arithmetica-overlay button').first().click();
+    await expect(page.locator('[data-arithmetica-screen="home"]')).toBeVisible();
+    await page.locator('.arithmetica-start-button').click();
+    await expect(page.locator('.arithmetica-blackboard')).toBeVisible();
     await expect(page.locator('.arithmetica-answer')).toHaveCount(2);
     await page.locator('.arithmetica-answer').first().click();
     await expect(page.locator('.arithmetica-time-fill')).toBeVisible();
@@ -139,6 +140,9 @@ for (const locale of locales) {
               await page.locator('.worm3-game .worm3-top-left button').first().click();
               await page.locator('.worm3-levels .worm3-top-left button').first().click();
               await page.locator('.worm3-home .worm3-top-left button').first().click();
+            }else if(id==='arithmetica'){
+              await page.locator('.arithmetica-heading .button.secondary').click();
+              await page.locator('.arithmetica-exit').click();
             }else{
               await page.locator(config.root+' .button.secondary').first().click();
             }

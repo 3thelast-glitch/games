@@ -41,3 +41,17 @@ export async function leaveGameLandscape(): Promise<void> {
   }
   enteredFullscreen = false;
 }
+
+/** Portrait-friendly immersive games share browser fullscreen but do not lock orientation. */
+export function enterFullscreenOnlyGame(gameId: string): void {
+  document.documentElement.dataset.immersiveGame = gameId;
+  document.documentElement.style.overflow = 'hidden';
+}
+export async function leaveFullscreenOnlyGame(): Promise<void> {
+  delete document.documentElement.dataset.immersiveGame;
+  document.documentElement.style.overflow = '';
+  if (enteredFullscreen && document.fullscreenElement) {
+    try { await document.exitFullscreen(); } catch { /* Safe inline fallback. */ }
+  }
+  enteredFullscreen = false;
+}
