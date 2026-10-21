@@ -12,7 +12,8 @@ import {
 import { RANKS } from '../../../packages/core/src/ranking.ts';
 import { Avatar, avatars, Empty, GameArt, Icon, Modal, formatTime } from './components.tsx';
 import { gameInfo, upcoming } from './gameViews.tsx';
-import { useI18n } from './i18n.tsx';
+import { useI18n, gameSearchAliases } from './i18n.tsx';
+import { libraryFilters, gameMatchesLibraryFilter, type LibraryCategory } from './gameLibraryCatalog.ts';
 import type { Settings } from './platform.ts';
 import { api } from './network.ts';
 import { practiceSummary } from './practice.ts';
@@ -41,21 +42,31 @@ export function HomePage({
   hasMatch: boolean;
 }) {
   const { t } = useI18n();
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState<LibraryCategory>('all');
+  const favorites = profile?.favorites ?? [];
+  const visibleGames = gameInfo.filter((game) =>
+    gameMatchesLibraryFilter(
+      game.id,
+      t(game.id),
+      search,
+      category,
+      favorites,
+      gameSearchAliases(game.id),
+    ),
+  );
   return (
-    <div className="home-page page-enter">
-      <section className="home-heading">
+    <div className="home-page naqla-library page-enter">
+      <header className="naqla-library-hero">
         <div>
-          <div className="eyebrow">
-            <span className="live-dot" />
-            {t('welcome')}
-          </div>
-          <h1>{t('headline')}</h1>
-          <p>{t('subhead')}</p>
+          <span className="naqla-library-kicker">{t('welcome')}</span>
+          <h1>{t('library')}</h1>
+          <p>{t('libraryDiscover')}</p>
         </div>
-        <div className="heading-mark" aria-hidden="true">
-          ✦<span>01 — {String(gameInfo.length).padStart(2, '0')}</span>
-        </div>
-      </section>
+        <span className="naqla-library-count" aria-label={`${gameInfo.length} ${t('library')}`}>
+          {String(gameInfo.length).padStart(2, '0')}
+        </span>
+      </header>
       {hasMatch && (
         <button className="resume-banner" onClick={onResume}>
           <span className="live-dot" />
@@ -63,62 +74,82 @@ export function HomePage({
           <Icon name="arrow" />
         </button>
       )}
-      <div className="section-heading">
-        <h2>
-          {t('library')} <span className="count">{String(gameInfo.length).padStart(2, '0')}</span>
-        </h2>
-        <span className="small-muted">{t('strategy')}</span>
+      <div className="naqla-library-toolbar">
+        <label className="naqla-library-search">
+          <svg width="19" height="19" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="10.5" cy="10.5" r="6.5" />
+            <path d="m15.5 15.5 5 5" />
+          </svg>
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={t('librarySearch')}
+            aria-label={t('librarySearch')}
+            autoComplete="off"
+          />
+        </label>
+        <div className="naqla-library-filters" role="group" aria-label={t('libraryCategories')}>
+          {libraryFilters.map((filter) => (
+            <button
+              key={filter}
+              type="button"
+              className="naqla-library-filter"
+              aria-pressed={category === filter}
+              onClick={() => setCategory(filter)}
+            >
+              {t(`libraryCategory_${filter}`)}
+            </button>
+          ))}
+        </div>
       </div>
-      <section className="game-grid">
-        {gameInfo.map((game, index) => (
-          <article className={`game-card ${game.id}`} key={game.id}>
-            <div className="card-art-wrap">
-              <GameArt game={game.id} />
-              <span className="availability">
-                <span />
-                {t('available')}
+      <section className="game-grid naqla-app-grid" aria-label={t('library')}>
+        {visibleGames.map((game) => (
+          <article className={`game-card naqla-icon-tile ${game.id}`} key={game.id}>
+            <button
+              type="button"
+              className="play-button naqla-icon-launch"
+              onClick={() => onChoose(game.id)}
+              aria-label={`${t('play')}: ${t(game.id)}`}
+            >
+              <span className="naqla-icon-frame">
+                <GameArt game={game.id} compact />
               </span>
-              {!['appleWorm','basketballLine','backroomBill','arithmetica','survivalBuilder','towerDestiny','gasStation'].includes(game.id) && <button
-                className={`favorite-button ${profile?.favorites.includes(game.id) ? 'is-favorite' : ''}`}
-                aria-label={`${t('favorites')}: ${t(game.id)}`}
-                aria-pressed={profile?.favorites.includes(game.id) ?? false}
-                onClick={() => onFavorite(game.id)}
-              >
-                <Icon name="heart" size={18} />
-              </button>}
-              <span className="art-number">{String(index + 1).padStart(2, '0')}</span>
-            </div>
-            <div className="game-card-body">
-              <div className="game-tag">{t(game.tag)}</div>
-              <div className="game-title">
-                <h2>{t(game.id)}</h2>
-                <button
-                  className="icon-button"
-                  aria-label={`${t('rules')}: ${t(game.id)}`}
-                  onClick={() => onRules(game.id)}
-                >
-                  <Icon name="info" size={18} />
-                </button>
-              </div>
-              <p>{t(game.description)}</p>
-              <div className="game-meta">
-                <span>
-                  <Icon name="people" size={16} />
-                  {game.id === 'ludo' ? '4 / 6 / 8 / 10' : ['appleWorm','basketballLine','backroomBill','arithmetica','survivalBuilder','towerDestiny','gasStation'].includes(game.id) ? '1' : t('players')}
-                </span>
-                <span>
-                  <Icon name="clock" size={16} />
-                  {['ludo', 'appleWorm', 'basketballLine', 'backroomBill', 'arithmetica', 'survivalBuilder', 'towerDestiny', 'gasStation'].includes(game.id) ? t('local') : game.duration + ' ' + t('minutes')}
-                </span>
-              </div>
-              <button className="button play-button" onClick={() => onChoose(game.id)}>
-                {t('play')}
-                <Icon name="arrow" size={19} />
-              </button>
-            </div>
+              <span className="naqla-icon-label">{t(game.id)}</span>
+            </button>
+            <button
+              type="button"
+              className="naqla-icon-info"
+              aria-label={`${t('rules')}: ${t(game.id)}`}
+              title={t('rules')}
+              onClick={() => onRules(game.id)}
+            >
+              <Icon name="info" size={16} />
+            </button>
+            <button
+              type="button"
+              className="naqla-icon-favorite"
+              aria-label={`${t('favorites')}: ${t(game.id)}`}
+              aria-pressed={favorites.includes(game.id)}
+              title={t('favorites')}
+              onClick={() => onFavorite(game.id)}
+            >
+              <Icon name="heart" size={16} />
+            </button>
           </article>
         ))}
       </section>
+      {visibleGames.length === 0 && (
+        <div className="naqla-library-empty" role="status">
+          <strong>{t('libraryEmpty')}</strong>
+          <button
+            type="button"
+            onClick={() => { setSearch(''); setCategory('all'); }}
+          >
+            {t('libraryReset')}
+          </button>
+        </div>
+      )}
       <section className="play-way">
         <div className="section-heading">
           <h2>{t('playYourWay')}</h2>
