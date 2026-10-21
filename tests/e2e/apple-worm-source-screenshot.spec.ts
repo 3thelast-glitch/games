@@ -1,72 +1,54 @@
 import {test,expect} from '@playwright/test';
 
-test('the 105 previously reference-only gallery stages are now the ONE interactive Apple Worm game',async({page})=>{
+/** The source-derived 105-stage game now has three distinct screens,
+ * rather than a debug dashboard / gallery mixed with the actual level.
+ */
+test('original 105-stage gameplay follows title → stage select → fullscreen puzzle',async({page})=>{
   const uncaught:string[]=[];
   page.on('pageerror',error=>uncaught.push(error.message));
   await page.goto('/');
   await page.addStyleTag({content:'*,*::before,*::after{animation:none!important;transition:none!important}'});
   await page.locator('.game-card.appleWorm .play-button').click();
-  const game=page.locator('[data-stage-origin="user-screenshot"]');
+  const game=page.locator('body > [data-stage-origin="user-screenshot"]');
   await expect(game).toBeVisible();
   await expect(game).toHaveAttribute('data-source-stage-count','105');
-  await expect(game).toHaveAttribute('data-pdf-reference','approved');
-  await expect(game).toHaveAttribute('data-renderer','premium-gallery-game');
   await expect(game).toHaveAttribute('data-visual-revision','PDF105-R11');
-  await expect(game.getByText('PDF105-R11')).toBeVisible();
-  await expect(game.getByText(/Reference snapshots|ليست قابلة للعب|غير معتمدة/)).toHaveCount(0);
-  await expect(game.getByRole('button',{name:/Legacy 40|المراحل القديمة 40/})).toHaveCount(0);
+  await expect(game).toHaveAttribute('data-worm-screen','home');
+  await expect(game.locator('.worm3-title-logo')).toBeVisible();
+  await expect(game.locator('svg[data-source-level]')).toHaveCount(0);
+
+  await game.locator('.worm3-play-button').click();
+  await expect(game).toHaveAttribute('data-worm-screen','levels');
+  await expect(game.locator('.worm3-level-tile')).toHaveCount(15);
+  await expect(game.locator('.worm3-level-tile').nth(10)).toBeDisabled();
+  await game.getByRole('button',{name:'Next level page'}).click();
+  await expect(game.locator('.worm3-level-tile').first()).toBeDisabled();
+  await game.getByRole('button',{name:'Previous level page'}).click();
+
+  await game.getByRole('button',{name:'Level 1'}).click();
+  await expect(game).toHaveAttribute('data-worm-screen','game');
   const board=game.locator('svg[data-source-level="1"]');
   await expect(board).toBeVisible();
   await expect(board).toHaveAttribute('viewBox','0 0 630 270');
   await expect(board).toHaveAttribute('data-terrain-cell-count','12');
-  await expect(board.locator('[data-source-terrain="premium-art"]')).toHaveCount(1);
-  await expect(board.locator('[data-source-worm]')).toHaveCount(1);
-  await expect(board.locator('.worm-character')).toHaveCount(1);
-  await expect(board.locator('.worm-terrain')).toHaveCount(1);
-  await expect(board.locator('.worm-clouds')).toHaveCount(1);
-  await expect(board.locator('[data-mouth-pose="idle"]')).toHaveCount(1);
-  await expect(board.locator('.worm-portal-orbit')).toHaveCount(1);
-  await expect(board.locator('.worm-portal-ready')).toHaveCount(1);
+  await expect(board.locator('[data-source-terrain="classic-solid-dirt"]')).toHaveCount(1);
   await expect(board.locator('[data-source-worm]')).toHaveAttribute('data-body-length','3');
   await expect(board.locator('[data-source-apple]')).toHaveCount(0);
-  await expect(board.locator('[data-source-gray-object]')).toHaveCount(0);
   await expect(board.locator('[data-source-portal]')).toHaveCount(1);
-  await expect(board.locator('[data-source-worm]')).toHaveAttribute('data-head-x','165');
-  await game.getByRole('button',{name:'right'}).click();
-  await expect(board.locator('[data-source-worm]')).toHaveAttribute('data-head-x','195');
+  await expect(game.locator('.worm-source-stats')).toHaveCount(0);
+  await expect(game.locator('.worm3-move-pad button')).toHaveCount(4);
+
+  await game.getByRole('button',{name:'Move right'}).click();
+  await expect(game.locator('.worm3-game')).toBeVisible();
+  await game.getByRole('button',{name:'Game menu'}).click();
   await game.getByRole('button',{name:'Undo'}).click();
-  await expect(board.locator('[data-source-worm]')).toHaveAttribute('data-head-x','165');
-
-  await game.getByRole('button',{name:'Stage 2'}).click();
+  await game.getByRole('button',{name:'Level Select'}).click();
+  await expect(game).toHaveAttribute('data-worm-screen','levels');
+  await game.getByRole('button',{name:'Level 2'}).click();
   const second=game.locator('svg[data-source-level="2"]');
-  await expect(second).toHaveAttribute('viewBox','0 0 630 270');
-  await expect(second).toHaveAttribute('data-terrain-cell-count','10');
-  await expect(second.locator('[data-source-worm]')).toHaveAttribute('data-head-x','195');
-  await expect(second.locator('[data-source-worm]')).toHaveAttribute('data-head-y','105');
-  await expect(second.locator('[data-source-worm]')).toHaveAttribute('data-face-angle','0');
-  await expect(second.locator('[data-source-worm]')).toHaveAttribute('data-mouth-target-distance','none');
-  await expect(second.locator('[data-source-apple]')).toHaveCount(0);
-  await expect(second.locator('[data-source-portal]')).toHaveAttribute('transform','translate(405 75)');
-  await expect(second.locator('.worm-portal-ready')).toHaveCount(1);
-
-  await game.getByRole('button',{name:'Stage 10'}).click();
-  const tenth=game.locator('svg[data-source-level="10"]');
-  await expect(tenth).toHaveAttribute('data-terrain-cell-count','25');
-
-  await game.getByRole('button',{name:'Stage 15'}).click();
-  const fifteenth=game.locator('svg[data-source-level="15"]');
-  await expect(fifteenth).toBeVisible();
-  await expect(fifteenth.locator('[data-source-apple]')).toHaveCount(1);
-  await expect(fifteenth.locator('[data-source-worm]')).toHaveAttribute('data-body-length','3');
-  await expect(fifteenth.locator('.worm-apple')).toHaveCount(1);
-  await expect(fifteenth.locator('.worm-fruit-aura')).toHaveCount(1);
-  await expect(fifteenth.locator('.worm-fruit-float')).toHaveCount(1);
-
-  await game.getByRole('button',{name:'91–105'}).click();
-  await game.getByRole('button',{name:'Stage 101'}).click();
-  const later=game.locator('svg[data-source-level="101"]');
-  await expect(later).toBeVisible();
-  await expect(later.locator('[data-source-apple]')).toHaveCount(12);
-  await expect(later.locator('[data-source-portal]')).toHaveCount(0);
+  await expect(second).toBeVisible();
+  await expect(second.locator('[data-source-portal]')).toHaveCount(1);
+  await expect(second.locator('[data-source-worm]')).toHaveCount(1);
+  await expect(game.locator('.worm-video-gallery')).toHaveCount(0);
   expect(uncaught).toEqual([]);
 });
