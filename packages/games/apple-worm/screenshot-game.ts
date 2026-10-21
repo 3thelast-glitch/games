@@ -20,6 +20,7 @@ import { APPLE_WORM_FULL_VIDEO_VISIBLE_APPLES } from './full-video-early-apples-
 import { supportsBatchTwoSideContact } from './wall-support-batch-2.ts';
 import { isBatchOneMovableGray, pushGrayBox, settleGrayBoxes } from './gray-box-physics-batch-1.ts';
 import { isBatchThreeMovableGray, fixedGrayForBatchThree, initialMovableGray } from './gray-box-physics-batch-3.ts';
+import {sourceSawStarts,sourceStoneStarts,sourceSpikeStarts,STATIONARY_STONES} from './video-source-obstacles-105.ts';
 
 export type ScreenshotPoint = readonly [number, number];
 export type ScreenshotDirection = 'up'|'right'|'down'|'left';
@@ -38,6 +39,10 @@ export interface ScreenshotLevel {
   /** In the complete source video L70/95/101 finish by leaving the TOP of the field. */
   readonly exitMode:'spiral'|'top-boundary'|'unknown';
   readonly grayObjects:readonly ScreenshotPoint[];
+  /** Circular blades with visible serrated teeth: contact is lethal. */
+  readonly saws:readonly ScreenshotPoint[];
+  /** Separate triangle spikes where future source evidence verifies cells. */
+  readonly spikes:readonly ScreenshotPoint[];
   readonly canMove:boolean;
   readonly issues:readonly string[];
   /** The PDF reference is approved; this is not a claim of visual parity. */
@@ -62,7 +67,9 @@ const DELTAS:Record<ScreenshotDirection,ScreenshotPoint>={
 };
 const eq=(a:ScreenshotPoint,b:ScreenshotPoint)=>a[0]===b[0]&&a[1]===b[1];
 const key=(p:ScreenshotPoint)=>p[0]+','+p[1];
-const hasMovableGray=(stage:number)=>isBatchOneMovableGray(stage)||isBatchThreeMovableGray(stage);
+const hasMovableGray=(stage:number,mode:ScreenshotSourceMode='full-video')=>
+  isBatchOneMovableGray(stage)||isBatchThreeMovableGray(stage)||
+  mode==='full-video'&&sourceStoneStarts(stage).length>0;
 /** Observed in the player's complete 105-level video, NOT invented spirals.
  * L70 ~1779s, L95 ~2570s, L101 ~2707s finish above visible playfield. */
 const TOP_BOUNDARY_EXIT_STAGES=new Set([70,95,101]);
@@ -136,7 +143,16 @@ export function screenshotWormLevel(level:number,sourceMode:ScreenshotSourceMode
   const earlyApples=sourceMode==='full-video'?APPLE_WORM_FULL_VIDEO_VISIBLE_APPLES[level]:undefined;
   const apples=earlyApples?[...earlyApples]:videoStart?.extraInitialApples
     ?[...source.applesVisible,...videoStart.extraInitialApples]:source.applesVisible;
-  const grayObjects=videoStart?.grayStartOverride??source.grayObjectsVisible;
+  // The original image-only detector grouped *saw wheels* with gray stones.
+  // Use the user's early VIDEO as the primary object-type evidence. Never
+  // turn a serrated wheel into a static solid/question-mark block.
+  const saws=sourceMode==='full-video'?sourceSawStarts(level):[];
+  const spikes=sourceMode==='full-video'?sourceSpikeStarts(level):[];
+  const filmedStones=sourceMode==='full-video'?sourceStoneStarts(level):[];
+  const grayObjects=sourceMode==='full-video'&&(saws.length||filmedStones.length)
+    ?filmedStones:videoStart?.grayStartOverride??source.grayObjectsVisible;
+  if(saws.length)issues.push('filmed-serrated-saw-hazards');
+  if(filmedStones.length)issues.push('filmed-typed-stones');
   if(sourceMode==='full-video'){
     if(fullVideoStart)issues.push('full-video-early-pose-mouth-confirmed');
     else issues.push('full-video-opening-pose-needs-manual-review');
@@ -151,7 +167,7 @@ export function screenshotWormLevel(level:number,sourceMode:ScreenshotSourceMode
     worm:worm??source.wormVisible,
     apples,
     portal,exitMode,
-    grayObjects,
+    grayObjects,saws,spikes,
     canMove:worm!==null,
     issues,
     sourceGeometry:'screenshot',referenceFrameApproved:true,
@@ -163,7 +179,7 @@ export function startScreenshotWorm(level=1,sourceMode:ScreenshotSourceMode='ful
   return {
     level,body:map.worm.map(([x,y]):ScreenshotPoint=>[x,y]),
     collected:[],phase:'playing',moves:0,
-    ...(hasMovableGray(level)?{grayPositions:initialMovableGray(level,map.grayObjects).map(
+    ...(hasMovableGray(level,sourceMode)?{grayPositions:initialMovableGray(level,map.grayObjects).map(
       ([x,y]):ScreenshotPoint=>[x,y])}:{})
   };
 }
@@ -203,7 +219,7 @@ export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDir
       ...(state.grayPositions?{grayPositions:state.grayPositions.map(p=>[...p] as ScreenshotPoint)}:{})};
   }
   if(!onBoard(head)||solid.has(key(head))||state.body[1]&&eq(head,state.body[1]))return state;
-  const dynamic=hasMovableGray(stage.number);
+  const dynamic=hasMovableGray(stage.number,stage.sourceMode);
   let boxes:readonly ScreenshotPoint[]|undefined=dynamic
     ?(state.grayPositions??initialMovableGray(stage.number,stage.grayObjects)):undefined;
   if(dynamic){
@@ -220,9 +236,14 @@ export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDir
   const collected=grow?[...state.collected,fruitIndex].sort((a,b)=>a-b):[...state.collected];
   let body:ScreenshotPoint[]=[head,...(grow?state.body:state.body.slice(0,-1))]
     .map(([x,y]):ScreenshotPoint=>[x,y]);
+  // Source-video serrated saws / spikes are DANGEROUS, not solid gray crates.
+  // Test every body segment after a step and during each falling gravity step.
+  // Rendering may rotate saws smoothly; collision stays deterministic.
+  const lethal=new Set([...stage.saws,...stage.spikes].map(key));
+  const hitLethal=()=>body.some(p=>lethal.has(key(p)));
   // The black exit is always active. Fruit is optional growth, not a gate.
   const win=()=>stage.portal!==null&&eq(body[0]!,stage.portal);
-  let phase:ScreenshotPhase=win()?'won':'playing';
+  let phase:ScreenshotPhase=hitLethal()?'lost':win()?'won':'playing';
   const remaining=stage.apples.filter((_,i)=>!collected.includes(i));
   // Simulate source-video gray box gravity only on explicitly verified stages.
   if(dynamic)boxes=settleGrayBoxes(boxes!,solid,body,remaining);
@@ -244,6 +265,7 @@ export function moveScreenshotWorm(state:ScreenshotState,direction:ScreenshotDir
         phase='lost';break;
       }
       body=falling;
+      if(hitLethal()){phase='lost';break;}
       if(win()){phase='won';break;}
     }
   }
@@ -269,7 +291,7 @@ export function restoreScreenshotWorm(value:unknown):ScreenshotState|null {
     new Set(s.collected).size!==s.collected.length)return null;
   if(s.phase==='won'&&!(board.exitMode==='spiral'&&!!board.portal&&eq(s.body[0]!,board.portal)||
     board.exitMode==='top-boundary'&&s.body[0]![1]===-3))return null;
-  const boxes=hasMovableGray(s.level!)?s.grayPositions:undefined;
+  const boxes=hasMovableGray(s.level!,board.sourceMode)?s.grayPositions:undefined;
   if(boxes!==undefined&&(!Array.isArray(boxes)||
     boxes.length!==initialMovableGray(s.level!,board.grayObjects).length||
     boxes.some(p=>!Array.isArray(p)||p.length!==2||!onBoard([p[0],p[1]])||
@@ -278,6 +300,6 @@ export function restoreScreenshotWorm(value:unknown):ScreenshotState|null {
     boxes.some(p=>s.body!.some(b=>eq(p,b)))))return null;
   return {level:s.level!,body:s.body.map(([x,y]):ScreenshotPoint=>[x,y]),
     collected:[...s.collected],moves:s.moves!,phase:s.phase!,
-    ...(hasMovableGray(s.level!)?{grayPositions:(boxes??initialMovableGray(s.level!,board.grayObjects))
+    ...(hasMovableGray(s.level!,board.sourceMode)?{grayPositions:(boxes??initialMovableGray(s.level!,board.grayObjects))
       .map(([x,y]):ScreenshotPoint=>[x,y])}:{})};
 }
