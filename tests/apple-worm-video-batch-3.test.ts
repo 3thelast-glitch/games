@@ -40,7 +40,7 @@ test('final batch is precisely the three requested stages and does not overwrite
 test('all three video opening poses are connected, unambiguous and clear of original ground',()=>{
   const expectedSizes={98:4,104:3,105:3};
   for(const n of BATCH_THREE_3){
-    const board=screenshotWormLevel(n),state=startScreenshotWorm(n);
+    const board=screenshotWormLevel(n,'legacy'),state=startScreenshotWorm(n,'legacy');
     assert.deepEqual(state.body,APPLE_WORM_VIDEO_BATCH_THREE_STARTS[n]!.headToTail);
     assert.equal(state.body.length,expectedSizes[n]);
     assert.ok(board.canMove&&board.portal);
@@ -58,20 +58,20 @@ test('all three video opening poses are connected, unambiguous and clear of orig
 });
 
 test('stage 98 restores the video-opening top apple and missing upper saw',()=>{
-  const board=screenshotWormLevel(98);
+  const board=screenshotWormLevel(98,'legacy');
   assert.deepEqual(board.apples.at(-1),[15,1]);
   assert.deepEqual(board.grayObjects,[[5,-1],[5,0],[5,1],[8,1]]);
   assert.deepEqual(board.portal,[2,1]);
 });
 
 test('stage 104 has seven IMMOBILE pillar blocks and exactly one PUSHABLE crate',()=>{
-  const board=screenshotWormLevel(104),start=startScreenshotWorm(104);
+  const board=screenshotWormLevel(104,'legacy'),start=startScreenshotWorm(104,'legacy');
   assert.deepEqual(fixedGrayForBatchThree(104,board.grayObjects),
     Array.from({length:7},(_,i)=>[4,i+1]));
   assert.deepEqual(initialMovableGray(104,board.grayObjects),[[7,7]]);
   assert.deepEqual(start.grayPositions,[[7,7]]);
   assert.equal(displayGrayPositions(104,board.grayObjects,start.grayPositions).length,8);
-  const first=moveScreenshotWorm(start,'right');
+  const first=moveScreenshotWorm(start,'right',board);
   assert.notEqual(first,start);
   assert.deepEqual(first.body[0],[7,7]);
   assert.deepEqual(first.grayPositions,[[8,7]],
@@ -82,18 +82,18 @@ test('stage 104 has seven IMMOBILE pillar blocks and exactly one PUSHABLE crate'
     [8,7],'rendered crate follows actual gameplay position');
 });
 
-test('all three final-batch stages replay legal moves to TRUE portal victory',()=>{
+test('three historical selected-clip routes replay faithfully in their isolated source fixture',()=>{
   const results=[] as {level:number;route:string;moves:number;won:boolean}[];
   for(const n of BATCH_THREE_3){
     const coded=BATCH_THREE_CODED_WIN_ROUTES[n];
     const moves=[...coded].map(ch=>decoder[ch]!);
     assert.ok(moves.every(Boolean));
-    const result=replayAppleWormRoute(n,moves);
+    const result=replayAppleWormRoute(n,moves,{source:'legacy'});
     assert.equal(result.legalMoves,moves.length,
       'illegal or blocked move in Level '+n+' at step '+(result.legalMoves+1));
     assert.equal(result.won,true,'actual in-engine portal win needed for '+n);
     assert.equal(result.state.phase,'won');
-    assert.deepEqual(result.state.body[0],screenshotWormLevel(n).portal);
+    assert.deepEqual(result.state.body[0],screenshotWormLevel(n,'legacy').portal);
     results.push({level:n,route:coded,moves:moves.length,won:true});
   }
   console.log('APPLE_WORM_VIDEO_BATCH_3_JSON='+JSON.stringify({
@@ -104,9 +104,9 @@ test('all three final-batch stages replay legal moves to TRUE portal victory',()
 
 test('short level 98 and 104 solutions are discoverable without any forced-win data',()=>{
   for(const n of [98,104]){
-    const r=solveAppleWormLevel(n,{maxStates:8000,maxMillis:1200});
+    const r=solveAppleWormLevel(n,{maxStates:8000,maxMillis:1200,source:'legacy'});
     assert.equal(r.status,'won','BFS cannot find Stage '+n);
     assert.ok(r.route);
-    assert.equal(replayAppleWormRoute(n,r.route).won,true);
+    assert.equal(replayAppleWormRoute(n,r.route,{source:'legacy'}).won,true);
   }
 });
