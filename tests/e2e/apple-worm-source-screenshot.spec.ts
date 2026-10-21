@@ -31,7 +31,11 @@ test('original 105-stage gameplay follows title → stage select → fullscreen 
   await expect(board).toBeVisible();
   await expect(board).toHaveAttribute('viewBox','0 0 630 270');
   await expect(board).toHaveAttribute('data-terrain-cell-count','12');
-  await expect(board.locator('[data-source-terrain="classic-solid-dirt"]')).toHaveCount(1);
+  await expect(board.locator('[data-source-terrain="premium-art"]')).toHaveCount(1);
+  await expect(board.locator('.worm-character')).toHaveCount(1);
+  await expect(board.locator('.worm-terrain')).toHaveCount(1);
+  await expect(board.locator('.worm-portal-ready')).toHaveCount(1);
+  await expect(board.locator('.worm-clouds')).toHaveCount(0); // forest remains fullscreen background
   await expect(board.locator('[data-source-worm]')).toHaveAttribute('data-body-length','3');
   await expect(board.locator('[data-source-apple]')).toHaveCount(0);
   await expect(board.locator('[data-source-portal]')).toHaveCount(1);
