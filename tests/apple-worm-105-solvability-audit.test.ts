@@ -56,3 +56,30 @@ test('Apple Worm 105-level production-engine solvability report', {timeout:12000
   assert.equal(rows.length,105);
   assert.equal(Object.values(tally).reduce((a,b)=>a+b,0),105);
 });
+
+/** Second pass only on levels not solved by the cheap baseline. Budget is
+ * deliberately larger but STILL NOT a proof of impossible gameplay.
+ * Every win is certified by replay; unresolved levels stay explicitly listed.
+ */
+test('deeper route search on 16 budget-limited video levels',{timeout:120000},()=>{
+  const candidates=[20,64,77,80,81,83,84,88,89,90,92,93,94,97,100,105];
+  const results=[] as Array<{n:number;status:string;explored:number;steps:number|null;route:string|null}>;
+  for(const n of candidates){
+    const outcome=solveAppleWormLevel(n,{maxStates:24000,maxMillis:1800,source:'full-video'});
+    if(outcome.status==='won'){
+      assert.ok(outcome.route,'no actual winning route for '+n);
+      const replay=replayAppleWormRoute(n,outcome.route!,{source:'full-video'});
+      assert.equal(replay.won,true,'failed to reproduce deep win L'+n);
+      assert.equal(replay.legalMoves,outcome.route!.length);
+    }
+    results.push({n,status:outcome.status,explored:outcome.explored,
+      steps:outcome.routeLength,route:outcome.route?.map(d=>({
+        up:'U',right:'R',down:'D',left:'L'})[d]).join('')??null});
+    console.log('APPLE_WORM_105_DEEP_STAGE='+JSON.stringify(results.at(-1)));
+  }
+  console.log('APPLE_WORM_105_DEEP_SUMMARY='+JSON.stringify({
+    proven:results.filter(x=>x.status==='won').map(x=>x.n),
+    exhausted:results.filter(x=>x.status==='exhausted').map(x=>x.n),
+    budget:results.filter(x=>x.status==='budget').map(x=>x.n),
+  }));
+});
