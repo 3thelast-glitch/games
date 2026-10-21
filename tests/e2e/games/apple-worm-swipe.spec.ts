@@ -34,7 +34,7 @@ for(const locale of [{id:'ar',name:'ar-SA',dir:'rtl'},{id:'en',name:'en-US',dir:
         const board=game.locator('svg[data-source-level="1"]');
         await expect(board).toBeVisible();
         await expect(board).toHaveCSS('touch-action','none');
-        await expect(board.locator('[data-source-terrain="classic-solid-dirt"]')).toHaveCount(1);
+        await expect(board.locator('[data-source-terrain="premium-art"]')).toHaveCount(1);
         await expect(game.locator('.worm3-move-pad button')).toHaveCount(4);
         await expect(page.locator('.sidebar')).toBeHidden();
         await expect(page.locator('.topbar')).toBeHidden();
