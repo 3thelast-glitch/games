@@ -6,6 +6,12 @@ import { circuitSize, isSafe, nodeFor, tokensPerSeat, type LudoState, type LudoT
 import { useI18n } from './i18n.tsx';
 
 export const LUDO_COLORS = ['#10a33c','#f5bf18','#228afa','#f32737','#8a40ed','#f48221','#12bfc3','#ec4a9d','#84c92d','#3457c8'];
+/** Blends two #rrggbb colors; amt 0 returns the first, 1 the second. */
+function mix(hex: string, hex2: string, amt: number): string {
+  const p = (h: string) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  const a = p(hex), b = p(hex2);
+  return `rgb(${a.map((v, i) => Math.round(v + (b[i]! - v) * amt)).join(',')})`;
+}
 export const LUDO_SYMBOLS = ['●','◆','▲','■','⬟','⬡','✚','☾','✴','⬢'];
 export type Point = { x: number; y: number };
 export type LudoLayout = { nodes: Record<string, Point>; bases: Point[]; trackWidth: number };
@@ -134,21 +140,37 @@ function BoardBackdrop({count,layout}:{count:SeatCount;layout:LudoLayout}) {
 function Pawn({token,point,radius,legal,onChoose,stackOffset}:{
   token:LudoToken;point:Point;radius:number;legal:boolean;onChoose:(id:string)=>void;stackOffset:number;
 }) {
-  const x=point.x+stackOffset,y=point.y;
+  const x=point.x+stackOffset,y=point.y,r=radius,color=LUDO_COLORS[token.seat];
+  const rim=r>=18?2.2:Math.max(.7,r*.09);
+  // A classic Ludo piece, drawn standing on the cell: tiered round base,
+  // gold collar, tapered glossy body, spherical head. The slot number sits
+  // on the body so the head stays a clean sphere.
+  const bodyPath=[
+    `M ${x-r*.40} ${y+r*.56}`,
+    `C ${x-r*.31} ${y+r*.28} ${x-r*.225} ${y+r*.04} ${x-r*.20} ${y-r*.15}`,
+    `L ${x+r*.20} ${y-r*.15}`,
+    `C ${x+r*.225} ${y+r*.04} ${x+r*.31} ${y+r*.28} ${x+r*.40} ${y+r*.56}`,
+    `C ${x+r*.20} ${y+r*.67} ${x-r*.20} ${y+r*.67} ${x-r*.40} ${y+r*.56} Z`,
+  ].join(' ');
   return <g data-ludo-token={token.id} className={legal?'ludo-legal-pawn':'ludo-pawn'}
       tabIndex={legal?0:undefined} role={legal?'button':undefined}
       aria-label={legal?`Token ${token.slot+1}`:undefined}
       onClick={legal?()=>onChoose(token.id):undefined}
       onKeyDown={legal?e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();onChoose(token.id);}}:undefined}>
-    {legal && <circle cx={x} cy={y} r={radius+8} fill="none" stroke="#fffada" strokeWidth="4" className="ludo-pawn-glow"/>}
-    <ellipse cx={x} cy={y+radius*.47} rx={radius*.96} ry={radius*.57} fill="#0c1627" opacity=".35"/>
-    <circle cx={x} cy={y} r={radius} fill={LUDO_COLORS[token.seat]} stroke="#fff4cc" strokeWidth={radius>=18?3:1.4}/>
-    <circle cx={x} cy={y-radius*.14} r={radius*.62} fill={`url(#ludo-token-${token.seat})`}/>
-    <ellipse cx={x-radius*.26} cy={y-radius*.37} rx={radius*.22} ry={radius*.13} fill="#fff" opacity=".68" transform={`rotate(-29 ${x-radius*.26} ${y-radius*.37})`}/>
-    <text x={x} y={y+radius*.36} textAnchor="middle" fill="#fff"
-      stroke="#0b1525" strokeWidth={radius<12?.9:1.5} paintOrder="stroke" fontWeight="900"
-      fontSize={Math.max(11,radius*.8)}>{token.slot+1}</text>
-    {legal && <circle cx={x} cy={y} r={Math.max(radius+8,17)} fill="transparent"/>}
+    {legal && <circle cx={x} cy={y-r*.05} r={radius+8} fill="none" stroke="#fffada" strokeWidth="4" className="ludo-pawn-glow"/>}
+    <ellipse cx={x} cy={y+r*1.0} rx={r*.84} ry={r*.23} fill="#0c1627" opacity=".32"/>
+    <ellipse cx={x} cy={y+r*.80} rx={r*.84} ry={r*.27} fill={mix(color,'#0a1428',.5)} stroke="#0b1525" strokeOpacity=".3" strokeWidth={rim*.6}/>
+    <ellipse cx={x} cy={y+r*.70} rx={r*.84} ry={r*.27} fill={mix(color,'#ffffff',.16)} stroke="#fff4cc" strokeOpacity=".55" strokeWidth={rim*.6}/>
+    <ellipse cx={x} cy={y+r*.56} rx={r*.60} ry={r*.19} fill={mix(color,'#0a1428',.28)}/>
+    <path d={bodyPath} fill={`url(#ludo-pawn-body-${token.seat})`} stroke="#0b1525" strokeOpacity=".35" strokeWidth={rim*.7}/>
+    <ellipse cx={x-r*.13} cy={y+r*.18} rx={r*.085} ry={r*.30} fill="#fff" opacity=".30" transform={`rotate(-8 ${x-r*.13} ${y+r*.18})`}/>
+    <ellipse cx={x} cy={y-r*.17} rx={r*.315} ry={r*.105} fill="url(#ludo-gold)" stroke="#a8742a" strokeWidth={rim*.55}/>
+    <circle cx={x} cy={y-r*.52} r={r*.335} fill={`url(#ludo-token-${token.seat})`} stroke="#fff4cc" strokeWidth={rim}/>
+    <ellipse cx={x-r*.115} cy={y-r*.665} rx={r*.105} ry={r*.058} fill="#fff" opacity=".8" transform={`rotate(-25 ${x-r*.115} ${y-r*.665})`}/>
+    <text x={x} y={y+r*.44} textAnchor="middle" fill="#fff"
+      stroke="#0b1525" strokeWidth={radius<12?.8:1.3} paintOrder="stroke" fontWeight="900"
+      fontSize={Math.max(8,radius*.56)}>{token.slot+1}</text>
+    {legal && <circle cx={x} cy={y-r*.05} r={Math.max(radius+8,17)} fill="transparent"/>}
   </g>;
 }
 export function LudoBoard({state,legal,onChoose,zoom,center}:{
@@ -180,8 +202,11 @@ export function LudoBoard({state,legal,onChoose,zoom,center}:{
         <stop stopColor="#fffefb"/><stop offset="1" stopColor="#eceae5"/>
       </linearGradient>
       {LUDO_COLORS.slice(0,n).map((color,seat)=><radialGradient key={seat} id={`ludo-token-${seat}`} cx=".3" cy=".2" r=".9">
-        <stop stopColor="#ffffff" stopOpacity=".6"/><stop offset=".29" stopColor={color}/><stop offset="1" stopColor="#12213d"/>
+        <stop stopColor="#ffffff" stopOpacity=".6"/><stop offset=".29" stopColor={color}/><stop offset="1" stopColor={mix(color,'#12213d',.5)}/>
       </radialGradient>)}
+      {LUDO_COLORS.slice(0,n).map((color,seat)=><linearGradient key={'b'+seat} id={`ludo-pawn-body-${seat}`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor={mix(color,'#ffffff',.48)}/><stop offset=".45" stopColor={color}/><stop offset="1" stopColor={mix(color,'#0a1428',.44)}/>
+      </linearGradient>)}
     </defs>
     <BoardBackdrop count={n} layout={layout}/>
     {Array.from({length:C},(_,i)=>{
