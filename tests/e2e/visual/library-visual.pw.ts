@@ -47,18 +47,30 @@ for (const lang of languages) {
             aspectError: Math.max(...bounds.map((rect) => Math.abs(rect.width - rect.height))),
             scrollWidth: document.documentElement.scrollWidth,
             clientWidth: document.documentElement.clientWidth,
+            overflowingElements: [...document.querySelectorAll<HTMLElement>('body *')]
+              .map((element) => {
+                const rect = element.getBoundingClientRect();
+                return {
+                  name: element.tagName.toLowerCase(),
+                  className: typeof element.className === 'string' ? element.className.slice(0, 64) : '',
+                  left: Math.round(rect.left),
+                  right: Math.round(rect.right),
+                };
+              })
+              .filter((item) => item.left < -1 || item.right > innerWidth + 1)
+              .slice(0, 10),
           };
         });
+        await mkdir('artifacts/library', { recursive: true });
+        const imagePath = `artifacts/library/${lang.id}-${viewport.width}x${viewport.height}.png`;
+        await page.screenshot({ path: imagePath, fullPage: true, animations: 'disabled' });
+        console.log(JSON.stringify({ ...measurement, language: lang.id, viewport: viewport.width, imagePath }));
+
         expect(measurement.columns).toBeGreaterThanOrEqual(viewport.columns[0]);
         expect(measurement.columns).toBeLessThanOrEqual(viewport.columns[1]);
         expect(measurement.aspectError).toBeLessThanOrEqual(1);
         expect(measurement.scrollWidth).toBeLessThanOrEqual(measurement.clientWidth + 1);
         expect(errors).toEqual([]);
-
-        await mkdir('artifacts/library', { recursive: true });
-        const imagePath = `artifacts/library/${lang.id}-${viewport.width}x${viewport.height}.png`;
-        await page.screenshot({ path: imagePath, fullPage: true, animations: 'disabled' });
-        console.log(JSON.stringify({ ...measurement, language: lang.id, viewport: viewport.width, imagePath }));
       } finally {
         await context.close();
       }
