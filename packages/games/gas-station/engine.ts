@@ -22,7 +22,7 @@ export type Worker={id:number;job:StaffJob;level:number};
 export type GarageStep='diagnose'|'parts'|'repair'|'done';
 export type Mission='cleanup'|'fuel'|'sales'|'repair'|'wash'|'expansion'|'race';
 export type State={
- cash:number; fuel:number; maxFuel:number; goods:number;maxGoods:number;parts:number;
+ cash:number; fuel:number; maxFuel:number; goods:number;maxGoods:number;parts:number;soap:number;
  level:number;exp:number; bestLevel:number; reputation:number; rating:number;
  player:{x:number;y:number;tx:number|null;ty:number|null};
  facilities:Record<Facility,number>; upgrades:Record<Upgrade,number>;
@@ -56,7 +56,7 @@ export const initialDebris=():Debris[]=>Array.from({length:24},(_,i)=>({
 })).filter(d=>Math.hypot(d.x-390,d.y-372)>96);
 export function newGasStation():State{
  return {
-  cash:180,fuel:125,maxFuel:240,goods:8,maxGoods:30,parts:6,
+  cash:180,fuel:125,maxFuel:240,goods:8,maxGoods:30,parts:6,soap:0,
   level:1,exp:0,bestLevel:1,reputation:45,rating:3.1,
   player:{x:470,y:338,tx:null,ty:null},
   facilities:{pump:1,shop:0,garage:0,wash:0,tires:0},
@@ -112,6 +112,7 @@ export function buyFacility(s:State,key:Facility):boolean{
  const order:{[k in Facility]:number}={pump:1,shop:3,garage:4,wash:6,tires:8};
  if(s.level<order[key]||s.cash<facilityCost(s,key))return false;
  s.cash-=facilityCost(s,key);s.facilities[key]++;
+ if(key==='wash')s.soap+=3; // Single starter allocation: duplicate builds are already rejected.
  s.missions.expansion++;
  s.notice='gasExpanded';
  return true;
@@ -135,14 +136,15 @@ export function dismissStaff(s:State,id:number):boolean{
  if(index<0)return false;
  s.staff.splice(index,1);s.notice='gasDismissed';return true;
 }
-export function restock(s:State,type:'fuel'|'goods'|'parts',amount:number):boolean{
+export function restock(s:State,type:'fuel'|'goods'|'parts'|'soap',amount:number):boolean{
  if(![20,50,100].includes(amount))return false;
- const unit=type==='fuel'?2.05-s.upgrades.tankSize*.05:type==='goods'?3:4.3;
+ const unit=type==='fuel'?2.05-s.upgrades.tankSize*.05:type==='goods'?3:type==='soap'?3:4.3;
  const price=Math.ceil(amount*unit);
  if(s.cash<price)return false;
  if(type==='fuel'&&s.fuel+amount>s.maxFuel)return false;
  if(type==='goods'&&s.goods+amount>s.maxGoods)return false;
  if(type==='parts'&&s.parts+amount>120)return false;
+ if(type==='soap'&&s.soap+amount>120)return false;
  s.cash-=price;s[type]+=amount;
  s.notice='gasRestocked';return true;
 }
@@ -155,12 +157,14 @@ export function availableServiceStock(s:State,kind:Facility):number{
  if(kind==='pump')return Math.max(0,s.fuel-pendingStock(s,'pump'));
  if(kind==='shop')return Math.max(0,s.goods-pendingStock(s,'shop'));
  if(kind==='tires')return Math.max(0,s.parts-pendingStock(s,'tires'));
+ if(kind==='wash')return Math.max(0,s.soap-pendingStock(s,'wash'));
  return Number.POSITIVE_INFINITY;
 }
 function canStartCar(s:State,c:Vehicle):boolean{
  if(c.facility==='pump')return availableServiceStock(s,'pump')>=Math.ceil(c.needs);
  if(c.facility==='shop')return availableServiceStock(s,'shop')>=1;
  if(c.facility==='tires')return availableServiceStock(s,'tires')>=1;
+ if(c.facility==='wash')return availableServiceStock(s,'wash')>=1;
  if(c.facility==='garage')return s.parts>=2;
  return true;
 }
@@ -193,7 +197,8 @@ export function interactCar(s:State,id:number):boolean{
  if(!car||!isNear(s,car,115))return false;
  if(car.facility==='garage')return workGarage(s);
  if(!canStartCar(s,car)){
-  s.notice=car.facility==='pump'?'gasNeedFuel':car.facility==='shop'?'gasNeedGoods':'gasNeedParts';
+  s.notice=car.facility==='pump'?'gasNeedFuel':car.facility==='shop'?'gasNeedGoods':
+   car.facility==='wash'?'gasNeedSoap':'gasNeedParts';
   return false;
  }
  car.actorId=-1;car.status='servicing';
@@ -292,6 +297,7 @@ export function tickGas(s:State,dt:number):State{
      s.goods-=1;earn(s,car.reward,'shop');
     }else {
      if(car.facility==='tires')s.parts-=1;
+     if(car.facility==='wash')s.soap-=1;
      earn(s,car.reward,'service');
      if(car.facility==='garage')s.missions.repair++;
      if(car.facility==='wash')s.missions.wash++;
