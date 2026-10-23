@@ -43,8 +43,20 @@ export function gameMatchesLibraryFilter(
 ): boolean {
   if (category === 'favorites' && !favorites.includes(gameId)) return false;
   if (category !== 'all' && category !== 'favorites' && gameLibraryCategories[gameId] !== category) return false;
-  const q = search.trim().toLocaleLowerCase();
+  const q = normalizeLibrarySearch(search);
   if (!q) return true;
   return [translatedName, alternateName, gameId]
-    .some((value) => value.toLocaleLowerCase().includes(q));
+    .some((value) => normalizeLibrarySearch(value).includes(q));
+}
+
+/** Search both languages without making Arabic diacritics or tatweel mandatory. */
+export function normalizeLibrarySearch(value: string): string {
+  return value
+    .normalize('NFKC')
+    .toLocaleLowerCase()
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+    .replace(/[\u0622\u0623\u0625\u0671]/g, '\u0627')
+    .replace(/\u0649/g, '\u064A')
+    .trim()
+    .replace(/\s+/g, ' ');
 }
