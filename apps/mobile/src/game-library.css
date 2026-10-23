@@ -324,13 +324,16 @@
 .naqla-icon-tile.chess { --icon-bg-a:#b49bcb; --icon-bg-b:#34265a; --icon-glow:#eac9ffad; }
 
 @media (min-width: 1500px) {
-  .game-grid.naqla-app-grid { grid-template-columns:repeat(auto-fill,124px); gap: 24px 18px; }
+  .game-grid.naqla-app-grid { grid-template-columns:repeat(auto-fill,112px); gap: 24px 16px; }
 }
 @media (max-width: 700px) {
-  .naqla-library-hero { margin-bottom: 18px; }
-  .naqla-library-hero h1 { font-size: 22px; }
+  .naqla-library { margin-top: -8px; }
+  .naqla-library-kicker { display: none; }
+  .naqla-library-hero { margin-bottom: 10px; }
+  .naqla-library-hero h1 { font-size: 22px; margin: 0; }
   .naqla-library-hero p { font-size: 12px; }
-  .naqla-library-toolbar { gap: 9px; margin-bottom: 17px; }
+  .naqla-library-toolbar { gap: 7px; margin-bottom: 10px; }
+  .naqla-library-search input { height: 42px; min-height: 42px; }
   .naqla-library-search { flex-basis: 100%; }
   .naqla-library-filters { flex-basis: 100%; }
   .game-grid.naqla-app-grid {
