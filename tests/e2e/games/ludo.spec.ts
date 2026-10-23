@@ -12,9 +12,13 @@ for (const [name, size, cells, pawns] of [
       await page.goto('/');
       await expect(page.locator('.game-card.ludo')).toBeVisible();
       await page.locator('.game-card.ludo .play-button').click();
-      await expect(page.locator('.ludo-variants')).toBeVisible();
-      await page.locator('.ludo-variants button').filter({hasText:name}).click();
-      await page.locator('.ludo-options button').filter({hasText:'Pass & play'}).click();
+      // Immersive fullscreen home: NAQLA's own chrome is hidden.
+      await expect(page.locator('.ludo-immersive .ludo-home')).toBeVisible();
+      await expect(page.locator('.app-shell .sidebar')).toBeHidden();
+      await page.locator('.ludo-home-play').click();
+      await page.locator('.ludo-mode-card').nth(1).click();
+      await page.locator('.ludo-count-card').filter({hasText:name}).click();
+      await page.locator('.ludo-flow-next').click();
       await page.locator('.ludo-start').click();
       await expect(page.locator('.ludo-board')).toBeVisible();
       await expect(page.locator('.ludo-board')).toHaveAttribute('data-ludo-board-variant',size===4?'square':'radial');
@@ -53,8 +57,11 @@ test('Ludo Grand Arabic keeps board topology while reversing the surrounding UI'
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('lang','ar');
     await page.locator('.game-card.ludo .play-button').click();
-    await page.locator('.ludo-variants button').nth(3).click();
-    await page.locator('.ludo-options button').nth(1).click();
+    await expect(page.locator('.ludo-immersive .ludo-home')).toBeVisible();
+    await page.locator('.ludo-home-play').click();
+    await page.locator('.ludo-mode-card').nth(1).click();
+    await page.locator('.ludo-count-card').nth(3).click();
+    await page.locator('.ludo-flow-next').click();
     await page.locator('.ludo-start').click();
     await expect(page.locator('.ludo-page')).toHaveAttribute('dir','rtl');
     await expect(page.locator('.ludo-board [data-ludo-cell]')).toHaveCount(130);
@@ -63,4 +70,23 @@ test('Ludo Grand Arabic keeps board topology while reversing the surrounding UI'
     await expect(page.locator('.ludo-player-strip > span')).toHaveCount(10);
     await expect(page.locator('.ludo-board')).toHaveAttribute('style',/direction: ltr/);
   }finally{await context.close();}
+});
+
+test('Ludo pause menu exits back to the NAQLA library and restores its chrome', async ({page})=>{
+  await page.setViewportSize({width:1280,height:800});
+  await page.goto('/');
+  await page.locator('.game-card.ludo .play-button').click();
+  await expect(page.locator('.ludo-immersive .ludo-home')).toBeVisible();
+  await page.locator('.ludo-home-play').click();
+  await page.locator('.ludo-mode-card').nth(1).click();
+  await page.locator('.ludo-count-card').first().click();
+  await page.locator('.ludo-flow-next').click();
+  await page.locator('.ludo-start').click();
+  await expect(page.locator('.ludo-board')).toBeVisible();
+  await page.getByRole('button',{name:/Pause/i}).click();
+  await expect(page.getByRole('button',{name:/Resume Game/i})).toBeVisible();
+  await page.getByRole('button',{name:/Exit to NAQLA/i}).click();
+  await expect(page.locator('.ludo-immersive')).toHaveCount(0);
+  await expect(page.locator('.app-shell .sidebar')).toBeVisible();
+  await expect(page.locator('.game-card.ludo')).toBeVisible();
 });
