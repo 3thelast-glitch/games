@@ -69,7 +69,7 @@ export function HomePage({
           <span className="naqla-library-kicker">{t('welcome')}</span>
           <h1>{t('library')}</h1>
         </div>
-        <output
+        <span
           className="naqla-library-count"
           aria-live="polite"
           aria-label={`${t('library')}: ${visibleGames.length} / ${gameInfo.length}`}
@@ -77,7 +77,7 @@ export function HomePage({
           {search.trim() || category !== 'all'
             ? `${visibleGames.length} / ${gameInfo.length}`
             : String(gameInfo.length).padStart(2, '0')}
-        </output>
+        </span>
       </header>
       {hasMatch && (
         <button className="resume-banner" onClick={onResume}>
