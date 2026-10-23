@@ -10,7 +10,7 @@
   z-index: -1;
   pointer-events: none;
   content: '';
-  inset: -34px -18px auto;
+  inset: -34px 0 auto;
   height: 280px;
   background: radial-gradient(ellipse at 78% 12%, #3651b91e, transparent 62%),
               radial-gradient(ellipse at 20% 18%, #7646ce14, transparent 60%);
