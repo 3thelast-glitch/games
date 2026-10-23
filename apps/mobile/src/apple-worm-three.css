@@ -330,3 +330,178 @@ body > .worm-immersive.worm3[data-stage-origin="user-screenshot"] .worm3-board-z
 :root[data-reduce-motion='true'] .worm3 .worm-source-saw-spinning {
   animation:none!important;
 }
+
+/* === Professional visual polish layer (chrome only) =====================
+ * Scope: everything AROUND the approved reference scene — page ambience,
+ * buttons, HUD chips, level selector, dialogs and the result celebration.
+ * It deliberately does NOT change: stage geometry, the reference scene
+ * renderer, board-zone positioning/sizing, saw/spike anchors, the save
+ * format or the visual revision marker. All motion is disabled by the
+ * existing prefers-reduced-motion rule for .worm3 and by the explicit
+ * data-reduce-motion guard at the end of this block. */
+.worm3 {
+  --w3-ink:#274b63;
+  --w3-accent:#ff9f2e;
+  --w3-accent-deep:#f08c0a;
+  --w3-leaf:#57b81e;
+  --w3-glass:rgba(21,58,84,.38);
+  --w3-glass-border:rgba(255,255,255,.38);
+  --w3-shadow-md:0 6px 16px rgba(23,68,94,.28);
+  --w3-shadow-lg:0 18px 42px rgba(23,68,94,.38);
+  --w3-ease:cubic-bezier(.22,.9,.28,1);
+  --w3-dur:180ms;
+}
+body > .worm-immersive.worm-page.worm3[data-stage-origin="user-screenshot"] {
+  background:linear-gradient(180deg,#74b4e0 0%,#8ac5e6 34%,#a9d7f0 62%,#d2effc 100%)!important;
+}
+.worm3::before {
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(120% 55% at 50% -8%,rgba(255,255,255,.5),rgba(255,255,255,0) 60%),
+    radial-gradient(130% 90% at 50% 45%,rgba(0,0,0,0) 62%,rgba(24,66,96,.20) 100%);
+}
+/* Shared motion + numeric polish */
+.worm3 .worm3-icon-button,
+.worm3 .worm3-play-button,
+.worm3 .worm3-level-tile,
+.worm3 .worm3-page-arrow,
+.worm3 .worm3-move-pad button,
+.worm3 .worm3-options button,
+.worm3 .worm3-result-actions button {
+  transition:transform var(--w3-dur) var(--w3-ease),
+    box-shadow var(--w3-dur) var(--w3-ease),
+    background-color var(--w3-dur) var(--w3-ease),
+    background var(--w3-dur) var(--w3-ease);
+}
+.worm3 .worm3-tile-number,
+.worm3 .worm3-current-level,
+.worm3 .worm3-page-label,
+.worm3 .worm3-home-progress {font-variant-numeric:tabular-nums;}
+/* Top icon buttons: lift on hover, keep the existing press */
+@media (hover:hover) {
+  .worm3 .worm3-icon-button:hover:not(:disabled) {
+    transform:translateY(-2px);
+    box-shadow:0 7px 0 #a0afb1a6,0 12px 20px rgba(23,68,94,.35),inset 0 2px 3px #fff;
+  }
+  .worm3 .worm3-level-tile:hover:not(:disabled) {
+    transform:translateY(-3px);
+    box-shadow:0 6px 4px rgba(90,110,110,.5),0 12px 20px rgba(35,90,110,.4);
+  }
+  .worm3 .worm3-page-arrow:hover:not(:disabled) {transform:translateY(-50%) scale(1.06);}
+  .worm3 .worm3-move-pad button:hover:not(:disabled) {background:rgba(255,255,255,.34);}
+  .worm3 .worm3-options button:hover:not(:disabled) {background:#fff3d6;border-color:var(--w3-accent);}
+  .worm3 .worm3-result-actions button:hover:not(:disabled) {transform:translateY(-2px);box-shadow:var(--w3-shadow-md);}
+}
+/* Title: gentle float (keeps the -50% centering) + play-button breathing ring */
+@keyframes w3p-logo-float {
+  from {transform:translate(-50%,0);}
+  to {transform:translate(-50%,-9px);}
+}
+.worm3 .worm3-title-logo {animation:w3p-logo-float 4.6s ease-in-out infinite alternate;}
+@keyframes w3p-play-breathe {
+  0% {box-shadow:0 6px 0 #a0a8a27d,0 10px 20px #506d8e45,inset 0 1px 3px #fff,0 0 0 0 rgba(255,255,255,.55);}
+  100% {box-shadow:0 6px 0 #a0a8a27d,0 10px 20px #506d8e45,inset 0 1px 3px #fff,0 0 0 16px rgba(255,255,255,0);}
+}
+.worm3 .worm3-play-button {animation:w3p-play-breathe 2.4s ease-out infinite;}
+.worm3 .worm3-play-button:active:not(:disabled) {transform:translate(-50%,-48%) scale(.96);}
+/* Home progress pill */
+.worm3 .worm3-home-progress {
+  position:absolute;left:50%;bottom:4.5%;transform:translateX(-50%);z-index:5;
+  display:flex;align-items:center;gap:7px;direction:ltr;
+  padding:7px 18px;border-radius:999px;
+  background:var(--w3-glass);border:1.5px solid var(--w3-glass-border);
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  color:#fff;font-weight:900;font-size:clamp(13px,1.5vw,18px);letter-spacing:.04em;
+  text-shadow:0 1px 3px rgba(23,68,94,.5);box-shadow:var(--w3-shadow-md);
+  white-space:nowrap;
+}
+.worm3 .worm3-home-progress-star {color:#ffd34d;font-size:1.15em;text-shadow:0 2px 0 #ba702c;}
+/* Level selector: completed = green identity, current = stronger ring */
+.worm3 .worm3-level-panel {box-shadow:inset 0 2px 14px #c1faff44,var(--w3-shadow-lg);}
+.worm3 .worm3-level-tile[data-completed="true"] {
+  background:linear-gradient(155deg,#f4ffdc,#dcf2ba);
+}
+.worm3 .worm3-level-tile[data-completed="true"] .worm3-tile-number {color:#4d8f1d;}
+.worm3 .worm3-level-tile[data-locked="true"] {filter:saturate(.55);}
+.worm3 .worm3-level-tile[aria-current="step"] {
+  box-shadow:0 0 0 3px #ffe49f,0 0 0 6px rgba(255,182,46,.65),0 6px 12px rgba(35,90,110,.45);
+}
+.worm3 .worm3-level-tile[aria-current="step"] .worm3-tile-number {color:#d87823;}
+.worm3 .worm3-page-label {
+  background:var(--w3-glass);border:1.5px solid var(--w3-glass-border);
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  box-shadow:var(--w3-shadow-md);
+}
+/* In-game HUD chips */
+.worm3 .worm3-goal {
+  padding:5px 16px;border-radius:999px;opacity:1;
+  background:var(--w3-glass);border:1.5px solid var(--w3-glass-border);
+  backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+  box-shadow:var(--w3-shadow-md);
+}
+.worm3 .worm3-current-level {
+  padding:3px 16px 5px;border-radius:999px;
+  background:var(--w3-glass);border:1.5px solid var(--w3-glass-border);
+  backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+  box-shadow:var(--w3-shadow-md);line-height:1.15;
+}
+.worm3 .worm3-move-pad button {
+  background:linear-gradient(160deg,rgba(255,255,255,.30),rgba(245,255,252,.14));
+  backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+  box-shadow:0 4px 12px rgba(35,90,110,.35),inset 0 1px 2px rgba(255,255,255,.5);
+}
+/* Dialogs: soft entrance */
+@keyframes w3p-rise {
+  from {opacity:0;transform:translateY(8px) scale(.97);}
+  to {opacity:1;transform:translateY(0) scale(1);}
+}
+.worm3 .worm3-options {animation:w3p-rise .22s var(--w3-ease) both;box-shadow:var(--w3-shadow-lg);}
+.worm3 .worm3-help {animation:w3p-rise .22s var(--w3-ease) both;}
+/* Result: blurred veil, popping card, glowing stars, primary Next, confetti */
+.worm3 .worm3-result {backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
+@keyframes w3p-pop {
+  0% {opacity:0;transform:scale(.82) translateY(14px);}
+  100% {opacity:1;transform:scale(1) translateY(0);}
+}
+.worm3 .worm3-result-card {animation:w3p-pop .38s cubic-bezier(.2,1.35,.36,1) both;box-shadow:var(--w3-shadow-lg);}
+@keyframes w3p-star-pop {
+  0% {opacity:0;transform:scale(.4);}
+  70% {transform:scale(1.25);}
+  100% {opacity:1;transform:scale(1);}
+}
+.worm3 .worm3-result-stars {
+  display:inline-block;animation:w3p-star-pop .5s .12s var(--w3-ease) both;
+  text-shadow:0 2px 0 #ba702c,0 0 18px rgba(255,173,46,.75);letter-spacing:.08em;
+}
+.worm3 .worm3-result-actions button:active:not(:disabled) {transform:scale(.95);}
+.worm3 .worm3-result-actions .worm3-result-primary {
+  background:linear-gradient(180deg,#ffb62e,#f08c0a);color:#fff;
+  border-color:#fff;text-shadow:0 1px 2px rgba(120,60,0,.45);
+  box-shadow:0 5px 14px rgba(240,140,10,.5);
+}
+.worm3 .worm3-confetti {position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.worm3 .worm3-confetti span {
+  position:absolute;top:-5%;width:9px;height:14px;border-radius:2px;opacity:0;
+  left:calc(3% + var(--i) * 6.8%);
+  background:#ff5d5d;
+  animation:w3p-confetti-fall calc(2.4s + var(--i) * .06s) ease-in both;
+  animation-delay:calc(var(--i) * .08s);
+}
+.worm3 .worm3-confetti span:nth-child(4n+2) {background:#ffd34d;}
+.worm3 .worm3-confetti span:nth-child(4n+3) {background:#57b81e;}
+.worm3 .worm3-confetti span:nth-child(4n+4) {background:#4db2ff;}
+@keyframes w3p-confetti-fall {
+  0% {opacity:0;transform:translate3d(0,-4vh,0) rotate(0deg);}
+  8% {opacity:1;}
+  100% {opacity:.85;transform:translate3d(calc(var(--i) * 2px - 14px),108vh,0) rotate(680deg);}
+}
+/* Reduced motion set by app settings (the media query above covers OS-level) */
+:root[data-reduce-motion='true'] .worm3 .worm3-title-logo,
+:root[data-reduce-motion='true'] .worm3 .worm3-play-button,
+:root[data-reduce-motion='true'] .worm3 .worm3-confetti span,
+:root[data-reduce-motion='true'] .worm3 .worm3-result-card,
+:root[data-reduce-motion='true'] .worm3 .worm3-result-stars,
+:root[data-reduce-motion='true'] .worm3 .worm3-options,
+:root[data-reduce-motion='true'] .worm3 .worm3-help {
+  animation:none!important;
+}
