@@ -103,3 +103,23 @@
 .gas-sidebar{gap:5px}.gas-tabs button{font-size:9px;min-height:39px}
 }
 @media(prefers-reduced-motion:reduce){.gas-page *{transition:none!important;animation:none!important}}
+
+/* NAQLA immersive shell: station scrolls within the viewport while library chrome is hidden. */
+.app-shell.is-immersive-game .gas-page{
+ box-sizing:border-box;width:100%;max-width:none;height:100dvh;min-height:0;
+ overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+ padding:max(12px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right))
+  max(12px,env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left));
+}
+.app-shell.is-immersive-game .gas-page .gas-layout{max-width:1800px;margin:0 auto;grid-template-columns:minmax(0,1fr) minmax(285px,360px)}
+.app-shell.is-immersive-game .gas-page .gas-heading{max-width:1800px;margin:0 auto 14px}
+.app-shell.is-immersive-game .gas-page .gas-map{min-width:0}
+@media(max-width:1150px){
+ .app-shell.is-immersive-game .gas-page .gas-layout{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:520px){
+ .app-shell.is-immersive-game .gas-page{padding:env(safe-area-inset-top) 7px max(8px,env(safe-area-inset-bottom)) 7px}
+ .app-shell.is-immersive-game .gas-page .gas-heading p{display:none}
+ .app-shell.is-immersive-game .gas-page .gas-heading h1{font-size:22px}
+ .app-shell.is-immersive-game .gas-page .gas-heading .button{min-height:44px}
+}
