@@ -5,7 +5,7 @@
 .basketball-heading h1{font-weight:800;font-size:clamp(26px,3.8vw,42px);letter-spacing:-.8px;margin:7px 0}
 .basketball-heading p{font-size:13px;max-width:590px;color:#9daabd;line-height:1.7}
 .basketball-layout{display:grid;grid-template-columns:minmax(280px,520px) minmax(230px,330px);align-items:start;justify-content:center;gap:clamp(15px,3vw,35px)}
-.basketball-machine{width:min(100%,43.2dvh);margin-inline:auto;position:relative;overflow:hidden;border-radius:22px;background:#26344e;border:6px solid #1f2735;box-shadow:0 23px 60px #0006,0 0 0 1px #58779f55,0 12px 44px #0b1526aa;color:#272a2e;min-width:0}
+.basketball-machine{width:min(100%,43.2dvh);margin-inline:auto;position:relative;overflow:hidden;border-radius:22px;background:#e9e9e9;border:6px solid #353b47;box-shadow:0 23px 60px #0006;color:#272a2e;min-width:0}
 .basketball-hud{height:0;z-index:5;position:relative;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:12px 15px;pointer-events:none}
 .basketball-gems{display:inline-flex;gap:7px;align-items:center;font-weight:900;color:#3d4348;text-shadow:0 1px white;font-size:19px}
 .basketball-gems span{color:#22a6eb;font-size:20px;filter:drop-shadow(0 2px 0 #2472ab)}
@@ -15,7 +15,7 @@
 .pencil-live{color:#369de2;text-shadow:1px 1px #226496}
 .pencil-spent{color:#a2a6aa;opacity:.45}
 .basketball-best{color:#4d565d;font-size:12px;font-weight:800;padding-top:7px}
-.basketball-canvas-wrap{position:relative;overflow:hidden;isolation:isolate;background:#26344e}
+.basketball-canvas-wrap{position:relative;overflow:hidden;isolation:isolate;background:#e9e9e9}
 .basketball-canvas{width:100%;height:auto;aspect-ratio:3/5;max-height:none;display:block;margin:0 auto;cursor:crosshair;touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:contain}
 .basketball-instructions{position:absolute;bottom:13%;left:50%;transform:translateX(-50%);display:flex;align-items:center;flex-direction:column;gap:7px;text-align:center;white-space:nowrap;background:#ffffffde;box-shadow:0 3px 15px #0002;border:1px solid #c6cbd0;padding:11px 16px;border-radius:10px;color:#3a7195;font-size:11px;font-weight:900;pointer-events:none;letter-spacing:.6px}
 .basketball-instruction-icon{font-size:25px;line-height:1}
