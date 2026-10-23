@@ -4,6 +4,7 @@
   isolation: isolate;
   position: relative;
   min-width: 0;
+  margin-block-start: -8px;
 }
 .naqla-library::before {
   position: absolute;
@@ -24,7 +25,7 @@
   min-width: 0;
 }
 .naqla-library-kicker {
-  display: inline-flex;
+  display: none;
   align-items: center;
   gap: 9px;
   color: #9ba9de;
@@ -42,7 +43,7 @@
   box-shadow: 0 0 16px #7e9cff99;
 }
 .naqla-library-hero h1 {
-  margin: 7px 0 6px;
+  margin: 0;
   font-size: clamp(20px, 2.2vw, 24px);
   letter-spacing: -.04em;
   line-height: 1.2;
@@ -327,7 +328,7 @@
   .game-grid.naqla-app-grid { grid-template-columns:repeat(auto-fill,112px); gap: 24px 16px; }
 }
 @media (max-width: 700px) {
-  .naqla-library { margin-top: -8px; }
+  .naqla-library { margin-block-start: -22px; }
   .naqla-library-kicker { display: none; }
   .naqla-library-hero { margin-bottom: 10px; }
   .naqla-library-hero h1 { font-size: 22px; margin: 0; }
@@ -349,6 +350,10 @@
 @media (min-width: 390px) and (max-width: 700px) {
   .game-grid.naqla-app-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
   .game-grid.naqla-app-grid > .game-card.naqla-icon-tile { max-width: 100px; }
+}
+@media (min-width: 701px) and (max-width: 1150px) {
+  .naqla-library-search { flex: 0 1 190px; }
+  .naqla-library-filters { flex: 1 1 320px; }
 }
 @media (min-width: 701px) and (max-width: 850px) {
   .game-grid.naqla-app-grid { grid-template-columns:repeat(6,minmax(0,1fr)); }
