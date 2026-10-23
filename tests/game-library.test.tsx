@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import React from 'react';
 import { gameInfo } from '../apps/mobile/src/gameViews.tsx';
-import { gameLibraryCategories, libraryFilters } from '../apps/mobile/src/gameLibraryCatalog.ts';
+import { gameLibraryCategories, gameMatchesLibraryFilter, libraryFilters, normalizeLibrarySearch } from '../apps/mobile/src/gameLibraryCatalog.ts';
 
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/' });
 Object.assign(globalThis, {
@@ -66,4 +66,35 @@ test('compact launcher preserves game play, rules, favorites, and bilingual sear
   assert.ok(view.getByRole('status').textContent?.includes('لا توجد ألعاب'));
   fireEvent.click(view.getByRole('button', { name: 'عرض جميع الألعاب' }));
   assert.equal(view.container.querySelectorAll('.game-grid > .game-card').length, 20);
+});
+
+test('search ignores Arabic tashkeel, tatweel, alif variants and extra whitespace', () => {
+  assert.equal(normalizeLibrarySearch('   الْأَلْعَاب  '), 'الالعاب');
+  assert.ok(gameMatchesLibraryFilter('quoridor', 'القُــوريدور', 'القوريدور', 'all', []));
+  assert.ok(gameMatchesLibraryFilter('appleWorm', 'دودة التفاح', 'دَوْدَةُ التُّفّاح', 'all', []));
+  assert.ok(gameMatchesLibraryFilter('ludo', 'لودو', '  LUDO  ', 'all', [], 'Ludo لودو'));
+  assert.ok(!gameMatchesLibraryFilter('chess', 'الشطرنج', 'دومينو', 'all', []));
+});
+
+test('search and category survive navigation away from the library', () => {
+  const props = {
+    onChoose: (_gameId: string) => {},
+    onRules: (_gameId: string) => {},
+    onFavorite: (_gameId: string) => {},
+    onResume: () => {},
+    hasMatch: false,
+    profile: null,
+  };
+  const first = render(<I18n lang="ar"><HomePage {...props} /></I18n>);
+  fireEvent.click(first.getByRole('button', { name: 'ألغاز' }));
+  fireEvent.change(first.getByRole('searchbox'), { target: { value: 'Apple Worm' } });
+  assert.equal(first.container.querySelectorAll('.naqla-icon-tile').length, 1);
+  cleanup();
+
+  const returned = render(<I18n lang="ar"><HomePage {...props} /></I18n>);
+  assert.equal((returned.getByRole('searchbox') as HTMLInputElement).value, 'Apple Worm');
+  assert.equal(returned.getByRole('button', { name: 'ألغاز' }).getAttribute('aria-pressed'), 'true');
+  assert.equal(returned.container.querySelectorAll('.naqla-icon-tile').length, 1);
+  fireEvent.change(returned.getByRole('searchbox'), { target: { value: '' } });
+  fireEvent.click(returned.getByRole('button', { name: 'الكل' }));
 });
