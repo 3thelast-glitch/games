@@ -134,6 +134,9 @@ export function buyStaff(s:State,job:StaffJob):boolean{
 export function dismissStaff(s:State,id:number):boolean{
  const index=s.staff.findIndex(x=>x.id===id);
  if(index<0)return false;
+ if(s.cars.some(c=>c.status==='servicing'&&c.actorId===id)){
+  s.notice='gasStaffBusy';return false;
+ }
  s.staff.splice(index,1);s.notice='gasDismissed';return true;
 }
 export function restock(s:State,type:'fuel'|'goods'|'parts'|'soap',amount:number):boolean{
