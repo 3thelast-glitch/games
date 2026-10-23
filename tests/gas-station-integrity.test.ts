@@ -137,3 +137,15 @@ test('A busy worker cannot be dismissed until their service transaction finishes
  assert.equal(s.staff.length,0);
  assert.equal(s.missions.fuel,1);
 });
+
+test('Legacy wash owners receive one migration stock grant, not repeated free soap',()=>{
+ const s=newGasStation();s.level=10;s.cash=10000;
+ assert.equal(buyFacility(s,'wash'),true);
+ const old=captureGas(s,123456);
+ const oldState=old.state as unknown as Record<string,unknown>;
+ delete oldState.soap;
+ const migrated=restoreGas(old).state;
+ assert.equal(migrated.soap,3);
+ migrated.soap=0;
+ assert.equal(restoreGas(captureGas(migrated,123457)).state.soap,0);
+});
