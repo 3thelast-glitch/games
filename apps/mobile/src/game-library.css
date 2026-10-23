@@ -20,7 +20,7 @@
   justify-content: space-between;
   align-items: center;
   gap: 18px;
-  margin: 0 0 21px;
+  margin: 0 0 12px;
   min-width: 0;
 }
 .naqla-library-kicker {
@@ -43,7 +43,7 @@
 }
 .naqla-library-hero h1 {
   margin: 7px 0 6px;
-  font-size: clamp(27px, 3vw, 42px);
+  font-size: clamp(20px, 2.2vw, 24px);
   letter-spacing: -.04em;
   line-height: 1.2;
   font-weight: 800;
@@ -70,7 +70,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 .naqla-library-search {
   flex: 1 1 240px;
@@ -138,7 +138,8 @@
 }
 .game-grid.naqla-app-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  grid-template-columns: repeat(auto-fill, 112px);
+  justify-content: start;
   gap: 23px 17px;
   align-items: start;
   margin-bottom: 35px;
@@ -147,7 +148,7 @@
   position: relative;
   justify-self: center;
   width: 100%;
-  max-width: 152px;
+  max-width: 124px;
   min-width: 0;
   border: 0;
   border-radius: 0;
@@ -205,7 +206,7 @@
 }
 .naqla-icon-launch:hover .naqla-icon-frame,
 .naqla-icon-launch:focus-visible .naqla-icon-frame {
-  transform: translateY(-4px) scale(1.045);
+  transform: translateY(-3px) scale(1.025);
   border-color: #aec5ffbf;
   box-shadow: inset 0 1px 3px #fff6, 0 12px 22px #0009, 0 0 23px #647bff38;
 }
@@ -255,7 +256,7 @@
   margin-top: 9px;
   padding: 0 1px;
   font-weight: 750;
-  font-size: clamp(11px,1.15vw,13px);
+  font-size: clamp(12px,1.15vw,14px);
   line-height: 1.38;
   overflow-wrap: anywhere;
   text-align: center;
@@ -323,11 +324,11 @@
 .naqla-icon-tile.chess { --icon-bg-a:#b49bcb; --icon-bg-b:#34265a; --icon-glow:#eac9ffad; }
 
 @media (min-width: 1500px) {
-  .game-grid.naqla-app-grid { grid-template-columns:repeat(auto-fill,minmax(125px,1fr)); gap: 28px 20px; }
+  .game-grid.naqla-app-grid { grid-template-columns:repeat(auto-fill,124px); gap: 24px 18px; }
 }
 @media (max-width: 700px) {
   .naqla-library-hero { margin-bottom: 18px; }
-  .naqla-library-hero h1 { font-size: 29px; }
+  .naqla-library-hero h1 { font-size: 22px; }
   .naqla-library-hero p { font-size: 12px; }
   .naqla-library-toolbar { gap: 9px; margin-bottom: 17px; }
   .naqla-library-search { flex-basis: 100%; }
@@ -336,17 +337,19 @@
     grid-template-columns:repeat(3,minmax(0,1fr));
     gap: 17px 11px;
   }
-  .naqla-icon-label { font-size: 11px; min-height: 31px; }
+  .naqla-icon-label { font-size: 12px; min-height: 33px; }
   .naqla-icon-info,.naqla-icon-favorite { width: 27px; height: 27px; min-height: 27px; border-radius: 9px; top: 5px; }
   .naqla-icon-info { inset-inline-start: 5px; }
   .naqla-icon-favorite { inset-inline-end: 5px; }
   .naqla-icon-info svg,.naqla-icon-favorite svg { width: 14px; height: 14px; }
 }
-@media (min-width: 460px) and (max-width: 700px) {
+@media (min-width: 390px) and (max-width: 700px) {
   .game-grid.naqla-app-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .game-grid.naqla-app-grid > .game-card.naqla-icon-tile { max-width: 100px; }
 }
 @media (min-width: 701px) and (max-width: 850px) {
-  .game-grid.naqla-app-grid { grid-template-columns:repeat(5,minmax(0,1fr)); }
+  .game-grid.naqla-app-grid { grid-template-columns:repeat(6,minmax(0,1fr)); }
+  .game-grid.naqla-app-grid > .game-card.naqla-icon-tile { max-width: 108px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .naqla-icon-frame, .naqla-library-filter, .naqla-icon-info, .naqla-icon-favorite { transition:none; }
