@@ -219,23 +219,58 @@ export function restoreLudo(source: unknown): LudoState {
 export function chooseAiToken(state: LudoState, difficulty: 'easy' | 'medium' | 'hard', random: () => number): string {
   const moves = legalMoves(state);
   if (!moves.length) fail('no-legal-moves');
-  if (difficulty === 'easy' && random() < 0.8) return moves[Math.floor(random() * moves.length)]!.tokenId;
+  // Easy plays randomly most of the time: casual and beatable, but not
+  // hopeless (at 80% random with the old scoring it won ~6% vs three
+  // mediums; see docs/ludo-ai-measurement.md for the measured ladder).
+  if (difficulty === 'easy' && random() < 0.7) return moves[Math.floor(random() * moves.length)]!.tokenId;
+  const F = finishProgress(state.seatCount);
+  const C = circuitSize(state.seatCount);
+  /** Enemies of `seat` that could capture on circuit cell `index` next turn. */
+  function threatsBehind(index: number, seat: number): number {
+    let danger = 0;
+    for (const enemy of state.tokens) {
+      if (enemy.seat === seat || enemy.progress < 0 || enemy.progress >= F) continue;
+      const distance = routeFor(state.seatCount, enemy.seat).indexOf('c:' + index) - enemy.progress;
+      if (distance >= 1 && distance <= 6) danger++;
+    }
+    return danger;
+  }
   function score(move: LudoMove): number {
-    const F = finishProgress(state.seatCount);
     const target = state.tokens.find(t => t.id === move.tokenId)!;
-    const safe = move.destination.startsWith('c:') && isSafe(state.seatCount, Number(move.destination.slice(2)));
+    const destIndex = move.destination.startsWith('c:') ? Number(move.destination.slice(2)) : -1;
+    const safe = destIndex >= 0 && isSafe(state.seatCount, destIndex);
     const completed = move.finishes && state.tokens.filter(t => t.seat === target.seat && t.progress === F).length + 1 >= Math.min(tokensPerSeat(state.seatCount), state.profile === 'fast' ? 2 : 4);
-    let value = (completed ? 1000 : 0) + (move.finishes ? 120 : 0) + move.captures * 35 + (safe ? 10 : 0) + (move.from === -1 ? 8 : 0) + (move.to >= circuitSize(state.seatCount) - 1 ? 15 : 0) + (move.to - Math.max(0, move.from)) * 12 / F;
-    if (difficulty === 'hard' && move.destination.startsWith('c:') && !safe) {
-      const targetIndex = Number(move.destination.slice(2));
-      let danger = 0;
-      for (const enemy of state.tokens) {
-        if (enemy.seat === target.seat || enemy.progress < 0 || enemy.progress >= F) continue;
-        const theirPath = routeFor(state.seatCount, enemy.seat);
-        const distance = theirPath.indexOf('c:' + targetIndex) - enemy.progress;
-        if (distance >= 1 && distance <= 6) danger++;
+    // Captures are worth the victim's advancement: sending home a pawn that
+    // nearly finished hurts far more than catching one that just left base.
+    let captureValue = 0;
+    if (move.captures > 0 && destIndex >= 0) {
+      for (const victim of state.tokens) {
+        if (victim.seat !== target.seat && victim.progress >= 0 && nodeFor(state, victim) === move.destination)
+          captureValue += 30 + victim.progress;
       }
+    }
+    // Escaping: a pawn already inside an enemy's capture range gains value
+    // by moving at all — medium notices, hard values it more.
+    let escapeValue = 0;
+    if (move.from >= 0) {
+      const currentNode = nodeFor(state, target);
+      if (currentNode.startsWith('c:')) {
+        const currentIndex = Number(currentNode.slice(2));
+        if (!isSafe(state.seatCount, currentIndex))
+          escapeValue = threatsBehind(currentIndex, target.seat) * (difficulty === 'hard' ? 13 : 9);
+      }
+    }
+    let value = (completed ? 1000 : 0) + (move.finishes ? 120 : 0) + captureValue + escapeValue
+      + (safe ? 10 : 0) + (move.from === -1 ? 14 : 0) + (move.to >= C - 1 ? 15 : 0)
+      + (move.to - Math.max(0, move.from)) * 12 / F + move.to * 0.12;
+    if (difficulty === 'hard' && destIndex >= 0 && !safe) {
+      const danger = threatsBehind(destIndex, target.seat);
       value -= danger * 18;
+      // Stacking onto your own pawn on an unsafe cell risks losing both to a
+      // single capture (this engine captures whole stacks), so hard avoids
+      // forming a threatened stack.
+      const stacked = state.tokens.some(t => t.seat === target.seat && t.id !== target.id && t.progress >= 0 && nodeFor(state, t) === move.destination);
+      if (stacked && danger > 0) value -= 30;
     }
     return value;
   }

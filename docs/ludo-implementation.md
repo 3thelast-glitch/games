@@ -47,14 +47,14 @@ The **4-player and 6-player boards have four pawns per player**, the **8-player 
 | Online private rooms | Not implemented | Not implemented | Not implemented | Not implemented |
 | Quick Match | Not implemented | Not implemented | Not implemented | Not implemented |
 
-AI is a basic configurable heuristic (Easy, Medium, Hard), not a measured competitive rollout engine. Online dice and results are **not** trusted to this client: online mode remains disabled. No cosmetic store, leaderboard integration, online replay/idempotency, AFK timer, server-side version check, or production matchmaking is claimed.
+AI is a configurable heuristic (Easy, Medium, Hard) — captures valued by victim advancement, escape-from-danger value, destination-danger and threatened-stack penalties on Hard — measured with the seeded simulation in `docs/ludo-ai-measurement.md` (it is still not a rollout/lookahead engine). Online dice and results are **not** trusted to this client: online mode remains disabled. No cosmetic store, leaderboard integration, online replay/idempotency, AFK timer, server-side version check, or production matchmaking is claimed.
 
 ## Next implementation gates
 
 1. Extend shared `PlayerCount`, `Seat`, transport, lobby capacity, ownership, match snapshots, results, and rematch protocols compatibly with the twelve existing games.
 2. Adapt this rules engine to the verified central server coordinator so online rolls use server CSPRNG, server-side legal moves, serialization/transactional revisions, idempotency and reconnect recovery. Establish a versioned command/event protocol.
 3. Build 4/6/8/10 independent authenticated-client tests, including concurrent joins, deadline/forfeit races and reconnects.
-4. Tune and measure AI Easy/Medium/Hard policies, especially Grand; do not claim balance or expected match duration without seeded simulation.
+4. ~~Tune and measure AI Easy/Medium/Hard policies~~ Done for 4p/6p classic and 4p fast via seeded simulation (`docs/ludo-ai-measurement.md`); Grand (10p) duration/balance measurement and any lookahead/rollout policy remain open.
 5. Complete real device UI accessibility/performance and reduced-motion checks; produce actual bilingual screenshots; verify app install and lifecycle behavior.
 6. Run release CI, verify downloadable Android/iOS artifacts when available, then convert this draft PR after the blockers are resolved.
 
