@@ -7,6 +7,7 @@ import {
   type Facility,type Mission,type SavedGas,type StaffJob,type State,type Upgrade,
 } from '../../../packages/games/gas-station/engine.ts';
 import {GasStationWorld} from './GasStationArt.tsx';
+import {enterFullscreenOnlyGame,leaveFullscreenOnlyGame} from './immersive-game.ts';
 import {feedback,storage,type Settings} from './platform.ts';
 import {useI18n} from './i18n.tsx';
 
@@ -24,6 +25,10 @@ const missionLabel=(key:Mission)=>'gasMission'+key[0]!.toUpperCase()+key.slice(1
 const orderKeys:Facility[]=['pump','shop','garage','wash','tires'];
 export function GasStationPage({onExit,settings}:{onExit:()=>void;settings:Settings}){
  const {t,lang}=useI18n();
+ useEffect(()=>{
+  enterFullscreenOnlyGame('gasStation');
+  return ()=>{void leaveFullscreenOnlyGame();};
+ },[]);
  const game=useRef<State>(newGasStation());
  const [view,setView]=useState<State>(()=>copy(game.current));
  const [loaded,setLoaded]=useState(false);
