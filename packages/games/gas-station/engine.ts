@@ -14,6 +14,8 @@ export type Vehicle={
  id:number; type:VehicleType; facility:Facility; bay:number; status:CarStatus;
  x:number;y:number; color:string; patience:number; amount:number; progress:number;
  needs:number; reward:number; event:boolean; condition:number;
+ /** -1 = player, positive ID = assigned employee; undefined = unclaimed. */
+ actorId?:number;
 };
 export type Debris={id:number;x:number;y:number;durability:number;value:number;cleared:boolean};
 export type Worker={id:number;job:StaffJob;level:number};
@@ -30,7 +32,7 @@ export type State={
  served:number; totalIncome:number; missed:number; revenueToday:number;
  day:number; clock:number; elapsed:number; spawnClock:number; nextId:number;
  event:{active:boolean;time:number;remaining:number;completed:number;goal:number};
- notice:string; staffClock:number; idleCollected:number;
+ notice:string; staffClock:number; idleCollected:number; offlineSettledAt?:number;
 };
 export const FACILITIES:readonly Facility[]=['pump','shop','garage','wash','tires'];
 export const JOBS:readonly StaffJob[]=['fuel','cashier','mechanic','wash'];
@@ -64,7 +66,7 @@ export function newGasStation():State{
   claimed:[],served:0,totalIncome:0,missed:0,revenueToday:0,
   day:1,clock:9*60,elapsed:0,spawnClock:2,nextId:100,
   event:{active:false,time:0,remaining:0,completed:0,goal:3},
-  notice:'gasWelcome',staffClock:0,idleCollected:0
+  notice:'gasWelcome',staffClock:0,idleCollected:0,offlineSettledAt:0
  };
 }
 export const facilityCost=(s:State,key:Facility):number=>{
@@ -144,6 +146,24 @@ export function restock(s:State,type:'fuel'|'goods'|'parts',amount:number):boole
  s.cash-=price;s[type]+=amount;
  s.notice='gasRestocked';return true;
 }
+/** Stock committed to in-flight services is reserved until the receipt is final. */
+function pendingStock(s:State,kind:Facility):number{
+ return s.cars.reduce((n,c)=>n+(c.facility===kind&&c.status==='servicing'?
+  kind==='pump'?Math.ceil(c.needs):1:0),0);
+}
+export function availableServiceStock(s:State,kind:Facility):number{
+ if(kind==='pump')return Math.max(0,s.fuel-pendingStock(s,'pump'));
+ if(kind==='shop')return Math.max(0,s.goods-pendingStock(s,'shop'));
+ if(kind==='tires')return Math.max(0,s.parts-pendingStock(s,'tires'));
+ return Number.POSITIVE_INFINITY;
+}
+function canStartCar(s:State,c:Vehicle):boolean{
+ if(c.facility==='pump')return availableServiceStock(s,'pump')>=Math.ceil(c.needs);
+ if(c.facility==='shop')return availableServiceStock(s,'shop')>=1;
+ if(c.facility==='tires')return availableServiceStock(s,'tires')>=1;
+ if(c.facility==='garage')return s.parts>=2;
+ return true;
+}
 function garageNeeds(s:State):Vehicle|undefined{
  const car=s.cars.find(c=>c.id===s.garageCar&&c.facility==='garage'&&c.status==='waiting');
  return car??s.cars.find(c=>c.facility==='garage'&&c.status==='waiting');
@@ -154,6 +174,7 @@ export function workGarage(s:State):boolean{
  if(!c)return false;
  if(s.garageCar!==c.id){s.garageCar=c.id;s.garageStep='diagnose';}
  if(s.garageStep==='diagnose'){
+  c.actorId=-1;
   s.garageStep='parts';s.notice='gasDiagnosed';return true;
  }
  if(s.garageStep==='parts'){
@@ -171,15 +192,13 @@ export function interactCar(s:State,id:number):boolean{
  const car=s.cars.find(c=>c.id===id&&c.status==='waiting');
  if(!car||!isNear(s,car,115))return false;
  if(car.facility==='garage')return workGarage(s);
- if(car.facility==='pump'){
-  if(s.fuel<Math.ceil(car.needs-car.progress)){s.notice='gasNeedFuel';return false;}
-  car.status='servicing';s.notice='gasFuelling';return true;
+ if(!canStartCar(s,car)){
+  s.notice=car.facility==='pump'?'gasNeedFuel':car.facility==='shop'?'gasNeedGoods':'gasNeedParts';
+  return false;
  }
- if(car.facility==='shop'){
-  if(!s.goods){s.notice='gasNeedGoods';return false;}
-  car.status='servicing';s.notice='gasShopping';return true;
- }
- car.status='servicing';s.notice=car.facility==='wash'?'gasWashing':'gasTireService';
+ car.actorId=-1;car.status='servicing';
+ s.notice=car.facility==='pump'?'gasFuelling':car.facility==='shop'?'gasShopping':
+  car.facility==='wash'?'gasWashing':'gasTireService';
  return true;
 }
 export function startRace(s:State):boolean{
@@ -200,8 +219,11 @@ const spawn=(s:State,forceSport=false)=>{
  const idx=Math.floor(s.elapsed*5+s.nextId*3)%order.length;
  let facility=forceSport?'pump':order[idx]!;
  if(!facilityCapacity(s,facility))facility='pump';
- if(s.cars.filter(c=>c.facility===facility&&c.status!=='leaving'&&c.status!=='done').length>=facilityCapacity(s,facility))return;
- const bay=facility==='pump'?s.cars.filter(c=>c.facility==='pump'&&c.status==='waiting').length:0;
+ const occupied=s.cars.filter(c=>c.facility===facility&&c.status!=='leaving');
+ if(occupied.length>=facilityCapacity(s,facility))return;
+ const used=new Set(occupied.map(c=>c.bay));
+ let bay=0;
+ while(used.has(bay))bay++;
  const type=forceSport?'sport':kinds[(s.nextId+s.day)%kinds.length]!;
  const base=type==='truck'?34:type==='suv'?27:type==='sport'?25:18;
  const needs=facility==='pump'?base+Math.floor(s.level/3)*3:
@@ -247,26 +269,29 @@ export function tickGas(s:State,dt:number):State{
  // Service progresses only while the business is open. Assigned staff starts the corresponding queue.
  for(const car of s.cars){
   if(car.status==='waiting'){
-   car.patience-=dt;
+   // A partially diagnosed player repair owns the job until it is finished.
+   if(car.actorId!==-1)car.patience-=dt;
    const match:Record<Facility,StaffJob>={pump:'fuel',shop:'cashier',garage:'mechanic',wash:'wash',tires:'mechanic'};
-   if(s.staff.some(w=>w.job===match[car.facility]) &&
-      (car.facility!=='garage'||s.parts>=2) &&
-      (car.facility!=='shop'||s.goods>0) &&
-      (car.facility!=='pump'||s.fuel>=car.needs)){
+   const busy=new Set(s.cars.filter(c=>c.status==='servicing'&&c.actorId!==undefined).map(c=>c.actorId));
+   const worker=s.staff.find(w=>w.job===match[car.facility]&&!busy.has(w.id));
+   if(car.actorId===undefined&&worker&&canStartCar(s,car)){
      if(car.facility==='garage')s.parts-=2;
-     car.status='servicing';
+     car.actorId=worker.id;car.status='servicing';
    }
-   if(car.patience<=0){car.status='leaving';s.missed++;s.reputation=clamp(s.reputation-2,0,100);s.notice='gasCustomerLeft';}
+   if(car.patience<=0&&car.status==='waiting'&&car.actorId!==-1){
+     car.status='leaving';s.missed++;s.reputation=clamp(s.reputation-2,0,100);s.notice='gasCustomerLeft';
+   }
   }else if(car.status==='servicing'){
    const speed=(1+s.upgrades.serviceSpeed*.24+s.upgrades.pumpSpeed*(car.facility==='pump'?.16:0));
    const duration=car.facility==='pump'?4.2:car.facility==='garage'?8:car.facility==='shop'?3:5;
    car.progress=Math.min(car.needs,car.progress+dt*car.needs/duration*speed);
    if(car.progress>=car.needs){
     if(car.facility==='pump'){
-     s.fuel-=car.needs;earn(s,car.reward,'fuel');
+     s.fuel-=Math.ceil(car.needs);earn(s,car.reward,'fuel');
     }else if(car.facility==='shop'){
-     s.goods=Math.max(0,s.goods-1);earn(s,car.reward,'shop');
+     s.goods-=1;earn(s,car.reward,'shop');
     }else {
+     if(car.facility==='tires')s.parts-=1;
      earn(s,car.reward,'service');
      if(car.facility==='garage')s.missions.repair++;
      if(car.facility==='wash')s.missions.wash++;
@@ -283,12 +308,8 @@ export function tickGas(s:State,dt:number):State{
   }
  }
  s.cars=s.cars.filter(c=>c.status!=='leaving');
- // Lightweight deterministic idle income while playing, not enough to replace service.
- if(s.staffClock>=45){
-  s.staffClock-=45;
-  const bonus=s.facilities.shop?4+s.upgrades.shopMargin*2:0;
-  if(bonus){s.cash+=bonus;s.totalIncome+=bonus;s.revenueToday+=bonus;}
- }
+ // No stock-free passive money: employees must complete actual customer orders.
+ if(s.staffClock>=45)s.staffClock%=45;
  return s;
 }
 export function applyOfflineEarnings(s:State,nowMs:number,savedAtMs:number):number{
