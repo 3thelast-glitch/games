@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { AppleWormReferenceScene } from './AppleWormReferenceScene.tsx';
 import { AppleWormForest } from './AppleWormForest.tsx';
@@ -283,6 +283,10 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
           aria-label={t('Play Apple Worm','العب دودة التفاح')}>
           <span aria-hidden="true">▶</span>
         </button>
+        <div className="worm3-home-progress" aria-hidden="true">
+          <span className="worm3-home-progress-star">★</span>
+          {completed.length} / {APPLE_WORM_SCREENSHOT_LEVEL_COUNT}
+        </div>
         {showOptions&&<div className="worm3-options worm3-home-options" role="dialog"
           aria-label={t('Options','الخيارات')}>
           {onToggleSound&&<button type="button" onClick={onToggleSound}>
@@ -309,6 +313,7 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
                 disabled={locked} onClick={()=>pick(n)}
                 aria-label={t('Level','المرحلة')+' '+n+(locked?t(' locked',' مغلقة'):'')}
                 aria-current={n===level?'step':undefined}
+                data-completed={completed.includes(n)?'true':'false'}
                 data-locked={locked?'true':'false'}>
                 {locked?<span className="worm3-padlock" aria-hidden="true">🔒</span>:
                   <span className="worm3-tile-stars" aria-hidden="true">{getStars(n)}</span>}
@@ -390,6 +395,10 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
           <button type="button" onClick={()=>setShowOptions(false)}>{t('Close','إغلاق')}</button>
         </div>}
         {state.phase!=='playing'&&<div className="worm3-result" role="status">
+          {state.phase==='won'&&<div className="worm3-confetti" aria-hidden="true">
+            {Array.from({length:14},(_,i)=><span key={i}
+              style={{'--i':i} as CSSProperties}/>)}
+          </div>}
           <div className="worm3-result-card">
             <h2>{state.phase==='won'?t('Level Complete!','اكتملت المرحلة!'):
               t('Try Again','حاول مرة أخرى')}</h2>
@@ -398,7 +407,7 @@ export function AppleWormScreenshotGame({onExit,settings,onToggleSound}:{
               <button type="button" onClick={reset}>{t('Retry','إعادة')}</button>
               <button type="button" onClick={toLevels}>{t('Levels','المراحل')}</button>
               {state.phase==='won'&&level<105&&
-                <button type="button" onClick={goNext}>{t('Next','التالي')}</button>}
+                <button type="button" className="worm3-result-primary" onClick={goNext}>{t('Next','التالي')}</button>}
             </div>
           </div>
         </div>}
