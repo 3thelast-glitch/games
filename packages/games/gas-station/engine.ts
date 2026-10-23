@@ -381,6 +381,8 @@ export function restoreGas(input:unknown):{state:State;savedAt:number}{
  for(const key of FACILITIES){
   state.facilities[key]=valid(facilities[key],key==='pump'?1:0,key==='pump'?3:1,state.facilities[key]);
  }
+ // Existing v1 station saves predate wash soap; migrate owners once without repeatedly gifting stock.
+ if(!Object.hasOwn(o,'soap')&&state.facilities.wash)state.soap=3;
  const up=o.upgrades&&typeof o.upgrades==='object'?o.upgrades as Record<string,unknown>:{};
  for(const key of UPGRADES)state.upgrades[key]=valid(up[key],0,6,0);
  state.maxFuel=240+state.upgrades.tankSize*90;state.maxGoods=30+state.upgrades.tankSize*8;
