@@ -26,7 +26,7 @@ for (const [name, size, cells, pawns] of [
       await expect(page.locator('.ludo-board [data-ludo-base-slot]')).toHaveCount(pawns);
       await expect(page.locator('.ludo-board [data-ludo-cell]')).toHaveCount(cells);
       await expect(page.locator('.ludo-board [data-ludo-token]')).toHaveCount(pawns);
-      await expect(page.locator('.ludo-player-strip > span')).toHaveCount(size);
+      await expect(page.locator('.ludo-player-strip')).toHaveCount(0);
       await page.getByRole('button',{name:/Zoom in/i}).click();
       await expect(page.locator('.ludo-board')).toHaveAttribute('viewBox',/\b7[0-9][0-9]\.\d+\b|\b7[0-9][0-9]\b/);
       await page.getByRole('button',{name:/Full board/i}).click();
@@ -40,7 +40,11 @@ for (const [name, size, cells, pawns] of [
       const phase = await page.locator('.ludo-play').getAttribute('data-ludo-phase');
       if (phase === 'move') {
         await expect(page.locator('.ludo-die')).toHaveText('6');
-        await expect(page.locator('.ludo-tray button:not(:disabled)')).toHaveCount(pawns/size);
+        // No move-choice tray: the highlighted board pawns are the input.
+        await expect(page.locator('.ludo-tray')).toHaveCount(0);
+        await expect(page.locator('.ludo-board .ludo-legal-pawn')).toHaveCount(pawns/size);
+        await page.locator('.ludo-board .ludo-legal-pawn').first().click({force:true});
+        await expect(page.locator('.ludo-play')).toHaveAttribute('data-ludo-revision', '2');
       } else {
         await expect(page.getByText('No legal move; play advanced automatically.')).toBeVisible();
       }
@@ -67,7 +71,7 @@ test('Ludo Grand Arabic keeps board topology while reversing the surrounding UI'
     await expect(page.locator('.ludo-board [data-ludo-cell]')).toHaveCount(130);
     await expect(page.locator('.ludo-board [data-ludo-token]')).toHaveCount(10);
     await expect(page.locator('.ludo-board [data-ludo-base-slot]')).toHaveCount(10);
-    await expect(page.locator('.ludo-player-strip > span')).toHaveCount(10);
+    await expect(page.locator('.ludo-player-strip')).toHaveCount(0);
     await expect(page.locator('.ludo-board')).toHaveAttribute('style',/direction: ltr/);
   }finally{await context.close();}
 });
