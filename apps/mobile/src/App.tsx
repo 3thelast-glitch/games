@@ -1095,7 +1095,7 @@ function ArenaApp({
                 onResume={() => setPage('match')}
               />
             )}
-            {page === 'ludo' && <LudoPage onExit={() => setPage('library')} />}
+            {page === 'ludo' && <LudoPage onExit={() => setPage('library')} settings={settings} />}
             {page === 'appleWorm' && <AppleWormPage onExit={() => setPage('library')} settings={settings} onToggleSound={() => changeSettings({ sound: !settings.sound })} />}
             {page === 'basketballLine' && <BasketballLinePage onExit={() => setPage('library')} settings={settings} />}
             {page === 'backroomBill' && <BackroomBillPage onExit={() => setPage('library')} settings={settings} />}
