@@ -40,36 +40,43 @@ Three unit tests in `tests/ludo.test.ts` pin the tactical behaviors
 directly: capture the most advanced victim, move a threatened pawn out of
 range, and (hard) refuse a threatened stack.
 
-## After (improved scoring, three 120-match batches)
+## After (improved scoring, two reproducible 120-match batches)
 
-| Config | Batch A (orig. seeds) | Batch B (fresh seeds) | Batch A2 (orig. seeds, easy retuned) |
-|---|---|---|---|
-| 1 hard vs 3 medium | hard 47 (39.2%), 570.2 rolls | hard 31 (25.8%), 536.9 rolls | hard 32 (26.7%), 523.2 rolls |
-| 1 hard vs 3 easy | hard 81 (67.5%), 514.8 rolls | hard 91 (75.8%), 509.4 rolls | hard 81 (67.5%), 500.6 rolls |
-| all medium | 560.9 rolls | 538.2 rolls | 525.8 rolls |
-| 4p fast, all medium | 336.0 rolls | 297.2 rolls | 292.8 rolls |
-| 6p classic, all medium (40) | 2074.5 rolls | 1673.8 rolls | 1762.4 rolls |
+| Config | Batch A2 (original seeds) | Batch B (fresh seeds) |
+|---|---|---|
+| 1 hard vs 3 medium | hard 32 (26.7%), 523.2 rolls | hard 31 (25.8%), 536.9 rolls |
+| 1 easy vs 3 medium | easy 7 (5.8%), 513.9 rolls | easy 8 (6.7%), 521.3 rolls |
+| 1 hard vs 3 easy | hard 81 (67.5%), 500.6 rolls | hard 91 (75.8%), 509.4 rolls |
+| all medium | 525.8 rolls | 538.2 rolls |
+| 4p fast, all medium | 292.8 rolls | 297.2 rolls |
+| 6p classic, all medium (40) | 1762.4 rolls | 1673.8 rolls |
 
-**Honest reading:** combined, hard won 110/360 (30.6%) against mediums —
-statistically indistinguishable from the 34.2% baseline. The tactical
-fixes are real (and unit-pinned), but they do not translate into a proven
-aggregate win-share gain at this sample size; anyone claiming otherwise
-is reading noise. What *is* consistent across all three batches is
-shorter matches: all-medium self-play runs 3–9% fewer rolls than
-baseline (579.2 → 525.8–560.9 across batches), fast 1–14% fewer
-(340.2 → 292.8–336.0), and the (noisier, n=40) six-player sample
-5–23% fewer (2172.2 → 1673.8–2074.5). Better tactics mostly make
-games *faster*, not the hard seat dominant.
+**Honest reading:** combined, hard won 63/240 (26.3%) against mediums,
+versus the 34.2% baseline (n=120). The difference is about 1.5 standard
+errors — not statistically significant, and the point estimate is if
+anything lower. The tactical fixes are real (and unit-pinned), but they
+do **not** produce a proven aggregate win-share gain; anyone claiming
+otherwise is reading noise. What *is* consistent across both batches is
+shorter matches: all-medium self-play runs 7–9% fewer rolls than
+baseline (579.2 → 525.8–538.2), fast 13–14% fewer (340.2 → 292.8–297.2),
+and the (noisier, n=40) six-player sample 19–23% fewer
+(2172.2 → 1673.8–1762.4). Better tactics mostly make games *faster*,
+not the hard seat dominant.
 
-## Easy ladder retune
+*Reproducibility note: an earlier batch produced during the tuning
+session (hard 47/120, all-medium 560.9 rolls) could not be reproduced
+afterwards from any reconstructable code state and was discarded. Only
+figures that rerun identically are published here; the baseline above
+was itself verified by two identical runs.*
 
-With the improved scoring, easy at 55% random moves won **36/120 (30%)**
-against three mediums — as strong as a medium seat, which is not
-"easy". Retuned to 70% random, easy won 7/120 (5.8%) on the original
-seeds and 8/120 (6.7%) on fresh seeds — consistently the weakest seat,
-matching its label. The shipped value is 70%: easy keeps the improved
-tactics for its non-random moves but plays randomly often enough to stay
-clearly beatable.
+## Easy ladder
+
+Easy's random-move rate was lowered from 80% to 70% as a design choice
+(it keeps the improved tactics for a slightly larger share of its
+moves). Measured, easy won 5.8% on the original seeds and 6.7% on fresh
+seeds against three mediums — the clearly weakest seat in every
+configuration, matching its label. No finer ladder claim is made: at
+these sample sizes the 80% and 70% rates are indistinguishable.
 
 ## Reproduce
 
