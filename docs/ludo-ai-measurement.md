@@ -13,7 +13,7 @@ rounding them into a story.
 
 | Config | Result | Avg rolls |
 |---|---|---:|
-| 4p classic, all medium | seat shares 27/34/30/29 (near-uniform) | 586.5 |
+| 4p classic, all medium | seat shares 33/32/25/30 (near-uniform) | 579.2 |
 | 4p classic, 1 hard vs 3 medium | hard won **41/120 (34.2%)** | 585.9 |
 | 4p classic, 1 easy vs 3 medium | easy won **7/120 (5.8%)** | 550.6 |
 | 4p classic, 1 hard vs 3 easy | hard won 83/120 (69.2%) | 519.7 |
@@ -55,9 +55,10 @@ statistically indistinguishable from the 34.2% baseline. The tactical
 fixes are real (and unit-pinned), but they do not translate into a proven
 aggregate win-share gain at this sample size; anyone claiming otherwise
 is reading noise. What *is* consistent across all three batches is
-shorter matches: all-medium self-play runs about 10% fewer rolls than
-baseline (586.5 → 525.8–560.9), fast about 14% fewer, and the (noisier,
-n=40) six-player sample about 19% fewer. Better tactics mostly make
+shorter matches: all-medium self-play runs 3–9% fewer rolls than
+baseline (579.2 → 525.8–560.9 across batches), fast 1–14% fewer
+(340.2 → 292.8–336.0), and the (noisier, n=40) six-player sample
+5–23% fewer (2172.2 → 1673.8–2074.5). Better tactics mostly make
 games *faster*, not the hard seat dominant.
 
 ## Easy ladder retune
