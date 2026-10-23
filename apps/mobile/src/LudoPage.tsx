@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useI18n } from './i18n.tsx';
 import { feedback, storage, type Settings } from './platform.ts';
+import { enterFullscreenOnlyGame, leaveFullscreenOnlyGame } from './immersive-game.ts';
 const secureByte = (target: Uint8Array): Uint8Array => {
   target[0] = crypto.getRandomValues(new Uint8Array(1))[0]!;
   return target;
@@ -37,6 +39,14 @@ function DieFace({ value, tumbling, spinKey, label }: {
         </span>
       : <span className="ludo-die-q" aria-hidden="true">?</span>}
     <span className="ludo-sr">{value ?? '?'}</span>
+  </div>;
+}
+
+/** Accurate static board preview for one variant, straight from the engine. */
+function BoardPreview({ count }: { count: SeatCount }) {
+  const demo = useMemo(() => createLudo(count), [count]);
+  return <div className="ludo-preview" aria-hidden="true">
+    <LudoBoard state={demo} legal={[]} onChoose={() => {}} zoom={1} center={{ x: 500, y: 500 }} />
   </div>;
 }
 
@@ -84,14 +94,20 @@ function buildMoveFrames(before: LudoState, after: LudoState, tokenId: string): 
   return frames;
 }
 
-export function LudoPage({onExit,settings}:{onExit:()=>void;settings:Settings}) {
+type Screen = 'home' | 'mode' | 'count' | 'config' | 'game';
+type Overlay = 'none' | 'howto' | 'settings' | 'pause';
+
+export function LudoPage({onExit,settings,onSettingsChange}:{onExit:()=>void;settings:Settings;onSettingsChange?:(patch:Partial<Settings>)=>void}) {
   const {lang,t}=useI18n();
   const ar=lang==='ar';
+  const [screen,setScreen]=useState<Screen>('home');
+  const [overlay,setOverlay]=useState<Overlay>('none');
   const [count,setCount]=useState<SeatCount>(4);
   const [mode,setMode]=useState<'local'|'ai'>('ai');
   const [difficulty,setDifficulty]=useState<'easy'|'medium'|'hard'>('medium');
   const [profile,setProfile]=useState<'classic'|'fast'>('classic');
   const [game,setGame]=useState<LudoState|null>(null);
+  const [savedGame,setSavedGame]=useState<LudoState|null>(null);
   const [loaded,setLoaded]=useState(false);
   const [zoom,setZoom]=useState(1);
   const [focus,setFocus]=useState<Point>({x:500,y:500});
@@ -106,6 +122,13 @@ export function LudoPage({onExit,settings}:{onExit:()=>void;settings:Settings}) 
   const tumbleInterval=useRef<ReturnType<typeof setInterval>|null>(null);
   const layout=useMemo(()=>game?buildLudoLayout(game.seatCount):null,[game?.seatCount]);
 
+  // Immersive fullscreen entry, mirroring the other standalone games:
+  // no orientation lock (Ludo supports portrait and landscape).
+  useEffect(()=>{
+    enterFullscreenOnlyGame('ludo');
+    return ()=>{ void leaveFullscreenOnlyGame(); };
+  },[]);
+
   const stopAnimation=()=>{
     if(animTimer.current)clearTimeout(animTimer.current);
     animTimer.current=null;
@@ -119,6 +142,7 @@ export function LudoPage({onExit,settings}:{onExit:()=>void;settings:Settings}) 
   };
   useEffect(()=>()=>{stopAnimation();stopTumble();},[]);
 
+  // Load the saved match for the Continue option; never auto-enter it.
   useEffect(()=>{
     let alive=true;
     void Promise.all([
@@ -129,10 +153,7 @@ export function LudoPage({onExit,settings}:{onExit:()=>void;settings:Settings}) 
       if(current || legacy) {
         try {
           const saved=restoreLudo(current ?? legacy);
-          setGame(saved);
-          setCount(saved.seatCount);
-          setProfile(saved.profile);
-          setMode(saved.controllers.every(c=>c==='human')?'local':'ai');
+          setSavedGame(saved);
         } catch(e) {
           setNotice(e instanceof Error && e.message==='legacy-board-requires-new-match'?'legacy-save':'invalid-save');
         }
@@ -140,7 +161,9 @@ export function LudoPage({onExit,settings}:{onExit:()=>void;settings:Settings}) 
     }).finally(()=>{if(alive)setLoaded(true);});
     return ()=>{alive=false;};
   },[]);
-  useEffect(()=>{ if(loaded) void storage.set('ludo-offline-v2',game); },[game,loaded]);
+  // Persist only real match states; browsing menus never touches the save.
+  useEffect(()=>{ if(game) void storage.set('ludo-offline-v2',game); },[game]);
+  useEffect(()=>{ if(game) setSavedGame(game); },[game]);
   useEffect(()=>{
     let live=true;
     void storage.get<'easy'|'medium'|'hard'>('ludo-ai-level-v1','medium').then(level=>{
@@ -178,7 +201,9 @@ export function LudoPage({onExit,settings}:{onExit:()=>void;settings:Settings}) 
     step();
   };
 
+  // AI turns run only while the match screen is actually showing.
   useEffect(()=>{
+    if(screen!=='game' || overlay!=='none') return;
     if(!game || game.phase==='finished' || animating) return;
     if(game.controllers[game.activeSeat]!=='ai') return;
     const revision=game.revision;
@@ -195,76 +220,239 @@ export function LudoPage({onExit,settings}:{onExit:()=>void;settings:Settings}) 
       }catch{/* keep current state */}
     },340);
     return ()=>clearTimeout(timer);
-  },[game,difficulty,animating]);
+  },[game,difficulty,animating,screen,overlay]);
 
   const moves=game && !animating ? legalMoves(game):[];
-  const start=()=>{
+  const hasUnfinishedSave=!!savedGame && savedGame.phase!=='finished';
+  const start=(force=false)=>{
+    const current=gameRef.current;
+    const wouldReplace=(current && current.phase!=='finished' && current.revision>0) || hasUnfinishedSave;
+    if(wouldReplace && !force && !window.confirm(t('ludoConfirmReplace'))) return;
     stopAnimation();stopTumble();
     const seats=Array.from({length:count},(_,i)=>mode==='local'||i===0?'human':'ai') as ('human'|'ai')[];
     const startSeat=secureSeat(count,secureByte);
     setGame(createLudo(count,seats,profile,startSeat));
     setZoom(1);setFocus({x:500,y:500});setNotice('');
+    setOverlay('none');
+    setScreen('game');
+  };
+  const continueGame=()=>{
+    if(!savedGame) return;
+    stopAnimation();stopTumble();
+    setGame(savedGame);
+    setCount(savedGame.seatCount);
+    setProfile(savedGame.profile);
+    setMode(savedGame.controllers.every(c=>c==='human')?'local':'ai');
+    setZoom(1);setFocus({x:500,y:500});setNotice('');
+    setOverlay('none');
+    setScreen('game');
   };
   const execute=(action:()=>LudoState)=>{
     try{setGame(action());setNotice('');}
     catch(e){setNotice(e instanceof Error?e.message:'invalid-action');}
   };
-  /** Human roll: the die tumbles through faces, then the real roll commits. */
+  /**
+   * Human roll: the result is generated by the secure die first; the tumble
+   * animation only presents it and can never change it.
+   */
   const handleRoll=()=>{
     const current=gameRef.current;
     if(!current || current.phase!=='roll' || tumbling!==null || animating) return;
     if(current.controllers[current.activeSeat]!=='human') return;
+    const dieValue=secureDie(secureByte);
     setTumbling(1+Math.floor(Math.random()*6));
     tumbleInterval.current=setInterval(()=>setTumbling(1+Math.floor(Math.random()*6)),75);
     tumbleTimer.current=setTimeout(()=>{
       stopTumble();
-      execute(()=>rollLudo(current,secureDie(secureByte)));
+      execute(()=>rollLudo(current,dieValue));
       feedback(settingsRef.current,'move');
     },540);
   };
   const title=(s:number)=>(ar?'لاعب ':'Player ')+(s+1);
-  if(!loaded) return <section className="ludo-page"><p>{t('loading')}</p></section>;
   const boardState=display ?? game;
   const eventText=!game?'':
     game.lastEvent.startsWith('captured:')?`${t('ludoCapture')} ×${game.lastEvent.slice(9)}`:
     game.lastEvent==='token-finished'?t('ludoFinish'):
     game.lastEvent==='third-six'?t('ludoThirdSix'):
     game.lastEvent==='no-move'?t('ludoNoMove'):'';
-  return <section className="ludo-page page-enter" dir={ar?'rtl':'ltr'}>
-    <header className="ludo-header">
-      <button type="button" className="button secondary" onClick={onExit}>{t('back')}</button>
-      <div><span className="eyebrow">NAQLA • LUDO</span><h1>{t('ludo')}</h1></div>
-      <button type="button" className="button secondary" onClick={()=>{stopAnimation();stopTumble();setGame(null);setNotice('');}}>{t('ludoNewMatch')}</button>
-    </header>
-    {!game ? <div className="ludo-setup">
-      <h2>{t('ludoSelectVariant')}</h2>
-      <div className="ludo-variants">
-        {VARIANTS.map(v=><button type="button" key={v.count} className={count===v.count?'chosen':''}
-          aria-pressed={count===v.count} onClick={()=>setCount(v.count)}>
-          <strong className="ludo-variant-symbol">{v.symbol}</strong><strong>{v.name}</strong>
-          <span>{v.count} {t('ludoPlayers')} · {v.count*tokensPerSeat(v.count)} {t('ludoTokens')}</span>
-          <span>{tokensPerSeat(v.count)} {t('ludoPerPlayer')}</span>
+  const variantName=(c:SeatCount)=>VARIANTS.find(v=>v.count===c)?.name ?? '';
+
+  const overlays=<>
+    {overlay==='howto' && <div className="ludo-overlay" role="dialog" aria-modal="true" aria-label={t('ludoHowToPlay')}>
+      <div className="ludo-sheet">
+        <h2>{t('ludoHowToPlay')}</h2>
+        <p>{t('ludoRules')}</p>
+        <ul className="ludo-howto-list">
+          <li>{t('ludoHowToRoll')}</li>
+          <li>{t('ludoHowToSafe')}</li>
+          <li>{t('ludoHowToZoom')}</li>
+        </ul>
+        <button type="button" className="button primary" onClick={()=>setOverlay(screen==='game'?'pause':'none')}>{t('back')}</button>
+      </div>
+    </div>}
+    {overlay==='settings' && <div className="ludo-overlay" role="dialog" aria-modal="true" aria-label={t('ludoSettings')}>
+      <div className="ludo-sheet">
+        <h2>{t('ludoSettings')}</h2>
+        <div className="ludo-setting-row">
+          <span>{t('ludoSound')}</span>
+          <button type="button" aria-pressed={settings.sound} disabled={!onSettingsChange}
+            onClick={()=>onSettingsChange?.({sound:!settings.sound})}>{settings.sound?t('ludoOn'):t('ludoOff')}</button>
+        </div>
+        <div className="ludo-setting-row">
+          <span>{t('ludoHaptics')}</span>
+          <button type="button" aria-pressed={settings.haptics} disabled={!onSettingsChange}
+            onClick={()=>onSettingsChange?.({haptics:!settings.haptics})}>{settings.haptics?t('ludoOn'):t('ludoOff')}</button>
+        </div>
+        <button type="button" className="button primary" onClick={()=>setOverlay(screen==='game'?'pause':'none')}>{t('back')}</button>
+      </div>
+    </div>}
+    {overlay==='pause' && screen==='game' && <div className="ludo-overlay" role="dialog" aria-modal="true" aria-label={t('ludoPause')}>
+      <div className="ludo-sheet ludo-pause-sheet">
+        <h2>{t('ludoPause')}</h2>
+        <button type="button" className="button primary" onClick={()=>setOverlay('none')}>{t('ludoResume')}</button>
+        <button type="button" className="button secondary" onClick={()=>setOverlay('settings')}>{t('ludoSettings')}</button>
+        <button type="button" className="button secondary" onClick={()=>setOverlay('howto')}>{t('ludoHowToPlay')}</button>
+        <button type="button" className="button secondary" onClick={()=>{
+          if(window.confirm(t('ludoConfirmRestart'))){ setOverlay('none'); start(true); }
+        }}>{t('ludoRestart')}</button>
+        <button type="button" className="button secondary" onClick={()=>{stopAnimation();stopTumble();setOverlay('none');setScreen('home');}}>{t('ludoMainMenu')}</button>
+        <button type="button" className="button secondary ludo-exit-btn" onClick={onExit}>{t('ludoExitToNaqla')}</button>
+      </div>
+    </div>}
+  </>;
+
+  if(!loaded) return createPortal(<section className="ludo-page ludo-immersive" dir={ar?'rtl':'ltr'}><p className="ludo-loading">{t('loading')}</p></section>,document.body);
+
+  return createPortal(<section className="ludo-page ludo-immersive" dir={ar?'rtl':'ltr'}>
+    {screen==='home' && <div className="ludo-screen ludo-home">
+      <div className="ludo-home-hero">
+        <span className="ludo-deco-die d1" aria-hidden="true"><DieGlyph value={5}/></span>
+        <span className="ludo-deco-die d2" aria-hidden="true"><DieGlyph value={3}/></span>
+        <div className="ludo-hero-board"><BoardPreview count={4}/></div>
+        <h1 className="ludo-home-title">{t('ludo')}</h1>
+        <p className="ludo-home-tag">{t('ludoTag')}</p>
+      </div>
+      <nav className="ludo-home-menu" aria-label={t('ludo')}>
+        <button type="button" className="ludo-menu-btn primary ludo-home-play" onClick={()=>setScreen('mode')}>
+          <span className="ludo-menu-icon">▶</span>{t('ludoPlay')}
+        </button>
+        {hasUnfinishedSave && <button type="button" className="ludo-menu-btn ludo-home-continue" onClick={continueGame}>
+          <span className="ludo-menu-icon">⏵</span>{t('ludoContinue')}
+          <small>{variantName(savedGame!.seatCount)} · {savedGame!.seatCount} {t('ludoPlayers')}</small>
+        </button>}
+        <button type="button" className="ludo-menu-btn" onClick={()=>setOverlay('howto')}>
+          <span className="ludo-menu-icon">?</span>{t('ludoHowToPlay')}
+        </button>
+        <button type="button" className="ludo-menu-btn" onClick={()=>setOverlay('settings')}>
+          <span className="ludo-menu-icon">⚙</span>{t('ludoSettings')}
+        </button>
+        <button type="button" className="ludo-menu-btn ghost" onClick={onExit}>
+          <span className="ludo-menu-icon">←</span>{t('ludoExitToNaqla')}
+        </button>
+      </nav>
+      <p className="ludo-offline-note">{t('ludoOnlineUnavailable')}</p>
+      {notice && <p className="ludo-error" role="alert">{notice==='invalid-save'?t('ludoInvalidSave'):notice==='legacy-save'?t('ludoLegacySave'):notice}</p>}
+    </div>}
+
+    {screen==='mode' && <div className="ludo-screen ludo-flow-screen">
+      <header className="ludo-flow-head">
+        <button type="button" className="button secondary" onClick={()=>setScreen('home')}>{t('back')}</button>
+        <h2>{t('ludoSelectMode')}</h2><span className="ludo-flow-spacer"/>
+      </header>
+      <div className="ludo-mode-cards">
+        <button type="button" className="ludo-mode-card" onClick={()=>{setMode('ai');setScreen('count');}}>
+          <strong className="ludo-mode-symbol">🤖</strong>
+          <strong>{t('ludoVsAi')}</strong>
+          <span>{t('ludoVsAiDesc')}</span>
+        </button>
+        <button type="button" className="ludo-mode-card" onClick={()=>{setMode('local');setScreen('count');}}>
+          <strong className="ludo-mode-symbol">👥</strong>
+          <strong>{t('ludoLocal')}</strong>
+          <span>{t('ludoLocalDesc')}</span>
+        </button>
+        <button type="button" className="ludo-mode-card" disabled aria-disabled="true">
+          <strong className="ludo-mode-symbol">🌐</strong>
+          <strong>{t('ludoOnline')}</strong>
+          <span>{t('ludoOnlineDesc')}</span>
+          <em className="ludo-soon">{t('ludoOnlineSoon')}</em>
+        </button>
+      </div>
+    </div>}
+
+    {screen==='count' && <div className="ludo-screen ludo-flow-screen">
+      <header className="ludo-flow-head">
+        <button type="button" className="button secondary" onClick={()=>setScreen('mode')}>{t('back')}</button>
+        <h2>{t('ludoSelectPlayers')}</h2><span className="ludo-flow-spacer"/>
+      </header>
+      <div className="ludo-count-grid">
+        {VARIANTS.map(v=><button type="button" key={v.count}
+          className={'ludo-count-card'+(count===v.count?' chosen':'')}
+          aria-pressed={count===v.count}
+          onClick={()=>setCount(v.count)}>
+          <BoardPreview count={v.count}/>
+          <strong>{v.name}</strong>
+          <span>{v.count} {t('ludoPlayers')} · {tokensPerSeat(v.count)} {t('ludoPerPlayer')}</span>
         </button>)}
       </div>
-      <h3>{t('ludoMode')}</h3>
-      <div className="ludo-options">
-        <button className={mode==='ai'?'chosen':''} onClick={()=>setMode('ai')}>{t('ludoVsAi')}</button>
-        <button className={mode==='local'?'chosen':''} onClick={()=>setMode('local')}>{t('ludoLocal')}</button>
+      <button type="button" className="button primary ludo-flow-next" onClick={()=>setScreen('config')}>{t('ludoMatchSettings')}</button>
+    </div>}
+
+    {screen==='config' && <div className="ludo-screen ludo-flow-screen">
+      <header className="ludo-flow-head">
+        <button type="button" className="button secondary" onClick={()=>setScreen('count')}>{t('back')}</button>
+        <h2>{t('ludoMatchSettings')}</h2><span className="ludo-flow-spacer"/>
+      </header>
+      <div className="ludo-config-card">
+        <div className="ludo-config-preview"><BoardPreview count={count}/></div>
+        {mode==='ai' && <label className="ludo-field">{t('difficulty')}
+          <select value={difficulty} onChange={e=>setDifficulty(e.target.value as typeof difficulty)}>
+            <option value="easy">{t('easy')}</option><option value="medium">{t('medium')}</option><option value="hard">{t('hard')}</option>
+          </select>
+        </label>}
+        <label className="ludo-field">{t('ludoRuleset')}
+          <select value={profile} onChange={e=>setProfile(e.target.value as typeof profile)}>
+            <option value="classic">{t('ludoFull')}</option><option value="fast">{t('ludoFast')}</option>
+          </select>
+        </label>
+        <div className="ludo-field ludo-colors-field">
+          <span>{t('ludoPlayerColors')}</span>
+          <span className="ludo-color-dots">
+            {Array.from({length:count},(_,s)=><i key={s} style={{background:LUDO_COLORS[s]}} title={title(s)}/>)}
+          </span>
+        </div>
+        <div className="ludo-summary">
+          <h3>{t('ludoSummary')}</h3>
+          <p>{variantName(count)} · {count} {t('ludoPlayers')} · {tokensPerSeat(count)} {t('ludoPerPlayer')}</p>
+          <p>{mode==='ai'?t('ludoVsAi'):t('ludoLocal')}{mode==='ai'?' · '+t(difficulty):''} · {profile==='classic'?t('ludoFull'):t('ludoFast')}</p>
+        </div>
+        <button type="button" className="button primary ludo-start" onClick={()=>start()}>{t('ludoStartGame')}</button>
       </div>
-      {mode==='ai' && <label className="ludo-field">{t('difficulty')}
-        <select value={difficulty} onChange={e=>setDifficulty(e.target.value as typeof difficulty)}>
-          <option value="easy">{t('easy')}</option><option value="medium">{t('medium')}</option><option value="hard">{t('hard')}</option>
-        </select>
-      </label>}
-      <label className="ludo-field">{t('ludoRuleset')}
-        <select value={profile} onChange={e=>setProfile(e.target.value as typeof profile)}>
-          <option value="classic">{t('ludoFull')}</option><option value="fast">{t('ludoFast')}</option>
-        </select>
-      </label>
-      <p className="small-muted">{t('ludoRules')}</p>
-      <p className="ludo-offline-note">{t('ludoOnlineUnavailable')}</p>
-      <button type="button" className="button primary ludo-start" onClick={start}>{t('start')}</button>
+    </div>}
+
+    {screen==='game' && game && (game.phase==='finished' ? <div className="ludo-screen ludo-results-screen">
+      <div className="ludo-confetti" aria-hidden="true">{Array.from({length:14},(_,i)=><i key={i}/>)}</div>
+      <p className="ludo-trophy" aria-hidden="true">🏆</p>
+      <h2>{t('ludoResults')}</h2>
+      {(()=>{ const winner=game.placements.find(p=>p.rank===1); return winner?<p className="ludo-winner">
+        <b style={{color:LUDO_COLORS[winner.seat]}}>{LUDO_SYMBOLS[winner.seat]}</b> {t('ludoWinner')}: {title(winner.seat)}
+      </p>:null; })()}
+      <div className="ludo-standings">
+        {[...game.placements].sort((a,b)=>a.rank-b.rank).map(p=><p key={p.seat}>
+          <strong>#{p.rank}</strong> <b style={{color:LUDO_COLORS[p.seat]}}>{LUDO_SYMBOLS[p.seat]}</b> {title(p.seat)} — {t('ludo'+(p.reason==='completed'?'Completed':p.reason==='resigned'?'Resigned':'Remaining'))}
+        </p>)}
+      </div>
+      <div className="ludo-results-actions">
+        <button type="button" className="button primary" onClick={()=>start(true)}>{t('ludoPlayAgain')}</button>
+        <button type="button" className="button secondary" onClick={()=>setScreen('mode')}>{t('ludoChangeMode')}</button>
+        <button type="button" className="button secondary" onClick={()=>setScreen('home')}>{t('ludoMainMenu')}</button>
+        <button type="button" className="button secondary" onClick={onExit}>{t('ludoExitToNaqla')}</button>
+      </div>
     </div> : <div className="ludo-play" data-ludo-revision={game.revision} data-ludo-phase={game.phase} data-ludo-token-count={game.tokens.length}>
+      <div className="ludo-game-topbar">
+        <button type="button" className="ludo-icon-btn" aria-label={t('ludoPause')} onClick={()=>setOverlay('pause')}>❚❚</button>
+        <span className="ludo-game-label">{variantName(game.seatCount)} · {game.seatCount} {t('ludoPlayers')}</span>
+        <button type="button" className="ludo-icon-btn" aria-label={t('ludoMainMenu')} onClick={()=>{stopAnimation();stopTumble();setScreen('home');}}>⌂</button>
+      </div>
       <div className="ludo-player-strip" style={{gridTemplateColumns:`repeat(${Math.min(game.seatCount,5)},minmax(0,1fr))`}}>
         {game.controllers.map((controller,s)=>{
           const place=game.placements.find(x=>x.seat===s);
@@ -288,13 +476,7 @@ export function LudoPage({onExit,settings}:{onExit:()=>void;settings:Settings}) 
           onChoose={id=>{if(game.controllers[game.activeSeat]==='human' && !animating)animateMove(id);}}
           zoom={zoom} center={focus} />}
       </div>
-      {game.phase==='finished' ? <div className="ludo-action-panel" aria-live="polite">
-        <h2>{t('ludoResults')}</h2>
-        {[...game.placements].sort((a,b)=>a.rank-b.rank).map(p=><p key={p.seat}>
-          <strong>#{p.rank}</strong> {LUDO_SYMBOLS[p.seat]} {title(p.seat)} — {t('ludo'+(p.reason==='completed'?'Completed':p.reason==='resigned'?'Resigned':'Remaining'))}
-        </p>)}
-        <button className="button primary" onClick={start}>{t('rematch')}</button>
-      </div> : <div className="ludo-action-panel" aria-live="polite">
+      <div className="ludo-action-panel" aria-live="polite">
         <strong className="ludo-current" style={{color:LUDO_COLORS[game.activeSeat]}}>
           {LUDO_SYMBOLS[game.activeSeat]} {title(game.activeSeat)} · {game.controllers[game.activeSeat]==='ai'?t('aiName'):t('yourTurn')}
         </strong>
@@ -320,8 +502,17 @@ export function LudoPage({onExit,settings}:{onExit:()=>void;settings:Settings}) 
         {game.controllers[game.activeSeat]==='human' && <button type="button" className="ludo-resign" onClick={()=>{
           if(window.confirm(t('ludoResignConfirm'))) execute(()=>resignLudo(game,game.activeSeat));
         }}>{t('resign')}</button>}
-      </div>}
-    </div>}
-    {notice && <p className="ludo-error" role="alert">{notice==='invalid-save'?t('ludoInvalidSave'):notice==='legacy-save'?t('ludoLegacySave'):notice}</p>}
-  </section>;
+      </div>
+      {notice && <p className="ludo-error" role="alert">{notice==='invalid-save'?t('ludoInvalidSave'):notice==='legacy-save'?t('ludoLegacySave'):notice}</p>}
+    </div>)}
+    {overlays}
+  </section>,document.body);
+}
+
+/** Small static pip glyph used for the home screen's decorative dice. */
+function DieGlyph({ value }: { value: number }) {
+  return <span className="ludo-deco-pips" aria-hidden="true">
+    {Array.from({ length: 9 }, (_, i) =>
+      <i key={i} className={PIPS[value]!.includes(i) ? 'pip on' : 'pip'} />)}
+  </span>;
 }

@@ -11,7 +11,7 @@ import {
 import { expectNoGlobalOverflow } from '../helpers/layout.ts';
 
 const solo = {
-  ludo: { root: '.ludo-page', scene: '.ludo-variants' },
+  ludo: { root: '.ludo-page', scene: '.ludo-home' },
   appleWorm: { root: '[data-stage-origin="user-screenshot"]', scene: 'svg[data-source-level]' },
   basketballLine: { root: '.basketball-page', scene: '.basketball-canvas' },
   backroomBill: { root: '.backroom-page', scene: '.backroom-canvas' },
@@ -25,8 +25,10 @@ const allIds = [...gameIds, ...Object.keys(solo)] as readonly string[];
 
 async function exerciseSolo(page: Page, id: SoloId) {
   if (id === 'ludo') {
-    await page.locator('.ludo-variants button').first().click();
-    await page.locator('.ludo-options button').nth(1).click();
+    await page.locator('.ludo-home-play').click();
+    await page.locator('.ludo-mode-card').nth(1).click();
+    await page.locator('.ludo-count-card').first().click();
+    await page.locator('.ludo-flow-next').click();
     await page.locator('.ludo-start').click();
     await expect(page.locator('.ludo-board')).toBeVisible();
     await expect(page.locator('.ludo-dice-line button')).toBeEnabled();
@@ -143,6 +145,9 @@ for (const locale of locales) {
             }else if(id==='arithmetica'){
               await page.locator('.arithmetica-heading .button.secondary').click();
               await page.locator('.arithmetica-exit').click();
+            }else if(id==='ludo'){
+              await page.locator('.ludo-icon-btn').first().click();
+              await page.locator('.ludo-exit-btn').click();
             }else{
               await page.locator(config.root+' .button.secondary').first().click();
             }
