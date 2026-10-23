@@ -14,13 +14,15 @@ export type Vehicle={
  id:number; type:VehicleType; facility:Facility; bay:number; status:CarStatus;
  x:number;y:number; color:string; patience:number; amount:number; progress:number;
  needs:number; reward:number; event:boolean; condition:number;
+ /** -1 = player, positive ID = assigned employee; undefined = unclaimed. */
+ actorId?:number;
 };
 export type Debris={id:number;x:number;y:number;durability:number;value:number;cleared:boolean};
 export type Worker={id:number;job:StaffJob;level:number};
 export type GarageStep='diagnose'|'parts'|'repair'|'done';
 export type Mission='cleanup'|'fuel'|'sales'|'repair'|'wash'|'expansion'|'race';
 export type State={
- cash:number; fuel:number; maxFuel:number; goods:number;maxGoods:number;parts:number;
+ cash:number; fuel:number; maxFuel:number; goods:number;maxGoods:number;parts:number;soap:number;
  level:number;exp:number; bestLevel:number; reputation:number; rating:number;
  player:{x:number;y:number;tx:number|null;ty:number|null};
  facilities:Record<Facility,number>; upgrades:Record<Upgrade,number>;
@@ -30,7 +32,7 @@ export type State={
  served:number; totalIncome:number; missed:number; revenueToday:number;
  day:number; clock:number; elapsed:number; spawnClock:number; nextId:number;
  event:{active:boolean;time:number;remaining:number;completed:number;goal:number};
- notice:string; staffClock:number; idleCollected:number;
+ notice:string; staffClock:number; idleCollected:number; offlineSettledAt?:number;
 };
 export const FACILITIES:readonly Facility[]=['pump','shop','garage','wash','tires'];
 export const JOBS:readonly StaffJob[]=['fuel','cashier','mechanic','wash'];
@@ -54,7 +56,7 @@ export const initialDebris=():Debris[]=>Array.from({length:24},(_,i)=>({
 })).filter(d=>Math.hypot(d.x-390,d.y-372)>96);
 export function newGasStation():State{
  return {
-  cash:180,fuel:125,maxFuel:240,goods:8,maxGoods:30,parts:6,
+  cash:180,fuel:125,maxFuel:240,goods:8,maxGoods:30,parts:6,soap:0,
   level:1,exp:0,bestLevel:1,reputation:45,rating:3.1,
   player:{x:470,y:338,tx:null,ty:null},
   facilities:{pump:1,shop:0,garage:0,wash:0,tires:0},
@@ -64,7 +66,7 @@ export function newGasStation():State{
   claimed:[],served:0,totalIncome:0,missed:0,revenueToday:0,
   day:1,clock:9*60,elapsed:0,spawnClock:2,nextId:100,
   event:{active:false,time:0,remaining:0,completed:0,goal:3},
-  notice:'gasWelcome',staffClock:0,idleCollected:0
+  notice:'gasWelcome',staffClock:0,idleCollected:0,offlineSettledAt:0
  };
 }
 export const facilityCost=(s:State,key:Facility):number=>{
@@ -110,6 +112,7 @@ export function buyFacility(s:State,key:Facility):boolean{
  const order:{[k in Facility]:number}={pump:1,shop:3,garage:4,wash:6,tires:8};
  if(s.level<order[key]||s.cash<facilityCost(s,key))return false;
  s.cash-=facilityCost(s,key);s.facilities[key]++;
+ if(key==='wash')s.soap+=3; // Single starter allocation: duplicate builds are already rejected.
  s.missions.expansion++;
  s.notice='gasExpanded';
  return true;
@@ -131,18 +134,42 @@ export function buyStaff(s:State,job:StaffJob):boolean{
 export function dismissStaff(s:State,id:number):boolean{
  const index=s.staff.findIndex(x=>x.id===id);
  if(index<0)return false;
+ if(s.cars.some(c=>c.status==='servicing'&&c.actorId===id)){
+  s.notice='gasStaffBusy';return false;
+ }
  s.staff.splice(index,1);s.notice='gasDismissed';return true;
 }
-export function restock(s:State,type:'fuel'|'goods'|'parts',amount:number):boolean{
+export function restock(s:State,type:'fuel'|'goods'|'parts'|'soap',amount:number):boolean{
  if(![20,50,100].includes(amount))return false;
- const unit=type==='fuel'?2.05-s.upgrades.tankSize*.05:type==='goods'?3:4.3;
+ const unit=type==='fuel'?2.05-s.upgrades.tankSize*.05:type==='goods'?3:type==='soap'?3:4.3;
  const price=Math.ceil(amount*unit);
  if(s.cash<price)return false;
  if(type==='fuel'&&s.fuel+amount>s.maxFuel)return false;
  if(type==='goods'&&s.goods+amount>s.maxGoods)return false;
  if(type==='parts'&&s.parts+amount>120)return false;
+ if(type==='soap'&&s.soap+amount>120)return false;
  s.cash-=price;s[type]+=amount;
  s.notice='gasRestocked';return true;
+}
+/** Stock committed to in-flight services is reserved until the receipt is final. */
+function pendingStock(s:State,kind:Facility):number{
+ return s.cars.reduce((n,c)=>n+(c.facility===kind&&c.status==='servicing'?
+  kind==='pump'?Math.ceil(c.needs):1:0),0);
+}
+export function availableServiceStock(s:State,kind:Facility):number{
+ if(kind==='pump')return Math.max(0,s.fuel-pendingStock(s,'pump'));
+ if(kind==='shop')return Math.max(0,s.goods-pendingStock(s,'shop'));
+ if(kind==='tires')return Math.max(0,s.parts-pendingStock(s,'tires'));
+ if(kind==='wash')return Math.max(0,s.soap-pendingStock(s,'wash'));
+ return Number.POSITIVE_INFINITY;
+}
+function canStartCar(s:State,c:Vehicle):boolean{
+ if(c.facility==='pump')return availableServiceStock(s,'pump')>=Math.ceil(c.needs);
+ if(c.facility==='shop')return availableServiceStock(s,'shop')>=1;
+ if(c.facility==='tires')return availableServiceStock(s,'tires')>=1;
+ if(c.facility==='wash')return availableServiceStock(s,'wash')>=1;
+ if(c.facility==='garage')return s.parts>=2;
+ return true;
 }
 function garageNeeds(s:State):Vehicle|undefined{
  const car=s.cars.find(c=>c.id===s.garageCar&&c.facility==='garage'&&c.status==='waiting');
@@ -154,6 +181,7 @@ export function workGarage(s:State):boolean{
  if(!c)return false;
  if(s.garageCar!==c.id){s.garageCar=c.id;s.garageStep='diagnose';}
  if(s.garageStep==='diagnose'){
+  c.actorId=-1;
   s.garageStep='parts';s.notice='gasDiagnosed';return true;
  }
  if(s.garageStep==='parts'){
@@ -171,15 +199,14 @@ export function interactCar(s:State,id:number):boolean{
  const car=s.cars.find(c=>c.id===id&&c.status==='waiting');
  if(!car||!isNear(s,car,115))return false;
  if(car.facility==='garage')return workGarage(s);
- if(car.facility==='pump'){
-  if(s.fuel<Math.ceil(car.needs-car.progress)){s.notice='gasNeedFuel';return false;}
-  car.status='servicing';s.notice='gasFuelling';return true;
+ if(!canStartCar(s,car)){
+  s.notice=car.facility==='pump'?'gasNeedFuel':car.facility==='shop'?'gasNeedGoods':
+   car.facility==='wash'?'gasNeedSoap':'gasNeedParts';
+  return false;
  }
- if(car.facility==='shop'){
-  if(!s.goods){s.notice='gasNeedGoods';return false;}
-  car.status='servicing';s.notice='gasShopping';return true;
- }
- car.status='servicing';s.notice=car.facility==='wash'?'gasWashing':'gasTireService';
+ car.actorId=-1;car.status='servicing';
+ s.notice=car.facility==='pump'?'gasFuelling':car.facility==='shop'?'gasShopping':
+  car.facility==='wash'?'gasWashing':'gasTireService';
  return true;
 }
 export function startRace(s:State):boolean{
@@ -200,8 +227,11 @@ const spawn=(s:State,forceSport=false)=>{
  const idx=Math.floor(s.elapsed*5+s.nextId*3)%order.length;
  let facility=forceSport?'pump':order[idx]!;
  if(!facilityCapacity(s,facility))facility='pump';
- if(s.cars.filter(c=>c.facility===facility&&c.status!=='leaving'&&c.status!=='done').length>=facilityCapacity(s,facility))return;
- const bay=facility==='pump'?s.cars.filter(c=>c.facility==='pump'&&c.status==='waiting').length:0;
+ const occupied=s.cars.filter(c=>c.facility===facility&&c.status!=='leaving');
+ if(occupied.length>=facilityCapacity(s,facility))return;
+ const used=new Set(occupied.map(c=>c.bay));
+ let bay=0;
+ while(used.has(bay))bay++;
  const type=forceSport?'sport':kinds[(s.nextId+s.day)%kinds.length]!;
  const base=type==='truck'?34:type==='suv'?27:type==='sport'?25:18;
  const needs=facility==='pump'?base+Math.floor(s.level/3)*3:
@@ -247,26 +277,30 @@ export function tickGas(s:State,dt:number):State{
  // Service progresses only while the business is open. Assigned staff starts the corresponding queue.
  for(const car of s.cars){
   if(car.status==='waiting'){
-   car.patience-=dt;
+   // A partially diagnosed player repair owns the job until it is finished.
+   if(car.actorId!==-1)car.patience-=dt;
    const match:Record<Facility,StaffJob>={pump:'fuel',shop:'cashier',garage:'mechanic',wash:'wash',tires:'mechanic'};
-   if(s.staff.some(w=>w.job===match[car.facility]) &&
-      (car.facility!=='garage'||s.parts>=2) &&
-      (car.facility!=='shop'||s.goods>0) &&
-      (car.facility!=='pump'||s.fuel>=car.needs)){
+   const busy=new Set(s.cars.filter(c=>c.status==='servicing'&&c.actorId!==undefined).map(c=>c.actorId));
+   const worker=s.staff.find(w=>w.job===match[car.facility]&&!busy.has(w.id));
+   if(car.actorId===undefined&&worker&&canStartCar(s,car)){
      if(car.facility==='garage')s.parts-=2;
-     car.status='servicing';
+     car.actorId=worker.id;car.status='servicing';
    }
-   if(car.patience<=0){car.status='leaving';s.missed++;s.reputation=clamp(s.reputation-2,0,100);s.notice='gasCustomerLeft';}
+   if(car.patience<=0&&car.status==='waiting'&&car.actorId!==-1){
+     car.status='leaving';s.missed++;s.reputation=clamp(s.reputation-2,0,100);s.notice='gasCustomerLeft';
+   }
   }else if(car.status==='servicing'){
    const speed=(1+s.upgrades.serviceSpeed*.24+s.upgrades.pumpSpeed*(car.facility==='pump'?.16:0));
    const duration=car.facility==='pump'?4.2:car.facility==='garage'?8:car.facility==='shop'?3:5;
    car.progress=Math.min(car.needs,car.progress+dt*car.needs/duration*speed);
    if(car.progress>=car.needs){
     if(car.facility==='pump'){
-     s.fuel-=car.needs;earn(s,car.reward,'fuel');
+     s.fuel-=Math.ceil(car.needs);earn(s,car.reward,'fuel');
     }else if(car.facility==='shop'){
-     s.goods=Math.max(0,s.goods-1);earn(s,car.reward,'shop');
+     s.goods-=1;earn(s,car.reward,'shop');
     }else {
+     if(car.facility==='tires')s.parts-=1;
+     if(car.facility==='wash')s.soap-=1;
      earn(s,car.reward,'service');
      if(car.facility==='garage')s.missions.repair++;
      if(car.facility==='wash')s.missions.wash++;
@@ -283,28 +317,43 @@ export function tickGas(s:State,dt:number):State{
   }
  }
  s.cars=s.cars.filter(c=>c.status!=='leaving');
- // Lightweight deterministic idle income while playing, not enough to replace service.
- if(s.staffClock>=45){
-  s.staffClock-=45;
-  const bonus=s.facilities.shop?4+s.upgrades.shopMargin*2:0;
-  if(bonus){s.cash+=bonus;s.totalIncome+=bonus;s.revenueToday+=bonus;}
- }
+ // No stock-free passive money: employees must complete actual customer orders.
+ if(s.staffClock>=45)s.staffClock%=45;
  return s;
 }
+/** Settles a bounded fraction of staffed work. Every offline sale consumes saved stock. */
 export function applyOfflineEarnings(s:State,nowMs:number,savedAtMs:number):number{
- if(!Number.isFinite(nowMs)||!Number.isFinite(savedAtMs)||savedAtMs<=0||nowMs<=savedAtMs)return 0;
- const time=Math.min(8*3600,(nowMs-savedAtMs)/1000);
- const workers=s.staff.length;
- const facilities=FACILITIES.reduce((n,k)=>n+(s.facilities[k]>0?1:0),0);
- const income=Math.floor(time/60)*Math.floor((workers*3+facilities*2)*.6);
- const capped=Math.min(2200,Math.max(0,income));
- s.cash+=capped;s.totalIncome+=capped;s.idleCollected=capped;
- return capped;
+ if(!Number.isFinite(nowMs)||!Number.isFinite(savedAtMs)||savedAtMs<=0||
+    nowMs<=savedAtMs||s.offlineSettledAt===savedAtMs)return 0;
+ s.offlineSettledAt=savedAtMs;
+ // At most two hours, roughly one quarter of a service per worker per minute.
+ const shifts=Math.floor(Math.min(2*3600,(nowMs-savedAtMs)/1000)/240);
+ let paid=0;
+ const settle=(requested:number,available:number,quantity:number,payout:number,consume:(count:number)=>void)=>{
+  const count=Math.min(requested,Math.floor(available/quantity),Math.floor((2200-paid)/payout));
+  if(count<=0)return;
+  consume(count*quantity);paid+=count*payout;
+ };
+ const workers=(job:StaffJob)=>s.staff.filter(w=>w.job===job).length;
+ if(s.facilities.pump){
+  settle(shifts*workers('fuel'),s.fuel,18,86,amount=>{s.fuel-=amount;});
+ }
+ if(s.facilities.shop){
+  settle(shifts*workers('cashier'),s.goods,1,20,amount=>{s.goods-=amount;});
+ }
+ if(s.facilities.garage){
+  settle(shifts*workers('mechanic'),s.parts,2,110,amount=>{s.parts-=amount;});
+ }
+ if(s.facilities.wash){
+  settle(shifts*workers('wash'),s.soap,1,64,amount=>{s.soap-=amount;});
+ }
+ s.cash+=paid;s.totalIncome+=paid;s.idleCollected=paid;
+ return paid;
 }
 export type SavedGas={version:1;savedAt:number;state:State};
 export const captureGas=(s:State,savedAt=Date.now()):SavedGas=>({
  version:1,savedAt,state:{...s,player:{...s.player,tx:null,ty:null},
-  debris:s.debris.map(x=>({...x})),cars:[],event:{...s.event,active:false,time:0},
+  debris:s.debris.map(x=>({...x})),cars:s.cars.map(x=>({...x})),event:{...s.event},
   staff:s.staff.map(x=>({...x})),facilities:{...s.facilities},
   upgrades:{...s.upgrades},missions:{...s.missions},claimed:[...s.claimed]}
 });
@@ -318,6 +367,8 @@ export function restoreGas(input:unknown):{state:State;savedAt:number}{
  const state=newGasStation();
  state.cash=money('cash',1e9,180);state.fuel=money('fuel',100000,125);
  state.goods=money('goods',10000,8);state.parts=money('parts',10000,6);
+ state.soap=money('soap',120,0);
+ state.offlineSettledAt=money('offlineSettledAt',Number.MAX_SAFE_INTEGER,0);
  state.level=valid(o.level,1,1000,1);state.bestLevel=valid(o.bestLevel,1,1000,state.level);
  state.exp=money('exp',1e8);state.totalIncome=money('totalIncome');state.served=money('served');
  state.missed=money('missed');state.revenueToday=money('revenueToday');
@@ -330,6 +381,8 @@ export function restoreGas(input:unknown):{state:State;savedAt:number}{
  for(const key of FACILITIES){
   state.facilities[key]=valid(facilities[key],key==='pump'?1:0,key==='pump'?3:1,state.facilities[key]);
  }
+ // Existing v1 station saves predate wash soap; migrate owners once without repeatedly gifting stock.
+ if(!Object.hasOwn(o,'soap')&&state.facilities.wash)state.soap=3;
  const up=o.upgrades&&typeof o.upgrades==='object'?o.upgrades as Record<string,unknown>:{};
  for(const key of UPGRADES)state.upgrades[key]=valid(up[key],0,6,0);
  state.maxFuel=240+state.upgrades.tankSize*90;state.maxGoods=30+state.upgrades.tankSize*8;
@@ -361,6 +414,58 @@ export function restoreGas(input:unknown):{state:State;savedAt:number}{
   }
  }
  state.nextId=Math.max(state.nextId,...state.staff.map(x=>x.id+1));
+ // Restore active customer jobs, but never trust arbitrary save objects or references.
+ const carIds=new Set<number>();
+ const savedCars=Array.isArray(o.cars)?o.cars:[];
+ for(const raw of savedCars.slice(0,24)){
+  if(!raw||typeof raw!=='object')continue;
+  const c=raw as Record<string,unknown>;
+  const id=valid(c.id,100,10000000,0);
+  const facility=c.facility as Facility;
+  const status=c.status as CarStatus;
+  if(!id||carIds.has(id)||!FACILITIES.includes(facility)||!state.facilities[facility]||
+   !(['waiting','servicing','done'] as string[]).includes(status)||
+   !(['sedan','suv','van','sport','truck'] as unknown[]).includes(c.type))continue;
+  const xy=(value:unknown,min:number,max:number,fallback:number)=>
+   typeof value==='number'&&Number.isFinite(value)?clamp(value,min,max):fallback;
+  const workerId=valid(c.actorId,1,10000000,0);
+  const actorId=c.actorId===-1?-1:state.staff.some(w=>w.id===workerId)?workerId:undefined;
+  const loc=TARGETS[facility];
+  const car:Vehicle={
+   id,type:c.type as VehicleType,facility,
+   bay:valid(c.bay,0,facility==='pump'?2:0,0),status,
+   x:xy(c.x,0,WORLD_W,loc.x),y:xy(c.y,0,WORLD_H,loc.y),
+   color:typeof c.color==='string'&&/^#[0-9a-f]{6}$/i.test(c.color)?c.color:'#56a9bb',
+   patience:xy(c.patience,-1,150,48),amount:xy(c.amount,0,10,0),
+   progress:xy(c.progress,0,1000,0),needs:valid(c.needs,1,1000,18),
+   reward:valid(c.reward,0,100000,90),event:c.event===true,
+   condition:xy(c.condition,0,1,1),actorId,
+  };
+  car.progress=Math.min(car.progress,car.needs);
+  state.cars.push(car);carIds.add(id);
+ }
+ state.nextId=Math.max(state.nextId,...state.cars.map(x=>x.id+1));
+ if(o.event&&typeof o.event==='object'){
+  const e=o.event as Record<string,unknown>;
+  state.event={
+   active:e.active===true&&typeof e.time==='number'&&e.time>0,
+   time:typeof e.time==='number'&&Number.isFinite(e.time)?clamp(e.time,0,600):0,
+   remaining:valid(e.remaining,0,30,0),completed:valid(e.completed,0,30,0),
+   goal:valid(e.goal,1,30,3),
+  };
+ }
+ state.elapsed=typeof o.elapsed==='number'&&Number.isFinite(o.elapsed)?
+  clamp(o.elapsed,0,10000000):0;
+ state.spawnClock=typeof o.spawnClock==='number'&&Number.isFinite(o.spawnClock)?
+  clamp(o.spawnClock,0,120):2;
+ state.staffClock=typeof o.staffClock==='number'&&Number.isFinite(o.staffClock)?
+  clamp(o.staffClock,0,45):0;
+ const garageCar=valid(o.garageCar,100,10000000,0);
+ if(garageCar&&state.cars.some(c=>c.id===garageCar&&c.facility==='garage'&&c.status==='waiting')){
+  state.garageCar=garageCar;
+  if(['diagnose','parts','repair'].includes(String(o.garageStep)))
+   state.garageStep=o.garageStep as GarageStep;
+ }
  const p=o.player&&typeof o.player==='object'?o.player as Record<string,unknown>:{};
  state.player.x=typeof p.x==='number'&&Number.isFinite(p.x)?clamp(p.x,20,WORLD_W-20):470;
  state.player.y=typeof p.y==='number'&&Number.isFinite(p.y)?clamp(p.y,70,WORLD_H-20):338;

@@ -7,6 +7,7 @@ import {
   type Facility,type Mission,type SavedGas,type StaffJob,type State,type Upgrade,
 } from '../../../packages/games/gas-station/engine.ts';
 import {GasStationWorld} from './GasStationArt.tsx';
+import {enterFullscreenOnlyGame,leaveFullscreenOnlyGame} from './immersive-game.ts';
 import {feedback,storage,type Settings} from './platform.ts';
 import {useI18n} from './i18n.tsx';
 
@@ -24,6 +25,10 @@ const missionLabel=(key:Mission)=>'gasMission'+key[0]!.toUpperCase()+key.slice(1
 const orderKeys:Facility[]=['pump','shop','garage','wash','tires'];
 export function GasStationPage({onExit,settings}:{onExit:()=>void;settings:Settings}){
  const {t,lang}=useI18n();
+ useEffect(()=>{
+  enterFullscreenOnlyGame('gasStation');
+  return ()=>{void leaveFullscreenOnlyGame();};
+ },[]);
  const game=useRef<State>(newGasStation());
  const [view,setView]=useState<State>(()=>copy(game.current));
  const [loaded,setLoaded]=useState(false);
@@ -212,6 +217,7 @@ export function GasStationPage({onExit,settings}:{onExit:()=>void;settings:Setti
        <div><span>📦 {t('gasGoods')}</span><b>{view.goods}/{view.maxGoods}</b>
         <progress value={shopFraction} max={100}/></div>
        <div><span>🔧 {t('gasParts')}</span><b>{view.parts}</b></div>
+       <div><span>🫧 {t('gasSoap')}</span><b>{view.soap}</b></div>
       </div>
       <div className="gas-actions">
        <button type="button" className="gas-action" onClick={()=>{
@@ -264,7 +270,7 @@ export function GasStationPage({onExit,settings}:{onExit:()=>void;settings:Setti
      </div>}
      <h3>📦 {t('gasStock')}</h3>
      <div className="gas-restock">
-      {(['fuel','goods','parts'] as const).map(type=><div key={type}>
+      {(['fuel','goods','parts','soap'] as const).map(type=><div key={type}>
        <span>{t('gas'+type[0]!.toUpperCase()+type.slice(1))}</span>
        <div>{([20,50,100] as const).map(count=><button type="button" key={count}
         onClick={()=>mutate(s=>restock(s,type,count))}>+{count}</button>)}</div>
@@ -316,7 +322,8 @@ export function GasStationPage({onExit,settings}:{onExit:()=>void;settings:Setti
      </div>
      {view.staff.map(worker=><div key={worker.id} className="gas-staff-row">
       <span>👷 {t(workerLabel(worker.job))} #{worker.id}</span>
-      <button type="button" onClick={()=>mutate(s=>dismissStaff(s,worker.id))}>
+      <button type="button" disabled={view.cars.some(c=>c.status==='servicing'&&c.actorId===worker.id)}
+       onClick={()=>mutate(s=>dismissStaff(s,worker.id))}>
        {t('gasDismiss')}</button></div>)}
     </div>}
     {tab==='missions'&&<div className="gas-panel">
