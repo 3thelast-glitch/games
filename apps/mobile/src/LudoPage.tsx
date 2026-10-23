@@ -469,12 +469,13 @@ export function LudoPage({onExit,settings,onSettingsChange}:{onExit:()=>void;set
           {LUDO_SYMBOLS[game.activeSeat]} {title(game.activeSeat)} · {game.controllers[game.activeSeat]==='ai'?t('aiName'):t('yourTurn')}
         </strong>
         <div className="ludo-dice-line">
-          <DieFace value={tumbling ?? game.die} tumbling={tumbling!==null}
-            spinKey={game.revision} label={t('ludoDice')} />
-          <button className="button primary" disabled={game.phase!=='roll'||game.controllers[game.activeSeat]==='ai'||tumbling!==null||animating}
-            onClick={handleRoll}>
-            {game.phase==='roll'?t('ludoRoll'):t('ludoChooseToken')}
-          </button>
+          {(()=>{ const canRoll=game.phase==='roll'&&game.controllers[game.activeSeat]==='human'&&tumbling===null&&!animating;
+            return <button type="button" className={'ludo-die-btn'+(canRoll?' ready':'')}
+              disabled={!canRoll} onClick={handleRoll}
+              aria-label={canRoll?t('ludoRoll'):t('ludoDice')}>
+              <DieFace value={tumbling ?? game.die} tumbling={tumbling!==null}
+                spinKey={game.revision} label={t('ludoDice')} />
+            </button>; })()}
         </div>
         {eventText && <p className="ludo-event" key={game.revision} role="status">{eventText}</p>}
         {!eventText && <p className="small-muted">{game.sixes>0?t('ludoBonus'):t('ludoStatus')}</p>}

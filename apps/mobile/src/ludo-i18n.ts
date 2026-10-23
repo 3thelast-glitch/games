@@ -66,7 +66,7 @@ export const ludoEn: Record<string,string> = {
   "ludoHaptics": "Vibration",
   "ludoOn": "On",
   "ludoOff": "Off",
-  "ludoHowToRoll": "Tap Roll, then tap a highlighted pawn on the board to move it.",
+  "ludoHowToRoll": "Tap the die to roll it, then tap a highlighted pawn on the board to move it.",
   "ludoHowToSafe": "Star tiles are safe: pawns there cannot be captured.",
   "ludoHowToZoom": "Use the board tools to zoom, focus the current player, or see the full board."
 };
@@ -138,7 +138,7 @@ export const ludoAr: Record<string,string> = {
   "ludoHaptics": "الاهتزاز",
   "ludoOn": "مشغّل",
   "ludoOff": "مغلق",
-  "ludoHowToRoll": "اضغط «ارمِ النرد» ثم اضغط قطعة مضيئة على اللوحة لتحريكها.",
+  "ludoHowToRoll": "اضغط النرد نفسه لرميه، ثم اضغط قطعة مضيئة على اللوحة لتحريكها.",
   "ludoHowToSafe": "خانات النجمة آمنة: لا يمكن أسر القطع الواقفة عليها.",
   "ludoHowToZoom": "استخدم أدوات اللوحة للتكبير أو التركيز على اللاعب الحالي أو رؤية اللوحة كاملة."
 };
