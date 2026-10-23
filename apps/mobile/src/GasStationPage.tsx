@@ -317,7 +317,8 @@ export function GasStationPage({onExit,settings}:{onExit:()=>void;settings:Setti
      </div>
      {view.staff.map(worker=><div key={worker.id} className="gas-staff-row">
       <span>👷 {t(workerLabel(worker.job))} #{worker.id}</span>
-      <button type="button" onClick={()=>mutate(s=>dismissStaff(s,worker.id))}>
+      <button type="button" disabled={view.cars.some(c=>c.status==='servicing'&&c.actorId===worker.id)}
+       onClick={()=>mutate(s=>dismissStaff(s,worker.id))}>
        {t('gasDismiss')}</button></div>)}
     </div>}
     {tab==='missions'&&<div className="gas-panel">
