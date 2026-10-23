@@ -212,6 +212,7 @@ export function GasStationPage({onExit,settings}:{onExit:()=>void;settings:Setti
        <div><span>📦 {t('gasGoods')}</span><b>{view.goods}/{view.maxGoods}</b>
         <progress value={shopFraction} max={100}/></div>
        <div><span>🔧 {t('gasParts')}</span><b>{view.parts}</b></div>
+       <div><span>🫧 {t('gasSoap')}</span><b>{view.soap}</b></div>
       </div>
       <div className="gas-actions">
        <button type="button" className="gas-action" onClick={()=>{
@@ -264,7 +265,7 @@ export function GasStationPage({onExit,settings}:{onExit:()=>void;settings:Setti
      </div>}
      <h3>📦 {t('gasStock')}</h3>
      <div className="gas-restock">
-      {(['fuel','goods','parts'] as const).map(type=><div key={type}>
+      {(['fuel','goods','parts','soap'] as const).map(type=><div key={type}>
        <span>{t('gas'+type[0]!.toUpperCase()+type.slice(1))}</span>
        <div>{([20,50,100] as const).map(count=><button type="button" key={count}
         onClick={()=>mutate(s=>restock(s,type,count))}>+{count}</button>)}</div>
