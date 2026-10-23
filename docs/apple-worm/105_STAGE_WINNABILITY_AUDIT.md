@@ -1,5 +1,17 @@
 # Apple Worm | NAQLA — 105-stage actual winning-route audit
 
+> **⚠️ SUPERSEDED — historical record only (2026-10-23).** The numbers in this
+> document (64/105 proven; stages 70, 95, 101 listed as having no exit) are
+> **stale** and must not be quoted as current. The current, reproducible
+> figures come from the generated audit:
+> [SOLVER_AUDIT_GENERATED.md](SOLVER_AUDIT_GENERATED.md), produced by
+> `scripts/apple-worm-audit.ts` and guarded by
+> `tests/apple-worm-proven-routes.test.ts`. As of that generated audit:
+> **83/105 proven won** (including 70, 95 and 101, which win via the
+> implemented top-boundary exit), **12 exhausted** under the current
+> provisional engine, **10 undetermined** (search budget), **0 missing exits**.
+> This document is kept unchanged below as the 2026-10-20 historical audit.
+
 **Audit date:** 2026-10-20 (Saudi local); **test evidence:** [Validate NAQLA workflow](https://github.com/3thelast-glitch/games/actions/runs/39327183465); **tested code:** `audit/apple-worm-105-playability-proof`.
 
 **The user-supplied video/PDF is approved.** This report tests whether NAQLA's **current implementation** can win each stage from its current initial state, and must NEVER be read as challenging the source puzzles.
