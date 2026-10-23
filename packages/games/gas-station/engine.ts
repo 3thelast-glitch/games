@@ -318,20 +318,39 @@ export function tickGas(s:State,dt:number):State{
  if(s.staffClock>=45)s.staffClock%=45;
  return s;
 }
+/** Settles a bounded fraction of staffed work. Every offline sale consumes saved stock. */
 export function applyOfflineEarnings(s:State,nowMs:number,savedAtMs:number):number{
- if(!Number.isFinite(nowMs)||!Number.isFinite(savedAtMs)||savedAtMs<=0||nowMs<=savedAtMs)return 0;
- const time=Math.min(8*3600,(nowMs-savedAtMs)/1000);
- const workers=s.staff.length;
- const facilities=FACILITIES.reduce((n,k)=>n+(s.facilities[k]>0?1:0),0);
- const income=Math.floor(time/60)*Math.floor((workers*3+facilities*2)*.6);
- const capped=Math.min(2200,Math.max(0,income));
- s.cash+=capped;s.totalIncome+=capped;s.idleCollected=capped;
- return capped;
+ if(!Number.isFinite(nowMs)||!Number.isFinite(savedAtMs)||savedAtMs<=0||
+    nowMs<=savedAtMs||s.offlineSettledAt===savedAtMs)return 0;
+ s.offlineSettledAt=savedAtMs;
+ // At most two hours, roughly one quarter of a service per worker per minute.
+ const shifts=Math.floor(Math.min(2*3600,(nowMs-savedAtMs)/1000)/240);
+ let paid=0;
+ const settle=(requested:number,available:number,quantity:number,payout:number,consume:(count:number)=>void)=>{
+  const count=Math.min(requested,Math.floor(available/quantity),Math.floor((2200-paid)/payout));
+  if(count<=0)return;
+  consume(count*quantity);paid+=count*payout;
+ };
+ const workers=(job:StaffJob)=>s.staff.filter(w=>w.job===job).length;
+ if(s.facilities.pump){
+  settle(shifts*workers('fuel'),s.fuel,18,86,amount=>{s.fuel-=amount;});
+ }
+ if(s.facilities.shop){
+  settle(shifts*workers('cashier'),s.goods,1,20,amount=>{s.goods-=amount;});
+ }
+ if(s.facilities.garage){
+  settle(shifts*workers('mechanic'),s.parts,2,110,amount=>{s.parts-=amount;});
+ }
+ if(s.facilities.wash){
+  settle(shifts*workers('wash'),s.soap,1,64,amount=>{s.soap-=amount;});
+ }
+ s.cash+=paid;s.totalIncome+=paid;s.idleCollected=paid;
+ return paid;
 }
 export type SavedGas={version:1;savedAt:number;state:State};
 export const captureGas=(s:State,savedAt=Date.now()):SavedGas=>({
  version:1,savedAt,state:{...s,player:{...s.player,tx:null,ty:null},
-  debris:s.debris.map(x=>({...x})),cars:[],event:{...s.event,active:false,time:0},
+  debris:s.debris.map(x=>({...x})),cars:s.cars.map(x=>({...x})),event:{...s.event},
   staff:s.staff.map(x=>({...x})),facilities:{...s.facilities},
   upgrades:{...s.upgrades},missions:{...s.missions},claimed:[...s.claimed]}
 });
@@ -345,6 +364,8 @@ export function restoreGas(input:unknown):{state:State;savedAt:number}{
  const state=newGasStation();
  state.cash=money('cash',1e9,180);state.fuel=money('fuel',100000,125);
  state.goods=money('goods',10000,8);state.parts=money('parts',10000,6);
+ state.soap=money('soap',120,0);
+ state.offlineSettledAt=money('offlineSettledAt',Number.MAX_SAFE_INTEGER,0);
  state.level=valid(o.level,1,1000,1);state.bestLevel=valid(o.bestLevel,1,1000,state.level);
  state.exp=money('exp',1e8);state.totalIncome=money('totalIncome');state.served=money('served');
  state.missed=money('missed');state.revenueToday=money('revenueToday');
@@ -388,6 +409,58 @@ export function restoreGas(input:unknown):{state:State;savedAt:number}{
   }
  }
  state.nextId=Math.max(state.nextId,...state.staff.map(x=>x.id+1));
+ // Restore active customer jobs, but never trust arbitrary save objects or references.
+ const carIds=new Set<number>();
+ const savedCars=Array.isArray(o.cars)?o.cars:[];
+ for(const raw of savedCars.slice(0,24)){
+  if(!raw||typeof raw!=='object')continue;
+  const c=raw as Record<string,unknown>;
+  const id=valid(c.id,100,10000000,0);
+  const facility=c.facility as Facility;
+  const status=c.status as CarStatus;
+  if(!id||carIds.has(id)||!FACILITIES.includes(facility)||!state.facilities[facility]||
+   !(['waiting','servicing','done'] as string[]).includes(status)||
+   !(['sedan','suv','van','sport','truck'] as unknown[]).includes(c.type))continue;
+  const xy=(value:unknown,min:number,max:number,fallback:number)=>
+   typeof value==='number'&&Number.isFinite(value)?clamp(value,min,max):fallback;
+  const workerId=valid(c.actorId,1,10000000,0);
+  const actorId=c.actorId===-1?-1:state.staff.some(w=>w.id===workerId)?workerId:undefined;
+  const loc=TARGETS[facility];
+  const car:Vehicle={
+   id,type:c.type as VehicleType,facility,
+   bay:valid(c.bay,0,facility==='pump'?2:0,0),status,
+   x:xy(c.x,0,WORLD_W,loc.x),y:xy(c.y,0,WORLD_H,loc.y),
+   color:typeof c.color==='string'&&/^#[0-9a-f]{6}$/i.test(c.color)?c.color:'#56a9bb',
+   patience:xy(c.patience,-1,150,48),amount:xy(c.amount,0,10,0),
+   progress:xy(c.progress,0,1000,0),needs:valid(c.needs,1,1000,18),
+   reward:valid(c.reward,0,100000,90),event:c.event===true,
+   condition:xy(c.condition,0,1,1),actorId,
+  };
+  car.progress=Math.min(car.progress,car.needs);
+  state.cars.push(car);carIds.add(id);
+ }
+ state.nextId=Math.max(state.nextId,...state.cars.map(x=>x.id+1));
+ if(o.event&&typeof o.event==='object'){
+  const e=o.event as Record<string,unknown>;
+  state.event={
+   active:e.active===true&&typeof e.time==='number'&&e.time>0,
+   time:typeof e.time==='number'&&Number.isFinite(e.time)?clamp(e.time,0,600):0,
+   remaining:valid(e.remaining,0,30,0),completed:valid(e.completed,0,30,0),
+   goal:valid(e.goal,1,30,3),
+  };
+ }
+ state.elapsed=typeof o.elapsed==='number'&&Number.isFinite(o.elapsed)?
+  clamp(o.elapsed,0,10000000):0;
+ state.spawnClock=typeof o.spawnClock==='number'&&Number.isFinite(o.spawnClock)?
+  clamp(o.spawnClock,0,120):2;
+ state.staffClock=typeof o.staffClock==='number'&&Number.isFinite(o.staffClock)?
+  clamp(o.staffClock,0,45):0;
+ const garageCar=valid(o.garageCar,100,10000000,0);
+ if(garageCar&&state.cars.some(c=>c.id===garageCar&&c.facility==='garage'&&c.status==='waiting')){
+  state.garageCar=garageCar;
+  if(['diagnose','parts','repair'].includes(String(o.garageStep)))
+   state.garageStep=o.garageStep as GarageStep;
+ }
  const p=o.player&&typeof o.player==='object'?o.player as Record<string,unknown>:{};
  state.player.x=typeof p.x==='number'&&Number.isFinite(p.x)?clamp(p.x,20,WORLD_W-20):470;
  state.player.y=typeof p.y==='number'&&Number.isFinite(p.y)?clamp(p.y,70,WORLD_H-20):338;
