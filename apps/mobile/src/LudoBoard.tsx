@@ -191,7 +191,7 @@ export function LudoBoard({state,legal,onChoose,zoom,center}:{
   });
   return <svg className="ludo-board" data-ludo-board-variant={square?'square':'radial'}
       data-ludo-player-count={n} viewBox={bounds} role="img"
-      aria-label={lang==='ar'?'لوحة لودو: اختر قطعة مضاءة أو استخدم أزرار الحركة':'Ludo board: choose a highlighted pawn or use the move controls'}
+      aria-label={lang==='ar'?'لوحة لودو: اختر قطعة مضاءة':'Ludo board: choose a highlighted pawn'}
       style={{direction:'ltr'}}>
     <defs>
       <linearGradient id="ludo-frame" x1="0" x2="1" y1="0" y2="1">

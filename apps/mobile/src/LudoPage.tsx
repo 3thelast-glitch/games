@@ -8,7 +8,7 @@ const secureByte = (target: Uint8Array): Uint8Array => {
   return target;
 };
 import {
-  chooseAiToken, circuitSize, createLudo, finishProgress, isSafe,
+  chooseAiToken, circuitSize, createLudo, isSafe,
   legalMoves, moveLudo, nodeFor, resignLudo, rollLudo, routeFor, secureDie, secureSeat,
   restoreLudo, tokensPerSeat, type LudoState, type SeatCount,
 } from '../../../packages/games/ludo/engine.ts';
@@ -453,18 +453,6 @@ export function LudoPage({onExit,settings,onSettingsChange}:{onExit:()=>void;set
         <span className="ludo-game-label">{variantName(game.seatCount)} · {game.seatCount} {t('ludoPlayers')}</span>
         <button type="button" className="ludo-icon-btn" aria-label={t('ludoMainMenu')} onClick={()=>{stopAnimation();stopTumble();setScreen('home');}}>⌂</button>
       </div>
-      <div className="ludo-player-strip" style={{gridTemplateColumns:`repeat(${Math.min(game.seatCount,5)},minmax(0,1fr))`}}>
-        {game.controllers.map((controller,s)=>{
-          const place=game.placements.find(x=>x.seat===s);
-          const finished=game.tokens.filter(x=>x.seat===s && x.progress===finishProgress(game.seatCount)).length;
-          return <span key={s} className={game.activeSeat===s && game.phase!=='finished'?'current':''}
-            style={{borderColor:LUDO_COLORS[s]}}>
-            <b style={{color:LUDO_COLORS[s]}}>{LUDO_SYMBOLS[s]} {s+1}</b>
-            <span>{controller==='ai'?t('aiName'):title(s)}</span>
-            <small>{place?'#'+place.rank:finished+'/'+tokensPerSeat(game.seatCount)}</small>
-          </span>;
-        })}
-      </div>
       <div className="ludo-board-area">
         <div className="ludo-toolbar">
           <button onClick={()=>setZoom(z=>Math.max(1,z/1.35))} aria-label={t('ludoZoomOut')}>−</button>
@@ -489,15 +477,6 @@ export function LudoPage({onExit,settings,onSettingsChange}:{onExit:()=>void;set
           </button>
         </div>
         {eventText && <p className="ludo-event" key={game.revision} role="status">{eventText}</p>}
-        {game.phase==='move' && game.controllers[game.activeSeat]==='human' && <div className="ludo-tray" aria-label={t('ludoChooseToken')}>
-          {game.tokens.filter(x=>x.seat===game.activeSeat).map(token=>{
-            const m=moves.find(x=>x.tokenId===token.id);
-            return <button key={token.id} disabled={!m||animating} onClick={()=>animateMove(token.id)}>
-              <b>{LUDO_SYMBOLS[token.seat]} {token.slot+1}</b>
-              <small>{m?(m.finishes?t('ludoFinish'):m.captures?t('ludoCapture')+' ×'+m.captures:t('ludoMove')):t('ludoUnavailable')}</small>
-            </button>;
-          })}
-        </div>}
         {!eventText && <p className="small-muted">{game.sixes>0?t('ludoBonus'):t('ludoStatus')}</p>}
         {game.controllers[game.activeSeat]==='human' && <button type="button" className="ludo-resign" onClick={()=>{
           if(window.confirm(t('ludoResignConfirm'))) execute(()=>resignLudo(game,game.activeSeat));
