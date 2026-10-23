@@ -28,6 +28,9 @@ export const basketballLineEn: Record<string, string> = {
   basketballLineStars: 'Stars',
   basketballLineSelectRound: 'Play the next round or replay any round to earn its gem and up to 3 stars: one for the win, one for the gem, one for using at most half your ink.',
   basketballLineClose: 'Close',
+  basketballLinePause: 'Pause',
+  basketballLineResume: 'Resume',
+  basketballLinePaused: 'PAUSED',
 };
 export const basketballLineAr: Record<string, string> = {
   basketballLine: 'خط كرة السلة',
@@ -59,4 +62,7 @@ export const basketballLineAr: Record<string, string> = {
   basketballLineStars: 'النجوم',
   basketballLineSelectRound: 'العب الجولة التالية أو أعد أي جولة لتحصل على جوهرتها وحتى 3 نجوم: نجمة للفوز، ونجمة للجوهرة، ونجمة لاستخدام نصف حبرك على الأكثر.',
   basketballLineClose: 'إغلاق',
+  basketballLinePause: 'إيقاف مؤقت',
+  basketballLineResume: 'استئناف',
+  basketballLinePaused: 'إيقاف مؤقت',
 };
