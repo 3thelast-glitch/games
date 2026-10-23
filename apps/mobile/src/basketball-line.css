@@ -54,3 +54,26 @@
 .basketballLine .play-button:hover{background:#58c4f6}
 @media(max-width:780px){.basketball-layout{grid-template-columns:minmax(0,1fr)}.basketball-machine{max-width:470px;width:min(100%,45dvh);margin:0 auto}.basketball-panel{max-width:470px;width:100%;margin:0 auto}.basketball-canvas{max-height:none}}
 @media(max-width:480px){.basketball-page{padding:7px}.basketball-heading{gap:7px}.basketball-heading .button{font-size:11px;padding:9px;min-width:90px}.basketball-machine{width:min(100%,40.2dvh);border:4px solid #343a45;border-radius:14px}.basketball-hud{padding:9px 11px}.basketball-hud-middle strong{font-size:31px}.basketball-best{font-size:10px}.basketball-panel{padding:17px}.basketball-canvas{max-height:none}.basketball-ink-row{padding:9px}}
+
+/* Progression depth: star results, panel totals and the rounds browser. */
+.basketball-result-stars{display:flex;gap:6px;font-size:32px;line-height:1}
+.basketball-result-stars .star-on{color:#f5a623;text-shadow:0 2px 0 #b96f06,0 0 14px #f5a62355}
+.basketball-result-stars .star-off{color:#c9ced4}
+.basketball-rounds-btn{border-radius:10px;min-height:49px;border:1px solid #8a6d1f;color:#ffe9a8;background:#2b2410;padding:8px 9px;cursor:pointer;font-size:13px;font-weight:800;width:100%}
+.basketball-rounds-btn:hover{background:#3a3013}
+.basketball-rounds-overlay{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:#060b16b8;backdrop-filter:blur(5px);padding:16px}
+.basketball-rounds-sheet{width:min(560px,94vw);max-height:86dvh;overflow-y:auto;background:linear-gradient(155deg,#22334f,#121d30);border:1px solid #927c55;border-radius:22px;padding:20px;color:#f5f7fb;box-shadow:0 24px 60px #000a}
+.basketball-rounds-sheet header{display:flex;align-items:center;gap:12px}
+.basketball-rounds-sheet header strong{font-size:19px;flex:1}
+.basketball-rounds-sheet header .rounds-total{color:#ffd782;font-weight:900}
+.basketball-rounds-sheet header button{border:1px solid #65738a;background:#202d46;color:#f5f7fb;border-radius:10px;padding:8px 14px;font-weight:800;cursor:pointer}
+.basketball-rounds-sheet p{color:#aebadd;font-size:13px;line-height:1.7;margin:10px 0 14px}
+.basketball-rounds-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(66px,1fr));gap:9px}
+.basketball-round-cell{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px 8px;border-radius:13px;border:2px solid #45516a;background:#182742;color:#f5f7fb;cursor:pointer;transition:transform .12s ease,border-color .12s ease}
+.basketball-round-cell:hover{transform:translateY(-2px);border-color:#ffd782}
+.basketball-round-cell.current{border-color:#ffd782;box-shadow:0 0 0 2px #e4b24a55}
+.basketball-round-cell b{font-size:17px}
+.basketball-round-cell .cell-stars{display:flex;gap:1px;font-size:11px;font-style:normal}
+.basketball-round-cell .cell-stars i{font-style:normal;color:#5a6a85}
+.basketball-round-cell .cell-stars i.on{color:#f5a623}
+.basketball-round-cell .cell-gem{position:absolute;top:4px;inset-inline-end:7px;color:#3ac1ef;font-size:11px}

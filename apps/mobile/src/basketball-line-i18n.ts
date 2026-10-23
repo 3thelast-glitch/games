@@ -24,6 +24,10 @@ export const basketballLineEn: Record<string, string> = {
   basketballLineRetry: 'RETRY',
   basketballLineErase: 'Erase last line',
   basketballLineOffline: 'Works without internet. Progress and your best score are saved on this device.',
+  basketballLineRounds: 'Rounds',
+  basketballLineStars: 'Stars',
+  basketballLineSelectRound: 'Play the next round or replay any round to earn its gem and up to 3 stars: one for the win, one for the gem, one for using at most half your ink.',
+  basketballLineClose: 'Close',
 };
 export const basketballLineAr: Record<string, string> = {
   basketballLine: 'خط كرة السلة',
@@ -51,4 +55,8 @@ export const basketballLineAr: Record<string, string> = {
   basketballLineRetry: 'إعادة المحاولة',
   basketballLineErase: 'مسح آخر خط',
   basketballLineOffline: 'تعمل دون إنترنت. تُحفظ أفضل نتيجة والتقدم على هذا الجهاز.',
+  basketballLineRounds: 'الجولات',
+  basketballLineStars: 'النجوم',
+  basketballLineSelectRound: 'العب الجولة التالية أو أعد أي جولة لتحصل على جوهرتها وحتى 3 نجوم: نجمة للفوز، ونجمة للجوهرة، ونجمة لاستخدام نصف حبرك على الأكثر.',
+  basketballLineClose: 'إغلاق',
 };

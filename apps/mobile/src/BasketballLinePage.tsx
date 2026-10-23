@@ -1,26 +1,32 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
 import {
-  addStroke, clamp, COURT_HEIGHT, COURT_WIDTH, INK_CAP, makeRound,
-  remainingInk, remainingPencils, STEP_SECONDS, strokeLength, stepRound, validateProgress,
-  type BasketRound, type Vec,
+  addStroke, applyWin, clamp, COURT_HEIGHT, COURT_WIDTH, INK_CAP, makeRound,
+  remainingInk, remainingPencils, roundStars, STEP_SECONDS, strokeLength, stepRound, validateProgress,
+  type BasketProgress, type BasketRound, type Vec,
 } from '../../../packages/games/basketball-line/engine.ts';
 import { paintBasketScene } from './BasketballLineArt.tsx';
 import { storage, feedback, type Settings } from './platform.ts';
 import { useI18n } from './i18n.tsx';
 
 const SAVE_KEY = 'basketball-line-v1';
-type Progress = { round: number; best: number; gems: number };
 type Snapshot = {
   round: number; best: number; gems: number;
   phase: BasketRound['phase']; pencils: number; ink: number; collected: boolean;
   basketballs: number; message: BasketRound['message'];
+  starsNow: number; totalStars: number; unlocked: number;
+  starsByRound: Record<number, number>; gemRounds: number[];
 };
-const snapshot = (game: BasketRound, progress: Progress): Snapshot => ({
+const snapshot = (game: BasketRound, progress: BasketProgress): Snapshot => ({
   round: game.round, best: progress.best, gems: progress.gems,
   phase: game.phase, pencils: remainingPencils(game), ink: remainingInk(game),
   collected: game.gemCollected,
   basketballs: game.balls.filter(ball => ball.kind === 'basketball').length,
   message: game.message,
+  starsNow: roundStars(game),
+  totalStars: Object.values(progress.stars).reduce((sum, s) => sum + s, 0),
+  unlocked: progress.round,
+  starsByRound: progress.stars,
+  gemRounds: progress.gemRounds,
 });
 const fresh = () => makeRound(1);
 
@@ -32,10 +38,11 @@ export function BasketballLinePage({ onExit, settings }: {
   const game = useRef<BasketRound>(fresh());
   const drawing = useRef<Vec[] | null>(null);
   const pointer = useRef<number | null>(null);
-  const progress = useRef<Progress>({ round: 1, best: 0, gems: 0 });
+  const progress = useRef<BasketProgress>({ round: 1, best: 0, gems: 0, stars: {}, gemRounds: [] });
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
   const [loaded, setLoaded] = useState(false);
+  const [showRounds, setShowRounds] = useState(false);
   const [view, setView] = useState<Snapshot>(() => snapshot(game.current, progress.current));
   const sync = useCallback(() => setView(snapshot(game.current, progress.current)), []);
   useEffect(() => {
@@ -75,9 +82,7 @@ export function BasketballLinePage({ onExit, settings }: {
           accumulator -= STEP_SECONDS;
           if (after !== before) {
             if (after === 'won') {
-              progress.current.best = Math.max(progress.current.best, round.round);
-              progress.current.gems += round.gemCollected ? 1 : 0;
-              progress.current.round = Math.min(9999, round.round + 1);
+              progress.current = applyWin(progress.current, round);
               feedback(settingsRef.current, 'win');
               void storage.set(SAVE_KEY, progress.current);
             } else if (after === 'lost') {
@@ -145,9 +150,16 @@ export function BasketballLinePage({ onExit, settings }: {
     sync();
   };
   const next = () => {
-    game.current = makeRound(progress.current.round);
+    game.current = makeRound(Math.min(9999, game.current.round + 1));
     drawing.current = null;
     pointer.current = null;
+    sync();
+  };
+  const loadRound = (roundNo: number) => {
+    game.current = makeRound(roundNo);
+    drawing.current = null;
+    pointer.current = null;
+    setShowRounds(false);
     sync();
   };
   const erase = () => {
@@ -205,6 +217,15 @@ export function BasketballLinePage({ onExit, settings }: {
                   {view.phase === 'won' ? '🏀' : '✎'}
                 </span>
                 <h2>{t(view.phase === 'won' ? 'basketballLineScored' : 'basketballLineMiss')}</h2>
+                {view.phase === 'won' && (
+                  <div className="basketball-result-stars" role="img"
+                    aria-label={t('basketballLineStars') + ': ' + view.starsNow + ' / 3'}>
+                    {[1, 2, 3].map(i => (
+                      <span key={i} aria-hidden="true"
+                        className={i <= view.starsNow ? 'star-on' : 'star-off'}>★</span>
+                    ))}
+                  </div>
+                )}
                 <p>{t(view.phase === 'won' ?
                   'basketballLineWinDesc' :
                   view.message === 'bomb' ? 'basketballLineBomb' :
@@ -234,15 +255,48 @@ export function BasketballLinePage({ onExit, settings }: {
             <span>{t('basketballLineRound')} <b>{view.round}</b></span>
             <span>{t('basketballLineBalls')} <b>{view.basketballs}</b></span>
             <span>{t('basketballLineBombs')} <b>{game.current.balls.filter(b=>b.kind==='bomb').length}</b></span>
+            <span>{t('basketballLineStars')} <b>★ {view.totalStars}</b></span>
           </div>
           <div className="basketball-buttons">
             <button type="button" onClick={reset}>{t('basketballLineRetry')}</button>
             <button type="button" onClick={erase} disabled={!game.current.strokes.length ||
               (view.phase !== 'ready' && view.phase !== 'running')}>{t('basketballLineErase')}</button>
           </div>
+          <button type="button" className="basketball-rounds-btn"
+            onClick={() => { sync(); setShowRounds(true); }}>
+            {t('basketballLineRounds')} · ★ {view.totalStars}
+          </button>
           <p className="basketball-panel-note">{t('basketballLineOffline')}</p>
         </aside>
       </section>
+      {showRounds && (
+        <div className="basketball-rounds-overlay">
+          <div className="basketball-rounds-sheet" role="dialog" aria-modal="true"
+            aria-label={t('basketballLineRounds')}>
+            <header>
+              <strong>{t('basketballLineRounds')}</strong>
+              <span className="rounds-total">★ {view.totalStars}</span>
+              <button type="button" onClick={() => setShowRounds(false)}>{t('basketballLineClose')}</button>
+            </header>
+            <p>{t('basketballLineSelectRound')}</p>
+            <div className="basketball-rounds-grid">
+              {Array.from({ length: view.unlocked }, (_, i) => i + 1).map(n => (
+                <button type="button" key={n}
+                  className={'basketball-round-cell' + (n === view.round ? ' current' : '')}
+                  onClick={() => loadRound(n)}>
+                  <b>{n}</b>
+                  <span className="cell-stars" aria-hidden="true">
+                    {[1, 2, 3].map(i => (
+                      <i key={i} className={i <= (view.starsByRound[n] ?? 0) ? 'on' : ''}>★</i>
+                    ))}
+                  </span>
+                  {view.gemRounds.includes(n) && <span className="cell-gem" aria-hidden="true">◆</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
