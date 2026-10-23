@@ -1002,7 +1002,7 @@ function ArenaApp({
   const matchNow = online ? clock + serverOffset.current : clock;
   return (
     <NoticeContext.Provider value={notice}>
-      <div className={`app-shell ${page === 'match' || page === 'lan' ? 'in-match' : ''} ${page === 'appleWorm' || page === 'arithmetica' || page === 'ludo' ? 'is-immersive-game' : ''}`}>
+      <div className={`app-shell ${page === 'match' || page === 'lan' ? 'in-match' : ''} ${page === 'appleWorm' || page === 'arithmetica' || page === 'ludo' || page === 'gasStation' ? 'is-immersive-game' : ''}`}>
         <aside className="sidebar">
           <button className="brand-button" onClick={() => navigate('library')}>
             <Logo />
@@ -1079,7 +1079,7 @@ function ArenaApp({
           <main className={`main-content ${page === 'match' ? 'match-content' : ''}`}>
             {page === 'library' && (
               <HomePage
-                onChoose={(gameId, mode) => gameId === 'ludo' ? (requestGameFullscreen(), setPage('ludo')) : gameId === 'appleWorm' ? (requestGameFullscreen(), setPage('appleWorm')) : gameId === 'basketballLine' ? setPage('basketballLine') : gameId === 'backroomBill' ? setPage('backroomBill') : gameId === 'arithmetica' ? (requestGameFullscreen(), setPage('arithmetica')) : gameId === 'survivalBuilder' ? setPage('survivalBuilder') : gameId === 'towerDestiny' ? setPage('towerDestiny') : gameId === 'gasStation' ? setPage('gasStation') : setChoice({ gameId, mode })}
+                onChoose={(gameId, mode) => gameId === 'ludo' ? (requestGameFullscreen(), setPage('ludo')) : gameId === 'appleWorm' ? (requestGameFullscreen(), setPage('appleWorm')) : gameId === 'basketballLine' ? setPage('basketballLine') : gameId === 'backroomBill' ? setPage('backroomBill') : gameId === 'arithmetica' ? (requestGameFullscreen(), setPage('arithmetica')) : gameId === 'survivalBuilder' ? setPage('survivalBuilder') : gameId === 'towerDestiny' ? setPage('towerDestiny') : gameId === 'gasStation' ? (requestGameFullscreen(), setPage('gasStation')) : setChoice({ gameId, mode })}
                 onRules={setRules}
                 profile={profile}
                 onFavorite={(id) =>
