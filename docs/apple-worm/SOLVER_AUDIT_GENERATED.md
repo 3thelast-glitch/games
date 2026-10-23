@@ -1,13 +1,13 @@
 # Apple Worm — generated solver audit (105 stages)
 
-Generated 2026-10-23 by `node --import tsx scripts/apple-worm-audit.ts --write`.
-Do not edit by hand; regenerate instead. A stage is **proven** only when
-its route below replays to `phase="won"` in the real engine — the same
-check enforced by `tests/apple-worm-proven-routes.test.ts`.
+Generated 2026-10-23 from the proven-routes fixture (baseline: `scripts/apple-worm-audit.ts --write`;
+heuristic deep pass: `scripts/apple-worm-deep-audit.ts --write`). Do not edit by hand.
+A stage is **proven** only when its route replays to `phase="won"` in the real
+engine — the check enforced by `tests/apple-worm-proven-routes.test.ts`.
 
-- **Proven won: 83/105**
+- **Proven won: 90/105**
 - Exhausted under the current provisional engine (not a verdict on the source puzzles): 12 — 12, 19, 26, 27, 29, 47, 58, 59, 72, 87, 91, 98
-- Undetermined (search budget reached): 10 — 20, 80, 81, 83, 89, 93, 94, 97, 100, 105
+- Undetermined (search budget reached): 3 — 80, 81, 83
 - No implemented exit: 0 — none
 
 | Stage | Status | Route length | Route (U/R/D/L) |
@@ -31,7 +31,7 @@ check enforced by `tests/apple-worm-proven-routes.test.ts`.
 | 17 | won | 16 | `RRRRUUURURURRDDD` |
 | 18 | won | 25 | `RRUURRDLLLLURRUUURRRRRDDL` |
 | 19 | exhausted | — | — |
-| 20 | budget | — | — |
+| 20 | won | 64 | `ULLLLLUURUURRDLLLDDRURDLLURDRRRRRURUUULLDRRRDDLULLDRRUUULURRRURR` |
 | 21 | won | 10 | `RRUURRDRRR` |
 | 22 | won | 20 | `RRDDRDLUUULURRRRRDDL` |
 | 23 | won | 31 | `RURRUURRRURULDDDLULLUURRRURRDDR` |
@@ -100,20 +100,20 @@ check enforced by `tests/apple-worm-proven-routes.test.ts`.
 | 86 | won | 33 | `RULLLULDRRRRRRRRRUULDLLLLLLLLDDRR` |
 | 87 | exhausted | — | — |
 | 88 | won | 46 | `RRRRRRDDRRDDLLURRUUULLUULLDLLLLDRRDDRRDLLDLLUU` |
-| 89 | budget | — | — |
+| 89 | won | 34 | `DRULLLLDRDLDDRRRRRUULDLLLLLLLLLLUL` |
 | 90 | won | 55 | `URRRRRRRRDDRRULLULLLLURRDRRUUURRDDRUULLLDDDLLLLLLLDDRRR` |
 | 91 | exhausted | — | — |
 | 92 | won | 41 | `RURRDLLDRRULLURUULLLLLUULDLDDRRDLDDRRURUU` |
-| 93 | budget | — | — |
-| 94 | budget | — | — |
+| 93 | won | 77 | `URRRRRDDLLLDRRURUULUUURDDDLLDRRUUULULLLUUULLLDRDDDRUUURRDRRRDDLLLDRDDLLLLUURU` |
+| 94 | won | 30 | `DDRDRRDLDLLURULUUUURRRRRRRRRRR` |
 | 95 | won | 12 | `RUUULUUUUUUU` |
 | 96 | won | 6 | `URUUUU` |
-| 97 | budget | — | — |
+| 97 | won | 74 | `ULDLLLUUURRRRRRRRRRRRRDRDDLLULLULLDRRRRUUULLLLUULLLDDLLLLLLDDLDDRRDRRRRRRU` |
 | 98 | exhausted | — | — |
 | 99 | won | 22 | `LLDLUURURRRRUURRRRRRRR` |
-| 100 | budget | — | — |
+| 100 | won | 38 | `ULLLLLDDDDRDRRUUULLLUUUUULLDDDDDDDDDRD` |
 | 101 | won | 9 | `DRURUUUUU` |
 | 102 | won | 34 | `RRRRDRRURDLLLDDDLLULLDLLDDRDRRRURR` |
 | 103 | won | 21 | `RRUUULUUULUURRRRRURRR` |
 | 104 | won | 11 | `DDRRRRURUUU` |
-| 105 | budget | — | — |
+| 105 | won | 42 | `ULULLDLLLLULUULLLDDRDRRRRRRRUUUURRRRUUURRR` |
