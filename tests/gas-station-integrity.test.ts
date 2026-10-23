@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {
- applyOfflineEarnings,availableServiceStock,buyFacility,buyStaff,captureGas,
+ applyOfflineEarnings,availableServiceStock,buyFacility,buyStaff,captureGas,dismissStaff,
  interactCar,newGasStation,restock,restoreGas,startRace,tickGas,workGarage,
  TARGETS,type Vehicle,type Facility,
 } from '../packages/games/gas-station/engine.ts';
@@ -120,4 +120,20 @@ test('Staffed facilities consume their own inventory in capped offline simulatio
  assert.equal(result,2*20+64);
  assert.equal(s.goods,0);assert.equal(s.soap,0);
  assert.equal(s.cash,10000-230-530-145-260+result);
+});
+
+test('A busy worker cannot be dismissed until their service transaction finishes',()=>{
+ const s=newGasStation();s.cash=10000;s.spawnClock=99;
+ assert.equal(buyStaff(s,'fuel'),true);
+ const worker=s.staff[0]!;
+ s.cars=[waiting(600)];
+ tickGas(s,.1);
+ assert.equal(s.cars[0]?.status,'servicing');
+ assert.equal(dismissStaff(s,worker.id),false);
+ assert.equal(s.staff.length,1);
+ for(let i=0;i<7;i++)tickGas(s,.8);
+ assert.equal(s.cars[0]?.status,'done');
+ assert.equal(dismissStaff(s,worker.id),true);
+ assert.equal(s.staff.length,0);
+ assert.equal(s.missions.fuel,1);
 });
