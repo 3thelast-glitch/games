@@ -1,0 +1,45 @@
+name: Library Production Visual Matrix
+
+on:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/**'
+      - 'playwright.library.config.ts'
+      - 'tests/e2e/visual/library-visual.pw.ts'
+      - '.github/workflows/library-visual.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  production-library-matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Build production web application
+        run: npm run build
+      - name: Remove unrelated Chrome apt source
+        run: grep -rl 'dl.google.com/linux/chrome' /etc/apt/sources.list.d 2>/dev/null | xargs -r sudo rm -f
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Capture and validate 12 bilingual real-app layouts
+        run: npx playwright test --config=playwright.library.config.ts
+      - name: Upload actual production screenshots and measurements
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: naqla-library-production-screenshots
+          path: |
+            artifacts/library
+            playwright-report/library
+            test-results/library
+          if-no-files-found: ignore
+          retention-days: 14
