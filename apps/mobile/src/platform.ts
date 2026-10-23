@@ -37,32 +37,47 @@ export const storage = {
   },
 };
 let context: AudioContext | undefined;
-export function feedback(settings: Settings, kind: 'move' | 'win' = 'move') {
+export function feedback(
+  settings: Settings,
+  kind: 'move' | 'win' | 'score' | 'gem' | 'lose' = 'move',
+) {
   if (settings.haptics) {
     if (Capacitor.isNativePlatform())
       void (
         kind === 'win'
           ? Haptics.notification({ type: NotificationType.Success })
-          : Haptics.impact({ style: ImpactStyle.Light })
+          : kind === 'lose'
+            ? Haptics.notification({ type: NotificationType.Error })
+            : Haptics.impact({ style: ImpactStyle.Light })
       ).catch(() => {});
-    else navigator.vibrate?.(kind === 'win' ? [35, 60, 35] : 15);
+    else
+      navigator.vibrate?.(
+        kind === 'win' ? [35, 60, 35] : kind === 'lose' ? 70 : 15,
+      );
   }
   if (!settings.sound) return;
+  const notes: Record<typeof kind, number[]> = {
+    move: [430],
+    win: [523, 659, 784],
+    score: [659, 880],
+    gem: [1175],
+    lose: [330, 233],
+  };
   try {
-    context ??= new AudioContext();
-    void context.resume();
-    for (let i = 0; i < (kind === 'win' ? 3 : 1); i++) {
-      const oscillator = context.createOscillator(),
-        gain = context.createGain();
+    const ctx = (context ??= new AudioContext());
+    void ctx.resume();
+    notes[kind].forEach((frequency, i) => {
+      const oscillator = ctx.createOscillator(),
+        gain = ctx.createGain();
       oscillator.type = 'sine';
-      oscillator.frequency.value = kind === 'win' ? [523, 659, 784][i] : 430;
-      gain.gain.setValueAtTime(0.08, context.currentTime + i * 0.13);
-      gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + i * 0.13 + 0.15);
+      oscillator.frequency.value = frequency;
+      gain.gain.setValueAtTime(0.08, ctx.currentTime + i * 0.13);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.13 + 0.15);
       oscillator.connect(gain);
-      gain.connect(context.destination);
-      oscillator.start(context.currentTime + i * 0.13);
-      oscillator.stop(context.currentTime + i * 0.13 + 0.16);
-    }
+      gain.connect(ctx.destination);
+      oscillator.start(ctx.currentTime + i * 0.13);
+      oscillator.stop(ctx.currentTime + i * 0.13 + 0.16);
+    });
   } catch {}
 }
 export async function openAuth(url: string) {

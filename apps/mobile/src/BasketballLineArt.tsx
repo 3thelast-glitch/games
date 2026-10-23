@@ -1,8 +1,16 @@
 import { useId } from 'react';
 import {
-  COURT_HEIGHT, COURT_WIDTH, INK_CAP, remainingInk, type BallBody,
+  COURT_HEIGHT, COURT_WIDTH, INK_CAP, remainingInk, ROUND_SECONDS, type BallBody,
   type BasketRound, type InkStroke, type Vec,
 } from '../../../packages/games/basketball-line/engine.ts';
+
+/** Transient visual effects computed by the page from game events. */
+export interface BasketFx {
+  /** 0..1 — how much the net is still rippling from the latest score. */
+  netFlex: number;
+  /** Expanding ring at the gem's position right after collection. */
+  gemRing: { x: number; y: number; age: number } | null;
+}
 
 const TAU = Math.PI * 2;
 export const BASKET_PALETTE = {
@@ -66,7 +74,7 @@ export function paintBomb(ctx: CanvasRenderingContext2D, bomb: BallBody) {
   ctx.fillStyle='#ffd758';circle(ctx,32,-23,2);ctx.fill();
   ctx.restore();
 }
-export function paintHoop(ctx: CanvasRenderingContext2D, hoop: BasketRound['hoop'], front: boolean) {
+export function paintHoop(ctx: CanvasRenderingContext2D, hoop: BasketRound['hoop'], front: boolean, flex = 0) {
   const {x,y,width} = hoop;
   ctx.save();
   if (!front) {
@@ -81,18 +89,20 @@ export function paintHoop(ctx: CanvasRenderingContext2D, hoop: BasketRound['hoop
     ctx.restore();return;
   }
   // Bright-white four-row net, prominent red rim, dark shadow underneath.
+  // A fresh score ripples the net: its lower rows stretch downward briefly.
   const rx=width/2;
+  const drop=flex*10;
   ctx.strokeStyle='#8f9399';ctx.lineWidth=3;
-  ctx.beginPath();ctx.moveTo(x-rx+9,y+6);ctx.lineTo(x-rx+17,y+52);
-  ctx.quadraticCurveTo(x,y+63,x+rx-19,y+52);ctx.lineTo(x+rx-9,y+6);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x-rx+9,y+6);ctx.lineTo(x-rx+17,y+52+drop);
+  ctx.quadraticCurveTo(x,y+63+drop,x+rx-19,y+52+drop);ctx.lineTo(x+rx-9,y+6);ctx.stroke();
   ctx.strokeStyle=BASKET_PALETTE.net;ctx.lineWidth=3.7;
   for(let i=0;i<6;i++){
     const x1=x-rx+10+i*(width-20)/5;
     const x2=x-rx+20+i*(width-40)/5;
-    ctx.beginPath();ctx.moveTo(x1,y+7);ctx.lineTo(x2,y+49);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x1,y+7);ctx.lineTo(x2,y+49+drop);ctx.stroke();
   }
   for(let j=1;j<4;j++){
-    const yy=y+10+j*10;
+    const yy=y+10+j*10+drop*(j/3);
     const shrink=j*4;
     ctx.beginPath();ctx.moveTo(x-rx+10+shrink,yy);
     ctx.quadraticCurveTo(x,yy+8,x+rx-10-shrink,yy);ctx.stroke();
@@ -110,11 +120,30 @@ export function paintGem(ctx: CanvasRenderingContext2D, gem: Vec) {
   ctx.shadowBlur=0;ctx.strokeStyle='#126b93';ctx.lineWidth=1.5;ctx.stroke();
   ctx.strokeStyle='#a9f4ff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-10,-4);ctx.lineTo(11,-4);ctx.moveTo(0,-14);ctx.lineTo(0,14);ctx.stroke();ctx.restore();
 }
+/** Visible round clock: a slim bar under the header band that drains as the
+ *  round's time budget elapses and pulses red in the final seconds. */
+function paintTimer(ctx: CanvasRenderingContext2D, round: BasketRound, reducedMotion: boolean) {
+  if (round.phase !== 'ready' && round.phase !== 'running') return;
+  const fraction = Math.max(0, Math.min(1, 1 - round.elapsed / ROUND_SECONDS));
+  const x0 = 14, x1 = COURT_WIDTH - 14, y = 92;
+  ctx.save();
+  ctx.fillStyle = '#ffffffa8';
+  ctx.beginPath(); ctx.roundRect(x0, y, x1 - x0, 7, 4); ctx.fill();
+  const urgent = round.phase === 'running' && fraction <= 5 / ROUND_SECONDS;
+  ctx.fillStyle = urgent ? '#e64b21' : '#29a9eb';
+  ctx.globalAlpha = urgent && !reducedMotion ? .68 + .32 * Math.sin(round.elapsed * 10) : 1;
+  if (fraction > 0) {
+    ctx.beginPath(); ctx.roundRect(x0, y, (x1 - x0) * fraction, 7, 4); ctx.fill();
+  }
+  ctx.restore();
+}
+
 export function paintBasketScene(
   ctx: CanvasRenderingContext2D,
   round: BasketRound,
   activeLine: Vec[] | null = null,
   reducedMotion = false,
+  fx: BasketFx = { netFlex: 0, gemRing: null },
 ) {
   ctx.save();ctx.clearRect(0,0,COURT_WIDTH,COURT_HEIGHT);
   // The QKY-inspired minimalist light-gray canvas and blue physics ink.
@@ -125,7 +154,15 @@ export function paintBasketScene(
   ctx.strokeStyle='#d1d2d2';ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(0,COURT_HEIGHT-39);ctx.lineTo(COURT_WIDTH,COURT_HEIGHT-39);ctx.stroke();
   paintHoop(ctx,round.hoop,false);
-  if(!round.gemCollected && round.round>=3) paintGem(ctx,round.gem);
+  if(!round.gemCollected) paintGem(ctx,round.gem);
+  if(fx.gemRing && fx.gemRing.age < 1){
+    const ring=fx.gemRing;
+    ctx.save();
+    ctx.globalAlpha=(1-ring.age)*.85;
+    ctx.strokeStyle='#3ac1ef';ctx.lineWidth=3;
+    circle(ctx,ring.x,ring.y,10+ring.age*28);ctx.stroke();
+    ctx.restore();
+  }
   for(const ink of round.strokes) {
     stroke(ctx,ink.points,'#1181bd',11);
     stroke(ctx,ink.points,BASKET_PALETTE.line,8);
@@ -137,10 +174,30 @@ export function paintBasketScene(
     stroke(ctx,activeLine,'#8fe2ff',1.8);
   }
   for(const ball of round.balls) if(ball.active) {
+    // Soft floor shadow that tightens as the ball descends, plus a short
+    // velocity smear on fast balls — both ground the motion without any
+    // change to the physics.
+    const groundY=COURT_HEIGHT-19;
+    const proximity=Math.max(.22,Math.min(1,1-(groundY-ball.y)/(COURT_HEIGHT*.92)));
+    ctx.save();
+    ctx.fillStyle='rgba(28,34,40,'+(0.20*proximity).toFixed(3)+')';
+    ctx.beginPath();ctx.ellipse(ball.x,groundY,ball.radius*1.05*proximity,5*proximity,0,0,TAU);ctx.fill();
+    ctx.restore();
+    const speed=Math.hypot(ball.vx,ball.vy);
+    if(!reducedMotion && ball.kind==='basketball' && speed>150){
+      ctx.save();
+      for(let k=2;k>=1;k--){
+        ctx.globalAlpha=k===2?.05:.1;
+        ctx.fillStyle=BASKET_PALETTE.basketball;
+        circle(ctx,ball.x-ball.vx*.028*k,ball.y-ball.vy*.028*k,ball.radius*(1-.1*k));ctx.fill();
+      }
+      ctx.restore();
+    }
     if(ball.kind==='bomb') paintBomb(ctx,ball);
     else paintBasketball(ctx,ball);
   }
-  paintHoop(ctx,round.hoop,true);
+  paintHoop(ctx,round.hoop,true,fx.netFlex);
+  paintTimer(ctx,round,reducedMotion);
   // In-scene pencil and ink-bar illustration.
   if(round.phase==='ready' && !activeLine && !reducedMotion){
     ctx.fillStyle='#777';ctx.font='15px Arial, sans-serif';ctx.textAlign='center';

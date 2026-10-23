@@ -7,6 +7,8 @@
 export const COURT_WIDTH = 420;
 export const COURT_HEIGHT = 700;
 export const STEP_SECONDS = 1 / 120;
+/** Seconds a running round may take before it is lost on time. */
+export const ROUND_SECONDS = 19;
 export const LINE_CAP = 3;
 export const INK_CAP = 850;
 export type Vec = { x: number; y: number };
@@ -173,7 +175,7 @@ export function stepRound(state: BasketRound, dt = STEP_SECONDS): RoundPhase {
   if (state.phase !== 'running') return state.phase;
   if (!finite(dt) || dt <= 0 || dt > 1 / 30) throw new RangeError('Invalid fixed time step');
   state.elapsed += dt;
-  if (state.elapsed > 19) {
+  if (state.elapsed > ROUND_SECONDS) {
     state.phase = 'lost'; state.message = 'time'; return state.phase;
   }
   for (const ball of state.balls) {

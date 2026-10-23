@@ -77,3 +77,18 @@
 .basketball-round-cell .cell-stars i{font-style:normal;color:#5a6a85}
 .basketball-round-cell .cell-stars i.on{color:#f5a623}
 .basketball-round-cell .cell-gem{position:absolute;top:4px;inset-inline-end:7px;color:#3ac1ef;font-size:11px}
+
+/* Fairness & feel: pause overlay/button and the win confetti burst. */
+.basketball-paused{position:absolute;z-index:11;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#101c2ccc;backdrop-filter:blur(2px);color:#fff;text-align:center}
+.basketball-paused h2{font-size:clamp(20px,4vw,30px);font-weight:950;letter-spacing:2px}
+.basketball-paused button{border:0;border-radius:12px;min-height:48px;padding:0 26px;font-size:15px;font-weight:900;background:#34aee7;color:#fff;cursor:pointer}
+.basketball-pause-btn{border-radius:10px;min-height:44px;border:1px solid #4e7596;color:#e6f5ff;background:#244761;padding:8px 9px;cursor:pointer;font-size:13px;font-weight:800;width:100%;margin-bottom:9px}
+.basketball-pause-btn:hover:not(:disabled){background:#31688b}
+.basketball-pause-btn:disabled{opacity:.4;cursor:not-allowed}
+.basketball-confetti{position:absolute;inset:0;overflow:visible;pointer-events:none}
+.basketball-confetti i{position:absolute;left:50%;top:34%;width:8px;height:12px;border-radius:2px;opacity:0;animation:basketball-confetti-burst .95s ease-out forwards}
+@keyframes basketball-confetti-burst{
+  0%{opacity:1;transform:translate(0,0) rotate(0deg) scale(1)}
+  100%{opacity:0;transform:translate(var(--tx),var(--ty)) rotate(var(--rot)) scale(.8)}
+}
+@media (prefers-reduced-motion: reduce){.basketball-confetti i{animation:none}}

@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import {
   addStroke, applyWin, clamp, COURT_HEIGHT, COURT_WIDTH, INK_CAP, makeRound,
   remainingInk, remainingPencils, roundStars, STEP_SECONDS, strokeLength, stepRound, validateProgress,
   type BasketProgress, type BasketRound, type Vec,
 } from '../../../packages/games/basketball-line/engine.ts';
-import { paintBasketScene } from './BasketballLineArt.tsx';
+import { paintBasketScene, type BasketFx } from './BasketballLineArt.tsx';
 import { storage, feedback, type Settings } from './platform.ts';
 import { useI18n } from './i18n.tsx';
 
@@ -43,6 +43,24 @@ export function BasketballLinePage({ onExit, settings }: {
   settingsRef.current = settings;
   const [loaded, setLoaded] = useState(false);
   const [showRounds, setShowRounds] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const pausedRef = useRef(false);
+  const [showResult, setShowResult] = useState(false);
+  const fxRef = useRef<{
+    lastScoreAt: number;
+    gemAt: { x: number; y: number; at: number } | null;
+    revealTimer: number | null;
+  }>({ lastScoreAt: -1e9, gemAt: null, revealTimer: null });
+  const setPausedBoth = (value: boolean) => {
+    pausedRef.current = value;
+    setPaused(value);
+  };
+  const clearReveal = () => {
+    if (fxRef.current.revealTimer !== null) {
+      window.clearTimeout(fxRef.current.revealTimer);
+      fxRef.current.revealTimer = null;
+    }
+  };
   const [view, setView] = useState<Snapshot>(() => snapshot(game.current, progress.current));
   const sync = useCallback(() => setView(snapshot(game.current, progress.current)), []);
   useEffect(() => {
@@ -56,6 +74,15 @@ export function BasketballLinePage({ onExit, settings }: {
     });
     return () => { active = false; };
   }, [sync]);
+  useEffect(() => {
+    const onVisibility = () => {
+      // Never let a backgrounded tab silently eat the round clock.
+      if (document.hidden && game.current.phase === 'running') setPausedBoth(true);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+  useEffect(() => () => clearReveal(), []);
   useEffect(() => {
     if (!loaded || !canvas.current) return;
     const element = canvas.current;
@@ -75,26 +102,57 @@ export function BasketballLinePage({ onExit, settings }: {
       accumulator = Math.min(.06, accumulator + frameDt);
       const round = game.current;
       let remainingSteps = 8;
-      if (round.phase === 'running') {
+      if (round.phase === 'running' && !pausedRef.current) {
+        const scoredBefore = round.balls.filter(b => b.scored).length;
+        const gemBefore = round.gemCollected;
+        let wonThisFrame = false;
         while (accumulator >= STEP_SECONDS && remainingSteps-- > 0 && round.phase === 'running') {
           const before = round.phase;
           const after = stepRound(round);
           accumulator -= STEP_SECONDS;
           if (after !== before) {
             if (after === 'won') {
+              wonThisFrame = true;
               progress.current = applyWin(progress.current, round);
-              feedback(settingsRef.current, 'win');
               void storage.set(SAVE_KEY, progress.current);
+              // The score sound lands with the ball; the result card (and
+              // the win jingle) follow after a short celebration beat.
+              feedback(settingsRef.current, 'score');
+              setShowResult(false);
+              clearReveal();
+              fxRef.current.revealTimer = window.setTimeout(() => {
+                fxRef.current.revealTimer = null;
+                setShowResult(true);
+                feedback(settingsRef.current, 'win');
+              }, 550);
             } else if (after === 'lost') {
               void storage.set(SAVE_KEY, progress.current);
+              feedback(settingsRef.current, 'lose');
+              setShowResult(true);
             }
             sync();
           }
         }
+        if (round.balls.filter(b => b.scored).length > scoredBefore) {
+          fxRef.current.lastScoreAt = now;
+          if (!wonThisFrame) feedback(settingsRef.current, 'score');
+        }
+        if (!gemBefore && round.gemCollected) {
+          fxRef.current.gemAt = { x: round.gem.x, y: round.gem.y, at: now };
+          feedback(settingsRef.current, 'gem');
+        }
       } else {
         accumulator = 0;
       }
-      paintBasketScene(context, game.current, drawing.current, settingsRef.current.reduceMotion);
+      const flexAge = 1 - (now - fxRef.current.lastScoreAt) / 450;
+      const fxNow: BasketFx = {
+        netFlex: flexAge > 0 ? flexAge * flexAge : 0,
+        gemRing: fxRef.current.gemAt
+          ? { ...fxRef.current.gemAt, age: (now - fxRef.current.gemAt.at) / 420 }
+          : null,
+      };
+      if (fxNow.gemRing && fxNow.gemRing.age >= 1) fxRef.current.gemAt = null;
+      paintBasketScene(context, game.current, drawing.current, settingsRef.current.reduceMotion, fxNow);
       frame = window.requestAnimationFrame(tick);
     };
     frame = window.requestAnimationFrame(tick);
@@ -109,7 +167,7 @@ export function BasketballLinePage({ onExit, settings }: {
   };
   const onPointerDown = (event: PointerEvent<HTMLCanvasElement>) => {
     const round = game.current;
-    if (!loaded || pointer.current !== null || (event.pointerType === 'mouse' && event.button !== 0) ||
+    if (!loaded || pausedRef.current || pointer.current !== null || (event.pointerType === 'mouse' && event.button !== 0) ||
         !['ready', 'running'].includes(round.phase) ||
         remainingPencils(round) === 0 || remainingInk(round) < 14) return;
     event.preventDefault();
@@ -143,24 +201,35 @@ export function BasketballLinePage({ onExit, settings }: {
       feedback(settingsRef.current, 'move');
     }
   };
-  const reset = () => {
-    game.current = makeRound(game.current.round);
+  const freshState = () => {
     drawing.current = null;
     pointer.current = null;
+    setPausedBoth(false);
+    setShowResult(false);
+    clearReveal();
+    fxRef.current.lastScoreAt = -1e9;
+    fxRef.current.gemAt = null;
+  };
+  const reset = () => {
+    game.current = makeRound(game.current.round);
+    freshState();
     sync();
   };
   const next = () => {
     game.current = makeRound(Math.min(9999, game.current.round + 1));
-    drawing.current = null;
-    pointer.current = null;
+    freshState();
     sync();
   };
   const loadRound = (roundNo: number) => {
     game.current = makeRound(roundNo);
-    drawing.current = null;
-    pointer.current = null;
+    freshState();
     setShowRounds(false);
     sync();
+  };
+  const togglePause = () => {
+    const phase = game.current.phase;
+    if (phase !== 'ready' && phase !== 'running') return;
+    setPausedBoth(!pausedRef.current);
   };
   const erase = () => {
     const round = game.current;
@@ -211,8 +280,29 @@ export function BasketballLinePage({ onExit, settings }: {
               <span className="basketball-instruction-icon">✎</span>
               {t('basketballLineDraw')}
             </div>}
-            {(view.phase === 'won' || view.phase === 'lost') && (
+            {paused && (view.phase === 'ready' || view.phase === 'running') && (
+              <div className="basketball-paused" role="status">
+                <h2>{t('basketballLinePaused')}</h2>
+                <button type="button" onClick={() => setPausedBoth(false)}>
+                  {t('basketballLineResume')}
+                </button>
+              </div>
+            )}
+            {(view.phase === 'won' || view.phase === 'lost') && showResult && (
               <div className={'basketball-result ' + view.phase} role="status">
+                {view.phase === 'won' && (
+                  <div className="basketball-confetti" aria-hidden="true">
+                    {Array.from({ length: 14 }, (_, i) => (
+                      <i key={i} style={{
+                        '--tx': ((i * 53) % 240 - 120) + 'px',
+                        '--ty': (70 + (i * 37) % 120) + 'px',
+                        '--rot': ((i * 97) % 360) + 'deg',
+                        background: ['#f5a623', '#29a9eb', '#3ac1ef', '#ff9e0f', '#e64b21'][i % 5],
+                        animationDelay: (i * 24) + 'ms',
+                      } as CSSProperties} />
+                    ))}
+                  </div>
+                )}
                 <span className="basketball-result-icon" aria-hidden="true">
                   {view.phase === 'won' ? '🏀' : '✎'}
                 </span>
@@ -262,6 +352,11 @@ export function BasketballLinePage({ onExit, settings }: {
             <button type="button" onClick={erase} disabled={!game.current.strokes.length ||
               (view.phase !== 'ready' && view.phase !== 'running')}>{t('basketballLineErase')}</button>
           </div>
+          <button type="button" className="basketball-pause-btn"
+            disabled={view.phase !== 'ready' && view.phase !== 'running'}
+            onClick={togglePause}>
+            {paused ? t('basketballLineResume') : t('basketballLinePause')}
+          </button>
           <button type="button" className="basketball-rounds-btn"
             onClick={() => { sync(); setShowRounds(true); }}>
             {t('basketballLineRounds')} · ★ {view.totalStars}
