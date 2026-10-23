@@ -26,6 +26,9 @@ export interface LocalHistory {
   durationMs: number;
   endedAt: number;
 }
+// Survives the library's unmount while a game or mode screen is open.
+const librarySession = { search: '', category: 'all' as LibraryCategory };
+
 export function HomePage({
   onChoose,
   onRules,
@@ -42,8 +45,12 @@ export function HomePage({
   hasMatch: boolean;
 }) {
   const { t } = useI18n();
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState<LibraryCategory>('all');
+  const [search, setSearch] = useState(librarySession.search);
+  const [category, setCategory] = useState<LibraryCategory>(librarySession.category);
+  useEffect(() => {
+    librarySession.search = search;
+    librarySession.category = category;
+  }, [search, category]);
   const favorites = profile?.favorites ?? [];
   const visibleGames = gameInfo.filter((game) =>
     gameMatchesLibraryFilter(
@@ -61,11 +68,16 @@ export function HomePage({
         <div>
           <span className="naqla-library-kicker">{t('welcome')}</span>
           <h1>{t('library')}</h1>
-          <p>{t('libraryDiscover')}</p>
         </div>
-        <span className="naqla-library-count" aria-label={`${gameInfo.length} ${t('library')}`}>
-          {String(gameInfo.length).padStart(2, '0')}
-        </span>
+        <output
+          className="naqla-library-count"
+          aria-live="polite"
+          aria-label={`${t('library')}: ${visibleGames.length} / ${gameInfo.length}`}
+        >
+          {search.trim() || category !== 'all'
+            ? `${visibleGames.length} / ${gameInfo.length}`
+            : String(gameInfo.length).padStart(2, '0')}
+        </output>
       </header>
       {hasMatch && (
         <button className="resume-banner" onClick={onResume}>
@@ -115,7 +127,7 @@ export function HomePage({
               <span className="naqla-icon-frame">
                 <GameArt game={game.id} compact />
               </span>
-              <span className="naqla-icon-label">{t(game.id)}</span>
+              <span className="naqla-icon-label" dir="auto" title={t(game.id)}>{t(game.id)}</span>
             </button>
             <button
               type="button"
