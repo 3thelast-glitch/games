@@ -1,0 +1,60 @@
+name: Verify bundled Mindustry web runtime
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'Dockerfile'
+      - 'apps/server/src/server.ts'
+      - 'scripts/package-mindustry-web.mjs'
+      - '.github/workflows/verify-community-web-runtime.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+      - name: Compile game and build NAQLA Docker image
+        run: docker build --progress=plain -t naqla-community-web:preview .
+      - name: Verify original game runtime was bundled
+        run: |
+          docker run --rm --entrypoint /bin/sh naqla-community-web:preview -ec '
+            test -s /app/dist/mobile/third-party/mindustry/naqla-runtime.json
+            test -s /app/dist/mobile/third-party/mindustry/mindustry.js
+            test -s /app/dist/mobile/third-party/mindustry/asset-manifest.txt
+            test -s /app/dist/mobile/third-party/mindustry/LICENSE
+            test -s /app/dist/mobile/third-party/mindustry/index.html
+          '
+      - name: Probe real HTTP endpoints and restrictive CSP
+        run: |
+          docker run --rm -d --name naqla-runtime-preview -p 8787:8787 \
+            -e HOST=0.0.0.0 naqla-community-web:preview
+          trap 'docker stop naqla-runtime-preview || true' EXIT
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:8787/api/health -o /dev/null; then break; fi
+            sleep 2
+          done
+          curl -fsSLo /tmp/runtime.json http://127.0.0.1:8787/third-party/mindustry/naqla-runtime.json
+          grep -q '"runtime": "teavm"' /tmp/runtime.json
+          curl -fsSLo /tmp/mindustry.html http://127.0.0.1:8787/third-party/mindustry/index.html
+          grep -q mindustry-canvas /tmp/mindustry.html
+          curl -fsSLo /tmp/game-assets.txt http://127.0.0.1:8787/third-party/mindustry/asset-manifest.txt
+          test -s /tmp/game-assets.txt
+          curl -fsSI http://127.0.0.1:8787/third-party/mindustry/index.html | grep -i 'x-frame-options: SAMEORIGIN'
+          curl -fsSI http://127.0.0.1:8787/ | grep -i 'x-frame-options: DENY'
+      - name: Extract testable web files from container
+        run: |
+          mkdir -p community-preview
+          id=$(docker create naqla-community-web:preview)
+          docker cp "$id:/app/dist/mobile/." community-preview/
+          docker rm "$id"
+          test -s community-preview/third-party/mindustry/naqla-runtime.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: NAQLA-experimental-web-with-Mindustry
+          path: community-preview
+          retention-days: 7
+          if-no-files-found: error

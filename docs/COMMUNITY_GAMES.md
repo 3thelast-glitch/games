@@ -133,3 +133,41 @@ Release acceptance:
 3. Confirm launch, gameplay, exit and resume on each target platform.
 4. Add repeatable runtime packaging and CI smoke tests.
 5. Only then claim a game is fully integrated and playable.
+
+## Staging web preview: original Mindustry engine embedded by Docker
+
+The earlier PR #165 proves that Mindustry TeaVM can compile and be packaged
+inside an Android APK, but **the normal NAQLA web Docker image still does not
+contain it**. The optional development path in
+`feat/staging-playable-community-runtimes` changes the staging Docker build
+to compile the pinned upstream-derived TeaVM game and copy its static files
+into `dist/mobile/third-party/mindustry/` *before* building the NAQLA frontend.
+
+The resulting Docker image serves a runtime manifest and the original game
+bundle from the same HTTPS origin as NAQLA. Its game frame has a narrow
+exception to the existing strict CSP: it may be framed by the same origin and
+execute the upstream game's inline boot scripts. Every other NAQLA page
+retains DENY, strict script-src and frame-ancestors none. A future separately
+hosted Freeciv web server can be permitted in the parent's `frame-src`
+**only** via the validated HTTPS origin `FREECIV_WEB_ORIGIN` on the server,
+together with `VITE_FREECIV_WEB_URL` at frontend build time. Both sides of
+that configuration must match; neither setting deploys Freeciv itself.
+
+The new experimental build can be checked through GitHub Actions workflow
+`Verify bundled Mindustry web runtime`, which builds the entire Docker image,
+checks the packaged binary and manifest and probes static game URLs and
+frame headers. CI and this document do **not** claim that full game
+play on browsers, iOS or Android has been verified.
+
+Before applying the preview to a real deployment:
+- Check compile success and that every expected Mindustry file was bundled.
+- Test actual boot/menu/world/touch/audio/save on the *target browser/device*.
+- Check CPU, bandwidth and deployment size requirements.
+- Complete legal review of GPL corresponding source, copyright notices and
+  the modified Arc port, not just the upstream repository.
+- Preserve the rest of the app's online backend and persistent data; do not
+  replace the existing NAQLA server with a static-only site.
+
+**SuperTux and Freeciv-web remain unavailable.** They require their real
+WebAssembly binary or full game server respectively. Merely showing their
+icons is not a successful integration.
