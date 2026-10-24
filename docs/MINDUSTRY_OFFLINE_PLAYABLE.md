@@ -77,3 +77,23 @@ confirms the API bucket is not consumed and still enforces its own limit.
 
 Browser first-frame test is still the release gate: do not treat an HTTP fix
 as proof of game progression, save/load or touch gameplay.
+
+
+## Small-screen original UI adaptation
+
+Mindustry's source includes `UI Scaling` (original `uiscale` setting).
+The original desktop main menu can overlap the logo and its own Play/Editor
+actions when rendered in a 390px-high landscape mobile WebView.
+`scripts/patch-mindustry-teavm-ui.mjs` applies a fail-closed patch to the
+reviewed `offlinemode/backend-teavm/src/mindustry/Vars.java` BEFORE TeaVM
+compilation. The default scale uses CSS-pixel height (physical graphics height
+divided by devicePixelRatio), proportionally reducing original menu elements
+for 390px-height phones; 680px+ displays retain 100%. Existing player-defined
+`uiscale` values still win. The full original game logic and content remain
+unchanged, and the source adaptation is included in the corresponding-source
+build instructions.
+
+For browsers denying orientation lock, NAQLA rotates the in-app iframe by CSS,
+preserving pointer mapping. Android attempts to rotate the native activity.
+The test artifact must still be verified with Play → Campaign/Custom → actual
+world progression, saves and audio on a physical device before final release.
