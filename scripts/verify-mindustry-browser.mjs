@@ -136,6 +136,15 @@ try {
     throw new Error('Original Mindustry iframe did not receive movement keydown/keyup from touch pad: ' + touchKeys);
   }
   await page.screenshot({ path: resolve(screenshots, 'mindustry-touch-movement.png'), fullPage: true });
+  // Open the original pause/menu UI to inspect whether local offline progress
+  // can be saved; do not claim persistence from a loading screen alone.
+  await canvas.evaluate(() => {
+    const keys = {code:'Escape', key:'Escape', bubbles:true, cancelable:true};
+    window.dispatchEvent(new KeyboardEvent('keydown', keys));
+    window.dispatchEvent(new KeyboardEvent('keyup', keys));
+  });
+  await page.waitForTimeout(1300);
+  await page.screenshot({ path: resolve(screenshots, 'mindustry-in-game-pause-menu.png'), fullPage: true });
   if (external.length) throw new Error('A gameplay world requested a remote server: ' + external.join(', '));
   if (httpErrors.length) throw new Error('Game files failed while starting the world: ' + httpErrors.slice(-10).join(', '));
   await page.locator('.community-game-exit').click();
