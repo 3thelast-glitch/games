@@ -145,6 +145,16 @@ try {
   });
   await page.waitForTimeout(1300);
   await page.screenshot({ path: resolve(screenshots, 'mindustry-in-game-pause-menu.png'), fullPage: true });
+  // Save & Quit through the original Mindustry pause dialog to test the
+  // offline save pipeline. This must not contact a remote account/server.
+  await canvas.tap({ position: cssRotated
+    ? {x: Math.floor(canvasRect.width * .325), y: Math.floor(canvasRect.height * .50)}
+    : landscapeMenu
+      ? {x: Math.floor(canvasRect.width * .50), y: Math.floor(canvasRect.height * .67)}
+      : {x: Math.floor(canvasRect.width * .50), y: Math.floor(canvasRect.height * .67)}
+  });
+  await page.waitForTimeout(4200);
+  await page.screenshot({ path: resolve(screenshots, 'mindustry-after-save-and-quit.png'), fullPage: true });
   if (external.length) throw new Error('A gameplay world requested a remote server: ' + external.join(', '));
   if (httpErrors.length) throw new Error('Game files failed while starting the world: ' + httpErrors.slice(-10).join(', '));
   await page.locator('.community-game-exit').click();
