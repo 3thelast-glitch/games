@@ -26,6 +26,8 @@ const manifest = {
   id: 'mindustry',
   entry: 'index.html',
   runtime: 'teavm',
+  offline: true,
+  requiresRemoteServer: false,
   source: 'https://github.com/khoichon/mindustry-web',
   sourceCommit: '33652d79b21498d2cbd0d7f38cab46aa3a8fe183',
   originalGame: 'https://github.com/Anuken/Mindustry',

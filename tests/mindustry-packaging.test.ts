@@ -39,6 +39,8 @@ test('Mindustry packager only exposes a runtime after original artifacts exist',
     assert.equal(manifest.id, 'mindustry');
     assert.equal(manifest.entry, 'index.html');
     assert.equal(manifest.runtime, 'teavm');
+    assert.equal(manifest.offline, true);
+    assert.equal(manifest.requiresRemoteServer, false);
     assert.ok(manifest.sourceCommit);
   } finally { rmSync(tmp, { recursive: true, force: true }); }
 });
