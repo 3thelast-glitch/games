@@ -6,6 +6,7 @@ import { ArithmeticaCover } from './ArithmeticaArt.tsx';
 import { SurvivalBuilderCover } from './SurvivalBuilderArt.tsx';
 import { TowerDefenseCover } from './TowerDestinyArt.tsx';
 import { GasStationCover } from './GasStationArt.tsx';
+import { CommunityGamesArt } from './CommunityGamesArt.tsx';
 import { createContext, useContext, useEffect, useId, useRef, type ReactNode } from 'react';
 import { useI18n } from './i18n.tsx';
 import { HEXES, createAbalone, hexKey } from '../../../packages/games/abalone/state.ts';
@@ -494,7 +495,9 @@ export function GameArt({ game, compact = false }: { game: string; compact?: boo
   return (
     <div className={`game-art ${game} ${compact ? 'compact' : ''}`} aria-hidden="true">
       <div className="art-halo" />
-      {game === 'ludo' ? (
+      {game === 'supertux' || game === 'freecivWeb' || game === 'mindustry' ? (
+        <CommunityGamesArt game={game} />
+      ) : game === 'ludo' ? (
         <svg viewBox="0 0 480 444">
           <rect x="80" y="50" width="320" height="320" rx="28" fill="#151e33" stroke="#c8a76a" strokeWidth="8"/>
           {[[105,75,'#D94356'],[265,75,'#3978E8'],[105,235,'#20A877'],[265,235,'#F1C44B']].map(([x,y,color],i)=><g key={i}>

@@ -17,6 +17,7 @@
     "mobile:android": "npm run build && node scripts/mobile.mjs android",
     "mobile:ios": "npm run build && node scripts/mobile.mjs ios",
     "mobile:sync": "npm run build && node scripts/mobile.mjs all",
+    "package:supertux": "node scripts/package-supertux-web.mjs",
     "format": "prettier --write ."
   },
   "dependencies": {

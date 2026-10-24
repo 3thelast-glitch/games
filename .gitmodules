@@ -1,3 +1,15 @@
 [submodule "native/supertuxkart/stk-code"]
 	path = native/supertuxkart/stk-code
 	url = https://github.com/supertuxkart/stk-code.git
+
+[submodule "native/community/supertux"]
+	path = native/community/supertux
+	url = https://github.com/SuperTux/supertux.git
+
+[submodule "native/community/freeciv-web"]
+	path = native/community/freeciv-web
+	url = https://github.com/freeciv/freeciv-web.git
+
+[submodule "native/community/mindustry"]
+	path = native/community/mindustry
+	url = https://github.com/Anuken/Mindustry.git

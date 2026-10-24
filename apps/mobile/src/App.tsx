@@ -59,6 +59,7 @@ import { ArithmeticaPage } from './ArithmeticaPage.tsx';
 import { SurvivalBuilderPage } from './SurvivalBuilderPage.tsx';
 import { TowerDestinyPage } from './TowerDestinyPage.tsx';
 import { GasStationPage } from './GasStationPage.tsx';
+import { CommunityGamesPage, isCommunityGameId, type CommunityGameId } from './CommunityGamesPage.tsx';
 import { lan } from './lan.ts';
 import {
   archiveAnalysisStatus,
@@ -92,7 +93,8 @@ type Page =
   | 'arithmetica'
   | 'survivalBuilder'
   | 'towerDestiny'
-  | 'gasStation';
+  | 'gasStation'
+  | CommunityGameId;
 interface OfflineSession {
   id: string;
   controller: OfflineMatch;
@@ -1079,7 +1081,7 @@ function ArenaApp({
           <main className={`main-content ${page === 'match' ? 'match-content' : ''}`}>
             {page === 'library' && (
               <HomePage
-                onChoose={(gameId, mode) => gameId === 'ludo' ? (requestGameFullscreen(), setPage('ludo')) : gameId === 'appleWorm' ? (requestGameFullscreen(), setPage('appleWorm')) : gameId === 'basketballLine' ? setPage('basketballLine') : gameId === 'backroomBill' ? setPage('backroomBill') : gameId === 'arithmetica' ? (requestGameFullscreen(), setPage('arithmetica')) : gameId === 'survivalBuilder' ? setPage('survivalBuilder') : gameId === 'towerDestiny' ? setPage('towerDestiny') : gameId === 'gasStation' ? (requestGameFullscreen(), setPage('gasStation')) : setChoice({ gameId, mode })}
+                onChoose={(gameId, mode) => gameId === 'ludo' ? (requestGameFullscreen(), setPage('ludo')) : gameId === 'appleWorm' ? (requestGameFullscreen(), setPage('appleWorm')) : gameId === 'basketballLine' ? setPage('basketballLine') : gameId === 'backroomBill' ? setPage('backroomBill') : gameId === 'arithmetica' ? (requestGameFullscreen(), setPage('arithmetica')) : gameId === 'survivalBuilder' ? setPage('survivalBuilder') : gameId === 'towerDestiny' ? setPage('towerDestiny') : gameId === 'gasStation' ? (requestGameFullscreen(), setPage('gasStation')) : isCommunityGameId(gameId) ? setPage(gameId) : setChoice({ gameId, mode })}
                 onRules={setRules}
                 profile={profile}
                 onFavorite={(id) =>
@@ -1103,6 +1105,7 @@ function ArenaApp({
             {page === 'survivalBuilder' && <SurvivalBuilderPage onExit={() => setPage('library')} settings={settings} />}
             {page === 'towerDestiny' && <TowerDestinyPage onExit={() => setPage('library')} settings={settings} />}
             {page === 'gasStation' && <GasStationPage onExit={() => setPage('library')} settings={settings} />}
+            {isCommunityGameId(page) && <CommunityGamesPage gameId={page} onExit={() => setPage('library')} />}
             {page === 'profile' && (
               <ProfilePage
                 profile={profile}

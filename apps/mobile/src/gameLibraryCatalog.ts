@@ -11,6 +11,9 @@ export const libraryFilters: readonly LibraryCategory[] = [
 ];
 
 export const gameLibraryCategories: Readonly<Record<string, Exclude<LibraryCategory, 'all' | 'favorites'>>> = {
+  supertux: 'casual',
+  freecivWeb: 'strategy',
+  mindustry: 'strategy',
   ludo: 'strategy',
   appleWorm: 'puzzle',
   basketballLine: 'casual',

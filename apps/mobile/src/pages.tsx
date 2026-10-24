@@ -12,6 +12,7 @@ import {
 import { RANKS } from '../../../packages/core/src/ranking.ts';
 import { Avatar, avatars, Empty, GameArt, Icon, Modal, formatTime } from './components.tsx';
 import { gameInfo, upcoming } from './gameViews.tsx';
+import { isCommunityGameId } from './CommunityGamesPage.tsx';
 import { useI18n, gameSearchAliases } from './i18n.tsx';
 import { libraryFilters, gameMatchesLibraryFilter, type LibraryCategory } from './gameLibraryCatalog.ts';
 import type { Settings } from './platform.ts';
@@ -122,12 +123,13 @@ export function HomePage({
               type="button"
               className="play-button naqla-icon-launch"
               onClick={() => onChoose(game.id)}
-              aria-label={`${t('play')}: ${t(game.id)}`}
+              aria-label={`${isCommunityGameId(game.id) ? t('communityOpenDetails') : t('play')}: ${t(game.id)}`}
             >
               <span className="naqla-icon-frame">
                 <GameArt game={game.id} compact />
               </span>
               <span className="naqla-icon-label" dir="auto" title={t(game.id)}>{t(game.id)}</span>
+              {isCommunityGameId(game.id) && <small className="naqla-community-state">{t('communityRuntimeRequired')}</small>}
             </button>
             <button
               type="button"
@@ -901,7 +903,7 @@ export function ProfilePage({
       <div className="profile-columns">
         <section className="panel">
           <h2>{t('ranking')}</h2>
-          {gameInfo.filter(g => !['ludo','appleWorm','basketballLine','backroomBill','arithmetica','survivalBuilder','towerDestiny','gasStation'].includes(g.id)).map((g) => (
+          {gameInfo.filter(g => !['ludo','appleWorm','basketballLine','backroomBill','arithmetica','survivalBuilder','towerDestiny','gasStation','supertux','freecivWeb','mindustry'].includes(g.id)).map((g) => (
             <div className="rating-row" key={g.id}>
               <span className={`game-glyph ${g.id}`}>{g.icon}</span>
               <div>
@@ -919,7 +921,7 @@ export function ProfilePage({
         </section>
         <section className="panel">
           <h2>{t('favorites')}</h2>
-          {gameInfo.filter(g => !['ludo','appleWorm','basketballLine','backroomBill','arithmetica','survivalBuilder','towerDestiny','gasStation'].includes(g.id)).map((g) => (
+          {gameInfo.filter(g => !['ludo','appleWorm','basketballLine','backroomBill','arithmetica','survivalBuilder','towerDestiny','gasStation','supertux','freecivWeb','mindustry'].includes(g.id)).map((g) => (
             <label className="favorite-row" key={g.id}>
               <span>{t(g.id)}</span>
               <input
@@ -1127,7 +1129,7 @@ export function LeaderboardPage({
       <div className="leaderboard-controls">
         <div className="arena-game-scroll" role="group" aria-label={t('library')} tabIndex={0}>
           <div className="segmented">
-            {gameInfo.filter(g => !['ludo','appleWorm','basketballLine','backroomBill','arithmetica','survivalBuilder','towerDestiny','gasStation'].includes(g.id)).map((g) => (
+            {gameInfo.filter(g => !['ludo','appleWorm','basketballLine','backroomBill','arithmetica','survivalBuilder','towerDestiny','gasStation','supertux','freecivWeb','mindustry'].includes(g.id)).map((g) => (
               <button key={g.id} onClick={() => setGame(g.id)} aria-pressed={game === g.id}>
                 {t(g.id)}
               </button>
