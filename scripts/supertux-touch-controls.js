@@ -56,8 +56,13 @@
     const keys = [
       ['left','◀','ArrowLeft','ArrowLeft',37,'Move left',dirs],
       ['right','▶','ArrowRight','ArrowRight',39,'Move right',dirs],
+      ['up','△','ArrowUp','ArrowUp',38,'Move / menu up',dirs],
+      ['down','▽','ArrowDown','ArrowDown',40,'Crouch / menu down',dirs],
       ['jump','▲','Space',' ',32,'Jump',actions],
-      ['action','X','KeyX','x',88,'Run / action',actions]
+      // Match SuperTux ORIGINAL src/control/keyboard_config.cpp defaults:
+      // ACTION=SDL_SCANCODE_LCTRL, ITEM=SDL_SCANCODE_LSHIFT.
+      ['action','Run','ControlLeft','Control',17,'Run / action',actions],
+      ['item','Item','ShiftLeft','Shift',16,'Use item',actions]
     ];
     for (const [id, label, code, key, num, description, target] of keys) {
       const button = document.createElement('button');
