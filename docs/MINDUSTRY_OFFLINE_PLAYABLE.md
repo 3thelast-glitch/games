@@ -88,8 +88,11 @@ actions when rendered in a 390px-high landscape mobile WebView.
 reviewed `offlinemode/backend-teavm/src/mindustry/Vars.java` BEFORE TeaVM
 compilation. The default scale uses CSS-pixel height (physical graphics height
 divided by devicePixelRatio), proportionally reducing original menu elements
-for 390px-height phones; 680px+ displays retain 100%. Existing player-defined
-`uiscale` values still win. The full original game logic and content remain
+for 390px-height phones; 680px+ displays retain 100%. Persisted `uiscale`
+settings cannot exceed the small viewport cap (e.g., 100% saved on the first
+launch becomes at most 57% on a 390px landscape screen), while smaller
+player-defined values remain honored. This prevents the original Play button
+from being clipped *after* reopening the game. The full original game logic and content remain
 unchanged, and the source adaptation is included in the corresponding-source
 build instructions.
 
