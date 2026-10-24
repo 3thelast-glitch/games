@@ -154,6 +154,37 @@ test('A resignation by an inactive seat does not replace the current die',()=>{
   validateLudo(next);
 });
 
+test('Ludo AI captures the most advanced victim, not just any victim',()=>{
+  const s=createLudo(4); s.phase='move'; s.die=1;
+  s.tokens[0]!.progress=13; // 0:0 -> c:14, captures a pawn that just left base
+  s.tokens[1]!.progress=19; // 0:1 -> c:20, captures a nearly-home pawn
+  s.tokens.find(t=>t.id==='1:0')!.progress=1;  // seat 1 route progress 1 == c:14
+  s.tokens.find(t=>t.id==='2:0')!.progress=46; // seat 2 route progress 46 == c:20
+  const moves=legalMoves(s);
+  assert.equal(moves.find(m=>m.tokenId==='0:0')!.captures,1);
+  assert.equal(moves.find(m=>m.tokenId==='0:1')!.captures,1);
+  assert.equal(chooseAiToken(s,'medium',()=>0.5),'0:1');
+  assert.equal(chooseAiToken(s,'hard',()=>0.5),'0:1');
+});
+
+test('Ludo AI moves a threatened pawn out of capture range',()=>{
+  const s=createLudo(4); s.phase='move'; s.die=4;
+  s.tokens[0]!.progress=28; // unthreatened pawn (destination c:32 is not a safe cell)
+  s.tokens[1]!.progress=20; // c:20, enemy three cells behind at c:17
+  s.tokens.find(t=>t.id==='1:0')!.progress=4; // seat 1 route progress 4 == c:17
+  assert.equal(chooseAiToken(s,'medium',()=>0.5),'0:1');
+  assert.equal(chooseAiToken(s,'hard',()=>0.5),'0:1');
+});
+
+test('Ludo hard AI avoids stacking onto a threatened unsafe cell',()=>{
+  const s=createLudo(4); s.phase='move'; s.die=2;
+  s.tokens[0]!.progress=18; // 0:0 -> c:20, where 0:1 already sits
+  s.tokens[1]!.progress=20; // own pawn on c:20
+  s.tokens[2]!.progress=40; // plain alternative move
+  s.tokens.find(t=>t.id==='1:0')!.progress=5; // c:18, two behind c:20
+  assert.equal(chooseAiToken(s,'hard',()=>0.5),'0:2');
+});
+
 test('Ludo visual board variants use a valid pawn quota and preserve old four/six-player saves',()=>{
   assert.deepEqual(counts.map(n=>tokensPerSeat(n)),[4,4,2,1]);
   assert.deepEqual(counts.map(n=>createLudo(n).tokens.length),[16,24,16,10]);
