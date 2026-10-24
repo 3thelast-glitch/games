@@ -59,3 +59,38 @@ test('Freeciv frame origins cannot be set to insecure HTTP', () => {
     store.close();
   }
 });
+
+test('Mindustry original resource prefetch cannot exhaust NAQLA account/API request limits', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'naqla-asset-burst-'));
+  const store = new Store();
+  mkdirSync(join(root, 'third-party', 'mindustry'), { recursive: true });
+  writeFileSync(join(root, 'index.html'), '<html>NAQLA</html>');
+  writeFileSync(join(root, 'third-party/mindustry/terrain.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+  const app = createArenaServer({ store, env: {}, staticDir: root });
+  await new Promise<void>((resolve) => app.server.listen(0, '127.0.0.1', resolve));
+  const base = `http://127.0.0.1:${(app.server.address() as { port: number }).port}`;
+  try {
+    // The real upstream Mindustry manifest lists hundreds of locally bundled
+    // fonts, maps, sprites and shaders, exceeding the standard 600 req/min API
+    // throttle when first loading a game. These are safe same-origin GETs.
+    for (let i = 0; i < 720; i++) {
+      const asset = await fetch(base + '/third-party/mindustry/terrain.png');
+      assert.equal(asset.status, 200, 'original local game assets must not return HTTP 429');
+      await asset.arrayBuffer();
+    }
+    // Safe static file downloads use a DIFFERENT bounded rate-limit bucket;
+    // they must not consume the existing 600/minute API budget.
+    const health = await fetch(base + '/api/health');
+    assert.equal(health.status, 200);
+    for (let i = 0; i < 599; i++) {
+      const r = await fetch(base + '/api/health');
+      assert.equal(r.status, 200);
+    }
+    const limitedApi = await fetch(base + '/api/health');
+    assert.equal(limitedApi.status, 429, 'API rate limiting must remain active');
+  } finally {
+    await app.close();
+    store.close();
+    rmSync(root, { recursive: true, force: true });
+  }
+});
