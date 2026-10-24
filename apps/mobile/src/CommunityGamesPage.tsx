@@ -16,14 +16,14 @@ interface MindustryNative {
 const mindustry = registerPlugin<MindustryNative>('NaqlaMindustry');
 
 type Availability = { kind: 'checking' } | { kind: 'unavailable' } | { kind: 'ready'; url?: string };
-const supertuxFolder = `${import.meta.env.BASE_URL}third-party/supertux/`;
-const freecivWebUrl = import.meta.env.VITE_FREECIV_WEB_URL as string | undefined;
+const supertuxFolder = `${(import.meta.env?.BASE_URL ?? '/')}third-party/supertux/`;
+const freecivWebUrl = import.meta.env?.VITE_FREECIV_WEB_URL as string | undefined;
 
 function secureConfiguredUrl(value: string | undefined): string | null {
   if (!value) return null;
   try {
     const url = new URL(value);
-    if (url.protocol === 'https:' || (import.meta.env.DEV && url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname))) {
+    if (url.protocol === 'https:' || (import.meta.env?.DEV && url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname))) {
       return url.toString();
     }
   } catch { /* Invalid URLs are never launched. */ }
