@@ -1,0 +1,66 @@
+name: Diagnose prebuilt Mindustry game boot
+# Reuse a previously built debug APK to isolate JS/WebGL issues without
+# rebuilding the full upstream TeaVM port on every diagnostics iteration.
+on:
+  workflow_dispatch:
+    inputs:
+      upstream_run_id:
+        description: GitHub Actions run that produced the Mindustry debug APK
+        required: true
+        default: '40083809685'
+        type: string
+  pull_request:
+    paths:
+      - 'scripts/verify-mindustry-browser.mjs'
+      - '.github/workflows/diagnose-mindustry-browser.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/download-artifact@v7
+        with:
+          name: NAQLA-Mindustry-offline-engine-debug-APK
+          run-id: ${{ inputs.upstream_run_id || '40083809685' }}
+          github-token: ${{ github.token }}
+          path: .cache/mindustry-apk
+      - name: Install and build NAQLA frontend
+        run: |
+          npm ci
+          npm run build
+      - name: Extract the EXACT Mindustry engine bundled in previously built APK
+        run: |
+          set -euo pipefail
+          APK=$(find .cache/mindustry-apk -name '*.apk' -type f -print -quit)
+          test -n "$APK"
+          mkdir -p "$RUNNER_TEMP/offline-apk"
+          unzip -q "$APK" 'assets/public/third-party/mindustry/*' -d "$RUNNER_TEMP/offline-apk"
+          mkdir -p dist/mobile/third-party
+          cp -a "$RUNNER_TEMP/offline-apk/assets/public/third-party/mindustry" dist/mobile/third-party/
+          test -s dist/mobile/third-party/mindustry/naqla-runtime.json
+          test -s dist/mobile/third-party/mindustry/mindustry.js
+      - name: Start NAQLA and diagnose first Mindustry rendered frame
+        run: |
+          npx playwright install --with-deps chromium
+          PORT=8787 DATABASE_PATH="$RUNNER_TEMP/mindustry-quick.db" \
+            node dist/server/index.mjs > "$RUNNER_TEMP/mindustry-server.log" 2>&1 &
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:8787/api/health > /dev/null; then break; fi
+            sleep 2
+          done
+          node scripts/verify-mindustry-browser.mjs http://127.0.0.1:8787
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: Mindustry-boot-diagnostics
+          path: artifacts/mindustry/
+          retention-days: 7
+          if-no-files-found: ignore
