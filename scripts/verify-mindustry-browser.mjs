@@ -92,6 +92,17 @@ try {
   } });
   await page.waitForTimeout(2000);
   await page.screenshot({ path: resolve(screenshots, 'mindustry-custom-game-selection.png'), fullPage: true });
+  // Select a real bundled original Mindustry map (Ancient Caldera) rather than
+  // stopping at the map library. Coordinates account for the 90deg CSS fallback:
+  // upright landscape (110,145) => portrait bounding box (245,110).
+  const selectedMap = cssRotated
+    ? {x: Math.floor(canvasRect.width * .63), y: Math.floor(canvasRect.height * .13)}
+    : landscapeMenu
+      ? {x: Math.floor(canvasRect.width * .13), y: Math.floor(canvasRect.height * .37)}
+      : {x: Math.floor(canvasRect.width * .25), y: Math.floor(canvasRect.height * .3)};
+  await canvas.tap({position: selectedMap});
+  await page.waitForTimeout(2200);
+  await page.screenshot({ path: resolve(screenshots, 'mindustry-custom-map-opened.png'), fullPage: true });
   await page.locator('.community-game-exit').click();
   await page.locator('.game-card.mindustry').waitFor({ state: 'visible', timeout: 10000 });
   console.log(JSON.stringify({
