@@ -1,0 +1,104 @@
+name: Mindustry playable offline - single-game verification
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/CommunityGamesPage.tsx'
+      - 'scripts/offline-game-csp.mjs'
+      - 'scripts/package-mindustry-web.mjs'
+      - 'scripts/verify-mindustry-browser.mjs'
+      - 'tests/mindustry-packaging.test.ts'
+      - '.github/workflows/mindustry-offline-playable.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  original-mindustry-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      VITE_SERVER_URL: ''
+      VITE_FREECIV_WEB_URL: ''
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          repository: khoichon/mindustry-web
+          ref: 33652d79b21498d2cbd0d7f38cab46aa3a8fe183
+          submodules: recursive
+          path: .cache/mindustry-web
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+      - name: Download verified upstream Mindustry art, maps, sounds and campaigns
+        run: |
+          curl --fail --location --retry 3 \
+            -o .cache/mindustry-web/mindustry.jar \
+            https://github.com/Anuken/Mindustry/releases/download/v159.7/Mindustry.jar
+          echo '67b2e5c7575e564b184ed11e139c01ddc140afd28b238715e7d42e81612fdfbe  .cache/mindustry-web/mindustry.jar' | sha256sum -c -
+      - name: Compile original Mindustry + Arc into offline TeaVM game
+        working-directory: .cache/mindustry-web/offlinemode
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon :backend-teavm:buildWeb "-Dorg.gradle.java.home=$JAVA_HOME"
+      - name: Package complete local original game
+        run: |
+          node scripts/package-mindustry-web.mjs
+          cp .cache/mindustry-web/LICENSE apps/mobile/public/third-party/mindustry/LICENSE
+          test -s apps/mobile/public/third-party/mindustry/mindustry.js
+          test -s apps/mobile/public/third-party/mindustry/asset-manifest.txt
+          grep -q '"offline": true' apps/mobile/public/third-party/mindustry/naqla-runtime.json
+          grep -q "connect-src 'self'" apps/mobile/public/third-party/mindustry/index.html
+      - name: NAQLA code, packaging and regression tests
+        run: |
+          npm ci
+          npm test
+      - name: Build single NAQLA Android application with real Mindustry
+        run: |
+          npm run mobile:android
+          test -s android/app/src/main/assets/public/third-party/mindustry/mindustry.js
+          test -s android/app/src/main/assets/public/third-party/mindustry/asset-manifest.txt
+          test -s android/app/src/main/assets/public/third-party/mindustry/index.html
+      - name: Assemble debug APK containing the entire game
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+      - name: Chromium software-WebGL smoke (game launch + first frame + touch)
+        run: |
+          npx playwright install --with-deps chromium
+          PORT=8787 DATABASE_PATH="$RUNNER_TEMP/naqla-mindustry.db" \
+            node dist/server/index.mjs > "$RUNNER_TEMP/mindustry-server.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/mindustry-server.pid"
+          for i in $(seq 1 40); do
+            if curl --fail --silent http://127.0.0.1:8787/api/health > /dev/null; then break; fi
+            sleep 2
+          done
+          node scripts/verify-mindustry-browser.mjs http://127.0.0.1:8787
+      - name: Upload playable-engine experimental Android APK
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: NAQLA-Mindustry-offline-engine-debug-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Upload rendering smoke screenshots (or error context)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: NAQLA-Mindustry-rendering-verification
+          path: artifacts/mindustry/
+          retention-days: 7
+          if-no-files-found: ignore
+      - name: Show backend errors when smoke fails
+        if: failure()
+        run: test ! -f "$RUNNER_TEMP/mindustry-server.log" || tail -n 150 "$RUNNER_TEMP/mindustry-server.log"

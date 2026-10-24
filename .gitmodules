@@ -13,3 +13,7 @@
 [submodule "native/community/mindustry"]
 	path = native/community/mindustry
 	url = https://github.com/Anuken/Mindustry.git
+
+[submodule "native/community/mindustry-web"]
+	path = native/community/mindustry-web
+	url = https://github.com/khoichon/mindustry-web.git

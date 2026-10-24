@@ -67,7 +67,9 @@ export function CommunityGamesPage({ gameId, onExit }: { gameId: CommunityGameId
             const json: unknown = await response.json();
             if (json && typeof json === 'object' && 'id' in json && json.id === 'mindustry' &&
               'entry' in json && json.entry === 'index.html' &&
-              'runtime' in json && json.runtime === 'teavm') {
+              'runtime' in json && json.runtime === 'teavm' &&
+              'offline' in json && json.offline === true &&
+              'requiresRemoteServer' in json && json.requiresRemoteServer === false) {
               next = { kind: 'ready', url: `${mindustryFolder}index.html` };
             }
           }

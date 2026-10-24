@@ -11,7 +11,7 @@ test('Mindustry runtime packager rejects incomplete upstream builds', () => {
   try {
     const input = join(tmp, 'source'), output = join(tmp, 'output');
     mkdirSync(input);
-    writeFileSync(join(input, 'index.html'), '<canvas id="mindustry-canvas"></canvas><script src="mindustry.js"></script>');
+    writeFileSync(join(input, 'index.html'), '<html><head></head><body><canvas id="mindustry-canvas"></canvas><script src="mindustry.js"></script></body></html>');
     const result = spawnSync(process.execPath, [script, input, output], { encoding: 'utf8' });
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /incomplete|Missing/);
@@ -24,7 +24,7 @@ test('Mindustry packager only exposes a runtime after original artifacts exist',
   try {
     const input = join(tmp, 'source'), output = join(tmp, 'output');
     mkdirSync(input);
-    writeFileSync(join(input, 'index.html'), '<canvas id="mindustry-canvas"></canvas><script src="mindustry.js"></script>');
+    writeFileSync(join(input, 'index.html'), '<html><head></head><body><canvas id="mindustry-canvas"></canvas><script src="mindustry.js"></script></body></html>');
     writeFileSync(join(input, 'mindustry.js'), Buffer.alloc(1000001, 65));
     writeFileSync(join(input, 'asset-manifest.txt'), 'assets/example-file\n'.repeat(100));
     for (const name of ['opentype.min.js', 'freetype-glue.js', 'net-glue.js']) {
@@ -39,6 +39,9 @@ test('Mindustry packager only exposes a runtime after original artifacts exist',
     assert.equal(manifest.id, 'mindustry');
     assert.equal(manifest.entry, 'index.html');
     assert.equal(manifest.runtime, 'teavm');
+    assert.equal(manifest.offline, true);
+    assert.equal(manifest.requiresRemoteServer, false);
+    assert.match(readFileSync(join(output, 'index.html'), 'utf8'), /connect-src 'self'/);
     assert.ok(manifest.sourceCommit);
   } finally { rmSync(tmp, { recursive: true, force: true }); }
 });
