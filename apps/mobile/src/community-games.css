@@ -72,3 +72,24 @@
   outline: 3px solid #9ec2ff;
   outline-offset: 3px;
 }
+
+
+/* Android uses NaqlaOrientation to rotate the activity. In browser WebViews
+   which deny ScreenOrientation.lock, rotate the local iframe as a fallback so
+   the original Mindustry Campaign / Custom / Load menus cannot be clipped by
+   a narrow portrait canvas. CSS transforms preserve pointer coordinates. */
+@media (orientation: portrait) and (max-width: 600px) {
+  .community-game-mindustry.community-game-playing .community-game-frame {
+    inset: auto;
+    top: 0;
+    left: 100vw;
+    width: 100dvh;
+    height: 100vw;
+    transform-origin: top left;
+    transform: rotate(90deg);
+  }
+  .community-game-mindustry.community-game-playing .community-game-exit {
+    inset-inline-start: max(8px, env(safe-area-inset-left));
+    top: max(8px, env(safe-area-inset-top));
+  }
+}
