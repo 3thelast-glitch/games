@@ -1,17 +1,12 @@
 name: SuperTux original offline - boot and touch proof
 on:
   workflow_dispatch:
-    inputs:
-      upstream_run_id:
-        description: Successful pinned original SuperTux WASM compile workflow run
-        required: true
-        default: "40082924498"
-        type: string
   pull_request:
     paths:
       - 'apps/mobile/src/CommunityGamesPage.tsx'
       - 'apps/mobile/src/community-games.css'
       - 'scripts/package-supertux-web.mjs'
+      - 'scripts/build-supertux-original-wasm.sh'
       - 'scripts/supertux-touch-controls.js'
       - 'scripts/verify-supertux-browser.mjs'
       - 'tests/supertux-original-packaging.test.ts'
@@ -20,7 +15,49 @@ permissions:
   contents: read
   actions: read
 jobs:
+  compile-original-supertux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 170
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          repository: SuperTux/supertux
+          ref: c837f4f5d8b5945e22df1e36ab8f05801cf08f9c
+          fetch-depth: 0
+          submodules: recursive
+          path: .cache/supertux-source
+          persist-credentials: false
+      - uses: actions/checkout@v7
+        with:
+          repository: libsdl-org/SDL_image
+          ref: 0891fc30428b518e7d018677bd6fa95c1a50f4c6
+          path: .cache/SDL_image
+          persist-credentials: false
+      - name: Install official Emscripten and C++ build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git cmake ninja-build build-essential curl zip rsync
+          git clone https://github.com/emscripten-core/emsdk.git "$RUNNER_TEMP/emsdk"
+          "$RUNNER_TEMP/emsdk/emsdk" install latest
+          "$RUNNER_TEMP/emsdk/emsdk" activate latest
+          vcpkg integrate install
+      - name: Build original SuperTux with REAL SDL3_image and strict link symbols
+        run: |
+          bash scripts/build-supertux-original-wasm.sh \
+            "$GITHUB_WORKSPACE/.cache/supertux-source" \
+            "$GITHUB_WORKSPACE/.cache/SDL_image" \
+            "$GITHUB_WORKSPACE/.cache/supertux-fixed"
+      - name: Upload reproducibly compiled original SuperTux game
+        uses: actions/upload-artifact@v7
+        with:
+          name: SuperTux-fixed-real-SDL3-image-wasm
+          path: .cache/supertux-fixed/
+          retention-days: 7
+          if-no-files-found: error
+
   original-supertux-offline:
+    needs: compile-original-supertux
     runs-on: ubuntu-latest
     timeout-minutes: 55
     env:
@@ -29,12 +66,10 @@ jobs:
     steps:
       - name: Checkout NAQLA
         uses: actions/checkout@v7
-      - name: Retrieve already compiled original SuperTux C++ WASM and assets
+      - name: Download THIS RUN's real SDL3_image-fixed original SuperTux build
         uses: actions/download-artifact@v7
         with:
-          name: supertux-original-offline-wasm
-          run-id: ${{ inputs.upstream_run_id || '40082924498' }}
-          github-token: ${{ github.token }}
+          name: SuperTux-fixed-real-SDL3-image-wasm
           path: .cache/supertux-wasm
       - uses: actions/setup-node@v7
         with:
