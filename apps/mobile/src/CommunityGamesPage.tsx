@@ -134,7 +134,7 @@ export function CommunityGamesPage({ gameId, onExit }: { gameId: CommunityGameId
         </div>
       ) : (
         <div className="community-game-stage">
-          <button type="button" className="community-game-exit" onClick={() => {setStarted(false); setError(false);}}>{t('communityBack')}</button>
+          <button type="button" className="community-game-exit" onClick={onExit}>{t('communityBack')}</button>
           <iframe
             title={t(gameId)}
             className="community-game-frame"
