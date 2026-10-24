@@ -7,8 +7,14 @@ on:
       upstream_run_id:
         description: GitHub Actions run that produced the Mindustry debug APK
         required: true
-        default: '40087932646'
+        default: '40090261319'
         type: string
+  pull_request:
+    paths:
+      - 'scripts/verify-mindustry-browser.mjs'
+      - 'apps/mobile/src/CommunityGamesPage.tsx'
+      - 'apps/mobile/src/community-games.css'
+      - '.github/workflows/diagnose-mindustry-browser.yml'
 permissions:
   contents: read
   actions: read
@@ -25,7 +31,7 @@ jobs:
       - uses: actions/download-artifact@v7
         with:
           name: NAQLA-Mindustry-offline-engine-debug-APK
-          run-id: ${{ inputs.upstream_run_id || '40087932646' }}
+          run-id: ${{ inputs.upstream_run_id || '40090261319' }}
           github-token: ${{ github.token }}
           path: .cache/mindustry-apk
       - name: Install and build NAQLA frontend
