@@ -1,0 +1,106 @@
+name: SuperTux original offline - boot and touch proof
+on:
+  workflow_dispatch:
+    inputs:
+      upstream_run_id:
+        description: Successful pinned original SuperTux WASM compile workflow run
+        required: true
+        default: "40082924498"
+        type: string
+  pull_request:
+    paths:
+      - 'apps/mobile/src/CommunityGamesPage.tsx'
+      - 'apps/mobile/src/community-games.css'
+      - 'scripts/package-supertux-web.mjs'
+      - 'scripts/supertux-touch-controls.js'
+      - 'scripts/verify-supertux-browser.mjs'
+      - 'tests/supertux-original-packaging.test.ts'
+      - '.github/workflows/supertux-original-offline.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  original-supertux-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      VITE_SERVER_URL: ''
+      VITE_FREECIV_WEB_URL: ''
+    steps:
+      - name: Checkout NAQLA
+        uses: actions/checkout@v7
+      - name: Retrieve already compiled original SuperTux C++ WASM and assets
+        uses: actions/download-artifact@v7
+        with:
+          name: supertux-original-offline-wasm
+          run-id: ${{ inputs.upstream_run_id || '40082924498' }}
+          github-token: ${{ github.token }}
+          path: .cache/supertux-wasm
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+      - name: Package verified original game files into NAQLA
+        run: |
+          test -s .cache/supertux-wasm/supertux2.js
+          test -s .cache/supertux-wasm/supertux2.wasm
+          test -s .cache/supertux-wasm/supertux2.data
+          test -s .cache/supertux-wasm/supertux2.html
+          node scripts/package-supertux-web.mjs .cache/supertux-wasm
+          grep -q '"offline": true' apps/mobile/public/third-party/supertux/naqla-runtime.json
+          test -s apps/mobile/public/third-party/supertux/naqla-supertux-touch.js
+      - name: Test NAQLA and SuperTux packager
+        run: |
+          npm ci
+          npm test
+      - name: Build full NAQLA web app with original SuperTux
+        run: |
+          npm run build
+          test -s dist/mobile/third-party/supertux/supertux2.wasm
+          test -s dist/mobile/third-party/supertux/supertux2.data
+      - name: Open original C++ game in Chromium and prove touch input
+        run: |
+          npx playwright install --with-deps chromium
+          PORT=8787 DATABASE_PATH="$RUNNER_TEMP/naqla-supertux.db" \
+            node dist/server/index.mjs > "$RUNNER_TEMP/supertux-server.log" 2>&1 &
+          for i in $(seq 1 50); do
+            if curl -fsS http://127.0.0.1:8787/api/health -o /dev/null; then break; fi
+            sleep 2
+          done
+          node scripts/verify-supertux-browser.mjs http://127.0.0.1:8787
+      - name: Assemble full offline-test Android APK
+        run: |
+          node scripts/mobile.mjs android
+          test -s android/app/src/main/assets/public/third-party/supertux/supertux2.wasm
+          test -s android/app/src/main/assets/public/third-party/supertux/supertux2.data
+          cd android
+          ./gradlew assembleDebug --no-daemon
+      - name: Upload test APK with original SuperTux levels and audio
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: NAQLA-SuperTux-original-offline-Android-TEST
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Upload boot and gameplay diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: NAQLA-SuperTux-original-gameplay-evidence
+          path: artifacts/supertux/
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Show server log on failure
+        if: failure()
+        run: |
+          if test -f "$RUNNER_TEMP/supertux-server.log"; then
+            tail -n 160 "$RUNNER_TEMP/supertux-server.log"
+          fi
