@@ -63,3 +63,17 @@ No new game is marked production-ready until boot, original gameplay,
 touch, world load, save/load and airplane-mode verification work on
 physical Android hardware. iOS requires separate testing. Neither source
 copies nor a compiled APK alone proves a fully working game.
+
+## Original game startup blocker fixed
+
+Mindustry's real WebAssets startup can fetch over 700 files in a burst.
+NAQLA's historical IP-wide HTTP limiter allowed only 600 requests per minute,
+returning HTTP 429 on fonts, shaders, and textures and preventing the first
+render. The server now assigns **GET/HEAD requests under
+`/third-party/mindustry/` only** a distinct bounded 3,000/minute bucket.
+Authentication, match, and API requests retain the original stricter
+600/minute limit. A regression test fetches 720 local game assets, then
+confirms the API bucket is not consumed and still enforces its own limit.
+
+Browser first-frame test is still the release gate: do not treat an HTTP fix
+as proof of game progression, save/load or touch gameplay.

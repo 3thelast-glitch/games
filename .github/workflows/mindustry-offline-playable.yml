@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'apps/mobile/src/CommunityGamesPage.tsx'
+      - 'apps/server/src/server.ts'
+      - 'tests/community-game-static-headers.test.ts'
       - 'scripts/offline-game-csp.mjs'
       - 'scripts/package-mindustry-web.mjs'
       - 'scripts/verify-mindustry-browser.mjs'
