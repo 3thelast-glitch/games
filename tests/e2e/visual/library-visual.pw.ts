@@ -33,7 +33,7 @@ for (const lang of languages) {
         await page.goto('/');
         await expect(page.locator('html')).toHaveAttribute('lang', lang.id);
         await expect(page.locator('html')).toHaveAttribute('dir', lang.dir);
-        await expect(page.locator('.naqla-app-grid .naqla-icon-tile')).toHaveCount(20);
+        await expect(page.locator('.naqla-app-grid .naqla-icon-tile')).toHaveCount(23);
         await expect(page.locator('.naqla-icon-frame').first()).toBeVisible();
 
         const measurement = await page.evaluate(() => {
