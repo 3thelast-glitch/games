@@ -79,7 +79,8 @@
    the original Mindustry Campaign / Custom / Load menus cannot be clipped by
    a narrow portrait canvas. CSS transforms preserve pointer coordinates. */
 @media (orientation: portrait) and (max-width: 600px) {
-  .community-game-mindustry.community-game-playing .community-game-frame {
+  .community-game-mindustry.community-game-playing .community-game-frame,
+  .community-game-supertux.community-game-playing .community-game-frame {
     inset: auto;
     top: 0;
     left: 100vw;
@@ -88,7 +89,8 @@
     transform-origin: top left;
     transform: rotate(90deg);
   }
-  .community-game-mindustry.community-game-playing .community-game-exit {
+  .community-game-mindustry.community-game-playing .community-game-exit,
+  .community-game-supertux.community-game-playing .community-game-exit {
     inset-inline-start: max(8px, env(safe-area-inset-left));
     top: max(8px, env(safe-area-inset-top));
   }

@@ -51,7 +51,10 @@ export function CommunityGamesPage({ gameId, onExit }: { gameId: CommunityGameId
           if (response.ok) {
             const json: unknown = await response.json();
             if (json && typeof json === 'object' && 'id' in json && json.id === 'supertux' &&
-              'entry' in json && json.entry === 'supertux2.html') {
+              'entry' in json && json.entry === 'supertux2.html' &&
+              'runtime' in json && json.runtime === 'emscripten' &&
+              'offline' in json && json.offline === true &&
+              'requiresRemoteServer' in json && json.requiresRemoteServer === false) {
               next = { kind: 'ready', url: `${supertuxFolder}supertux2.html` };
             }
           }
@@ -90,8 +93,8 @@ export function CommunityGamesPage({ gameId, onExit }: { gameId: CommunityGameId
 
   useEffect(() => {
     if (!started) return;
-    if (gameId === 'mindustry') {
-      // Original Mindustry's menus need landscape width to remain fully usable.
+    if (gameId === 'mindustry' || gameId === 'supertux') {
+      // The original Mindustry and SuperTux controls need landscape width.
       void enterGameLandscape(gameId);
       return () => { void leaveGameLandscape(); };
     }
@@ -105,7 +108,7 @@ export function CommunityGamesPage({ gameId, onExit }: { gameId: CommunityGameId
     if (gameId === 'mindustry' && !availability.url) {
       try { await mindustry.launch(); } catch { setError(true); }
     } else {
-      if (gameId === 'mindustry') requestGameFullscreen();
+      if (gameId === 'mindustry' || gameId === 'supertux') requestGameFullscreen();
       setStarted(true);
     }
   }
