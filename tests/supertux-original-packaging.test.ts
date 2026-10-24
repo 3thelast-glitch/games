@@ -66,7 +66,7 @@ test('packages all original engine components, license, runtime gate and phone c
     assert.match(html,/connect-src 'self'/);
     assert.match(html,/supertux2\.js/);
     const controls=readFileSync(join(target,'naqla-supertux-touch.js'),'utf8');
-    for(const code of ['ArrowLeft','ArrowRight','Space','Enter','Escape'])
+    for(const code of ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','ControlLeft','ShiftLeft','Enter','Escape'])
       assert.ok(controls.includes(code),code);
   });
 });
