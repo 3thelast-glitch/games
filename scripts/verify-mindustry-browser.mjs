@@ -165,6 +165,25 @@ try {
   });
   await page.waitForTimeout(4300);
   await page.screenshot({ path: resolve(screenshots, 'mindustry-after-save-and-quit.png'), fullPage: true });
+  const storedFiles = await canvas.evaluate(async () => {
+    return await new Promise((resolve, reject) => {
+      const open = indexedDB.open('mindustry-fs');
+      open.onerror = () => reject(new Error('Original Mindustry local VFS could not open'));
+      open.onsuccess = () => {
+        const db = open.result;
+        if (!db.objectStoreNames.contains('files')) {
+          db.close();
+          resolve([]);
+          return;
+        }
+        const tx = db.transaction('files','readonly');
+        const query = tx.objectStore('files').getAllKeys();
+        query.onsuccess = () => { resolve(query.result.map(k => String(k))); db.close(); };
+        query.onerror = () => { db.close(); reject(new Error('Cannot inspect Mindustry local saves')); };
+      };
+    });
+  });
+  console.log('MINDUSTRY OFFLINE PERSISTENCE FILES:', JSON.stringify(storedFiles.filter(k => /saves|\.msav|settings/i.test(k)).slice(-40)));
   if (external.length) throw new Error('A gameplay world requested a remote server: ' + external.join(', '));
   if (httpErrors.length) throw new Error('Game files failed while starting the world: ' + httpErrors.slice(-10).join(', '));
   await page.locator('.community-game-exit').click();
