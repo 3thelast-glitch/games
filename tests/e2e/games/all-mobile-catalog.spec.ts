@@ -102,16 +102,37 @@ async function exerciseSolo(page: Page, id: SoloId) {
   }
 }
 
-test('NAQLA library registers 20 unique playable game cards', async ({ page }) => {
+test('NAQLA library keeps 20 playable titles and clearly stages 3 upstream games', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
   const cards = page.locator('.game-grid > .game-card');
-  await expect(cards).toHaveCount(20);
+  const communityIds = ['supertux', 'freecivWeb', 'mindustry'];
+  await expect(cards).toHaveCount(23);
   expect(new Set(allIds).size).toBe(20);
   for (const id of allIds) {
     await expect(page.locator('.game-card.' + id + ' .play-button')).toBeVisible();
   }
+  for (const id of communityIds) {
+    const card = page.locator('.game-card.' + id);
+    await expect(card).toBeVisible();
+    await expect(card.locator('.naqla-community-state')).toBeVisible();
+    await expect(card.locator('.play-button')).toHaveAttribute('aria-label', /Open game details|فتح تفاصيل اللعبة/);
+  }
   await expectNoGlobalOverflow(page);
+});
+
+test('upstream game details never pretend a missing original runtime is playable', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  for (const id of ['supertux', 'freecivWeb', 'mindustry']) {
+    await page.locator('.game-card.' + id + ' .play-button').click();
+    const screen = page.locator('.community-game');
+    await expect(screen).toBeVisible();
+    await expect(screen.locator('.community-game-help')).toBeVisible();
+    await expect(screen.locator('.community-game-start')).toHaveCount(0);
+    await screen.locator('.community-game-back').click();
+    await expect(page.locator('.game-card.' + id)).toBeVisible();
+  }
 });
 
 for (const locale of locales) {
