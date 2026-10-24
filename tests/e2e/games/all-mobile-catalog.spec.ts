@@ -155,6 +155,13 @@ test('an installed original Mindustry game exits straight to the NAQLA library',
   await expect(page.locator('.community-game-start')).toBeVisible();
   await page.locator('.community-game-start').click();
   await expect(page.frameLocator('.community-game-frame').locator('#mindustry-canvas')).toBeVisible();
+  const immersive = page.locator('.community-game-playing');
+  await expect(immersive).toHaveCSS('position', 'fixed');
+  const viewport = page.viewportSize();
+  const fullscreenBounds = await immersive.boundingBox();
+  expect(fullscreenBounds).not.toBeNull();
+  expect(Math.round(fullscreenBounds!.width)).toBe(viewport!.width);
+  expect(Math.round(fullscreenBounds!.height)).toBe(viewport!.height);
   await page.locator('.community-game-exit').click();
   await expect(page.locator('.game-grid .game-card.mindustry')).toBeVisible();
   await expect(page.locator('.community-game')).toHaveCount(0);
