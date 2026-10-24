@@ -113,6 +113,27 @@ try {
   });
   await page.waitForTimeout(12000);
   await page.screenshot({ path: resolve(screenshots, 'mindustry-survival-world-boot.png'), fullPage: true });
+  // A real mobile web build must let the player move without a hardware WASD
+  // keyboard. Verify the on-screen D-pad emits real KeyW keydown + keyup
+  // events to the same iframe Window the original TeavmInput listens on.
+  const controls = frame.locator('#naqla-touch-toggle');
+  await controls.waitFor({ state: 'visible', timeout: 12000 });
+  await controls.click();
+  const up = frame.locator('#naqla-touch-up');
+  await up.waitFor({ state: 'visible' });
+  await canvas.evaluate(() => {
+    window.__naqlaTouchEvents = [];
+    window.addEventListener('keydown', event => window.__naqlaTouchEvents.push('down:' + event.code));
+    window.addEventListener('keyup', event => window.__naqlaTouchEvents.push('up:' + event.code));
+  });
+  await up.dispatchEvent('pointerdown', { pointerId: 7, pointerType: 'touch', bubbles: true, cancelable: true });
+  await page.waitForTimeout(850);
+  await up.dispatchEvent('pointerup', { pointerId: 7, pointerType: 'touch', bubbles: true, cancelable: true });
+  const touchKeys = await canvas.evaluate(() => window.__naqlaTouchEvents || []);
+  if (!touchKeys.includes('down:KeyW') || !touchKeys.includes('up:KeyW')) {
+    throw new Error('Original Mindustry iframe did not receive movement keydown/keyup from touch pad: ' + touchKeys);
+  }
+  await page.screenshot({ path: resolve(screenshots, 'mindustry-touch-movement.png'), fullPage: true });
   if (external.length) throw new Error('A gameplay world requested a remote server: ' + external.join(', '));
   if (httpErrors.length) throw new Error('Game files failed while starting the world: ' + httpErrors.slice(-10).join(', '));
   await page.locator('.community-game-exit').click();
