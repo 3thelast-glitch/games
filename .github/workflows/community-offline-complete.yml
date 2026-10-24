@@ -1,0 +1,223 @@
+name: Original offline games - full bundle Android test
+
+# Builds actual original game engines and resource packs, not app-style
+# placeholders. Network access is allowed ONLY during CI compilation. The
+# resulting Android APK uses local assets and has no configured online backend.
+# Experimental: requires device gameplay + GPL/AGPL review before distribution.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'scripts/package-supertux-web.mjs'
+      - 'scripts/package-mindustry-web.mjs'
+      - 'apps/mobile/src/CommunityGamesPage.tsx'
+      - '.github/workflows/community-offline-complete.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  supertux-wasm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: SuperTux/supertux
+          ref: c837f4f5d8b5945e22df1e36ab8f05801cf08f9c
+          fetch-depth: 0
+          submodules: recursive
+          path: supertux-source
+      - name: Install original Emscripten SDK and C++ build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git cmake build-essential curl zip rsync
+          git clone https://github.com/emscripten-core/emsdk.git "$RUNNER_TEMP/emsdk"
+          "$RUNNER_TEMP/emsdk/emsdk" install latest
+          "$RUNNER_TEMP/emsdk/emsdk" activate latest
+          vcpkg integrate install
+      - name: Configure original SuperTux engine
+        shell: bash
+        run: |
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          mkdir -p supertux-source/build
+          cd supertux-source/build
+          emcmake cmake .. -DCMAKE_BUILD_TYPE=Release -DWARNINGS=ON \
+            -DCMAKE_TOOLCHAIN_FILE="$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" \
+            -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$RUNNER_TEMP/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake" \
+            -DVCPKG_TARGET_TRIPLET=wasm32-emscripten \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DVCPKG_MANIFEST_FEATURES=core
+      - name: Include original maps, sprites, sounds and level data
+        run: rsync -a supertux-source/data/ supertux-source/build/data/
+      - name: Compile original game
+        shell: bash
+        run: |
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          cd supertux-source/build
+          emmake make -j"$(nproc)"
+      - name: Stage real engine and license files
+        run: |
+          mkdir -p supertux-offline
+          cp supertux-source/build/supertux2.js supertux-offline/
+          cp supertux-source/build/supertux2.wasm supertux-offline/
+          cp supertux-source/build/supertux2.data supertux-offline/
+          cp supertux-source/build/template.html supertux-offline/supertux2.html
+          cp supertux-source/LICENSE.txt supertux-offline/
+          test -s supertux-offline/supertux2.wasm
+          test -s supertux-offline/supertux2.data
+      - name: Archive complete original SuperTux source, maps and assets
+        run: |
+          tar --exclude-vcs --exclude='*/build' \
+            -czf supertux-original-source.tar.gz supertux-source
+          test -s supertux-original-source.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: SuperTux-original-recursive-source-GPL
+          path: supertux-original-source.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v7
+        with:
+          name: supertux-original-offline-wasm
+          path: supertux-offline/
+          if-no-files-found: error
+          retention-days: 7
+
+  mindustry-teavm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: khoichon/mindustry-web
+          ref: 33652d79b21498d2cbd0d7f38cab46aa3a8fe183
+          submodules: recursive
+          path: mindustry-source
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Acquire complete official Mindustry v159.7 resource JAR
+        run: |
+          curl -fL --retry 3 -o mindustry-source/mindustry.jar \
+            https://github.com/Anuken/Mindustry/releases/download/v159.7/Mindustry.jar
+          echo '67b2e5c7575e564b184ed11e139c01ddc140afd28b238715e7d42e81612fdfbe  mindustry-source/mindustry.jar' | sha256sum -c -
+      - name: Compile original Mindustry and modified Arc into local web engine
+        working-directory: mindustry-source/offlinemode
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon :backend-teavm:buildWeb "-Dorg.gradle.java.home=$JAVA_HOME"
+      - name: Stage real Mindustry game, graphics and source license
+        run: |
+          mkdir -p mindustry-offline
+          cp -a mindustry-source/offlinemode/backend-teavm/build/web/. mindustry-offline/
+          cp mindustry-source/LICENSE mindustry-offline/LICENSE
+          test -s mindustry-offline/mindustry.js
+          test -s mindustry-offline/asset-manifest.txt
+      - name: Archive full modified Arc and Mindustry source with official assets
+        run: |
+          tar --exclude-vcs --exclude='*/build' --exclude='*/.gradle' \
+            -czf mindustry-original-source.tar.gz mindustry-source
+          test -s mindustry-original-source.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Mindustry-and-Arc-recursive-original-source-GPL
+          path: mindustry-original-source.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mindustry-original-offline-teavm
+          path: mindustry-offline/
+          if-no-files-found: error
+          retention-days: 7
+
+  freeciv-complete-source:
+    # The real Freeciv-web client is NOT runnable offline in a Capacitor app.
+    # This archives the complete original web/client and C game engine source
+    # WITHOUT misrepresenting them as a playable mobile game.
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: freeciv/freeciv-web
+          ref: c19ce060fadc99663f8aba3652ca94b07174467c
+          submodules: recursive
+          path: freeciv-web-source
+      - uses: actions/checkout@v7
+        with:
+          repository: freeciv/freeciv
+          ref: b2307bd16106159eb6a2d2efbcb03c0bcafad631
+          submodules: recursive
+          path: freeciv-c-source
+      - name: Package the original Freeciv-web frontend and full C AI/rules engine source
+        run: |
+          tar --exclude-vcs --exclude='*/build' -czf freeciv-original-source.tar.gz freeciv-web-source freeciv-c-source
+          test -s freeciv-original-source.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Freeciv-web-and-C-original-sources-NOT-YET-PLAYABLE
+          path: freeciv-original-source.tar.gz
+          if-no-files-found: error
+          retention-days: 7
+
+  build-naqla-offline-apk:
+    needs: [supertux-wasm, mindustry-teavm]
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      VITE_SERVER_URL: ''
+      VITE_FREECIV_WEB_URL: ''
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v7
+        with:
+          name: supertux-original-offline-wasm
+          path: .cache/offline/supertux
+      - uses: actions/download-artifact@v7
+        with:
+          name: mindustry-original-offline-teavm
+          path: .cache/offline/mindustry
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+      - name: Include full game engines and original resources
+        run: |
+          node scripts/package-supertux-web.mjs .cache/offline/supertux
+          node scripts/package-mindustry-web.mjs .cache/offline/mindustry
+          cp .cache/offline/mindustry/LICENSE apps/mobile/public/third-party/mindustry/LICENSE
+          test -s apps/mobile/public/third-party/supertux/supertux2.data
+          test -s apps/mobile/public/third-party/mindustry/asset-manifest.txt
+      - name: Build and test same NAQLA application with actual local games
+        run: |
+          npm ci
+          npm test
+          npm run mobile:android
+          test -s android/app/src/main/assets/public/third-party/supertux/supertux2.wasm
+          test -s android/app/src/main/assets/public/third-party/supertux/supertux2.data
+          test -s android/app/src/main/assets/public/third-party/mindustry/mindustry.js
+          test -s android/app/src/main/assets/public/third-party/mindustry/naqla-runtime.json
+      - name: Build offline-test APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v7
+        with:
+          name: NAQLA-2-ORIGINAL-GAMES-OFFLINE-ANDROID-TEST
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@v7
+        with:
+          name: NAQLA-original-games-local-web-files
+          path: dist/mobile/
+          if-no-files-found: error
+          retention-days: 7

@@ -25,7 +25,8 @@ test('original game assets are framed by NAQLA only, and strict global CSP remai
     const home = await fetch(base + '/');
     assert.equal(home.headers.get('x-frame-options'), 'DENY');
     assert.match(home.headers.get('content-security-policy') ?? '', /frame-ancestors 'none'/);
-    assert.match(home.headers.get('content-security-policy') ?? '', /frame-src 'self' https:\/\/freeciv\.example/);
+    assert.match(home.headers.get('content-security-policy') ?? '', /frame-src 'self';/);
+    assert.doesNotMatch(home.headers.get('content-security-policy') ?? '', /freeciv\.example/);
     assert.doesNotMatch(home.headers.get('content-security-policy') ?? '', /unsafe-eval|wasm-unsafe-eval/);
     for (const route of ['/third-party/mindustry/index.html', '/third-party/supertux/supertux2.html']) {
       const game = await fetch(base + route);
@@ -34,6 +35,8 @@ test('original game assets are framed by NAQLA only, and strict global CSP remai
       const csp = game.headers.get('content-security-policy') ?? '';
       assert.match(csp, /frame-ancestors 'self'/);
       assert.match(csp, /script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'/);
+      assert.match(csp, /connect-src 'self';/);
+      assert.doesNotMatch(csp, /ws:|wss:|https:\/\//);
       assert.doesNotMatch(csp, /frame-ancestors 'none'/);
     }
     const wasm = await fetch(base + '/third-party/supertux/supertux2.wasm');
@@ -48,14 +51,3 @@ test('original game assets are framed by NAQLA only, and strict global CSP remai
   }
 });
 
-test('Freeciv frame origins cannot be set to insecure HTTP', () => {
-  const store = new Store();
-  try {
-    assert.throws(
-      () => createArenaServer({ store, env: { FREECIV_WEB_ORIGIN: 'http://example.com' } }),
-      /HTTPS/,
-    );
-  } finally {
-    store.close();
-  }
-});

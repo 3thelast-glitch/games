@@ -18,19 +18,6 @@ const mindustry = registerPlugin<MindustryNative>('NaqlaMindustry');
 type Availability = { kind: 'checking' } | { kind: 'unavailable' } | { kind: 'ready'; url?: string };
 const supertuxFolder = `${(import.meta.env?.BASE_URL ?? '/')}third-party/supertux/`;
 const mindustryFolder = `${(import.meta.env?.BASE_URL ?? '/')}third-party/mindustry/`;
-const freecivWebUrl = import.meta.env?.VITE_FREECIV_WEB_URL as string | undefined;
-
-function secureConfiguredUrl(value: string | undefined): string | null {
-  if (!value) return null;
-  try {
-    const url = new URL(value);
-    if (url.protocol === 'https:' || (import.meta.env?.DEV && url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname))) {
-      return url.toString();
-    }
-  } catch { /* Invalid URLs are never launched. */ }
-  return null;
-}
-
 export function CommunityGamesPage({ gameId, onExit }: { gameId: CommunityGameId; onExit: () => void }) {
   const { t } = useI18n();
   const [availability, setAvailability] = useState<Availability>({ kind: 'checking' });
@@ -51,14 +38,17 @@ export function CommunityGamesPage({ gameId, onExit }: { gameId: CommunityGameId
           if (response.ok) {
             const json: unknown = await response.json();
             if (json && typeof json === 'object' && 'id' in json && json.id === 'supertux' &&
-              'entry' in json && json.entry === 'supertux2.html') {
+              'entry' in json && json.entry === 'supertux2.html' &&
+              'offline' in json && json.offline === true &&
+              'requiresRemoteServer' in json && json.requiresRemoteServer === false) {
               next = { kind: 'ready', url: `${supertuxFolder}supertux2.html` };
             }
           }
         } catch { /* Upstream Emscripten output has not been packaged. */ }
       } else if (gameId === 'freecivWeb') {
-        const url = secureConfiguredUrl(freecivWebUrl);
-        if (url) next = { kind: 'ready', url };
+        // Do not use a hosted Freeciv server. Original single-player depends on
+        // Freeciv C + proxy; a real local engine is a prerequisite for Play.
+        next = { kind: 'unavailable' };
       } else if (gameId === 'mindustry') {
         try {
           // A separately compiled real TeaVM game, embedded as static NAQLA assets.
@@ -67,7 +57,9 @@ export function CommunityGamesPage({ gameId, onExit }: { gameId: CommunityGameId
             const json: unknown = await response.json();
             if (json && typeof json === 'object' && 'id' in json && json.id === 'mindustry' &&
               'entry' in json && json.entry === 'index.html' &&
-              'runtime' in json && json.runtime === 'teavm') {
+              'runtime' in json && json.runtime === 'teavm' &&
+              'offline' in json && json.offline === true &&
+              'requiresRemoteServer' in json && json.requiresRemoteServer === false) {
               next = { kind: 'ready', url: `${mindustryFolder}index.html` };
             }
           }
