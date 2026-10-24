@@ -303,6 +303,10 @@
   color: white;
 }
 /* Unique art direction per game; the existing authored SVG scene is the artwork source. */
+.naqla-icon-tile.supertux { --icon-bg-a:#7ee4ff; --icon-bg-b:#175a7d; --icon-glow:#9ff5ffbd; }
+.naqla-icon-tile.freecivWeb { --icon-bg-a:#6abd92; --icon-bg-b:#355c47; --icon-glow:#fff4a0a3; }
+.naqla-icon-tile.mindustry { --icon-bg-a:#ffa756; --icon-bg-b:#303f5d; --icon-glow:#ffce90b1; }
+.naqla-community-state { display:block; color:#ffd99b; font-size:10px; line-height:1.1; margin-top:1px; min-height:20px; text-align:center; }
 .naqla-icon-tile.ludo { --icon-bg-a:#6436bf; --icon-bg-b:#171244; --icon-glow:#b34afaa3; }
 .naqla-icon-tile.appleWorm { --icon-bg-a:#53c9eb; --icon-bg-b:#228c64; --icon-glow:#9beefad6; }
 .naqla-icon-tile.basketballLine { --icon-bg-a:#46aff1; --icon-bg-b:#185fbd; --icon-glow:#8de1ffcc; }

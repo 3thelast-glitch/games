@@ -74,6 +74,9 @@ export const gameViews: Record<string, (props: Props) => React.ReactNode> = {
   ),
 };
 export const gameInfo = [
+  { id: 'supertux', duration: '—', icon: '❄', tag: 'supertuxTag', description: 'supertuxDesc' },
+  { id: 'freecivWeb', duration: '—', icon: '🏛', tag: 'freecivWebTag', description: 'freecivWebDesc' },
+  { id: 'mindustry', duration: '—', icon: '⚙', tag: 'mindustryTag', description: 'mindustryDesc' },
   { id: 'ludo', duration: '—', icon: '⚄', tag: 'ludoTag', description: 'ludoDesc' },
   { id: 'appleWorm', duration: '5–10', icon: '🍎', tag: 'appleWormTag', description: 'appleWormDesc' },
   { id: 'basketballLine', duration: '2–8', icon: '🏀', tag: 'basketballLineTag', description: 'basketballLineDesc' },
