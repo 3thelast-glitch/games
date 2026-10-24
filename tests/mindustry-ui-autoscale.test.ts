@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 const patcher = resolve('scripts/patch-mindustry-teavm-ui.mjs');
 const anchor = 'Scl.setProduct(Math.max(settings.getInt("uiscale", 100), 25) / 100f);';
 
-test('original offline Mindustry UI auto-scale patch preserves player preferences', () => {
+test('offline Mindustry UI scale is capped on small phones after local settings restore', () => {
   const folder = mkdtempSync(join(tmpdir(), 'naqla-mindustry-uiscale-'));
   try {
     const source = join(folder, 'Vars.java');
@@ -17,6 +17,7 @@ test('original offline Mindustry UI auto-scale patch preserves player preference
     assert.equal(patched.status, 0, patched.stderr);
     const java = readFileSync(source, 'utf8');
     assert.ok(java.includes('settings.getInt("uiscale", mobileWebUiScale)'));
+    assert.ok(java.includes('Math.min(requestedUiScale, mobileWebUiScale)'));
     assert.ok(java.includes('graphics.getDensity()'));
     assert.ok(java.includes('graphics.getHeight()'));
     assert.ok(java.includes('680f'));
@@ -44,4 +45,8 @@ test('small landscape phones use compact defaults and large viewports retain ori
   assert.equal(scale(360),52);
   assert.equal(scale(720),100);
   assert.equal(scale(844),100);
+  const selected = (cssHeight: number, storedUiScale: number) => Math.min(Math.max(storedUiScale,25),scale(cssHeight));
+  assert.equal(selected(390,100),57);
+  assert.equal(selected(390,45),45);
+  assert.equal(selected(720,100),100);
 });
