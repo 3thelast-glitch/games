@@ -239,6 +239,21 @@ try {
       JSON.stringify({beforeReload, afterReload}));
   }
   await page.screenshot({path:resolve(screenshots, 'mindustry-save-persists-after-reopen.png'),fullPage:true});
+  // Navigate the ORIGINAL game's Play → Load Game, not a NAQLA substitute.
+  // The original Arc UI is canvas-based; validate the saved slot visually.
+  const reopenedCanvas = reopenedFrame.locator('#mindustry-canvas');
+  await reopenedCanvas.tap({position: {
+    x: Math.floor(canvasRect.width * (cssRotated ? .75 : .15)),
+    y: Math.floor(canvasRect.height * (cssRotated ? .15 : .26)),
+  }});
+  await page.waitForTimeout(1200);
+  await page.screenshot({path:resolve(screenshots, 'mindustry-after-restart-play-menu.png'),fullPage:true});
+  await reopenedCanvas.tap({position: {
+    x: Math.floor(canvasRect.width * (cssRotated ? .45 : .55)),
+    y: Math.floor(canvasRect.height * (cssRotated ? .27 : .54)),
+  }});
+  await page.waitForTimeout(1400);
+  await page.screenshot({path:resolve(screenshots, 'mindustry-original-load-game-menu.png'),fullPage:true});
   await page.locator('.community-game-exit').click();
   await page.locator('.game-card.mindustry').waitFor({ state: 'visible', timeout: 10000 });
   if (external.length) throw new Error('Mindustry used an external game server: ' + external.join(', '));
