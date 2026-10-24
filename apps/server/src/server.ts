@@ -121,13 +121,28 @@ export function createArenaServer(options: ServerOptions = {}) {
       return Object.fromEntries(new URLSearchParams(text));
     return JSON.parse(text);
   }
+  // Only a separately configured HTTPS origin may host a remote Freeciv game
+  // frame. All other app pages retain their strict same-origin policy.
+  let freecivFrameOrigin = '';
+  if (env.FREECIV_WEB_ORIGIN) {
+    const configured = new URL(env.FREECIV_WEB_ORIGIN);
+    if (configured.protocol !== 'https:') throw new Error('FREECIV_WEB_ORIGIN must use HTTPS');
+    freecivFrameOrigin = configured.origin;
+  }
   const server = createServer(async (req, res) => {
+    const url = new URL(req.url ?? '/', 'http://localhost');
+    const bundledGame = url.pathname.startsWith('/third-party/mindustry/') ||
+      url.pathname.startsWith('/third-party/supertux/');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Referrer-Policy', 'no-referrer');
-    res.setHeader('X-Frame-Options', 'DENY');
+    // The top-level app must never be framed. Trusted local game runtimes are
+    // intentionally embedded only by NAQLA on the SAME origin.
+    res.setHeader('X-Frame-Options', bundledGame ? 'SAMEORIGIN' : 'DENY');
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:; worker-src 'self'; frame-ancestors 'none'; base-uri 'self'",
+      bundledGame
+        ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self' ws: wss:; worker-src 'self' blob:; frame-ancestors 'self'; object-src 'none'; base-uri 'self'"
+        : `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:; worker-src 'self'; frame-src 'self'${freecivFrameOrigin ? ' ' + freecivFrameOrigin : ''}; frame-ancestors 'none'; object-src 'none'; base-uri 'self'`,
     );
     const origin = req.headers.origin;
     if (origin && origins.has(origin)) {
@@ -136,7 +151,6 @@ export function createArenaServer(options: ServerOptions = {}) {
       res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, DELETE, OPTIONS');
     }
-    const url = new URL(req.url ?? '/', 'http://localhost');
     const callback = /^\/api\/auth\/oauth\/(google|apple)\/callback$/.exec(url.pathname);
     if (origin && !origins.has(origin) && url.pathname.startsWith('/api') && !callback)
       return json(res, 403, { error: 'origin-not-allowed' });
@@ -386,6 +400,14 @@ export function createArenaServer(options: ServerOptions = {}) {
         '.png': 'image/png',
         '.json': 'application/json',
         '.webmanifest': 'application/manifest+json',
+        '.wasm': 'application/wasm',
+        '.ogg': 'audio/ogg',
+        '.mp3': 'audio/mpeg',
+        '.wav': 'audio/wav',
+        '.webp': 'image/webp',
+        '.woff': 'font/woff',
+        '.woff2': 'font/woff2',
+        '.txt': 'text/plain; charset=utf-8',
       };
       res.writeHead(200, {
         'Content-Type': types[extension] ?? 'application/octet-stream',
