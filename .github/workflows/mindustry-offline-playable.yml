@@ -8,6 +8,7 @@ on:
       - 'tests/community-game-static-headers.test.ts'
       - 'scripts/offline-game-csp.mjs'
       - 'scripts/package-mindustry-web.mjs'
+      - 'scripts/mindustry-touch-controls.js'
       - 'scripts/patch-mindustry-teavm-ui.mjs'
       - 'scripts/verify-mindustry-browser.mjs'
       - 'tests/mindustry-packaging.test.ts'
