@@ -1,5 +1,6 @@
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
+import { embedOfflineCsp } from './offline-game-csp.mjs';
 
 const source = resolve(process.argv[2] ?? '.cache/mindustry-web/offlinemode/backend-teavm/build/web');
 const destination = resolve(process.argv[3] ?? 'apps/mobile/public/third-party/mindustry');
@@ -22,10 +23,19 @@ cpSync(source, destination, {
   recursive: true,
   filter: name => !name.endsWith('mindustry-standalone.html'),
 });
+// The upstream game must never load external scripts, fonts or game services.
+const touchFile = 'naqla-touch-controls.js';
+copyFileSync(new URL('./mindustry-touch-controls.js', import.meta.url), join(destination, touchFile));
+if (!/<\/body>/i.test(html)) throw new Error('Upstream Mindustry HTML has no closing body for touch bridge');
+writeFileSync(join(destination, 'index.html'), embedOfflineCsp(
+  html.replace(/<\/body>/i, `<script defer src="./${touchFile}"></script>\n</body>`)
+));
 const manifest = {
   id: 'mindustry',
   entry: 'index.html',
   runtime: 'teavm',
+  offline: true,
+  requiresRemoteServer: false,
   source: 'https://github.com/khoichon/mindustry-web',
   sourceCommit: '33652d79b21498d2cbd0d7f38cab46aa3a8fe183',
   originalGame: 'https://github.com/Anuken/Mindustry',

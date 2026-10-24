@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
-import { enterFullscreenOnlyGame, leaveFullscreenOnlyGame } from './immersive-game.ts';
+import { enterFullscreenOnlyGame, leaveFullscreenOnlyGame, enterGameLandscape, leaveGameLandscape, requestGameFullscreen } from './immersive-game.ts';
 import { useI18n } from './i18n.tsx';
 
 export type CommunityGameId = 'supertux' | 'freecivWeb' | 'mindustry';
@@ -67,7 +67,9 @@ export function CommunityGamesPage({ gameId, onExit }: { gameId: CommunityGameId
             const json: unknown = await response.json();
             if (json && typeof json === 'object' && 'id' in json && json.id === 'mindustry' &&
               'entry' in json && json.entry === 'index.html' &&
-              'runtime' in json && json.runtime === 'teavm') {
+              'runtime' in json && json.runtime === 'teavm' &&
+              'offline' in json && json.offline === true &&
+              'requiresRemoteServer' in json && json.requiresRemoteServer === false) {
               next = { kind: 'ready', url: `${mindustryFolder}index.html` };
             }
           }
@@ -88,6 +90,11 @@ export function CommunityGamesPage({ gameId, onExit }: { gameId: CommunityGameId
 
   useEffect(() => {
     if (!started) return;
+    if (gameId === 'mindustry') {
+      // Original Mindustry's menus need landscape width to remain fully usable.
+      void enterGameLandscape(gameId);
+      return () => { void leaveGameLandscape(); };
+    }
     enterFullscreenOnlyGame(gameId);
     return () => { void leaveFullscreenOnlyGame(); };
   }, [started, gameId]);
@@ -98,6 +105,7 @@ export function CommunityGamesPage({ gameId, onExit }: { gameId: CommunityGameId
     if (gameId === 'mindustry' && !availability.url) {
       try { await mindustry.launch(); } catch { setError(true); }
     } else {
+      if (gameId === 'mindustry') requestGameFullscreen();
       setStarted(true);
     }
   }
@@ -109,7 +117,7 @@ export function CommunityGamesPage({ gameId, onExit }: { gameId: CommunityGameId
       : 'communityMindustryNeedsNative';
 
   return (
-    <section className={`community-game ${started ? 'community-game-playing' : ''}`} aria-label={t(gameId)}>
+    <section className={`community-game community-game-${gameId} ${started ? 'community-game-playing' : ''}`} aria-label={t(gameId)}>
       <header className="community-game-header">
         <button type="button" onClick={onExit} className="community-game-back">{t('communityBack')}</button>
         <h1>{t(gameId)}</h1>
@@ -132,7 +140,7 @@ export function CommunityGamesPage({ gameId, onExit }: { gameId: CommunityGameId
         </div>
       ) : (
         <div className="community-game-stage">
-          <button type="button" className="community-game-exit" onClick={() => {setStarted(false); setError(false);}}>{t('communityBack')}</button>
+          <button type="button" className="community-game-exit" onClick={onExit}>{t('communityBack')}</button>
           <iframe
             title={t(gameId)}
             className="community-game-frame"

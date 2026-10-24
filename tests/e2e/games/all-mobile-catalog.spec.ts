@@ -135,6 +135,42 @@ test('upstream game details never pretend a missing original runtime is playable
   }
 });
 
+
+test('an installed original Mindustry game exits straight to the NAQLA library', async ({ page }) => {
+  // Navigation regression only: the actual TeaVM first-frame and touch
+  // gameplay are tested with the real upstream bundle by the dedicated CI.
+  await page.route('**/third-party/mindustry/naqla-runtime.json', route => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({
+      id: 'mindustry', entry: 'index.html', runtime: 'teavm',
+      offline: true, requiresRemoteServer: false,
+    }),
+  }));
+  await page.route('**/third-party/mindustry/index.html', route => route.fulfill({
+    status: 200, contentType: 'text/html',
+    body: '<!doctype html><html><body><canvas id="mindustry-canvas" width="390" height="650"></canvas></body></html>',
+  }));
+  await page.goto('/');
+  await page.locator('.game-card.mindustry .play-button').click();
+  await expect(page.locator('.community-game-start')).toBeVisible();
+  await page.locator('.community-game-start').click();
+  await expect(page.frameLocator('.community-game-frame').locator('#mindustry-canvas')).toBeVisible();
+  const immersive = page.locator('.community-game-playing');
+  await expect(immersive).toHaveCSS('position', 'fixed');
+  const viewport = page.viewportSize();
+  const fullscreenBounds = await immersive.boundingBox();
+  expect(fullscreenBounds).not.toBeNull();
+  expect(Math.round(fullscreenBounds!.width)).toBe(viewport!.width);
+  expect(Math.round(fullscreenBounds!.height)).toBe(viewport!.height);
+  const gameFrameBounds = await page.locator('iframe.community-game-frame').boundingBox();
+  expect(gameFrameBounds).not.toBeNull();
+  expect(Math.round(gameFrameBounds!.width)).toBe(viewport!.width);
+  expect(Math.round(gameFrameBounds!.height)).toBe(viewport!.height);
+  await page.locator('.community-game-exit').click();
+  await expect(page.locator('.game-grid .game-card.mindustry')).toBeVisible();
+  await expect(page.locator('.community-game')).toHaveCount(0);
+});
+
 for (const locale of locales) {
   for (const width of [320, 390] as const) {
     const height = width === 320 ? 568 : 844;
