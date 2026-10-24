@@ -83,6 +83,15 @@ try {
   } });
   await page.waitForTimeout(2500);
   await page.screenshot({ path: resolve(screenshots, 'mindustry-after-play-tap.png'), fullPage: true });
+  // Enter the original Custom Game option to validate deeper gameplay menus.
+  // Coordinates are for the original canvas's Play submenu in landscape, or
+  // the visually rotated bounding box when held portrait.
+  await canvas.tap({ position: {
+    x: Math.floor(canvasRect.width * (cssRotated ? .54 : landscapeMenu ? .29 : .80)),
+    y: Math.floor(canvasRect.height * (cssRotated ? .29 : landscapeMenu ? .46 : .46)),
+  } });
+  await page.waitForTimeout(2000);
+  await page.screenshot({ path: resolve(screenshots, 'mindustry-custom-game-selection.png'), fullPage: true });
   await page.locator('.community-game-exit').click();
   await page.locator('.game-card.mindustry').waitFor({ state: 'visible', timeout: 10000 });
   console.log(JSON.stringify({
