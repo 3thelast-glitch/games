@@ -69,10 +69,17 @@ try {
   const gameCanvasSize = await canvas.evaluate(el => ({
     width: el.clientWidth, height: el.clientHeight,
   }));
+  const canvasRect = await canvas.boundingBox();
+  if (!canvasRect) throw new Error('Original game canvas has no visible rectangle');
+  // Playwright position values are relative to the *transformed bounding box*.
+  // For the 90-degree portrait fallback, portrait (x, y) maps to upright
+  // landscape (y, screenWidth - x). Pick the real Mindustry "Play" button.
+  const cssRotated = gameCanvasSize.width > gameCanvasSize.height &&
+    canvasRect.height > canvasRect.width;
   const landscapeMenu = gameCanvasSize.width > gameCanvasSize.height;
   await canvas.tap({ position: {
-    x: Math.floor(gameCanvasSize.width * (landscapeMenu ? .24 : .45)),
-    y: Math.floor(gameCanvasSize.height * (landscapeMenu ? .28 : .30)),
+    x: Math.floor(canvasRect.width * (cssRotated ? .75 : landscapeMenu ? .15 : .45)),
+    y: Math.floor(canvasRect.height * (cssRotated ? .15 : landscapeMenu ? .26 : .30)),
   } });
   await page.waitForTimeout(2500);
   await page.screenshot({ path: resolve(screenshots, 'mindustry-after-play-tap.png'), fullPage: true });
