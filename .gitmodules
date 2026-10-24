@@ -1,0 +1,3 @@
+[submodule "native/supertuxkart/stk-code"]
+	path = native/supertuxkart/stk-code
+	url = https://github.com/supertuxkart/stk-code.git

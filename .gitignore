@@ -11,3 +11,6 @@ android/
 ios/
 .DS_Store
 *.log
+
+# SuperTuxKart assets are fetched separately, with per-asset licenses.
+/native/supertuxkart/stk-assets/
