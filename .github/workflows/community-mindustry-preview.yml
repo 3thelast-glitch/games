@@ -1,0 +1,84 @@
+name: Mindustry browser runtime - Android preview
+
+# Experimental workflow. It builds the real GPL Mindustry/Arc TeaVM port and
+# packages it into the SAME NAQLA Capacitor APK. No production release.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'apps/mobile/src/CommunityGamesPage.tsx'
+      - 'scripts/package-mindustry-web.mjs'
+      - '.github/workflows/community-mindustry-preview.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  mindustry-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      MINDUSTRY_WEB_COMMIT: 33652d79b21498d2cbd0d7f38cab46aa3a8fe183
+      MINDUSTRY_JAR_SHA256: 67b2e5c7575e564b184ed11e139c01ddc140afd28b238715e7d42e81612fdfbe
+    steps:
+      - name: Checkout NAQLA
+        uses: actions/checkout@v7
+      - name: Checkout experimental TeaVM Mindustry port at pinned commit
+        uses: actions/checkout@v7
+        with:
+          repository: khoichon/mindustry-web
+          ref: ${{ env.MINDUSTRY_WEB_COMMIT }}
+          submodules: recursive
+          path: .cache/mindustry-web
+          persist-credentials: false
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+      - name: Download exact official Mindustry asset source
+        shell: bash
+        run: |
+          curl --fail --location --retry 3 \
+            -o .cache/mindustry-web/mindustry.jar \
+            https://github.com/Anuken/Mindustry/releases/download/v159.7/Mindustry.jar
+          echo "$MINDUSTRY_JAR_SHA256  .cache/mindustry-web/mindustry.jar" | sha256sum -c -
+      - name: Compile original Mindustry/Arc into TeaVM web runtime
+        working-directory: .cache/mindustry-web/offlinemode
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon :backend-teavm:buildWeb \
+            "-Dorg.gradle.java.home=$JAVA_HOME"
+      - name: Package browser runtime into NAQLA
+        run: |
+          node scripts/package-mindustry-web.mjs
+          cp .cache/mindustry-web/LICENSE apps/mobile/public/third-party/mindustry/LICENSE
+          test -s apps/mobile/public/third-party/mindustry/mindustry.js
+          test -s apps/mobile/public/third-party/mindustry/asset-manifest.txt
+      - name: Install NAQLA packages and run tests
+        run: |
+          npm ci
+          npm test
+      - name: Build NAQLA Android application WITH Mindustry
+        run: npm run mobile:android
+      - name: Check game assets reached Capacitor bundle
+        run: |
+          test -s android/app/src/main/assets/public/third-party/mindustry/naqla-runtime.json
+          test -s android/app/src/main/assets/public/third-party/mindustry/mindustry.js
+      - name: Assemble test APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+      - name: Upload testing-only APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: NAQLA-Mindustry-experimental-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+          if-no-files-found: error

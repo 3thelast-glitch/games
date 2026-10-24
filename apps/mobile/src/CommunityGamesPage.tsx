@@ -17,6 +17,7 @@ const mindustry = registerPlugin<MindustryNative>('NaqlaMindustry');
 
 type Availability = { kind: 'checking' } | { kind: 'unavailable' } | { kind: 'ready'; url?: string };
 const supertuxFolder = `${(import.meta.env?.BASE_URL ?? '/')}third-party/supertux/`;
+const mindustryFolder = `${(import.meta.env?.BASE_URL ?? '/')}third-party/mindustry/`;
 const freecivWebUrl = import.meta.env?.VITE_FREECIV_WEB_URL as string | undefined;
 
 function secureConfiguredUrl(value: string | undefined): string | null {
@@ -58,10 +59,26 @@ export function CommunityGamesPage({ gameId, onExit }: { gameId: CommunityGameId
       } else if (gameId === 'freecivWeb') {
         const url = secureConfiguredUrl(freecivWebUrl);
         if (url) next = { kind: 'ready', url };
-      } else if (Capacitor.isNativePlatform() && Capacitor.isPluginAvailable('NaqlaMindustry')) {
+      } else if (gameId === 'mindustry') {
         try {
-          if ((await mindustry.available()).available) next = { kind: 'ready' };
-        } catch { /* Native runtime is not installed. */ }
+          // A separately compiled real TeaVM game, embedded as static NAQLA assets.
+          const response = await fetch(`${mindustryFolder}naqla-runtime.json`, { cache: 'no-store' });
+          if (response.ok) {
+            const json: unknown = await response.json();
+            if (json && typeof json === 'object' && 'id' in json && json.id === 'mindustry' &&
+              'entry' in json && json.entry === 'index.html' &&
+              'runtime' in json && json.runtime === 'teavm') {
+              next = { kind: 'ready', url: `${mindustryFolder}index.html` };
+            }
+          }
+        } catch { /* Preview web runtime not bundled. */ }
+        // Retain native-engine path for a future first-party native integration.
+        if (next.kind === 'unavailable' && Capacitor.isNativePlatform() &&
+          Capacitor.isPluginAvailable('NaqlaMindustry')) {
+          try {
+            if ((await mindustry.available()).available) next = { kind: 'ready' };
+          } catch { /* Native runtime is not installed. */ }
+        }
       }
       if (active) setAvailability(next);
     }
@@ -78,7 +95,7 @@ export function CommunityGamesPage({ gameId, onExit }: { gameId: CommunityGameId
   async function start() {
     if (availability.kind !== 'ready') return;
     setError(false);
-    if (gameId === 'mindustry') {
+    if (gameId === 'mindustry' && !availability.url) {
       try { await mindustry.launch(); } catch { setError(true); }
     } else {
       setStarted(true);
