@@ -15,6 +15,10 @@ command -v ninja
 # upstream sources, not a link-time stub or an SDL2 ABI compatibility shim.
 embuilder build sdl3
 IMAGE_BUILD="$RUNNER_TEMP/naqla-sdl3-image"
+# Emscripten's SDL3 port is 3.4.2 and meets SDL3_image's >=3.4 requirement,
+# but its generated CMake config reports version 'unknown'. Remove only that
+# CMake version check; this leaves the actual upstream SDL implementation intact.
+sed -i 's/find_package(SDL3 ${SDL_REQUIRED_VERSION} REQUIRED COMPONENTS/find_package(SDL3 REQUIRED COMPONENTS/' "$IMAGE_SRC/CMakeLists.txt"
 emcmake cmake -S "$IMAGE_SRC" -B "$IMAGE_BUILD" -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_PREFIX_PATH="$RUNNER_TEMP/emsdk/upstream/emscripten/cache/sysroot" \
