@@ -42,7 +42,7 @@ test('Mindustry packager only exposes a runtime after original artifacts exist',
     assert.equal(manifest.offline, true);
     assert.equal(manifest.requiresRemoteServer, false);
     assert.match(readFileSync(join(output, 'index.html'), 'utf8'), /connect-src 'self'/);
-    assert.match(readFileSync(join(output, 'index.html'), 'utf8'), /naqla-touch-controls\\.js/);
+    assert.match(readFileSync(join(output, 'index.html'), 'utf8'), /naqla-touch-controls\.js/);
     assert.equal(existsSync(join(output, 'naqla-touch-controls.js')), true);
     assert.match(readFileSync(join(output, 'naqla-touch-controls.js'), 'utf8'), /KeyW/);
     assert.ok(manifest.sourceCommit);
