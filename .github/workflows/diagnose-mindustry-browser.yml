@@ -12,6 +12,8 @@ on:
   pull_request:
     paths:
       - 'scripts/verify-mindustry-browser.mjs'
+      - 'apps/mobile/src/CommunityGamesPage.tsx'
+      - 'tests/e2e/games/all-mobile-catalog.spec.ts'
       - 'apps/server/src/server.ts'
       - 'tests/community-game-static-headers.test.ts'
       - '.github/workflows/diagnose-mindustry-browser.yml'
