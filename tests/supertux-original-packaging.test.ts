@@ -12,14 +12,14 @@ const rootFiles=[
   'supertux2.js','supertux2.wasm','supertux2.data',
   'supertux2.html','LICENSE.txt'
 ];
-function withDir(fn) {
+function withDir(fn: (original: string, target: string) => void) {
   const temp=mkdtempSync(join(tmpdir(),'naqla-original-supertux-'));
   const original=join(temp,'original'),target=join(temp,'bundled');
   mkdirSync(original);
   try { return fn(original,target); }
   finally { rmSync(temp,{recursive:true,force:true}); }
 }
-function originalTestFixture(original) {
+function originalTestFixture(original: string) {
   writeFileSync(join(original,'supertux2.js'),'/* original compiled Emscripten test placeholder */'.repeat(300));
   writeFileSync(join(original,'supertux2.wasm'),Buffer.concat([
     Buffer.from([0,97,115,109]),Buffer.alloc(1000000)
