@@ -153,7 +153,17 @@ try {
       ? {x: Math.floor(canvasRect.width * .50), y: Math.floor(canvasRect.height * .67)}
       : {x: Math.floor(canvasRect.width * .50), y: Math.floor(canvasRect.height * .67)}
   });
-  await page.waitForTimeout(4200);
+  await page.waitForTimeout(1800);
+  await page.screenshot({ path: resolve(screenshots, 'mindustry-save-and-quit-confirmation.png'), fullPage: true });
+  // The original menu explicitly confirms quitting. Choose OK so the game
+  // gets the opportunity to flush its IndexedDB-backed local save.
+  await canvas.tap({ position: cssRotated
+    ? {x: Math.floor(canvasRect.width * .44), y: Math.floor(canvasRect.height * .57)}
+    : landscapeMenu
+      ? {x: Math.floor(canvasRect.width * .57), y: Math.floor(canvasRect.height * .56)}
+      : {x: Math.floor(canvasRect.width * .57), y: Math.floor(canvasRect.height * .56)}
+  });
+  await page.waitForTimeout(4300);
   await page.screenshot({ path: resolve(screenshots, 'mindustry-after-save-and-quit.png'), fullPage: true });
   if (external.length) throw new Error('A gameplay world requested a remote server: ' + external.join(', '));
   if (httpErrors.length) throw new Error('Game files failed while starting the world: ' + httpErrors.slice(-10).join(', '));
