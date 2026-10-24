@@ -12,6 +12,9 @@ mkdirSync(screenshots, { recursive: true });
 let browser;
 const external = [];
 const runtimeErrors = [];
+const browserLogs = [];
+const httpErrors = [];
+let page = null;
 try {
   browser = await chromium.launch({
     headless: true,
@@ -21,7 +24,11 @@ try {
     viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true,
     deviceScaleFactor: 1,
   });
-  const page = await context.newPage();
+  page = await context.newPage();
+  page.on('console', msg => { if (msg.type() === 'error' || msg.type() === 'warning') browserLogs.push(msg.type() + ': ' + msg.text()); });
+  page.on('requestfailed', request => browserLogs.push('FETCH FAILED ' + request.url() + ': ' + (request.failure()?.errorText || 'unknown')));
+  page.on('response', response => { if (response.status() >= 400) httpErrors.push(response.status() + ' ' + response.url()); });
+  page.on('crash', () => browserLogs.push('CHROMIUM PAGE CRASHED'));
   page.on('request', request => {
     const url = request.url();
     if (url.startsWith('data:') || url.startsWith('blob:')) return;
@@ -37,7 +44,7 @@ try {
   await page.screenshot({ path: resolve(screenshots, 'mindustry-loading.png'), fullPage: true });
   // The upstream WebAssets/TeaVM renderer itself removes #ms-boot on the first
   // successfully rendered frame via __msBootDone; JS bundle fetch alone isn't enough.
-  await frame.locator('#ms-boot').waitFor({ state: 'detached', timeout: 180000 });
+  await frame.locator('#ms-boot').waitFor({ state: 'detached', timeout: 75000 });
   const title = await frame.locator('html').evaluate(el => el.ownerDocument.title);
   if (title.includes('BOOT FAILED')) throw new Error('Mindustry TeaVM reported BOOT FAILED');
   const canvas = frame.locator('#mindustry-canvas');
@@ -64,6 +71,19 @@ try {
   }));
 } catch (error) {
   console.error('Mindustry real-engine smoke failed:', error);
+  try {
+    const gameFrame = page?.frames().find(frame => frame.url().includes('/third-party/mindustry/index.html'));
+    const state = gameFrame && await gameFrame.evaluate(() => ({
+      title: document.title,
+      bootText: document.querySelector('#ms-boot-label')?.textContent || '',
+      gameEntryFunction: typeof window.main,
+      assetCacheVersion: window.__msCacheVersion || null,
+      webglAvailable: !!document.createElement('canvas').getContext('webgl'),
+      pageScripts: [...document.querySelectorAll('script[src]')].map(s => s.src),
+    }));
+    console.error('MINDUSTRY DIAGNOSTIC STATE', JSON.stringify({state, browserLogs:browserLogs.slice(-100), httpErrors:httpErrors.slice(-50), pageErrors:runtimeErrors.slice(-40), externalRequests:external.slice(-50)}, null, 2));
+    if (page) await page.screenshot({path:resolve(screenshots, 'mindustry-error-state.png'),fullPage:true});
+  } catch (diagError) { console.error('Unable to inspect browser after failure:', diagError); }
   throw error;
 } finally {
   if (browser) await browser.close();
