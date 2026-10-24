@@ -254,6 +254,17 @@ try {
   }});
   await page.waitForTimeout(1400);
   await page.screenshot({path:resolve(screenshots, 'mindustry-original-load-game-menu.png'),fullPage:true});
+  // Select the real saved Ancient Caldera card from the original Load Game UI.
+  // Clicking a serialized world (not only listing files) exercises restore.
+  await reopenedCanvas.tap({position: {
+    x: Math.floor(canvasRect.width * (cssRotated ? .46 : .50)),
+    y: Math.floor(canvasRect.height * (cssRotated ? .49 : .52)),
+  }});
+  await page.waitForTimeout(9000);
+  await page.screenshot({path:resolve(screenshots, 'mindustry-restored-survival-world.png'),fullPage:true});
+  if (external.length || httpErrors.length) {
+    throw new Error('Offline restore requested missing or external game data: ' + JSON.stringify({external,httpErrors}));
+  }
   await page.locator('.community-game-exit').click();
   await page.locator('.game-card.mindustry').waitFor({ state: 'visible', timeout: 10000 });
   if (external.length) throw new Error('Mindustry used an external game server: ' + external.join(', '));
