@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { cpSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { embedOfflineCsp } from './offline-game-csp.mjs';
 
@@ -24,7 +24,12 @@ cpSync(source, destination, {
   filter: name => !name.endsWith('mindustry-standalone.html'),
 });
 // The upstream game must never load external scripts, fonts or game services.
-writeFileSync(join(destination, 'index.html'), embedOfflineCsp(html));
+const touchFile = 'naqla-touch-controls.js';
+copyFileSync(new URL('./mindustry-touch-controls.js', import.meta.url), join(destination, touchFile));
+if (!/<\/body>/i.test(html)) throw new Error('Upstream Mindustry HTML has no closing body for touch bridge');
+writeFileSync(join(destination, 'index.html'), embedOfflineCsp(
+  html.replace(/<\/body>/i, `<script defer src="./${touchFile}"></script>\n</body>`)
+));
 const manifest = {
   id: 'mindustry',
   entry: 'index.html',
