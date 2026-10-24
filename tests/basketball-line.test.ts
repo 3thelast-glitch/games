@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  COURT_HEIGHT, COURT_WIDTH, INK_CAP, addStroke, makeRound,
-  remainingInk, remainingPencils, stepRound, strokeLength, validateProgress,
-  type BallBody, type Vec,
+  COURT_HEIGHT, COURT_WIDTH, INK_CAP, addStroke, applyWin, makeRound,
+  remainingInk, remainingPencils, roundStars, stepRound, strokeLength, validateProgress,
+  type BallBody, type BasketProgress, type Vec,
 } from '../packages/games/basketball-line/engine.ts';
 
 const segment = (x1: number, y1: number, x2: number, y2: number): Vec[] =>
@@ -114,8 +114,68 @@ test('Basketball Line ends when basketball goes out of bounds or time limit pass
 });
 
 test('Basketball Line validates save contents without trusting malformed local data', () => {
-  assert.deepEqual(validateProgress(null),{round:1,best:0,gems:0});
-  assert.deepEqual(validateProgress({round:8,best:7,gems:11}),{round:8,best:7,gems:11});
-  assert.deepEqual(validateProgress({round:-2,best:NaN,gems:'20'}),{round:1,best:0,gems:0});
-  assert.deepEqual(validateProgress({round:Infinity,best:999999,gems:-10}),{round:1,best:9999,gems:0});
+  const empty = {round:1,best:0,gems:0,stars:{},gemRounds:[]};
+  assert.deepEqual(validateProgress(null),empty);
+  // Legacy saves (no stars/gemRounds) migrate with totals preserved.
+  assert.deepEqual(validateProgress({round:8,best:7,gems:11}),{round:8,best:7,gems:11,stars:{},gemRounds:[]});
+  assert.deepEqual(validateProgress({round:-2,best:NaN,gems:'20'}),empty);
+  assert.deepEqual(validateProgress({round:Infinity,best:999999,gems:-10}),{round:1,best:9999,gems:0,stars:{},gemRounds:[]});
+  // Rich fields are sanitized entry by entry.
+  const rich = validateProgress({round:5,best:4,gems:2,
+    stars:{'3':3,'4':9,'x':2,'7':0, '2':1.9}, gemRounds:[3,3,1,'a',0,10000,2]});
+  assert.deepEqual(rich.stars,{2:1,3:3,4:3});
+  assert.deepEqual(rich.gemRounds,[1,2,3]);
+});
+
+test('Basketball Line layout variety: deterministic per round, distinct across rounds', () => {
+  for (const n of [1, 2, 3, 7, 12, 20, 33]) {
+    assert.deepEqual(makeRound(n), makeRound(n));
+  }
+  const positions = new Set<string>();
+  for (let i = 1; i <= 30; i++) {
+    const game = makeRound(i);
+    positions.add(game.hoop.x + ',' + game.hoop.y + ',' + game.gem.x + ',' + game.gem.y);
+  }
+  assert.ok(positions.size >= 24, 'expected near-unique layouts, got ' + positions.size);
+  assert.ok(makeRound(20).hoop.width < makeRound(1).hoop.width);
+});
+
+test('Basketball Line star rating: win, gem and frugal ink', () => {
+  const won = makeRound(3);
+  won.phase = 'won'; won.inkUsed = 600; won.gemCollected = false;
+  assert.equal(roundStars(won), 1);
+  won.gemCollected = true;
+  assert.equal(roundStars(won), 2);
+  won.inkUsed = INK_CAP / 2;
+  assert.equal(roundStars(won), 3);
+  won.phase = 'lost';
+  assert.equal(roundStars(won), 0);
+});
+
+test('Basketball Line applyWin: frontier advances once, replays improve without farming', () => {
+  const freshProgress: BasketProgress = { round: 3, best: 2, gems: 5, stars: {}, gemRounds: [] };
+  const frontierWin = makeRound(3);
+  frontierWin.phase = 'won'; frontierWin.gemCollected = true; frontierWin.inkUsed = 100;
+  const after = applyWin(freshProgress, frontierWin);
+  assert.equal(after.round, 4);
+  assert.equal(after.best, 3);
+  assert.equal(after.gems, 6);
+  assert.deepEqual(after.stars, { 3: 3 });
+  assert.deepEqual(after.gemRounds, [3]);
+  // Replaying round 3: no frontier move, no second gem, stars keep the best.
+  const replay = makeRound(3);
+  replay.phase = 'won'; replay.gemCollected = true; replay.inkUsed = 800;
+  const afterReplay = applyWin(after, replay);
+  assert.equal(afterReplay.round, 4);
+  assert.equal(afterReplay.gems, 6);
+  assert.deepEqual(afterReplay.stars, { 3: 3 });
+  // Replaying an older round never touches the frontier either.
+  const old = makeRound(1);
+  old.phase = 'won'; old.gemCollected = false; old.inkUsed = 10;
+  const afterOld = applyWin(afterReplay, old);
+  assert.equal(afterOld.round, 4);
+  assert.equal(afterOld.best, 3);
+  assert.equal(afterOld.stars[1], 2);
+  // The input object is never mutated.
+  assert.deepEqual(freshProgress, { round: 3, best: 2, gems: 5, stars: {}, gemRounds: [] });
 });

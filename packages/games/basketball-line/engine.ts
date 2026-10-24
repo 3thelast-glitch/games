@@ -40,33 +40,49 @@ const finite = (n: number) => Number.isFinite(n);
 export const clamp = (n: number, a: number, b: number) => Math.max(a, Math.min(b, n));
 const distance = (a: Vec, b: Vec) => Math.hypot(b.x - a.x, b.y - a.y);
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+/** Deterministic 0..1 hash of the round number, for layout variety that
+ *  stays identical on every device and every replay of the same round. */
+const roundHash = (n: number, salt: number): number => {
+  let h = (n * 2654435761 + salt * 40503) % 4294967296;
+  h ^= h >>> 13; h = (h * 1597334677) % 4294967296; h ^= h >>> 16;
+  return (h % 1000) / 1000;
+};
 export function makeRound(round = 1): BasketRound {
   const n = Math.max(1, Math.min(9999, Math.floor(round)));
   // Deliberate, reproducible course variations. Ball spawn is well away from hoop;
-  // players must create a path, not just watch an automatic basket.
+  // players must create a path, not just watch an automatic basket. A hashed
+  // jitter widens the old short % patterns so layouts stay fresh for many
+  // rounds; the first two rounds stay gentle.
   const side = n % 2 === 1 ? -1 : 1;
-  const hoopX = side < 0 ? 98 + (n % 3) * 13 : 310 - (n % 3) * 14;
-  const spawnX = side < 0 ? 337 - (n % 3) * 8 : 83 + (n % 3) * 7;
+  const ramp = n <= 2 ? .35 : 1;
+  const j = (salt: number, span: number) => (roundHash(n, salt) - .5) * 2 * span * ramp;
+  const hoopX = clamp((side < 0 ? 98 + (n % 3) * 13 : 310 - (n % 3) * 14) + j(1, 24), 72, 348);
+  const hoopY = clamp(510 - (n % 3) * 16 + j(2, 26), 428, 572);
+  const hoopWidth = n < 6 ? 88 : n < 14 ? 84 : 80;
+  const spawnX = clamp((side < 0 ? 337 - (n % 3) * 8 : 83 + (n % 3) * 7) + j(3, 18), 45, 375);
   const ballCount = n >= 8 && n % 4 !== 1 ? 2 : 1;
   const balls: BallBody[] = [];
   for (let i = 0; i < ballCount; i++) {
     balls.push({
-      id: i, kind: 'basketball', x: spawnX + i * (side < 0 ? -45 : 45),
+      id: i, kind: 'basketball', x: clamp(spawnX + i * (side < 0 ? -45 : 45), 40, 380),
       y: 129 - i * 85, vx: side * (22 + (n % 5) * 7 + i * 11), vy: i === 0 ? 0 : 15,
       radius: 17, scored: false, active: true, rotation: (n + i) * .17,
     });
   }
   if (n >= 5 && n % 3 !== 1) {
     balls.push({
-      id: 100, kind: 'bomb', x: clamp(hoopX + (side < 0 ? 145 : -145), 50, 370),
+      id: 100, kind: 'bomb', x: clamp(hoopX + (side < 0 ? 145 : -145) + j(4, 14), 50, 370),
       y: 78, vx: -side * 7, vy: 0, radius: 16, scored: false, active: true, rotation: 0,
     });
   }
   return {
     round: n, phase: 'ready', elapsed: 0,
-    hoop: { x: hoopX, y: 510 - (n % 3) * 16, width: 88 },
+    hoop: { x: hoopX, y: hoopY, width: hoopWidth },
     balls, strokes: [], inkUsed: 0, pencils: n === 1 ? 1 : LINE_CAP,
-    gem: { x: side < 0 ? 200 : 215, y: 325 + (n % 3) * 28 },
+    gem: {
+      x: clamp(150 + roundHash(n, 5) * 120, 120, 300),
+      y: clamp(250 + roundHash(n, 6) * 160, 230, 430),
+    },
     gemCollected: false, message: null,
   };
 }
@@ -217,8 +233,49 @@ export function stepRound(state: BasketRound, dt = STEP_SECONDS): RoundPhase {
   }
   return state.phase;
 }
-export function validateProgress(value: unknown): { round: number; best: number; gems: number } {
-  if (!value || typeof value !== 'object') return { round: 1, best: 0, gems: 0 };
+export interface BasketProgress {
+  /** Next unwon round (the frontier). Rounds 1..round are playable. */
+  round: number;
+  /** Highest round ever won. */
+  best: number;
+  /** Total gems banked (legacy totals are preserved on migration). */
+  gems: number;
+  /** Best star rating per won round: round number -> 1..3. */
+  stars: Record<number, number>;
+  /** Rounds whose gem has already been banked (a gem counts once). */
+  gemRounds: number[];
+}
+/** Stars for a finished round: 1 for the win, +1 for the gem, +1 for
+ *  finishing with at most half the ink budget spent. 0 unless won. */
+export function roundStars(state: BasketRound): number {
+  if (state.phase !== 'won') return 0;
+  let stars = 1;
+  if (state.gemCollected) stars++;
+  if (state.inkUsed <= INK_CAP / 2) stars++;
+  return stars;
+}
+/** Pure bookkeeping for a won round. Returns a new progress object.
+ *  Replaying an old round improves its stars and can bank its gem once,
+ *  but only winning the frontier round advances the frontier. */
+export function applyWin(progress: BasketProgress, finished: BasketRound): BasketProgress {
+  const next: BasketProgress = {
+    ...progress,
+    stars: { ...progress.stars },
+    gemRounds: [...progress.gemRounds],
+  };
+  const stars = roundStars(finished);
+  if (stars > (next.stars[finished.round] ?? 0)) next.stars[finished.round] = stars;
+  next.best = Math.max(next.best, finished.round);
+  if (finished.gemCollected && !next.gemRounds.includes(finished.round)) {
+    next.gemRounds.push(finished.round);
+    next.gems = clamp(next.gems + 1, 0, 99999);
+  }
+  if (finished.round === next.round) next.round = Math.min(9999, finished.round + 1);
+  return next;
+}
+export function validateProgress(value: unknown): BasketProgress {
+  const empty: BasketProgress = { round: 1, best: 0, gems: 0, stars: {}, gemRounds: [] };
+  if (!value || typeof value !== 'object') return empty;
   const saved = value as Record<string, unknown>;
   const round = typeof saved.round === 'number' && Number.isSafeInteger(saved.round) ?
     clamp(saved.round, 1, 9999) : 1;
@@ -226,5 +283,27 @@ export function validateProgress(value: unknown): { round: number; best: number;
     clamp(saved.best, 0, 9999) : 0;
   const gems = typeof saved.gems === 'number' && Number.isSafeInteger(saved.gems) ?
     clamp(saved.gems, 0, 99999) : 0;
-  return { round, best, gems };
+  const stars: Record<number, number> = {};
+  if (saved.stars && typeof saved.stars === 'object' && !Array.isArray(saved.stars)) {
+    for (const [key, val] of Object.entries(saved.stars as Record<string, unknown>)) {
+      const roundNo = Number(key);
+      if (Number.isSafeInteger(roundNo) && roundNo >= 1 && roundNo <= 9999 &&
+          typeof val === 'number' && Number.isFinite(val) && Math.floor(val) >= 1) {
+        stars[roundNo] = Math.min(3, Math.floor(val));
+      }
+      if (Object.keys(stars).length >= 9999) break;
+    }
+  }
+  const gemRounds: number[] = [];
+  if (Array.isArray(saved.gemRounds)) {
+    for (const entry of saved.gemRounds) {
+      if (typeof entry === 'number' && Number.isSafeInteger(entry) &&
+          entry >= 1 && entry <= 9999 && !gemRounds.includes(entry)) {
+        gemRounds.push(entry);
+      }
+      if (gemRounds.length >= 9999) break;
+    }
+    gemRounds.sort((a, b) => a - b);
+  }
+  return { round, best, gems, stars, gemRounds };
 }
