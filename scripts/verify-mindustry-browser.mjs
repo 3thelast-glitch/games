@@ -52,7 +52,9 @@ try {
     el.dataset.naqlaPointerReceived = 'false';
     el.addEventListener('pointerdown', () => { el.dataset.naqlaPointerReceived = 'true'; }, { once: true });
   });
-  await canvas.tap({ timeout: 30000, position: { x: 45, y: 50 } });
+  // Avoid the touch-control toggle at the rotated viewport edge. Tap a free
+  // part of the original canvas while checking that real pointer input lands.
+  await canvas.tap({ timeout: 30000, position: { x: 195, y: 42 } });
   const pointerReceived = await canvas.evaluate(el => el.dataset.naqlaPointerReceived === 'true');
   if (!pointerReceived) throw new Error('Mindustry canvas did not receive touchscreen pointer input');
   if (external.length) throw new Error('Offline game requested external URLs: ' + external.join(', '));
