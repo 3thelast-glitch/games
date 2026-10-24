@@ -1,5 +1,6 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
 import { resolve, extname, sep } from 'node:path';
 import { WebSocketServer, WebSocket } from 'ws';
 import { z } from 'zod';
@@ -393,6 +394,30 @@ export function createArenaServer(options: ServerOptions = {}) {
         path = resolve(root, '.' + pathname);
       if (path !== root && !path.startsWith(root + sep))
         return json(res, 403, { error: 'forbidden' });
+      // SuperTux bundles the complete original art, maps, audio and C++ WASM
+      // in large .data/.wasm files. Do not Buffer/readFile hundreds of MB into
+      // the online backend's heap for every game startup or HEAD request.
+      if (url.pathname.startsWith('/third-party/supertux/') &&
+          (path.endsWith('/supertux2.data') || path.endsWith('/supertux2.wasm'))) {
+        let info;
+        try {
+          info = await stat(path);
+          if (!info.isFile()) return json(res, 404, { error: 'not-found' });
+        } catch {
+          return json(res, 404, { error: 'not-found' });
+        }
+        res.writeHead(200, {
+          'Content-Type': path.endsWith('.wasm') ? 'application/wasm' : 'application/octet-stream',
+          'Content-Length': info.size,
+          'Cache-Control': 'private,max-age=3600',
+          'X-Content-Type-Options': 'nosniff',
+        });
+        if (req.method === 'HEAD') return res.end();
+        const stream = createReadStream(path);
+        stream.on('error', err => res.destroy(err));
+        stream.pipe(res);
+        return;
+      }
       let bytes: Buffer,
         extension = extname(path);
       try {
