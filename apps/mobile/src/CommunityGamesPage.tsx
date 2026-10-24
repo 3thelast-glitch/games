@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
-import { enterFullscreenOnlyGame, leaveFullscreenOnlyGame } from './immersive-game.ts';
+import { enterFullscreenOnlyGame, leaveFullscreenOnlyGame, enterGameLandscape, leaveGameLandscape, requestGameFullscreen } from './immersive-game.ts';
 import { useI18n } from './i18n.tsx';
 
 export type CommunityGameId = 'supertux' | 'freecivWeb' | 'mindustry';
@@ -90,6 +90,11 @@ export function CommunityGamesPage({ gameId, onExit }: { gameId: CommunityGameId
 
   useEffect(() => {
     if (!started) return;
+    if (gameId === 'mindustry') {
+      // Original Mindustry's menus need landscape width to remain fully usable.
+      void enterGameLandscape(gameId);
+      return () => { void leaveGameLandscape(); };
+    }
     enterFullscreenOnlyGame(gameId);
     return () => { void leaveFullscreenOnlyGame(); };
   }, [started, gameId]);
@@ -100,6 +105,7 @@ export function CommunityGamesPage({ gameId, onExit }: { gameId: CommunityGameId
     if (gameId === 'mindustry' && !availability.url) {
       try { await mindustry.launch(); } catch { setError(true); }
     } else {
+      if (gameId === 'mindustry') requestGameFullscreen();
       setStarted(true);
     }
   }
@@ -111,7 +117,7 @@ export function CommunityGamesPage({ gameId, onExit }: { gameId: CommunityGameId
       : 'communityMindustryNeedsNative';
 
   return (
-    <section className={`community-game ${started ? 'community-game-playing' : ''}`} aria-label={t(gameId)}>
+    <section className={`community-game community-game-${gameId} ${started ? 'community-game-playing' : ''}`} aria-label={t(gameId)}>
       <header className="community-game-header">
         <button type="button" onClick={onExit} className="community-game-back">{t('communityBack')}</button>
         <h1>{t(gameId)}</h1>
