@@ -103,6 +103,18 @@ try {
   await canvas.tap({position: selectedMap});
   await page.waitForTimeout(2200);
   await page.screenshot({ path: resolve(screenshots, 'mindustry-custom-map-opened.png'), fullPage: true });
+  // Press the *original* game "Play" on the Survival setup dialog. This starts
+  // an offline world: the test must demonstrate a real map, not just menus.
+  await canvas.tap({ position: cssRotated
+    ? {x: Math.floor(canvasRect.width * .10), y: Math.floor(canvasRect.height * .57)}
+    : landscapeMenu
+      ? {x: Math.floor(canvasRect.width * .57), y: Math.floor(canvasRect.height * .90)}
+      : {x: Math.floor(canvasRect.width * .50), y: Math.floor(canvasRect.height * .82)}
+  });
+  await page.waitForTimeout(12000);
+  await page.screenshot({ path: resolve(screenshots, 'mindustry-survival-world-boot.png'), fullPage: true });
+  if (external.length) throw new Error('A gameplay world requested a remote server: ' + external.join(', '));
+  if (httpErrors.length) throw new Error('Game files failed while starting the world: ' + httpErrors.slice(-10).join(', '));
   await page.locator('.community-game-exit').click();
   await page.locator('.game-card.mindustry').waitFor({ state: 'visible', timeout: 10000 });
   console.log(JSON.stringify({
