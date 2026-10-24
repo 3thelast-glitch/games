@@ -15,6 +15,39 @@ const runtimeErrors = [];
 const browserLogs = [];
 const httpErrors = [];
 let page = null;
+
+// Read original Mindustry's real binary .msav bytes, not just a save filename.
+// This runs inside the game iframe against its native IndexedDB-backed VFS.
+async function readOriginalSavedWorld(frameLocator) {
+  return frameLocator.locator('#mindustry-canvas').evaluate(async () => {
+    const db = await new Promise((resolve, reject) => {
+      const req = indexedDB.open('mindustry-fs');
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(new Error('Mindustry VFS IndexedDB failed to open'));
+    });
+    try {
+      if (!db.objectStoreNames.contains('files')) return null;
+      const value = await new Promise((resolve, reject) => {
+        const req = db.transaction('files','readonly').objectStore('files').get('mindustry/saves/0.msav');
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(new Error('Mindustry world save unavailable'));
+      });
+      if (!value) return null;
+      const bytes = value instanceof Uint8Array ? value
+        : value instanceof ArrayBuffer ? new Uint8Array(value)
+        : ArrayBuffer.isView(value) ? new Uint8Array(value.buffer, value.byteOffset, value.byteLength)
+        : null;
+      if (!bytes) throw new Error('Mindustry VFS returned non-binary save content');
+      const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', bytes));
+      return {
+        bytes: bytes.byteLength,
+        sha256: [...digest].map(b => b.toString(16).padStart(2, '0')).join(''),
+      };
+    } finally {
+      db.close();
+    }
+  });
+}
 try {
   browser = await chromium.launch({
     headless: true,
@@ -184,16 +217,40 @@ try {
     });
   });
   console.log('MINDUSTRY OFFLINE PERSISTENCE FILES:', JSON.stringify(storedFiles.filter(k => /saves|\.msav|settings/i.test(k)).slice(-40)));
+  const beforeReload = await readOriginalSavedWorld(frame);
+  if (!beforeReload || beforeReload.bytes < 1024) {
+    throw new Error('Save & Quit did not store a full binary Mindustry world');
+  }
+  console.log('MINDUSTRY ORIGINAL SAVE HASH BEFORE RESTART:', JSON.stringify(beforeReload));
   if (external.length) throw new Error('A gameplay world requested a remote server: ' + external.join(', '));
   if (httpErrors.length) throw new Error('Game files failed while starting the world: ' + httpErrors.slice(-10).join(', '));
+  // Destroy the first game iframe and reload from the embedded package.
+  // Verify the exact same original save bytes persist across a fresh boot.
   await page.locator('.community-game-exit').click();
   await page.locator('.game-card.mindustry').waitFor({ state: 'visible', timeout: 10000 });
+  await page.locator('.game-card.mindustry .play-button').click({ timeout: 30000 });
+  await page.locator('.community-game-start').click({ timeout: 30000 });
+  const reopenedFrame = page.frameLocator('iframe.community-game-frame');
+  await reopenedFrame.locator('#ms-boot').waitFor({ state: 'detached', timeout: 75000 });
+  const afterReload = await readOriginalSavedWorld(reopenedFrame);
+  if (!afterReload || beforeReload.bytes !== afterReload.bytes ||
+      beforeReload.sha256 !== afterReload.sha256) {
+    throw new Error('Offline Mindustry save changed or disappeared after iframe restart: ' +
+      JSON.stringify({beforeReload, afterReload}));
+  }
+  await page.screenshot({path:resolve(screenshots, 'mindustry-save-persists-after-reopen.png'),fullPage:true});
+  await page.locator('.community-game-exit').click();
+  await page.locator('.game-card.mindustry').waitFor({ state: 'visible', timeout: 10000 });
+  if (external.length) throw new Error('Mindustry used an external game server: ' + external.join(', '));
+  console.log('MINDUSTRY PERSISTED ORIGINAL SAVE VERIFIED AFTER RESTART:', JSON.stringify(afterReload));
   console.log(JSON.stringify({
-    result: 'original Mindustry/Arc first frame rendered in Chromium',
+    result: 'offline Mindustry original Survival world, touch movement and binary save persistence verified',
     canvasTouchReceived: pointerReceived,
+    saveBytes: afterReload.bytes,
+    sha256: afterReload.sha256,
     thirdPartyNetworkRequests: external.length,
     navigatedBackToNAQLA: true,
-    note: 'Gameplay, saves and hardware remain unverified.',
+    note: 'Physical Android and in-game Load Game menu remain to verify.',
   }));
 } catch (error) {
   console.error('Mindustry real-engine smoke failed:', error);
