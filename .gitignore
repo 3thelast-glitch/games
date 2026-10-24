@@ -17,3 +17,6 @@ ios/
 
 # Third-party original game runtimes are generated after license review.
 /apps/mobile/public/third-party/supertux/
+
+# Original Mindustry TeaVM browser runtime: generated, large, separately licensed
+/apps/mobile/public/third-party/mindustry/
