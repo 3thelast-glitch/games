@@ -26,7 +26,13 @@ GitHub Actions: `.github/workflows/community-offline-complete.yml`
 
 This three-job preview builds source engines in parallel, then produces a
 single **NAQLA-2-ORIGINAL-GAMES-OFFLINE-ANDROID-TEST** debug APK and a local
-web files artifact. The workflow is not a normal release:
+web files artifact. The workflow is not a normal release. It also exports independent full
+source-code archives for **all three** original games: SuperTux recursive
+C++/assets, Mindustry/modified Arc and resources, and Freeciv-web plus the
+original Freeciv C rules/AI engine. The archive of Freeciv source is NOT
+a playable offline port.
+
+The workflow is not a normal release:
 
 | Game | Source and content | Packaging | Current limit |
 | --- | --- | --- | --- |

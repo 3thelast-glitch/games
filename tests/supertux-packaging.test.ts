@@ -16,7 +16,7 @@ function workspace(run: (input: string, output: string) => void) {
 }
 test('offline SuperTux packager rejects missing original engine and its data', () => {
   workspace((input, output) => {
-    writeFileSync(join(input, 'supertux2.html'), '<script src="supertux2.js"></script>');
+    writeFileSync(join(input, 'supertux2.html'), '<html><head></head><body><script src="supertux2.js"></script></body></html>');
     const result = spawnSync(process.execPath, [packager, input, output], { encoding: 'utf8' });
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /output missing/);
@@ -28,7 +28,7 @@ test('offline SuperTux package contains executable engine, maps and GPL notices'
     writeFileSync(join(input, 'supertux2.js'), Buffer.alloc(4096, 65));
     writeFileSync(join(input, 'supertux2.wasm'), Buffer.alloc(1001000, 65));
     writeFileSync(join(input, 'supertux2.data'), Buffer.alloc(1001000, 65));
-    writeFileSync(join(input, 'supertux2.html'), '<script src="supertux2.js"></script>');
+    writeFileSync(join(input, 'supertux2.html'), '<html><head></head><body><script src="supertux2.js"></script></body></html>');
     writeFileSync(join(input, 'LICENSE.txt'), 'GPL-3.0-or-later');
     const result = spawnSync(process.execPath, [packager, input, output], { encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);
@@ -39,6 +39,7 @@ test('offline SuperTux package contains executable engine, maps and GPL notices'
     assert.equal(manifest.entry, 'supertux2.html');
     assert.equal(manifest.offline, true);
     assert.equal(manifest.requiresRemoteServer, false);
+    assert.match(readFileSync(join(output, 'supertux2.html'), 'utf8'), /connect-src 'self'/);
     assert.equal(manifest.runtime, 'emscripten');
   });
 });

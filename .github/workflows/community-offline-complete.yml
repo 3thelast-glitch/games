@@ -65,6 +65,17 @@ jobs:
           cp supertux-source/LICENSE.txt supertux-offline/
           test -s supertux-offline/supertux2.wasm
           test -s supertux-offline/supertux2.data
+      - name: Archive complete original SuperTux source, maps and assets
+        run: |
+          tar --exclude-vcs --exclude='*/build' \
+            -czf supertux-original-source.tar.gz supertux-source
+          test -s supertux-original-source.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: SuperTux-original-recursive-source-GPL
+          path: supertux-original-source.tar.gz
+          if-no-files-found: error
+          retention-days: 7
       - uses: actions/upload-artifact@v7
         with:
           name: supertux-original-offline-wasm
@@ -103,10 +114,51 @@ jobs:
           cp mindustry-source/LICENSE mindustry-offline/LICENSE
           test -s mindustry-offline/mindustry.js
           test -s mindustry-offline/asset-manifest.txt
+      - name: Archive full modified Arc and Mindustry source with official assets
+        run: |
+          tar --exclude-vcs --exclude='*/build' --exclude='*/.gradle' \
+            -czf mindustry-original-source.tar.gz mindustry-source
+          test -s mindustry-original-source.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Mindustry-and-Arc-recursive-original-source-GPL
+          path: mindustry-original-source.tar.gz
+          if-no-files-found: error
+          retention-days: 7
       - uses: actions/upload-artifact@v7
         with:
           name: mindustry-original-offline-teavm
           path: mindustry-offline/
+          if-no-files-found: error
+          retention-days: 7
+
+  freeciv-complete-source:
+    # The real Freeciv-web client is NOT runnable offline in a Capacitor app.
+    # This archives the complete original web/client and C game engine source
+    # WITHOUT misrepresenting them as a playable mobile game.
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          repository: freeciv/freeciv-web
+          ref: c19ce060fadc99663f8aba3652ca94b07174467c
+          submodules: recursive
+          path: freeciv-web-source
+      - uses: actions/checkout@v7
+        with:
+          repository: freeciv/freeciv
+          ref: b2307bd16106159eb6a2d2efbcb03c0bcafad631
+          submodules: recursive
+          path: freeciv-c-source
+      - name: Package the original Freeciv-web frontend and full C AI/rules engine source
+        run: |
+          tar --exclude-vcs --exclude='*/build' -czf freeciv-original-source.tar.gz freeciv-web-source freeciv-c-source
+          test -s freeciv-original-source.tar.gz
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Freeciv-web-and-C-original-sources-NOT-YET-PLAYABLE
+          path: freeciv-original-source.tar.gz
           if-no-files-found: error
           retention-days: 7
 

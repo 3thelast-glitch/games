@@ -123,12 +123,6 @@ export function createArenaServer(options: ServerOptions = {}) {
   }
   // Only a separately configured HTTPS origin may host a remote Freeciv game
   // frame. All other app pages retain their strict same-origin policy.
-  let freecivFrameOrigin = '';
-  if (env.FREECIV_WEB_ORIGIN) {
-    const configured = new URL(env.FREECIV_WEB_ORIGIN);
-    if (configured.protocol !== 'https:') throw new Error('FREECIV_WEB_ORIGIN must use HTTPS');
-    freecivFrameOrigin = configured.origin;
-  }
   const server = createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', 'http://localhost');
     const bundledGame = url.pathname.startsWith('/third-party/mindustry/') ||
@@ -141,8 +135,8 @@ export function createArenaServer(options: ServerOptions = {}) {
     res.setHeader(
       'Content-Security-Policy',
       bundledGame
-        ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self' ws: wss:; worker-src 'self' blob:; frame-ancestors 'self'; object-src 'none'; base-uri 'self'"
-        : `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:; worker-src 'self'; frame-src 'self'${freecivFrameOrigin ? ' ' + freecivFrameOrigin : ''}; frame-ancestors 'none'; object-src 'none'; base-uri 'self'`,
+        ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self'; worker-src 'self' blob:; frame-ancestors 'self'; object-src 'none'; base-uri 'self'"
+        : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:; worker-src 'self'; frame-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
     );
     const origin = req.headers.origin;
     if (origin && origins.has(origin)) {

@@ -34,28 +34,22 @@ accidentally commit large binary assets or unreviewed upstream artwork.
 Verify full gameplay, touch controls, audio, pause/resume, license notices and
 saves on real browsers and Android/iOS WebViews before releasing.
 
-## 2. Freeciv-web
+## 2. Freeciv-web — full offline C engine not ported yet
 
-Pinned upstream source: https://github.com/freeciv/freeciv-web
+Original full source: https://github.com/freeciv/freeciv-web
+Pinned recursive source: `native/community/freeciv-web`.
 
-The original Freeciv-web JavaScript client requires a *separately deployed*
-Freeciv-web stack. Its README documents Tomcat/Java, nginx, Python
-WebSocket proxy and Freeciv C game servers; an iframe without those services
-is not a functioning game.
+**NAQLA's required mode is 100% offline.** The original Freeciv-web user
+interface depends on the Freeciv C server and Python/Java services even to
+play against AI. There is no fully working local in-app conversion in
+NAQLA yet. Do not configure `VITE_FREECIV_WEB_URL`, host an external
+instance or offer a public URL as a substitute. The original full game
+needs a real C engine plus AI/rules/protocol running locally on device.
+Until then its Play button must remain disabled.
 
-Deploy an instance that you operate and set the HTTPS origin/URL at Vite
-build time:
-
-```sh
-VITE_FREECIV_WEB_URL=https://your-freeciv-host.example/ npm run build
-```
-
-**The URL is a placeholder, not a working service.** It must permit framing by
-the NAQLA origin through CSP `frame-ancestors`; the server must provide
-real authentication, privacy controls and security patching. If not configured,
-NAQLA displays an unavailable/runtime setup state rather than silently loading
-someone else's public service or pretending to implement the game. Do not
-redirect users to an unrelated website.
+See [OFFLINE_ORIGINAL_GAMES.md](OFFLINE_ORIGINAL_GAMES.md) for the offline
+feature contract, exact sources, original game asset packaging and required
+acceptance tests.
 
 ## 3. Mindustry (browser preview path, not yet a proven release)
 
@@ -147,11 +141,13 @@ The resulting Docker image serves a runtime manifest and the original game
 bundle from the same HTTPS origin as NAQLA. Its game frame has a narrow
 exception to the existing strict CSP: it may be framed by the same origin and
 execute the upstream game's inline boot scripts. Every other NAQLA page
-retains DENY, strict script-src and frame-ancestors none. A future separately
-hosted Freeciv web server can be permitted in the parent's `frame-src`
-**only** via the validated HTTPS origin `FREECIV_WEB_ORIGIN` on the server,
-together with `VITE_FREECIV_WEB_URL` at frontend build time. Both sides of
-that configuration must match; neither setting deploys Freeciv itself.
+retains DENY, strict script-src and frame-ancestors none. The offline edition never uses an externally hosted Freeciv page. Only same-origin local game frames are permitted.
+
+The separate **complete original offline Android test build** combines
+SuperTux + Mindustry in one APK via
+`.github/workflows/community-offline-complete.yml`, with all original compiled
+game assets included before the Capacitor build. A real local Freeciv engine
+is not yet ready.
 
 The new experimental build can be checked through GitHub Actions workflow
 `Verify bundled Mindustry web runtime`, which builds the entire Docker image,

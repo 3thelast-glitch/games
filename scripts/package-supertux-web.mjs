@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, copyFileSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
+import { embedOfflineCsp } from './offline-game-csp.mjs';
 
 // Compile the ORIGINAL upstream C++/Emscripten game first. This script does not
 // substitute simplified gameplay, web links or placeholder binary assets.
@@ -22,6 +23,7 @@ rmSync(output, { recursive: true, force: true });
 mkdirSync(output, { recursive: true });
 for (const name of files) copyFileSync(join(input, name), join(output, name));
 copyFileSync(join(input, html), join(output, 'supertux2.html'));
+writeFileSync(join(output, 'supertux2.html'), embedOfflineCsp(readFileSync(join(input, html), 'utf8')));
 copyFileSync(license, join(output, 'LICENSE.txt'));
 writeFileSync(join(output, 'naqla-runtime.json'), JSON.stringify({
   id: 'supertux',
