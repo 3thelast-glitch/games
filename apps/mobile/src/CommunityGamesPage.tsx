@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { enterFullscreenOnlyGame, leaveFullscreenOnlyGame } from './immersive-game.ts';
 import { useI18n } from './i18n.tsx';
-import './community-games.css';
 
 export type CommunityGameId = 'supertux' | 'freecivWeb' | 'mindustry';
 export const communityGameIds: readonly CommunityGameId[] = ['supertux', 'freecivWeb', 'mindustry'];
