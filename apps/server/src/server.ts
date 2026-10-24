@@ -160,7 +160,17 @@ export function createArenaServer(options: ServerOptions = {}) {
     }
     const ip = req.socket.remoteAddress ?? 'unknown';
     // Trust the socket address. Configure a dedicated authenticated proxy before honoring forwarded headers.
-    if (!limits.allow(`http:${ip}`, 600, 60000)) return json(res, 429, { error: 'rate-limited' });
+    // Mindustry's original WebAssets loader fetches ~700 bundled game files
+    // concurrently on first offline boot. Exempt ONLY safe, same-origin,
+    // read-only game resources from the much smaller API rate-limit bucket.
+    // Keep a separate, bounded static-file budget to mitigate abuse.
+    const originalGameAsset =
+      (req.method === 'GET' || req.method === 'HEAD') &&
+      url.pathname.startsWith('/third-party/mindustry/') &&
+      !/%(?:2f|5c|2e)/i.test(url.pathname);
+    const rateKey = originalGameAsset ? `game-assets:${ip}` : `http:${ip}`;
+    const limit = originalGameAsset ? 3000 : 600;
+    if (!limits.allow(rateKey, limit, 60000)) return json(res, 429, { error: 'rate-limited' });
     try {
       if (url.pathname === '/api/health' && req.method === 'GET') {
         // A running HTTP listener alone does not prove the database is readable.
