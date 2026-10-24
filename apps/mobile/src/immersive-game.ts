@@ -19,8 +19,8 @@ export function requestGameFullscreen(): void {
     if (pending) void pending.then(() => { enteredFullscreen = true; }).catch(() => {});
   } catch { /* Inline landscape remains playable when browser denies fullscreen. */ }
 }
-export async function enterGameLandscape(): Promise<void> {
-  document.documentElement.dataset.immersiveGame = 'appleWorm';
+export async function enterGameLandscape(gameId = 'appleWorm'): Promise<void> {
+  document.documentElement.dataset.immersiveGame = gameId;
   document.documentElement.style.overflow = 'hidden';
   if (Capacitor.isNativePlatform()) {
     try { await native.landscape(); return; } catch { /* Rotate prompt is fallback. */ }
