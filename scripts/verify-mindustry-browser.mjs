@@ -60,6 +60,18 @@ try {
     throw new Error('Game emitted startup errors: ' + runtimeErrors.join('; '));
   }
   await page.screenshot({ path: resolve(screenshots, 'mindustry-first-frame.png'), fullPage: true });
+  // Probe the original in-game Play menu, not just the loading screen. Game
+  // menus render into canvas rather than accessible DOM, so save a real capture
+  // for visual review rather than claiming this proves a level has started.
+  const gameCanvasBounds = await canvas.boundingBox();
+  if (gameCanvasBounds) {
+    await canvas.tap({ position: {
+      x: Math.floor(gameCanvasBounds.width * .45),
+      y: Math.floor(gameCanvasBounds.height * .30),
+    } });
+    await page.waitForTimeout(2500);
+    await page.screenshot({ path: resolve(screenshots, 'mindustry-after-play-tap.png'), fullPage: true });
+  }
   await page.locator('.community-game-exit').click();
   await page.locator('.game-card.mindustry').waitFor({ state: 'visible', timeout: 10000 });
   console.log(JSON.stringify({
