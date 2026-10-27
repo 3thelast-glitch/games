@@ -42,5 +42,5 @@ test('scout cannot capture a city',()=>{
 });
 test('computer only acts during its turn and ends its turn',()=>{
  const s=createBattle();assert.equal(aiTurn(s).turn,1);finishTurn(s);assert.equal(s.turn,2);
- aiTurn(s);assert.ok(s.winner!==0||s.turn===1);
+ aiTurn(s);assert.ok(s.winner!==0||Number(s.turn)===1);
 });
