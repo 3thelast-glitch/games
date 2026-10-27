@@ -51,6 +51,7 @@ import { ChessTrainerPage } from './ChessTrainerPage.tsx';
 import { ChessArchivePage } from './ChessArchivePage.tsx';
 import { LanPage } from './LanPage.tsx';
 import { LudoPage } from './LudoPage.tsx';
+import { NaqlaTacticsPage } from './NaqlaTacticsPage.tsx';
 import { AppleWormPage } from './AppleWormPage.tsx';
 import { requestGameFullscreen } from './immersive-game.ts';
 import { BasketballLinePage } from './BasketballLinePage.tsx';
@@ -87,6 +88,7 @@ type Page =
   | 'chessArchive'
   | 'lan'
   | 'ludo'
+  | 'naqlaTactics'
   | 'appleWorm'
   | 'basketballLine'
   | 'backroomBill'
@@ -1004,7 +1006,7 @@ function ArenaApp({
   const matchNow = online ? clock + serverOffset.current : clock;
   return (
     <NoticeContext.Provider value={notice}>
-      <div className={`app-shell ${page === 'match' || page === 'lan' ? 'in-match' : ''} ${page === 'appleWorm' || page === 'arithmetica' || page === 'ludo' || page === 'gasStation' ? 'is-immersive-game' : ''}`}>
+      <div className={`app-shell ${page === 'match' || page === 'lan' ? 'in-match' : ''} ${page === 'appleWorm' || page === 'arithmetica' || page === 'ludo' || page === 'gasStation' || page === 'naqlaTactics' ? 'is-immersive-game' : ''}`}>
         <aside className="sidebar">
           <button className="brand-button" onClick={() => navigate('library')}>
             <Logo />
@@ -1081,7 +1083,7 @@ function ArenaApp({
           <main className={`main-content ${page === 'match' ? 'match-content' : ''}`}>
             {page === 'library' && (
               <HomePage
-                onChoose={(gameId, mode) => gameId === 'ludo' ? (requestGameFullscreen(), setPage('ludo')) : gameId === 'appleWorm' ? (requestGameFullscreen(), setPage('appleWorm')) : gameId === 'basketballLine' ? setPage('basketballLine') : gameId === 'backroomBill' ? setPage('backroomBill') : gameId === 'arithmetica' ? (requestGameFullscreen(), setPage('arithmetica')) : gameId === 'survivalBuilder' ? setPage('survivalBuilder') : gameId === 'towerDestiny' ? setPage('towerDestiny') : gameId === 'gasStation' ? (requestGameFullscreen(), setPage('gasStation')) : isCommunityGameId(gameId) ? setPage(gameId) : setChoice({ gameId, mode })}
+                onChoose={(gameId, mode) => gameId === 'naqlaTactics' ? (requestGameFullscreen(), setPage('naqlaTactics')) : gameId === 'ludo' ? (requestGameFullscreen(), setPage('ludo')) : gameId === 'appleWorm' ? (requestGameFullscreen(), setPage('appleWorm')) : gameId === 'basketballLine' ? setPage('basketballLine') : gameId === 'backroomBill' ? setPage('backroomBill') : gameId === 'arithmetica' ? (requestGameFullscreen(), setPage('arithmetica')) : gameId === 'survivalBuilder' ? setPage('survivalBuilder') : gameId === 'towerDestiny' ? setPage('towerDestiny') : gameId === 'gasStation' ? (requestGameFullscreen(), setPage('gasStation')) : isCommunityGameId(gameId) ? setPage(gameId) : setChoice({ gameId, mode })}
                 onRules={setRules}
                 profile={profile}
                 onFavorite={(id) =>
@@ -1097,6 +1099,7 @@ function ArenaApp({
                 onResume={() => setPage('match')}
               />
             )}
+            {page === 'naqlaTactics' && <NaqlaTacticsPage onExit={() => setPage('library')} language={settings.lang} />}
             {page === 'ludo' && <LudoPage onExit={() => setPage('library')} settings={settings} onSettingsChange={(patch) => changeSettings(patch)} />}
             {page === 'appleWorm' && <AppleWormPage onExit={() => setPage('library')} settings={settings} onToggleSound={() => changeSettings({ sound: !settings.sound })} />}
             {page === 'basketballLine' && <BasketballLinePage onExit={() => setPage('library')} settings={settings} />}

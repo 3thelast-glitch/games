@@ -14,6 +14,7 @@ export const gameLibraryCategories: Readonly<Record<string, Exclude<LibraryCateg
   supertux: 'casual',
   freecivWeb: 'strategy',
   mindustry: 'strategy',
+  naqlaTactics: 'strategy',
   ludo: 'strategy',
   appleWorm: 'puzzle',
   basketballLine: 'casual',

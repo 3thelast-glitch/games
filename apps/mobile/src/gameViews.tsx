@@ -74,6 +74,7 @@ export const gameViews: Record<string, (props: Props) => React.ReactNode> = {
   ),
 };
 export const gameInfo = [
+  { id: 'naqlaTactics', duration: '15–40', icon: '⚔', tag: 'naqlaTacticsTag', description: 'naqlaTacticsDesc' },
   { id: 'supertux', duration: '—', icon: '❄', tag: 'supertuxTag', description: 'supertuxDesc' },
   { id: 'freecivWeb', duration: '—', icon: '🏛', tag: 'freecivWebTag', description: 'freecivWebDesc' },
   { id: 'mindustry', duration: '—', icon: '⚙', tag: 'mindustryTag', description: 'mindustryDesc' },
