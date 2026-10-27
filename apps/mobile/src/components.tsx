@@ -497,6 +497,8 @@ export function GameArt({ game, compact = false }: { game: string; compact?: boo
       <div className="art-halo" />
       {game === 'supertux' || game === 'freecivWeb' || game === 'mindustry' ? (
         <CommunityGamesArt game={game} />
+      ) : game === 'naqlaTactics' ? (
+        <svg viewBox="0 0 480 444" role="presentation"><rect width="480" height="444" fill="#0b2632" rx="32"/><g transform="translate(58,46)">{Array.from({length:6},(_,y)=>Array.from({length:6},(_,x)=><rect key={`${x}-${y}`} x={x*61} y={y*59} width="60" height="58" fill={(x+y)%5===0?'#315d63':(x+y)%3===0?'#637b52':'#4c8665'} stroke="#1b4948"/>))}<rect x="20" y="262" width="75" height="74" rx="8" fill="#286bc7" stroke="#93e1ff" strokeWidth="5"/><path d="M33 291h50v12H33m10-28h30v45H43" stroke="#e2faff" strokeWidth="8" fill="none"/><rect x="260" y="55" width="78" height="76" rx="8" fill="#ba4152" stroke="#ffd4b0" strokeWidth="5"/><path d="M276 86h48v12h-48m10-29h28v46h-28" stroke="#ffe3d8" strokeWidth="8" fill="none"/></g><text x="240" y="421" fontSize="29" fontWeight="900" fill="#c6f7ef" textAnchor="middle" letterSpacing="5">TACTICS</text></svg>
       ) : game === 'ludo' ? (
         <svg viewBox="0 0 480 444">
           <rect x="80" y="50" width="320" height="320" rx="28" fill="#151e33" stroke="#c8a76a" strokeWidth="8"/>
