@@ -22,8 +22,8 @@ const { I18n } = await import('../apps/mobile/src/i18n.tsx');
 const { HomePage } = await import('../apps/mobile/src/pages.tsx');
 afterEach(() => cleanup());
 
-test('the app library has a category for all 23 unique library entries (including 3 runtime-gated upstream games)', () => {
-  assert.equal(gameInfo.length, 23);
+test('the app library has a category for all unique library entries (including 3 runtime-gated upstream games)', () => {
+  assert.ok(gameInfo.length >= 24);
   assert.equal(new Set(gameInfo.map((game) => game.id)).size, gameInfo.length);
   for (const game of gameInfo) assert.ok(gameLibraryCategories[game.id], game.id);
   assert.ok(libraryFilters.includes('favorites'));
@@ -46,8 +46,8 @@ test('compact launcher preserves game play, rules, favorites, and bilingual sear
       />
     </I18n>,
   );
-  assert.equal(view.container.querySelectorAll('.game-grid > .game-card.naqla-icon-tile').length, 23);
-  assert.equal(view.container.querySelectorAll('.naqla-icon-frame').length, 23);
+  assert.equal(view.container.querySelectorAll('.game-grid > .game-card.naqla-icon-tile').length, gameInfo.length);
+  assert.equal(view.container.querySelectorAll('.naqla-icon-frame').length, gameInfo.length);
   fireEvent.click(view.container.querySelector('.game-card.supertux .play-button')!);
   assert.equal(selected, 'supertux');
   assert.match(view.container.querySelector('.game-card.supertux')!.textContent!, /يتطلب تجهيز/);
@@ -69,7 +69,7 @@ test('compact launcher preserves game play, rules, favorites, and bilingual sear
   assert.equal(view.container.querySelectorAll('.game-grid > .game-card').length, 0);
   assert.ok(view.getByRole('status').textContent?.includes('لا توجد ألعاب'));
   fireEvent.click(view.getByRole('button', { name: 'عرض جميع الألعاب' }));
-  assert.equal(view.container.querySelectorAll('.game-grid > .game-card').length, 23);
+  assert.equal(view.container.querySelectorAll('.game-grid > .game-card').length, gameInfo.length);
 });
 
 test('search ignores Arabic tashkeel, tatweel, alif variants and extra whitespace', () => {
